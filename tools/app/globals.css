@@ -1,0 +1,351 @@
+:root {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --brand-from: #0ea5e9;
+  --brand-to: #6366f1;
+  --brand: #4f46e5;
+  --warn-bg: #fffbeb;
+  --warn-border: #f59e0b;
+  --radius: 16px;
+  --shadow-sm: 0 1px 2px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 8px 24px rgb(15 23 42 / 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Hiragino Sans',
+    'Noto Sans JP', 'Yu Gothic UI', sans-serif;
+  color: var(--text);
+  line-height: 1.8;
+  font-size: 16px;
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--brand);
+}
+
+/* ===== ヘッダー ===== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgb(255 255 255 / 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header .inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.site-header a.brand {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.site-header a.brand::before {
+  content: '';
+  width: 14px;
+  height: 14px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+  display: inline-block;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+/* ===== ヒーロー ===== */
+.hero {
+  text-align: center;
+  padding: 40px 0 16px;
+}
+
+.hero h1 {
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 0 0 10px;
+}
+
+.hero h1 .grad {
+  background: linear-gradient(90deg, var(--brand-from), var(--brand-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero .lead {
+  color: var(--muted);
+  font-size: 1rem;
+  max-width: 560px;
+  margin: 0 auto 18px;
+}
+
+.hero .badges {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero .badges span {
+  font-size: 0.8rem;
+  color: var(--brand);
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 999px;
+  padding: 3px 14px;
+  font-weight: 600;
+}
+
+/* ===== セクション ===== */
+h1 {
+  font-size: 1.45rem;
+  line-height: 1.4;
+  margin: 8px 0 4px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 40px 0 4px;
+}
+
+.section-title h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.section-title .count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 2.2em;
+}
+
+h3 {
+  font-size: 1rem;
+  margin-top: 1.6em;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin-bottom: 20px;
+}
+
+/* ===== ツールカード ===== */
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin: 16px 0 8px;
+}
+
+.tool-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  display: block;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: #c7d2fe;
+}
+
+.tool-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: linear-gradient(135deg, #eef2ff, #e0f2fe);
+  border: 1px solid #e0e7ff;
+  margin-bottom: 12px;
+}
+
+.tool-card .name {
+  font-weight: 700;
+  font-size: 0.98rem;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+
+.tool-card .desc {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.tool-card.coming {
+  pointer-events: none;
+  box-shadow: none;
+}
+
+.tool-card.coming .desc {
+  opacity: 0.8;
+}
+
+.tool-card .badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  background: var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 1px 10px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-weight: 600;
+}
+
+/* ===== フッター ===== */
+.site-footer {
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.site-footer .inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+.site-footer a {
+  color: var(--muted);
+  margin-right: 16px;
+}
+
+/* ===== ツールページ共通 ===== */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 0.95rem;
+  background: var(--surface);
+}
+
+th,
+td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: right;
+}
+
+th {
+  background: #eef2ff;
+  text-align: center;
+  font-weight: 600;
+}
+
+td:first-child,
+th:first-child {
+  text-align: center;
+}
+
+.note {
+  background: var(--warn-bg);
+  border-left: 4px solid var(--warn-border);
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  margin: 16px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 20px 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.adslot {
+  min-height: 90px;
+  margin: 24px 0;
+  text-align: center;
+}
+
+input[type='number'],
+input[type='text'],
+input[type='time'],
+select {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 1.05rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+input:focus,
+select:focus {
+  outline: 2px solid #c7d2fe;
+  border-color: var(--brand);
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .hero h1 {
+    font-size: 1.5rem;
+  }
+  h1 {
+    font-size: 1.25rem;
+  }
+  th,
+  td {
+    padding: 6px;
+    font-size: 0.85rem;
+  }
+}
