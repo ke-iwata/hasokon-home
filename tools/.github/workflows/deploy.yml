@@ -1,0 +1,87 @@
+name: Deploy to S3 + CloudFront
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  test:
+    name: テスト & ビルド
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: 計算ロジックのテスト
+        run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
+
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out/
+          retention-days: 3
+
+  deploy:
+    name: S3へデプロイ
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: out
+
+      - name: AWS認証（OIDC・長期キー不要）
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: S3へ同期（immutableなアセット）
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+            --delete \
+            --exclude "*" \
+            --include "_next/static/*" \
+            --cache-control "public,max-age=31536000,immutable"
+
+      - name: S3へ同期（HTML・その他）
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+            --delete \
+            --exclude "_next/static/*" \
+            --cache-control "public,max-age=0,must-revalidate"
+
+      - name: CloudFrontのキャッシュを削除
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: デプロイ完了
+        run: echo "https://tool.hasokon.com/ に反映されました"
