@@ -37,3 +37,11 @@ tests/
 2. `tests/{slug}.test.ts` にテストを追加
 3. `app/{slug}/page.tsx` にページを実装
 4. `lib/registry.ts` の該当エントリを `ready: true` に変更
+
+## ドキュメント
+
+| ファイル | 内容 |
+|---|---|
+| [docs/CONCEPT.md](./docs/CONCEPT.md) | コンセプト・SEO戦略・収益化方針・ロードマップ（**まずこれ**） |
+| [CLAUDE.md](./CLAUDE.md) | 実装ガイド・設計上の約束・ツール追加手順・落とし穴 |
+| [DEPLOY.md](./DEPLOY.md) | AWSセットアップとデプロイ手順 |
