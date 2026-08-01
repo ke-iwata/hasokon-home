@@ -60,13 +60,12 @@ Resources:
           - ObjectOwnership: BucketOwnerEnforced
       LifecycleConfiguration:
         Rules:
-          # ハッシュ付きの古いビルド成果物を自動で片付ける。
-          # デプロイ時に消さないのは、古いHTMLをキャッシュしている利用者が
-          # 直後に404になるのを避けるため（DEPLOY.md「デプロイの流れ」参照）
-          - Id: expire-old-build-assets
-            Status: Enabled
-            Prefix: _next/static/
-            ExpirationInDays: 30
+          # _next/static/ に有効期限を設定してはいけない。
+          # S3のライフサイクルはオブジェクトの作成日からの経過日数で消すため、
+          # 現在使われているJSやCSSかどうかを区別できない。期限を付けると、
+          # 更新のない期間が続いただけで配信中のアセットが消えてサイトが壊れる。
+          # 使われなくなったハッシュ付きファイルは蓄積するが、1ビルドあたり
+          # 数百KB程度なので保管料は無視できる。整理したくなったら手動で消すこと
           - Id: abort-incomplete-uploads
             Status: Enabled
             AbortIncompleteMultipartUpload:
