@@ -85,7 +85,7 @@ export default function Calculator() {
           }}
         >
           次の壁は <strong style={{ color: 'var(--brand)' }}>{next.label}</strong>
-          （あと <strong>{fmtMan(next.diff)}</strong>）
+          {next.diff === 0 ? '（ちょうど到達）' : <>（あと <strong>{fmtMan(next.diff)}</strong>）</>}
         </p>
       ) : (
         <p style={{ margin: '18px 0 4px', fontSize: '0.95rem' }}>
@@ -124,7 +124,14 @@ export default function Calculator() {
                 </span>
               </strong>
               <span style={{ color: r.over ? '#b45309' : 'var(--muted)' }}>
-                {r.over ? `超えています（+${fmtMan(r.diff)}）` : `あと${fmtMan(r.diff)}`}
+                {/* 壁ちょうどは「+0万円」「あと0万円」だと不自然なので専用の文言にする */}
+                {r.diff === 0
+                  ? r.over
+                    ? 'ちょうど（超えています）'
+                    : 'ちょうど（まだ超えていません）'
+                  : r.over
+                    ? `超えています（+${fmtMan(r.diff)}）`
+                    : `あと${fmtMan(r.diff)}`}
               </span>
             </div>
             <div style={{ color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>{r.effect}</div>
