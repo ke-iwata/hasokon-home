@@ -61,12 +61,31 @@ docs/CONCEPT.md       コンセプトと方針
 
 1. `lib/{slug}.ts` — 計算ロジックを純関数で実装。JSDocで出典と更新箇所を明記
 2. `tests/{slug}.test.ts` — import は `@/lib/{slug}`。一次資料の計算例・境界値・異常値を必ず入れる
-3. `app/{slug}/page.tsx` — 構成は `h1 → p.lead → <Calculator /> → adslot → 解説 → FAQ → adslot → 出典`
+3. `app/{slug}/page.tsx` — 構成は
+   `h1 → p.lead → <Calculator /> → <AdUnit position="below-tool" /> → 解説 → FAQ → <AdUnit position="below-faq" /> → 出典`
    - `metadata` に `title` / `description` / `alternates.canonical`（`${SITE_URL}/{slug}/`）
    - JSON-LD で `WebApplication` + `FAQPage`
 4. `app/{slug}/Calculator.tsx` — `'use client'`。`useState` で入力を持ち、lib の関数を呼ぶだけ
-5. `lib/registry.ts` にエントリを追加し `ready: true` に
+5. `lib/registry.ts` にエントリを追加し `ready: true` に。
+   `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
 6. `npm test && npm run build` が通ることを確認
+
+## AdSense
+
+設定は `lib/adsense.ts` の1箇所に集約されている。**審査に通ったらここを埋めるだけ**でよい。
+
+1. `ADSENSE_CLIENT` に `ca-pub-` から始まるパブリッシャーIDを入れる
+2. AdSense管理画面で広告ユニットを2つ作り、`AD_SLOTS` にスロットIDを入れる
+   （`below-tool` = 計算結果の下、`below-faq` = 解説の下。全ページで使い回す）
+
+`ADSENSE_CLIENT` が空の間はスクリプトも広告枠も出力されないため、**審査前でも安全にデプロイできる**。
+`/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
+
+- 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く
+- 未設定時は、開発中のみ破線のプレースホルダを表示し、本番ビルドでは何も出力しない
+- **AdSenseのscriptは `app/layout.tsx` の `<head>` に生タグで置く**。`next/script` の
+  `afterInteractive` だと静的HTMLにpreloadしか出ず、審査でコードを検出されない可能性があるため
+- **計算機より上に広告を置かない**（UX悪化 → 直帰率上昇 → 順位下落を避ける。docs/CONCEPT.md 5参照）
 
 ## よく踏む落とし穴
 
@@ -83,7 +102,7 @@ docs/CONCEPT.md       コンセプトと方針
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在96件）
+npm test         # 計算ロジックのテスト（現在99件）
 npm run build    # out/ に静的出力
 ```
 
@@ -100,12 +119,20 @@ npm run build    # out/ に静的出力
 
 ## 現在の状態と次の一手
 
-- 実装済み: ツール8本 / テスト96件 / sitemap・robots / GitHub Actions
+- 実装済み: ツール8本 / テスト99件 / sitemap・robots / GitHub Actions
 - 未着手: AWSリソース作成 → 初回デプロイ → Search Console登録 → AdSense申請
 - 中長期: 制度改正が出るたびに計算機を追加する（このサイトの本命戦略）
 
-### 未確認事項（着手前に検証すること）
+### 制度データの根拠と注意点
 
-- `lib/nenshu-kabe.ts` の金額（178万 / 119万 / 136万 / 169万）は
-  二次情報ベースで実装している。**公開前に国税庁等の一次情報で最終確認すること**
+- `lib/nenshu-kabe.ts` の金額は**検証済み**（2026年8月）。
+  所得税法等の一部を改正する法律（**令和8年法律第12号**・2026年3月31日成立公布）により
+  令和8年分から 給与所得控除74万円 / 基礎控除104万円（本則62万＋特例加算42万）となり、
+  178万・136万・169万・159万・163万・119万はいずれもこの組み合わせで導出できる。
+  なお**国税庁のタックスアンサーは令和7年分の内容のまま**で本改正が未反映なので、
+  参照するときに数値が食い違って見えるが誤りではない
+- **2026年10月に106万円の壁の賃金要件が撤廃される**。撤廃後は金額の壁ではなくなるため、
+  10月以降に `lib/nenshu-kabe.ts` の106万円の壁の note とページFAQの文言を見直すこと
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
+- 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
+  社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
