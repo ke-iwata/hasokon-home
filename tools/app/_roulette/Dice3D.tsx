@@ -110,6 +110,54 @@ function shadeOf(faceCls: string, rx: number, ry: number): number {
   return 0.17 * (1 - Math.max(0, dot))
 }
 
+/**
+ * この端末で立体表示が実際に効くかを確かめる。
+ *
+ * transform-style: preserve-3d は「対応している」と報告されても、
+ * 端末やブラウザによっては平面に潰れて描画されることがある。
+ * 宣言の有無だけでは分からないので、実際に描かせて測る。
+ *
+ * 45度回した親の中で -45度回した子を作り、打ち消し合って元の幅に
+ * 戻れば立体が効いている。潰れていれば cos45（約71%）に縮む。
+ */
+function detect3D(): boolean {
+  if (typeof window === 'undefined' || typeof CSS === 'undefined') return false
+  if (!CSS.supports('transform-style', 'preserve-3d')) return false
+
+  const outer = document.createElement('div')
+  outer.setAttribute(
+    'style',
+    'position:fixed;top:-9999px;left:0;width:100px;height:100px;' +
+      'transform:rotateY(45deg);transform-style:preserve-3d;pointer-events:none;',
+  )
+  const inner = document.createElement('div')
+  inner.setAttribute('style', 'position:absolute;inset:0;transform:rotateY(-45deg);')
+  outer.appendChild(inner)
+  document.body.appendChild(outer)
+  const width = inner.getBoundingClientRect().width
+  document.body.removeChild(outer)
+
+  return width > 90
+}
+
+/** 立体が使えないときの平面表示 */
+function FlatDie({ value, size, rolling }: { value: number; size: number; rolling: boolean }) {
+  return (
+    <div
+      className={`die-flat ${rolling ? 'rolling' : ''}`}
+      style={{ width: size, height: size }}
+      role="img"
+      aria-label={`${value}`}
+    >
+      <svg viewBox="0 0 3 3" aria-hidden>
+        {(PIPS[value] ?? PIPS[1]).map(([x, y], k) => (
+          <circle key={k} cx={x + 0.5} cy={y + 0.5} r="0.3" />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 /** 個数が増えるほど小さくして、横に並べても収まるようにする */
 function dieSize(count: number): number {
   if (count <= 2) return 62
@@ -182,18 +230,25 @@ interface Props {
   values: number[]
   /** 振るたびに増える番号。変わると転がる動きをやり直す */
   spin: number
+  /** 転がっている最中か（平面表示のときだけ使う） */
+  rolling: boolean
 }
 
 /**
  * 立体的に転がるサイコロ。横に並べて表示する。
  *
  * WebGLは使わずCSSの3D変換で作っている。立方体なら見た目は十分で、
- * ライブラリを増やさずに済み、端末やブラウザを選ばないため。
+ * ライブラリを増やさずに済むため。
+ * 立体が効かない端末では平面表示に切り替える（detect3D 参照）。
  */
-export default function Dice3D({ values, spin }: Props) {
+export default function Dice3D({ values, spin, rolling }: Props) {
   const [reduceMotion, setReduceMotion] = useState(false)
+  // 判定はマウント後にしかできない。判定前は平面で出しておき、
+  // 使えると分かった時点で立体に切り替える（逆だと崩れた状態が一瞬見える）
+  const [can3D, setCan3D] = useState(false)
 
   useEffect(() => {
+    setCan3D(detect3D())
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
     const apply = () => setReduceMotion(mq.matches)
     apply()
@@ -225,17 +280,26 @@ export default function Dice3D({ values, spin }: Props) {
 
   return (
     <div className="dice-row">
-      {values.map((v, i) => (
-        // spin が変わるたびに作り直して、転がる動きを最初から流す
-        <Die
-          key={`${spin}-${i}`}
-          value={v}
-          size={size}
-          axis={rolls[i].axis}
-          spin={rolls[i].spin}
-          animate={!reduceMotion}
-        />
-      ))}
+      {values.map((v, i) =>
+        can3D ? (
+          // spin が変わるたびに作り直して、転がる動きを最初から流す
+          <Die
+            key={`${spin}-${i}`}
+            value={v}
+            size={size}
+            axis={rolls[i].axis}
+            spin={rolls[i].spin}
+            animate={!reduceMotion}
+          />
+        ) : (
+          <FlatDie
+            key={`${spin}-${i}`}
+            value={v}
+            size={size}
+            rolling={rolling && !reduceMotion}
+          />
+        ),
+      )}
     </div>
   )
 }

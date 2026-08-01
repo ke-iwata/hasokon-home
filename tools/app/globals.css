@@ -1649,6 +1649,9 @@ label {
      （タブが裏、強い省電力など）で、サイコロが途中の姿勢で止まってしまう。
      付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
   animation: die-roll 0.78s cubic-bezier(0.12, 0.66, 0.26, 1);
+  /* 転がっている間だけ合成のヒントを出す。スマホで毎コマ描き直して
+     かくつくのを防ぐため。常時付けるとメモリを無駄に使う */
+  will-change: transform;
 }
 
 /* その場で高速で回って止まる。少し浮いたところから落ちて、軽く弾む。
@@ -1761,4 +1764,45 @@ label {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+/* 立体が効かない端末向けの平面表示。
+   transform-style: preserve-3d が潰れる環境では、崩れた立方体より
+   素直な平面のほうが読みやすい（Dice3D の detect3D で切り替える） */
+.rl .die-flat {
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.25);
+  display: grid;
+  place-items: center;
+}
+
+.rl .die-flat svg {
+  width: 76%;
+  height: 76%;
+  fill: var(--accent);
+}
+
+.rl .die-flat.rolling {
+  animation: die-shake 0.16s linear infinite;
+}
+
+@keyframes die-shake {
+  0%,
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate(-2px, -2px) rotate(-6deg);
+  }
+  75% {
+    transform: translate(2px, -1px) rotate(6deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rl .die-flat.rolling {
+    animation: none;
+  }
 }

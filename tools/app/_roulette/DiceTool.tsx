@@ -78,7 +78,7 @@ export default function DiceTool({ theme }: Props) {
           <p className="mode-note">下のボタンで振ります</p>
         ) : (
           <>
-            <Dice3D values={values} spin={spin} />
+            <Dice3D values={values} spin={spin} rolling={rolling} />
             {values.length > 1 && !rolling && <p className="dice-total">合計 {total}</p>}
           </>
         )}
