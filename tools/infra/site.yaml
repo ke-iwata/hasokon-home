@@ -240,8 +240,17 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                # このリポジトリからのワークフローだけに限定する
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepository}:*'
+                # このリポジトリからのワークフローだけに限定する。
+                # GitHubは sub に不変ID を含める形式（repo:owner@123/repo@456:...）を
+                # 送ることがあり、従来形式だけだと AssumeRoleWithWebIdentity が拒否される。
+                # 設定で切り替わるため両方を許可しておく。
+                # owner名・repo名はGitHub全体で一意なので @* を付けても他リポジトリには一致しない
+                token.actions.githubusercontent.com:sub:
+                  - !Sub 'repo:${GitHubRepository}:*'
+                  - !Sub
+                    - 'repo:${Owner}@*/${Repo}@*:*'
+                    - Owner: !Select [0, !Split ['/', !Ref GitHubRepository]]
+                      Repo: !Select [1, !Split ['/', !Ref GitHubRepository]]
       Policies:
         - PolicyName: deploy
           PolicyDocument:
