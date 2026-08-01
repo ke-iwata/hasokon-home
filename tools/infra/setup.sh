@@ -74,12 +74,43 @@ zone_id="$(aws route53 list-hosted-zones-by-name \
   || die "${PARENT_DOMAIN} のRoute 53ホストゾーンが見つかりません"
 echo "ホストゾーンID: ${zone_id}"
 
-# OIDCプロバイダが既にあるなら作らせない（重複作成はエラーになる）
-if aws iam list-open-id-connect-providers \
-     --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')] | [0]" \
-     --output text | grep -q arn; then
+# GitHubのOIDCエンドポイントのルート証明書からサムプリントを取得する。
+# 古い値のままだとトークン検証に失敗するため、毎回実際の証明書から取り直す
+# openssl s_client は正常時も非ゼロで終わることがあり、pipefail と組み合わせると
+# スクリプトごと止まってしまうため、各段で明示的に失敗を吸収する
+oidc_host=token.actions.githubusercontent.com
+cert_chain="$(openssl s_client -servername "${oidc_host}" -showcerts \
+  -connect "${oidc_host}:443" </dev/null 2>/dev/null || true)"
+# チェーンの最後の証明書＝ルートCA
+root_cert="$(printf '%s' "${cert_chain}" | awk '
+  /-----BEGIN CERTIFICATE-----/ { buf = "" }
+  { buf = buf $0 ORS }
+  /-----END CERTIFICATE-----/   { last = buf }
+  END { printf "%s", last }' || true)"
+thumbprint="$(printf '%s' "${root_cert}" \
+  | openssl x509 -outform DER 2>/dev/null \
+  | openssl dgst -sha1 2>/dev/null \
+  | sed 's/.*[= ]//' | tr 'A-Z' 'a-z' || true)"
+[ ${#thumbprint} -eq 40 ] \
+  || die "GitHubのOIDC証明書からサムプリントを取得できませんでした（取得値: ${thumbprint:-空}）"
+echo "OIDCサムプリント: ${thumbprint}"
+
+# OIDCプロバイダを このスタックで作るかどうかを決める。
+#
+# 「存在するなら作らない」だけで判定してはいけない。前回このスタックが作った
+# プロバイダを検出して条件がfalseになり、次の更新でCloudFormationが
+# 自分の管理下のリソースとして削除してしまう（実際にそれで認証が壊れた）。
+# まずスタックの管理下にあるかを見て、管理下なら維持する。
+if aws cloudformation describe-stack-resource \
+     --stack-name "${SITE_STACK}" --region "${REGION}" \
+     --logical-resource-id GitHubOIDCProvider >/dev/null 2>&1; then
+  create_oidc=true
+  echo "GitHub OIDCプロバイダ: このスタックの管理下（維持）"
+elif aws iam list-open-id-connect-providers \
+       --query "OpenIDConnectProviderList[?contains(Arn, 'token.actions.githubusercontent.com')] | [0]" \
+       --output text | grep -q arn; then
   create_oidc=false
-  echo "GitHub OIDCプロバイダ: 既存のものを使う"
+  echo "GitHub OIDCプロバイダ: スタック管理外の既存のものを使う"
 else
   create_oidc=true
   echo "GitHub OIDCプロバイダ: 新規作成する"
@@ -123,6 +154,7 @@ aws cloudformation deploy \
     "HostedZoneId=${zone_id}" \
     "CertificateArn=${cert_arn}" \
     "GitHubRepository=${REPO}" \
+    "OIDCThumbprint=${thumbprint}" \
     "CreateGitHubOIDCProvider=${create_oidc}"
 
 get_output() {

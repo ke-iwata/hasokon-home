@@ -28,6 +28,15 @@ Parameters:
     Default: ke-iwata/hasokon-tools
     Description: デプロイを許可するGitHubリポジトリ（owner/repo）
 
+  OIDCThumbprint:
+    Type: String
+    Default: ab9d0263244dd0326eb67015705a667e79cfe998
+    AllowedPattern: '[0-9a-f]{40}'
+    Description: >
+      GitHubのOIDCエンドポイントのルート証明書のSHA-1サムプリント。
+      証明書は更新されるため、infra/setup.sh が実行時に取得した値で上書きする。
+      既定値はISRG Root YR（Let's Encrypt）のもの。
+
   CreateGitHubOIDCProvider:
     Type: String
     Default: 'true'
@@ -218,9 +227,12 @@ Resources:
       Url: https://token.actions.githubusercontent.com
       ClientIdList:
         - sts.amazonaws.com
+      # 古いサムプリントのままだとトークンの検証に失敗し
+      # 「The web identity token provided could not be validated」になる。
+      # GitHubの証明書はDigiCertからLet's Encryptに移行済みで、今後も変わりうるため
+      # infra/setup.sh が実行時に実際の証明書から取得して渡す
       ThumbprintList:
-        - 6938fd4d98bab03faadb97b34396831e3780aea1
-        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+        - !Ref OIDCThumbprint
 
   DeployRole:
     Type: AWS::IAM::Role
