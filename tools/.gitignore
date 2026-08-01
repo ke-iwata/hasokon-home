@@ -4,6 +4,3 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
-
-# 削除できないファイルの退避先（手元で削除してください）
-_to_delete/
