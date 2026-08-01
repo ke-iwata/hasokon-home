@@ -37,8 +37,7 @@ export default function PrivacyPage() {
           www.aboutads.info
         </a>
         では、第三者配信事業者のCookieを使用したパーソナライズド広告を一括で無効にできます。
-        第三者配信事業者による広告配信を無効にしていない場合、本サイトでの広告配信時に
-        第三者配信事業者や広告ネットワークのCookieが使用されることがあります。
+        第三者配信事業者による広告配信を無効にしていない場合、本サイトでの広告配信時に第三者配信事業者や広告ネットワークのCookieが使用されることがあります。
         詳しくは
         <a
           href="https://policies.google.com/technologies/ads?hl=ja"

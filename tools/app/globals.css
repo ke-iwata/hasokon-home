@@ -316,6 +316,7 @@ th:first-child {
 input[type='number'],
 input[type='text'],
 input[type='time'],
+textarea,
 select {
   width: 100%;
   padding: 10px 12px;
@@ -325,7 +326,15 @@ select {
   background: var(--surface);
 }
 
+/* 複数行の入力は行間を詰めると読みにくいので、本文と同じ行送りにする */
+textarea {
+  font-family: inherit;
+  line-height: 1.7;
+  resize: vertical;
+}
+
 input:focus,
+textarea:focus,
 select:focus {
   outline: 2px solid #c7d2fe;
   border-color: var(--brand);

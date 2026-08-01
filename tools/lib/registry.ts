@@ -130,6 +130,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-07-01',
   },
   {
+    slug: 'hankaku-zenkaku',
+    icon: '🔡',
+    name: '半角⇔全角 変換',
+    description:
+      '半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選べます。',
+    category: '計算・変換',
+    ready: true,
+    updatedAt: '2026-08-02',
+  },
+  {
     slug: 'aspect-ratio',
     icon: '📐',
     name: 'アスペクト比計算機',
