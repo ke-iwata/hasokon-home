@@ -1332,12 +1332,19 @@ label {
   gap: 6px;
 }
 
-.rl .num-field  {
+.rl .num-field {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
   color: var(--muted);
+  /* ラベルが「個 / 数」のように縦に折れるのを防ぐ */
+  white-space: nowrap;
+}
+
+.rl .num-field select {
+  width: auto;
+  min-width: 4.2rem;
 }
 
 .rl .num-field input  {
@@ -1604,7 +1611,7 @@ label {
   }}
 
 /* ------------------------------------------------------------------
-   サイコロ：お椀を上から見た形。横から投げ込まれて中に転がり落ちる。
+   サイコロ：お椀を上から見た形。中で転がって止まる。
 
    WebGLは使わずCSSの3D変換で作っている。立方体なら見た目は十分で、
    ライブラリを増やさずに済み、端末やブラウザを選ばないため。
@@ -1647,55 +1654,43 @@ label {
   position: absolute;
   left: 50%;
   top: 54%;
-  width: 54px;
-  height: 54px;
-  margin: -27px 0 0 -27px;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
   transform-style: preserve-3d;
-  transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), var(--half))
-    rotateX(var(--rx)) rotateY(var(--ry));
+  transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), calc(var(--size) / 2))
+    rotate3d(var(--ax), var(--ay), var(--az), 0deg) rotateX(var(--rx)) rotateY(var(--ry));
 }
 
-.rl .die3d.throwing {
+.rl .die3d.rolling {
   /* fill-mode は付けない。付けるとアニメーションが走らない状況
-     （タブが裏、強い省電力、動きを抑える設定など）で、
-     サイコロが画面外に置き去りになって見えなくなる。
-     付けなければ、この要素本来の transform ＝ お椀の中の定位置が常に効く */
-  animation: die-throw 1.15s cubic-bezier(0.32, 0, 0.66, 0.35);
+     （タブが裏、強い省電力など）で、サイコロが途中の姿勢で止まってしまう。
+     付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
+  animation: die-roll 0.85s cubic-bezier(0.22, 0.72, 0.3, 1);
 }
 
-/* 横から放り込まれ、回りながら落ちて、一度弾んでから収まる */
-@keyframes die-throw {
+/* その場で転がって止まる。少し浮いたところから落ちて、軽く弾む */
+@keyframes die-roll {
   0% {
-    transform: rotateX(var(--tilt)) translate3d(var(--from-x), -30px, 190px)
-      rotateX(0deg) rotateY(0deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 1;
-  }
-  /* まだ空中。ここまでで回転の大半を終える */
-  52% {
     transform: rotateX(var(--tilt))
-      translate3d(calc(var(--x) * 0.55), calc(var(--y) * 0.55), 118px)
-      rotateX(calc(var(--rx) * 0.62)) rotateY(calc(var(--ry) * 0.62));
-    animation-timing-function: cubic-bezier(0.45, 0, 0.7, 0.4);
+      translate3d(var(--x), var(--y), calc(var(--size) / 2 + 62px))
+      rotate3d(var(--ax), var(--ay), var(--az), var(--spin)) rotateX(var(--rx))
+      rotateY(var(--ry));
   }
-  /* 一度お椀に当たる */
-  72% {
-    transform: rotateX(var(--tilt))
-      translate3d(calc(var(--x) * 0.88), calc(var(--y) * 0.88), var(--half))
-      rotateX(calc(var(--rx) * 0.86)) rotateY(calc(var(--ry) * 0.86));
-    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  62% {
+    transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), calc(var(--size) / 2))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.22)) rotateX(var(--rx))
+      rotateY(var(--ry));
   }
-  /* 小さく弾む */
-  86% {
+  80% {
     transform: rotateX(var(--tilt))
-      translate3d(calc(var(--x) * 0.97), calc(var(--y) * 0.97), calc(var(--half) + 16px))
-      rotateX(calc(var(--rx) * 0.96)) rotateY(calc(var(--ry) * 0.96));
+      translate3d(var(--x), var(--y), calc(var(--size) / 2 + 13px))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.08)) rotateX(var(--rx))
+      rotateY(var(--ry));
   }
   100% {
-    transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), var(--half))
-      rotateX(var(--rx)) rotateY(var(--ry));
+    transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), calc(var(--size) / 2))
+      rotate3d(var(--ax), var(--ay), var(--az), 0deg) rotateX(var(--rx)) rotateY(var(--ry));
   }
 }
 
@@ -1718,28 +1713,35 @@ label {
   fill: var(--accent);
 }
 
-/* 6面の配置。24px = 一辺の半分 */
+.rl .die3d-num {
+  font-size: calc(var(--size) * 0.42);
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+}
+
+/* 6面の配置 */
 .rl .die3d-face.front {
-  transform: translateZ(27px);
+  transform: translateZ(calc(var(--size) / 2));
 }
 .rl .die3d-face.back {
-  transform: rotateY(180deg) translateZ(27px);
+  transform: rotateY(180deg) translateZ(calc(var(--size) / 2));
 }
 .rl .die3d-face.right {
-  transform: rotateY(90deg) translateZ(27px);
+  transform: rotateY(90deg) translateZ(calc(var(--size) / 2));
 }
 .rl .die3d-face.left {
-  transform: rotateY(-90deg) translateZ(27px);
+  transform: rotateY(-90deg) translateZ(calc(var(--size) / 2));
 }
 .rl .die3d-face.top {
-  transform: rotateX(90deg) translateZ(27px);
+  transform: rotateX(90deg) translateZ(calc(var(--size) / 2));
 }
 .rl .die3d-face.bottom {
-  transform: rotateX(-90deg) translateZ(27px);
+  transform: rotateX(-90deg) translateZ(calc(var(--size) / 2));
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rl .die3d.throwing {
+  .rl .die3d.rolling {
     animation: none;
   }
 }
