@@ -66,7 +66,6 @@ Resources:
           - Id: expire-old-build-assets
             Status: Enabled
             Prefix: _next/static/
-            NoncurrentVersionExpirationInDays: 1
             ExpirationInDays: 30
           - Id: abort-incomplete-uploads
             Status: Enabled

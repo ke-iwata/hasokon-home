@@ -22,6 +22,33 @@ SSO を使う場合はセッションを更新しておきます。
 aws sso login --profile developer
 ```
 
+### 実行に必要な権限
+
+`infra/setup-policy.json` が構築に必要な権限一式です。
+IAMロールやOIDCプロバイダを作るため、**読み取り専用や一般的な開発者権限では足りません**。
+
+IAM Identity Center を使っている場合は、権限セットのインラインポリシーとして貼り付けます。
+
+```
+IAM Identity Center → 権限セット → 該当の権限セット → インラインポリシー → 編集
+```
+
+IAMユーザー／ロールに直接付ける場合はこちらです。
+
+```bash
+aws iam put-role-policy \
+  --role-name <ロール名> \
+  --policy-name hasokon-tools-setup \
+  --policy-document file://infra/setup-policy.json
+```
+
+構築が終わったあとの通常運用（`git push` によるデプロイ）にこの権限は不要です。
+デプロイは GitHub Actions が `site.yaml` で作られる専用ロールで行うため、
+**構築が済んだらこのポリシーは外して構いません**。
+
+ドメインを変える場合は、ポリシー内のホストゾーンID（`Z0020019D48V35ZUBWTD`）と
+バケット名（`tool-hasokon-com`）も合わせて書き換えてください。
+
 ### 実行
 
 **`default` プロファイルが無い環境では `PROFILE` の指定が必須です。**
