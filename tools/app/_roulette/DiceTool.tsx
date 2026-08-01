@@ -9,10 +9,10 @@ import DiceBowl from './DiceBowl'
 const CUBE_FACES = 6
 /**
  * 投げ込むアニメーションの長さ。
- * CSSの die-throw（0.92s）に、最後のサイコロの遅れ（個数×70ms）と
+ * CSSの die-throw（1.15s）に、最後のサイコロの遅れ（個数×70ms）と
  * 少しの余裕を足す。短いと動いている途中で結果が出てしまう
  */
-const THROW_MS = 920
+const THROW_MS = 1150
 const throwDuration = (count: number) => THROW_MS + count * 70 + 120
 
 interface Props {

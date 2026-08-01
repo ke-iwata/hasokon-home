@@ -50,6 +50,48 @@ const FACES: { cls: string; value: number }[] = [
   { cls: 'bottom', value: 5 },
 ]
 
+/** 面の法線（立方体そのものの向きでの値） */
+const FACE_NORMAL: Record<string, [number, number, number]> = {
+  front: [0, 0, 1],
+  back: [0, 0, -1],
+  right: [1, 0, 0],
+  left: [-1, 0, 0],
+  top: [0, -1, 0],
+  bottom: [0, 1, 0],
+}
+
+/** 光の向き。左上手前から当てる（画面座標なのでYは下が正） */
+const LIGHT: [number, number, number] = [-0.32, -0.72, 0.61]
+
+const rad = (deg: number) => (deg * Math.PI) / 180
+
+/** CSSの rotateX と同じ回転 */
+function rotX([x, y, z]: [number, number, number], deg: number): [number, number, number] {
+  const c = Math.cos(rad(deg))
+  const s = Math.sin(rad(deg))
+  return [x, y * c - z * s, y * s + z * c]
+}
+
+/** CSSの rotateY と同じ回転 */
+function rotY([x, y, z]: [number, number, number], deg: number): [number, number, number] {
+  const c = Math.cos(rad(deg))
+  const s = Math.sin(rad(deg))
+  return [x * c + z * s, y, -x * s + z * c]
+}
+
+/**
+ * 面の陰の濃さ（0〜1）を求める。
+ *
+ * 面ごとに固定の陰影を付けると、サイコロが回ったときに手前の面が暗くなって
+ * 破綻する。転がり終わりの向きから法線を計算して、そのつど濃さを決めている。
+ */
+function shadeOf(faceCls: string, rx: number, ry: number): number {
+  const n = rotX(rotX(rotY(FACE_NORMAL[faceCls], ry), rx), TILT)
+  const dot = n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]
+  // 光に向いているほど明るく（陰は薄く）
+  return 0.17 * (1 - Math.max(0, dot))
+}
+
 /**
  * その目を front 面（＝お椀の中では上を向く面）に持ってくる回転角 [X, Y]。
  * 面を配置したときの回転の逆をかければよい。
@@ -98,8 +140,8 @@ function scatter(count: number): Placement[] {
       x: Math.cos(angle) * radius,
       // 上から見下ろす角度で奥行きは自然に潰れるので、ここでは縮めない
       y: Math.sin(angle) * radius,
-      turnX: (1 + Math.floor(Math.random() * 2)) * 360,
-      turnY: (1 + Math.floor(Math.random() * 2)) * 360,
+      turnX: (2 + Math.floor(Math.random() * 3)) * 360,
+      turnY: (2 + Math.floor(Math.random() * 3)) * 360,
       from: Math.random() < 0.5 ? -1 : 1,
       delay: 0,
     }
@@ -139,7 +181,15 @@ function Die({
       aria-label={`${value}`}
     >
       {FACES.map((f) => (
-        <div key={f.cls} className={`die3d-face ${f.cls}`}>
+        <div
+          key={f.cls}
+          className={`die3d-face ${f.cls}`}
+          // 巨大な inset シャドウを陰の代わりに使う。filter を使うと
+          // 重ね合わせの文脈ができて立体が潰れるため
+          style={{
+            boxShadow: `inset 0 0 0 999px rgba(15, 23, 42, ${shadeOf(f.cls, rx, ry).toFixed(3)})`,
+          }}
+        >
           <svg viewBox="0 0 3 3" aria-hidden>
             {(PIPS[f.value] ?? PIPS[1]).map(([x, y], i) => (
               <circle key={i} cx={x + 0.5} cy={y + 0.5} r="0.3" />

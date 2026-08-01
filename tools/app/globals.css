@@ -1660,23 +1660,38 @@ label {
      （タブが裏、強い省電力、動きを抑える設定など）で、
      サイコロが画面外に置き去りになって見えなくなる。
      付けなければ、この要素本来の transform ＝ お椀の中の定位置が常に効く */
-  animation: die-throw 0.92s cubic-bezier(0.18, 0.72, 0.28, 1);
+  animation: die-throw 1.15s cubic-bezier(0.32, 0, 0.66, 0.35);
 }
 
-/* 横から投げ込まれ、弾んでお椀の中に収まる */
+/* 横から放り込まれ、回りながら落ちて、一度弾んでから収まる */
 @keyframes die-throw {
   0% {
-    transform: rotateX(var(--tilt)) translate3d(var(--from-x), -40px, 150px)
+    transform: rotateX(var(--tilt)) translate3d(var(--from-x), -30px, 190px)
       rotateX(0deg) rotateY(0deg);
     opacity: 0;
   }
-  12% {
+  10% {
     opacity: 1;
   }
-  62% {
+  /* まだ空中。ここまでで回転の大半を終える */
+  52% {
     transform: rotateX(var(--tilt))
-      translate3d(calc(var(--x) * 0.85), calc(var(--y) * 0.85), 74px)
-      rotateX(calc(var(--rx) * 0.7)) rotateY(calc(var(--ry) * 0.7));
+      translate3d(calc(var(--x) * 0.55), calc(var(--y) * 0.55), 118px)
+      rotateX(calc(var(--rx) * 0.62)) rotateY(calc(var(--ry) * 0.62));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.7, 0.4);
+  }
+  /* 一度お椀に当たる */
+  72% {
+    transform: rotateX(var(--tilt))
+      translate3d(calc(var(--x) * 0.88), calc(var(--y) * 0.88), var(--half))
+      rotateX(calc(var(--rx) * 0.86)) rotateY(calc(var(--ry) * 0.86));
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
+  }
+  /* 小さく弾む */
+  86% {
+    transform: rotateX(var(--tilt))
+      translate3d(calc(var(--x) * 0.97), calc(var(--y) * 0.97), calc(var(--half) + 16px))
+      rotateX(calc(var(--rx) * 0.96)) rotateY(calc(var(--ry) * 0.96));
   }
   100% {
     transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), var(--half))
@@ -1688,9 +1703,10 @@ label {
   position: absolute;
   inset: 0;
   /* 角を丸めすぎると、面と面が接する辺が欠けて立方体が分解して見える */
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--surface);
-  border: 1px solid var(--line);
+  /* 稜線をはっきり出さないと、白い面が並ぶだけで紙のように見える */
+  border: 1px solid rgba(15, 23, 42, 0.16);
   display: grid;
   place-items: center;
   backface-visibility: hidden;
