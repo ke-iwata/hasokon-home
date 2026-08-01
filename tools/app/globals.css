@@ -334,9 +334,7 @@ select:focus {
 label {
   font-size: 0.9rem;
   font-weight: 600;
-}
-
-@media (max-width: 600px) {
+}@media (max-width: 600px) {
   .hero h1 {
     font-size: 1.5rem;
   }
@@ -347,9 +345,7 @@ label {
   td {
     padding: 6px;
     font-size: 0.85rem;
-  }
-}
-
+  }}
 
 /* ============================================================
    ルーレット系ツール（ルーレット・グループ分け・あみだくじ・
@@ -751,9 +747,7 @@ label {
     0 0 0 6px var(--accent),
     0 10px 24px rgba(0, 0, 0, 0.28);
   animation: winnerPop 0.7s ease;
-}
-
-@keyframes winnerPop {
+}@keyframes winnerPop {
   30%  {
   filter: brightness(1.25);
   }
@@ -789,9 +783,7 @@ label {
   padding: 18px;
   z-index: 50;
   animation: fade 0.2s ease;
-}
-
-@keyframes fade  {
+}@keyframes fade  {
   from  {
   opacity: 0;
   }
@@ -808,9 +800,7 @@ label {
   background: var(--surface);
   border: 1px solid var(--line);
   animation: pop 0.28s cubic-bezier(0.2, 1.3, 0.4, 1);
-}
-
-@keyframes pop  {
+}@keyframes pop  {
   from  {
   opacity: 0;
     transform: scale(0.92);
@@ -859,9 +849,7 @@ label {
   animation-timing-function: linear;
   animation-iteration-count: 1;
   animation-fill-mode: forwards;
-}
-
-@keyframes fall  {
+}@keyframes fall  {
   to  {
   top: 106%;
     transform: rotate(520deg);
@@ -975,15 +963,12 @@ label {
   text-align: center;
   color: var(--muted);
   font-size: 0.8rem;
-}
-
-@media (prefers-reduced-motion: reduce)  {
+}@media (prefers-reduced-motion: reduce)  {
   .rl .wheel,
 .rl .confetti span  {
   animation: none !important;
     transition-duration: 1.2s !important;
-  }
-}
+  }}
 
 .rl .chip  {
   position: relative;
@@ -1160,20 +1145,6 @@ label {
   display: none;
 }
 
-.rl .draw-panel  {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 18px 20px;
-  margin-top: 12px;
-}
-
-.rl .mode-row  {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
 .rl .mode  {
   border: 1px solid var(--line);
   background: var(--surface);
@@ -1195,18 +1166,6 @@ label {
   background: var(--accent);
   color: #fff;
   font-weight: 700;
-}
-
-.rl .mode-note  {
-  font-size: 0.8rem;
-  color: var(--muted);
-  margin-top: 10px;
-  line-height: 1.7;
-}
-
-.rl .mode-note.pool  {
-  margin-top: 4px;
-  color: var(--accent);
 }
 
 .rl .tally  {
@@ -1241,36 +1200,6 @@ label {
 
 .rl .tally-item.zero em  {
   color: var(--muted);
-}
-
-.rl .history  {
-  margin-top: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.rl .history-list  {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  list-style: none;
-  margin: 0;
-  flex: 1;
-  min-width: 0;
-}
-
-.rl .history-list li  {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  color: var(--muted);
-  background: var(--stage);
-  border-radius: 8px;
-  padding: 4px 9px;
-  margin: 0;
 }
 
 .rl .notice  {
@@ -1429,12 +1358,6 @@ label {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.rl .tool-controls .mode-note  {
-  width: 100%;
-  text-align: center;
-  margin-top: 0;
-}
-
 .rl .share-row  {
   display: flex;
   gap: 8px;
@@ -1545,9 +1468,7 @@ label {
 
 .rl .die.rolling  {
   animation: shake 0.14s linear infinite;
-}
-
-@keyframes shake {
+}@keyframes shake {
   50%  {
   transform: translateY(-4px) rotate(6deg);
   }
@@ -1596,102 +1517,13 @@ label {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
-.rl .amida-wrap  {
-  width: 100%;
-  overflow-x: auto;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 10px;
-}
-
-.rl .amida  {
-  display: block;
-  margin: 0 auto;
-  max-width: none;
-}
-
 .rl .prize-hint  {
   font-size: 0.78rem;
   color: var(--accent);
-}
-
-.rl .amida-label  {
-  font-size: 13px;
-  font-weight: 700;
-  fill: var(--text);
-  text-anchor: middle;
-}
-
-.rl .amida-label.result  {
-  fill: var(--muted);
-  font-weight: 500;
-}
-
-.rl .amida-trace  {
-  stroke-dasharray: 1400;
-  stroke-dashoffset: 1400;
-  animation: trace 1.6s ease-out forwards;
-}
-
-@keyframes trace  {
+}@keyframes trace  {
   to  {
   stroke-dashoffset: 0;
   }
-}
-
-.rl .amida-picks  {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  justify-content: center;
-}
-
-.rl .amida-pick  {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 8px 15px;
-  font-size: 0.85rem;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.rl .amida-pick:hover  {
-  border-color: var(--accent);
-}
-
-.rl .amida-pick.done  {
-  border-color: var(--accent);
-}
-
-.rl .amida-pick em  {
-  font-style: normal;
-  font-weight: 700;
-  color: var(--accent);
-  border-left: 1px solid var(--line);
-  padding-left: 8px;
-  margin-left: 2px;
-}
-
-.rl .bracket  {
-  display: flex;
-  gap: 18px;
-  overflow-x: auto;
-  width: 100%;
-  padding-bottom: 6px;
-}
-
-.rl .bracket-round  {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  gap: 12px;
-  min-width: 150px;
 }
 
 .rl .round-label  {
@@ -1746,9 +1578,7 @@ label {
 
 .rl .champion strong  {
   color: var(--accent);
-}
-
-@media print  {
+}@media print  {
   .rl .hero,
 .rl .editor,
 .rl .doc,
@@ -1765,5 +1595,4 @@ label {
 
 .rl .groups  {
   grid-template-columns: repeat(3, 1fr);
-  }
-}
+  }}

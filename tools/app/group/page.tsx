@@ -75,9 +75,7 @@ export default function Page() {
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         関連ツール：<Link href="/roulette/">ルーレット</Link>
         ／
-        <Link href="/amida/">あみだくじ</Link>／
-        <Link href="/dice/">サイコロ</Link>／
-        <Link href="/tournament/">トーナメント表</Link>
+        <Link href="/dice/">サイコロ</Link>
       </p>
     </>
   );

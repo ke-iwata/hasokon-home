@@ -4,9 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import Carousel from './Carousel';
 import ItemEditor, { makeItem } from './ItemEditor';
 import ResultOverlay from './ResultOverlay';
-import DrawPanel from './DrawPanel';
 import { shareCard } from '@/lib/roulette/resultImage';
-import { addRecord, pickWinner, type DrawMode, type DrawRecord } from '@/lib/roulette/draw';
+import { pickWinner } from '@/lib/roulette/draw';
 import { LISTS_KEY, type SavedList } from '@/lib/roulette/lists';
 import { useLocalStorage } from '@/lib/roulette/useLocalStorage';
 import { itemsFromHash, shareUrl } from '@/lib/roulette/share';
@@ -50,9 +49,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
   const [copied, setCopied] = useState(false);
   const [spinKey, setSpinKey] = useState(0);
   const [lists, setLists] = useLocalStorage<SavedList[]>(LISTS_KEY, []);
-  const [mode, setMode] = useLocalStorage<DrawMode>('roulette:mode', 'random');
-  const historyKey = `roulette:history:${preset?.slug ?? 'custom'}`;
-  const [history, setHistory] = useLocalStorage<DrawRecord[]>(historyKey, []);
 
   const theme = themeById(themeId);
   const ready = items.length >= 2;
@@ -122,13 +118,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
           <>
             <ItemEditor items={items} onChange={update} lists={lists} onChangeLists={setLists} />
 
-            <DrawPanel
-              items={items}
-              history={history}
-              mode={mode}
-              onChangeMode={setMode}
-              onClearHistory={() => setHistory([])}
-            />
 
             <div className="themes" role="group" aria-label="配色を選ぶ">
               <span className="themes-label">配色</span>
@@ -188,11 +177,10 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
               spinning={spinning}
               spinSignal={spinKey}
               onSpinStart={() => setSpinning(true)}
-              pick={(list) => pickWinner(list, history, mode)}
+              pick={(list) => pickWinner(list)}
               onResult={(item) => {
                 setSpinning(false);
                 setWinner(item);
-                setHistory((h) => addRecord(h, item));
               }}
             />
 

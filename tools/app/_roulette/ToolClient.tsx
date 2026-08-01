@@ -4,8 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import ItemEditor, { makeItem } from './ItemEditor';
 import GroupTool from './GroupTool';
 import DiceTool from './DiceTool';
-import AmidaTool from './AmidaTool';
-import TournamentTool from './TournamentTool';
 import { LISTS_KEY, type SavedList } from '@/lib/roulette/lists';
 import { useLocalStorage } from '@/lib/roulette/useLocalStorage';
 import { itemsFromHash } from '@/lib/roulette/share';
@@ -14,7 +12,7 @@ import { guessEmoji } from '@/lib/roulette/emoji';
 import type { Item } from '@/lib/roulette/types';
 
 /** サイコロは項目の入力を必要としない */
-export type RouletteToolId = 'group' | 'amida' | 'dice' | 'tournament';
+export type RouletteToolId = 'group' | 'dice';
 
 function fromShared(): Item[] | null {
   const shared = itemsFromHash();
@@ -64,12 +62,16 @@ export default function ToolClient({ tool }: { tool: RouletteToolId }) {
     <div className="rl" ref={rootRef}>
       <div className="app">
         {needsItems && (
-          <ItemEditor items={items} onChange={update} lists={lists} onChangeLists={setLists} />
+          <ItemEditor
+            items={items}
+            onChange={update}
+            lists={lists}
+            onChangeLists={setLists}
+            samples={tool === 'group' ? 'people' : 'choices'}
+          />
         )}
         {tool === 'group' && <GroupTool items={items} theme={theme} />}
-        {tool === 'amida' && <AmidaTool items={items} theme={theme} />}
         {tool === 'dice' && <DiceTool theme={theme} />}
-        {tool === 'tournament' && <TournamentTool items={items} theme={theme} />}
       </div>
     </div>
   );

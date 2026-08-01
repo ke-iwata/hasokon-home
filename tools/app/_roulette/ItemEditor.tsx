@@ -11,20 +11,56 @@ interface Props {
   onChange: (items: Item[]) => void
   lists: SavedList[]
   onChangeLists: (lists: SavedList[]) => void
+  /** 出すサンプルの種類。省略時は選択肢向け */
+  samples?: SampleKind
 }
 
-const PRESETS: { label: string; items: string[] }[] = [
-  { label: 'はい / いいえ', items: ['はい', 'いいえ'] },
-  {
-    label: 'ランチ',
-    items: ['ラーメン', 'カレー', '寿司', 'そば', 'パスタ', '中華', '弁当'],
-  },
-  {
-    label: '今日の家事',
-    items: ['皿洗い', '洗濯', '掃除', 'ゴミ出し', '風呂そうじ', '買い物'],
-  },
-  { label: '1〜10', items: Array.from({ length: 10 }, (_, i) => String(i + 1)) },
+/**
+ * サンプルは用途によって中身を変える。
+ * グループ分けで「ラーメン・カレー…」を班に分けても意味がないため、
+ * 人を分ける道具では名簿風のサンプルを出す。
+ */
+export type SampleKind = 'choices' | 'people'
+
+const NAMES = [
+  '佐藤',
+  '鈴木',
+  '高橋',
+  '田中',
+  '伊藤',
+  '渡辺',
+  '山本',
+  '中村',
+  '小林',
+  '加藤',
+  '吉田',
+  '山田',
 ]
+
+const SAMPLES: Record<SampleKind, { label: string; items: string[] }[]> = {
+  // 何かひとつを選ぶ道具（ルーレットなど）
+  choices: [
+    { label: 'はい / いいえ', items: ['はい', 'いいえ'] },
+    {
+      label: 'ランチ',
+      items: ['ラーメン', 'カレー', '寿司', 'そば', 'パスタ', '中華', '弁当'],
+    },
+    {
+      label: '今日の家事',
+      items: ['皿洗い', '洗濯', '掃除', 'ゴミ出し', '風呂そうじ', '買い物'],
+    },
+    { label: '1〜10', items: Array.from({ length: 10 }, (_, i) => String(i + 1)) },
+  ],
+  // 人を分ける道具（グループ分けなど）
+  people: [
+    { label: '6人', items: NAMES.slice(0, 6) },
+    { label: '12人', items: NAMES },
+    {
+      label: '出席番号 1〜30',
+      items: Array.from({ length: 30 }, (_, i) => String(i + 1)),
+    },
+  ],
+}
 
 export function makeItem(text: string): Item {
   return {
@@ -39,6 +75,7 @@ export default function ItemEditor({
   onChange,
   lists,
   onChangeLists,
+  samples = 'choices',
 }: Props) {
   const [draft, setDraft] = useState('')
   const [bulk, setBulk] = useState(false)
@@ -268,7 +305,7 @@ export default function ItemEditor({
 
           <div className="presets">
             <span className="presets-label">サンプル</span>
-            {PRESETS.map((p) => (
+            {SAMPLES[samples].map((p) => (
               <button
                 key={p.label}
                 className="preset"

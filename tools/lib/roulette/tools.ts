@@ -3,7 +3,7 @@
 
 import TOOLS_DATA from './tools.json'
 
-export type ToolId = 'group' | 'amida' | 'dice' | 'tournament'
+export type ToolId = 'group' | 'dice'
 
 export interface ToolMeta {
   id: ToolId
