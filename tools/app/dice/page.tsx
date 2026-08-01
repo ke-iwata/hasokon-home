@@ -4,9 +4,9 @@ import AdUnit from '@/app/AdUnit';
 import ToolClient from '@/app/_roulette/ToolClient';
 import { SITE_URL } from '@/lib/registry';
 
-const title = 'サイコロ・乱数ツール | 好きな範囲の数字をランダムに出す';
+const title = 'サイコロを振る | 1〜10個をまとめて振れる無料ツール';
 const description =
-  'サイコロを振ったり、好きな範囲の数字をランダムに出せる無料ツール。個数や範囲を自由に変えられます。登録もアプリも不要、スマホ対応。';
+  'サイコロを振れる無料ツール。1〜10個まで同時に振って合計も出ます。「範囲から選ぶ」にすれば1〜100のような好きな範囲の数字も出せます。登録不要・アプリ不要でスマホからも使えます。';
 
 export const metadata: Metadata = {
   title,
@@ -57,7 +57,7 @@ export default function Page() {
       />
 
       <h1>サイコロ</h1>
-      <p className="lead">サイコロを振るか、好きな範囲の数字を出します。個数は1〜10個、面の数は6・8・10・12から選べます。</p>
+      <p className="lead">サイコロを振るか、好きな範囲の数字を出します。サイコロは1〜10個まで同時に振れます。</p>
 
       <ToolClient tool="dice" />
 

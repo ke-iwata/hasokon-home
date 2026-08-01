@@ -1662,30 +1662,46 @@ label {
     rotate3d(var(--ax), var(--ay), var(--az), 0deg) rotateX(var(--rx)) rotateY(var(--ry));
 }
 
+/* fill-mode は付けない。付けるとアニメーションが走らない状況
+   （タブが裏、強い省電力など）で、サイコロが途中の姿勢で止まってしまう。
+   付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
 .rl .die3d.rolling {
-  /* fill-mode は付けない。付けるとアニメーションが走らない状況
-     （タブが裏、強い省電力など）で、サイコロが途中の姿勢で止まってしまう。
-     付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
-  animation: die-roll 0.85s cubic-bezier(0.22, 0.72, 0.3, 1);
+  animation: die-throw 1.05s cubic-bezier(0.24, 0.62, 0.3, 1) var(--delay);
 }
 
-/* その場で転がって止まる。少し浮いたところから落ちて、軽く弾む */
-@keyframes die-roll {
+/* 横から放り込まれ、回りながら落ちて、軽く弾んで収まる。
+   回転は斜めの軸1本まわり。X軸とY軸を重ねると視線と揃った向きを
+   頻繁に通り、平たいコインが回っているように見えてしまう */
+@keyframes die-throw {
   0% {
     transform: rotateX(var(--tilt))
-      translate3d(var(--x), var(--y), calc(var(--size) / 2 + 62px))
+      translate3d(var(--from-x), -34px, calc(var(--size) / 2 + 120px))
       rotate3d(var(--ax), var(--ay), var(--az), var(--spin)) rotateX(var(--rx))
       rotateY(var(--ry));
+    opacity: 0;
   }
-  62% {
-    transform: rotateX(var(--tilt)) translate3d(var(--x), var(--y), calc(var(--size) / 2))
-      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.22)) rotateX(var(--rx))
+  12% {
+    opacity: 1;
+  }
+  /* まだ空中。ここまでで回転の大半を終える */
+  56% {
+    transform: rotateX(var(--tilt))
+      translate3d(calc(var(--x) * 0.62), calc(var(--y) * 0.62), calc(var(--size) / 2 + 66px))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.34)) rotateX(var(--rx))
       rotateY(var(--ry));
   }
-  80% {
+  /* 一度お椀に当たる */
+  76% {
     transform: rotateX(var(--tilt))
-      translate3d(var(--x), var(--y), calc(var(--size) / 2 + 13px))
-      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.08)) rotateX(var(--rx))
+      translate3d(calc(var(--x) * 0.93), calc(var(--y) * 0.93), calc(var(--size) / 2))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.12)) rotateX(var(--rx))
+      rotateY(var(--ry));
+  }
+  /* 小さく弾む */
+  88% {
+    transform: rotateX(var(--tilt))
+      translate3d(var(--x), var(--y), calc(var(--size) / 2 + 14px))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.04)) rotateX(var(--rx))
       rotateY(var(--ry));
   }
   100% {
@@ -1711,13 +1727,6 @@ label {
   width: 76%;
   height: 76%;
   fill: var(--accent);
-}
-
-.rl .die3d-num {
-  font-size: calc(var(--size) * 0.42);
-  font-weight: 800;
-  color: var(--accent);
-  line-height: 1;
 }
 
 /* 6面の配置 */

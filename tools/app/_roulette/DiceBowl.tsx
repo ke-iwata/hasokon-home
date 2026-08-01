@@ -132,44 +132,71 @@ interface Placement {
   axis: [number, number, number]
   /** 転がり始めの回転量（度）。0まで戻しながら転がす */
   spin: number
+  /** 投げ込まれてくる向き。-1 なら左から、1 なら右から */
+  from: number
+  /** 投げ込みの遅れ（ミリ秒）。少しずつずらすと次々に入ってくる */
+  delay: number
 }
 
-/** お椀の中に散らす位置を決める */
+/**
+ * お椀の中に散らす位置を決める。
+ *
+ * 適当に散らすとサイコロ同士が重なって読みにくいので、
+ * すでに置いたものから一定以上離れた場所を選び直す。
+ * 何度試しても離れられないときは、その中で一番離れた場所に置く
+ */
 function scatter(count: number, size: number): Placement[] {
-  return Array.from({ length: count }, (_, i) => {
-    const angle = (i / Math.max(1, count)) * Math.PI * 2 + Math.random() * 0.8
-    // 個数が増えるほど広げないと重なる。お椀からはみ出さない範囲で頭打ちにする
-    // 上から見下ろす角度は浅い（34度）ので、奥行きはほとんど潰れない。
-    // お椀の内側に収まる範囲で抑える
-    const radius = count === 1 ? 0 : Math.min(64, size * 0.34 + count * 4) + Math.random() * 10
-    return {
-      x: Math.cos(angle) * radius,
-      // 上から見下ろす角度で奥行きは自然に潰れるので、ここでは縮めない
-      y: Math.sin(angle) * radius,
-      // どの成分もそこそこ大きい斜めの軸にする
-      axis: [0.5 + Math.random() * 0.5, 0.4 + Math.random() * 0.4, 0.3 + Math.random() * 0.4],
-      // 速すぎると回っているのが見えず、ちらついて平面に見える
-      spin: (1.25 + Math.random() * 0.75) * 360,
+  // サイコロ同士の中心間の最低距離。少し余裕を持たせる
+  const minGap = size * 1.15
+  // 置ける範囲（お椀の内側）。見下ろす角度が浅いので縦は横より狭い
+  const rx = Math.max(0, 120 - size * 0.62)
+  const ry = Math.max(0, 98 - size * 0.62)
+
+  const placed: { x: number; y: number }[] = []
+  for (let i = 0; i < count; i++) {
+    let best: { x: number; y: number; gap: number } | null = null
+    for (let t = 0; t < 240; t++) {
+      const a = Math.random() * Math.PI * 2
+      // 面積が均等になるよう平方根を取る（中心に寄りすぎない）
+      const r = Math.sqrt(Math.random())
+      const p = { x: Math.cos(a) * r * rx, y: Math.sin(a) * r * ry }
+      const gap = placed.length
+        ? Math.min(...placed.map((q) => Math.hypot(p.x - q.x, p.y - q.y)))
+        : Infinity
+      if (gap >= minGap) {
+        best = { ...p, gap }
+        break
+      }
+      if (!best || gap > best.gap) best = { ...p, gap }
     }
-  })
+    placed.push({ x: best!.x, y: best!.y })
+  }
+
+  return placed.map((p, i) => ({
+    x: count === 1 ? 0 : p.x,
+    y: count === 1 ? 0 : p.y,
+    // どの成分もそこそこ大きい斜めの軸にする
+    axis: [0.5 + Math.random() * 0.5, 0.4 + Math.random() * 0.4, 0.3 + Math.random() * 0.4],
+    // 速すぎると回っているのが見えず、ちらついて平面に見える
+    spin: (1.25 + Math.random() * 0.75) * 360,
+    from: Math.random() < 0.5 ? -1 : 1,
+    delay: i * 60,
+  }))
 }
 
 function Die({
   value,
-  faces,
   place,
   size,
   animate,
 }: {
   value: number
-  faces: number
   place: Placement
   size: number
   animate: boolean
 }) {
-  // 6面は出目の面が上を向くように回す。
-  // それ以外は数字を front 面だけに出すので、front が上に来る向き（回転なし）に固定する
-  const [rx, ry] = faces === 6 ? (FACE_ROTATION[value] ?? FACE_ROTATION[1]) : [0, 0]
+  // 出目の面が上を向くように回す
+  const [rx, ry] = FACE_ROTATION[value] ?? FACE_ROTATION[1]
 
   // 入れ子の preserve-3d は iOS Safari で平面に潰れることがあるため、
   // 見下ろす角度・位置・向きをすべて1つの transform にまとめ、
@@ -183,6 +210,8 @@ function Die({
     '--ay': `${place.axis[1]}`,
     '--az': `${place.axis[2]}`,
     '--spin': `${animate ? place.spin : 0}deg`,
+    '--from-x': `${place.from * 250}px`,
+    '--delay': `${place.delay}ms`,
     '--tilt': `${TILT}deg`,
     '--size': `${size}px`,
   } as React.CSSProperties
@@ -194,7 +223,7 @@ function Die({
       role="img"
       aria-label={`${value}`}
     >
-      {FACES.map((cls, i) => (
+      {FACES.map((cls) => (
         <div
           key={cls}
           className={`die3d-face ${cls}`}
@@ -204,18 +233,11 @@ function Die({
             boxShadow: `inset 0 0 0 999px rgba(15, 23, 42, ${shadeOf(cls, rx, ry).toFixed(3)})`,
           }}
         >
-          {faces === 6 ? (
-            <svg viewBox="0 0 3 3" aria-hidden>
-              {(PIPS[FACE_PIP[cls]] ?? PIPS[1]).map(([x, y], k) => (
-                <circle key={k} cx={x + 0.5} cy={y + 0.5} r="0.3" />
-              ))}
-            </svg>
-          ) : (
-            // 6面より多い数は目で表せないので数字にする。
-            // 側面に数字を入れると回転で逆さまに見えるため、上を向く面だけに出す。
-            // 読むのは上面だけなので、これで足りる
-            cls === 'front' && <span className="die3d-num">{value}</span>
-          )}
+          <svg viewBox="0 0 3 3" aria-hidden>
+            {(PIPS[FACE_PIP[cls]] ?? PIPS[1]).map(([x, y], k) => (
+              <circle key={k} cx={x + 0.5} cy={y + 0.5} r="0.3" />
+            ))}
+          </svg>
         </div>
       ))}
     </div>
@@ -224,8 +246,6 @@ function Die({
 
 interface Props {
   values: number[]
-  /** サイコロの面の数 */
-  faces: number
   /** 振るたびに増える番号。変わると転がる動きをやり直す */
   spin: number
 }
@@ -235,9 +255,8 @@ interface Props {
  *
  * WebGLは使わずCSSの3D変換で作っている。立方体なら見た目は十分で、
  * ライブラリを増やさずに済み、端末やブラウザを選ばないため。
- * 面が6より多いときも立方体のまま、上を向く面に数字を出す。
  */
-export default function DiceBowl({ values, faces, spin }: Props) {
+export default function DiceBowl({ values, spin }: Props) {
   const [reduceMotion, setReduceMotion] = useState(false)
 
   useEffect(() => {
@@ -260,14 +279,7 @@ export default function DiceBowl({ values, faces, spin }: Props) {
       <div className="dice-bowl-dish" aria-hidden />
       {values.map((v, i) => (
         // spin が変わるたびに作り直して、転がる動きを最初から流す
-        <Die
-          key={`${spin}-${i}`}
-          value={v}
-          faces={faces}
-          place={places[i]}
-          size={size}
-          animate={!reduceMotion}
-        />
+        <Die key={`${spin}-${i}`} value={v} place={places[i]} size={size} animate={!reduceMotion} />
       ))}
     </div>
   )

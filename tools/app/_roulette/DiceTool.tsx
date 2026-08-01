@@ -7,14 +7,15 @@ import DiceBowl from './DiceBowl'
 
 /** 選べる個数。細かく入力させるより選ぶほうが早い */
 const COUNTS = Array.from({ length: 10 }, (_, i) => i + 1)
-/** 選べる面の数。実際に売られているサイコロに合わせる */
-const FACE_OPTIONS = [6, 8, 10, 12]
+/** サイコロの面の数。立方体なので6で固定 */
+const FACES = 6
 /**
- * 転がるアニメーションの長さ。
- * CSSの die-roll（0.85s）に少し余裕を足す。
- * 短いと動いている途中で結果が出てしまう
+ * 投げ込むアニメーションの長さ。
+ * CSSの die-throw（1.05s）に、最後のサイコロの遅れ（個数×60ms）と
+ * 少しの余裕を足す。短いと動いている途中で結果が出てしまう
  */
-const ROLL_MS = 980
+const THROW_MS = 1050
+const throwDuration = (count: number) => THROW_MS + count * 60 + 100
 
 interface Props {
   theme: Theme
@@ -25,7 +26,6 @@ type Kind = 'dice' | 'range'
 export default function DiceTool({ theme }: Props) {
   const [kind, setKind] = useState<Kind>('dice')
   const [count, setCount] = useState(2)
-  const [faces, setFaces] = useState(6)
   const [min, setMin] = useState(1)
   const [max, setMax] = useState(100)
   const [values, setValues] = useState<number[]>([])
@@ -38,7 +38,7 @@ export default function DiceTool({ theme }: Props) {
   const rollOnce = () =>
     kind === 'dice'
       ? Array.from({ length: Math.min(Math.max(1, count), 10) }, () =>
-          Math.floor(Math.random() * Math.max(2, faces)) + 1,
+          Math.floor(Math.random() * FACES) + 1,
         )
       : [Math.floor(Math.random() * (Math.max(min, max) - Math.min(min, max) + 1)) + Math.min(min, max)]
 
@@ -51,9 +51,12 @@ export default function DiceTool({ theme }: Props) {
     // 出目を先に決めてしまい、その面が上を向くまで転がす。
     // 途中で値を差し替えると動きと噛み合わないため
     if (kind === 'dice') {
-      setValues(rollOnce())
+      const next = rollOnce()
+      setValues(next)
       setSpin((n) => n + 1)
-      timers.current.push(window.setTimeout(() => setRolling(false), ROLL_MS))
+      timers.current.push(
+        window.setTimeout(() => setRolling(false), throwDuration(next.length)),
+      )
       return
     }
 
@@ -114,16 +117,6 @@ export default function DiceTool({ theme }: Props) {
                 ))}
               </select>
             </label>
-            <label className="num-field">
-              面の数
-              <select value={faces} onChange={(e) => setFaces(Number(e.target.value))}>
-                {FACE_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
-            </label>
           </>
         ) : (
           <>
@@ -152,7 +145,7 @@ export default function DiceTool({ theme }: Props) {
           <p className="mode-note">下のボタンで振ります</p>
         ) : kind === 'dice' ? (
           <>
-            <DiceBowl values={values} faces={faces} spin={spin} />
+            <DiceBowl values={values} spin={spin} />
             {values.length > 1 && !rolling && <p className="dice-total">合計 {total}</p>}
           </>
         ) : (
