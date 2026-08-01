@@ -75,6 +75,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-07-01',
   },
   {
+    slug: 'furusato-nozei',
+    icon: '🎁',
+    name: 'ふるさと納税 控除額計算機',
+    description:
+      '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。2026年改正対応。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-02',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: '🧱',
     name: '年収の壁 計算機',

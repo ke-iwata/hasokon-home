@@ -36,8 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/*
           AdSense本体。next/script ではなく生のscriptタグをheadに置いている。
-          next/script（afterInteractive）だと静的HTMLにはpreloadしか出ず、
-          実際のscriptタグはハイドレーション後に差し込まれるため、
+          next/script（afterInteractive）だと静的HTMLにはpreloadしか出ず、実際のscriptタグはハイドレーション後に差し込まれるため、
           AdSenseのサイト審査でコードを検出されない可能性がある。
           lib/adsense.ts が未設定の間は出力しない。
         */}
@@ -61,8 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="site-footer">
           <div className="inner">
             <p>
-              計算はすべてお使いのブラウザ内で行われ、入力内容がサーバーに送信されることはありません。
-              計算結果は目安です。
+              計算はすべてお使いのブラウザ内で行われ、入力内容がサーバーに送信されることはありません。計算結果は目安です。
             </p>
             <p>
               <Link href="/">ツール一覧</Link>
