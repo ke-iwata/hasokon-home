@@ -7,7 +7,7 @@
 
 ## プロジェクト概要
 
-`https://tool.hasokon.com` で公開する無料Webツール集。
+`https://tool.hasokon.com` で公開している無料Webツール集。
 1ページ = 1ツールで、SEOで検索上位を狙い、AdSenseで収益化する。
 
 - **完全静的サイト**（Next.js App Router + `output: 'export'`）
@@ -34,12 +34,20 @@ app/
   sitemap.ts          registryから自動生成
   robots.ts
   privacy/ contact/   AdSense審査に必要な固定ページ
+  not-found.tsx       404ページ（out/404.html になる）
+  AdUnit.tsx          広告枠。lib/adsense.ts が未設定なら何も出さない
+  ads.txt/route.ts    /ads.txt を lib/adsense.ts から生成
   {slug}/
     page.tsx          サーバーコンポーネント（metadata / JSON-LD / 解説 / FAQ）
     Calculator.tsx    'use client' のUI。ロジックは持たせない
+  _roulette/          ルーレット系ツールのUI（'use client'）
+  r/[slug]/           用途別ルーレット。lib/roulette/presets.json から生成
+  guide/[slug]/       使い方の記事。lib/roulette/guides.json から生成
 lib/
   registry.ts         ツールレジストリ（一覧・sitemapの単一の情報源）
+  adsense.ts          AdSenseの設定。ここだけ埋めれば広告が出る
   {slug}.ts           計算ロジック（純関数のみ。DOM/Reactに依存しない）
+  roulette/           ルーレット系のロジックとデータ（純関数のみ）
 tests/
   {slug}.test.ts      lib/{slug}.ts のテスト
 infra/
@@ -80,14 +88,17 @@ docs/CONCEPT.md       コンセプトと方針
 
 ## AdSense
 
-設定は `lib/adsense.ts` の1箇所に集約されている。**審査に通ったらここを埋めるだけ**でよい。
+設定は `lib/adsense.ts` の1箇所に集約されている。
+旧サイト（roulette.hasokon.com）から引き継いだ審査済みアカウントで**配信中**。
 
-1. `ADSENSE_CLIENT` に `ca-pub-` から始まるパブリッシャーIDを入れる
-2. AdSense管理画面で広告ユニットを2つ作り、`AD_SLOTS` にスロットIDを入れる
-   （`below-tool` = 計算結果の下、`below-faq` = 解説の下。全ページで使い回す）
-
-`ADSENSE_CLIENT` が空の間はスクリプトも広告枠も出力されないため、**審査前でも安全にデプロイできる**。
-`/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
+- 旧サイトが自動広告のみで運用していたため、`AD_SLOTS` は空のまま。
+  スクリプトが入っていれば自動広告は動く
+- 手動で広告枠を置きたくなったら、AdSense管理画面で広告ユニットを作って
+  `AD_SLOTS` にスロットIDを入れる（`below-tool` = ツールの下、`below-faq` = 解説の下）
+- `/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
+  ルートドメイン（hasokon.com）側にも同じ内容が必要なので、変えるときは
+  [hasokon-home](https://github.com/ke-iwata/hasokon-home) も直すこと
+- `ADSENSE_CLIENT` を空にすると、スクリプトも広告枠も ads.txt も出力されなくなる
 
 - 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く
 - 未設定時は、開発中のみ破線のプレースホルダを表示し、本番ビルドでは何も出力しない
@@ -112,7 +123,7 @@ docs/CONCEPT.md       コンセプトと方針
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在99件）
+npm test         # 計算ロジックのテスト（現在124件）
 npm run build    # out/ に静的出力
 ```
 
@@ -129,8 +140,10 @@ npm run build    # out/ に静的出力
 
 ## 現在の状態と次の一手
 
-- 実装済み: ツール8本 / テスト99件 / sitemap・robots / GitHub Actions
-- 未着手: AWSリソース作成 → 初回デプロイ → Search Console登録 → AdSense申請
+- 公開済み: https://tool.hasokon.com （S3 + CloudFront）
+- ツール11本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト124件
+- AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
+- 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加
 - 中長期: 制度改正が出るたびに計算機を追加する（このサイトの本命戦略）
 
 ### 制度データの根拠と注意点
