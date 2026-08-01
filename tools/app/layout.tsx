@@ -4,8 +4,16 @@ import './globals.css';
 import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
 import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
 
+/**
+ * Google Search Console の所有権確認用トークン。
+ * <meta name="google-site-verification"> として出力される。
+ * 【削除しないこと】確認後に消すと所有権の確認が外れる。
+ */
+const GOOGLE_SITE_VERIFICATION = 'Q3DpEEDOkoxOZDuQwfCl_kDDbsdaqLxHDJrCcJOZvnU';
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  verification: { google: GOOGLE_SITE_VERIFICATION },
   title: {
     default: `${SITE_NAME}｜年収の壁・支援金・電気代などをすぐ計算`,
     template: `%s｜${SITE_NAME}`,
