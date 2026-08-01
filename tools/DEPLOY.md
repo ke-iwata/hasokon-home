@@ -71,7 +71,7 @@ PROFILE=developer ./infra/setup.sh
 | ACM証明書 | `tool.hasokon.com` 用（us-east-1）。DNS検証レコードも自動作成 |
 | S3バケット | `tool-hasokon-com`。パブリックアクセスは全ブロック |
 | CloudFront | OAC経由でS3を参照。HTTP→HTTPSリダイレクト、HTTP/3、IPv6有効 |
-| CloudFront Function | `/warikan/` → `/warikan/index.html` のURL書き換え |
+| CloudFront Function | 全ページ共通のURL書き換え（`/{slug}/` → `/{slug}/index.html`）|
 | カスタムエラーページ | 403/404 → `/404.html`（ステータス404で返す） |
 | Route 53 レコード | `tool.hasokon.com` のA/AAAAエイリアス |
 | IAMロール | GitHub Actions用（OIDC・長期キー不要） |

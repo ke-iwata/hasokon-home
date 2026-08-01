@@ -99,8 +99,10 @@ docs/CONCEPT.md       コンセプトと方針
 
 - **`app/sitemap.ts` / `app/robots.ts` には `export const dynamic = 'force-static'` が必須**。
   `output: 'export'` ではこれがないとビルドが落ちる
-- **CloudFront に URL書き換え Function が必要**。`trailingSlash: true` のため
-  `/warikan/` → `/warikan/index.html` の変換をしないと全ページ403になる（DEPLOY.md 3-1）
+- **CloudFront に URL書き換え Function が必要**。`trailingSlash: true` のため全ページが
+  `{slug}/index.html` というキーで出力される。S3にはディレクトリの概念がなく `/{slug}/` という
+  キーは存在しないので、変換しないと全ページ403になる（`infra/site.yaml` の RewriteFunction）。
+  特定ページ向けの対応ではなく全ページ共通
 - **TypeScript を 7系に上げない**（上記のとおりビルドが落ちる）
 - **Vitest のエイリアス**は `vitest.config.ts` の `resolve.alias` で `@` を解決している。
   `fileURLToPath(new URL('.', import.meta.url))` を使うこと（`__dirname` はESMで未定義）

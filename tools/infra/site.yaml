@@ -112,8 +112,10 @@ Resources:
         SigningBehavior: always
         SigningProtocol: sigv4
 
-  # trailingSlash: true で出力しているため、/warikan/ を /warikan/index.html に書き換える。
-  # これが無いと S3 にキーが存在せず全ページ403になる
+  # trailingSlash: true で出力しているため、全ページが {slug}/index.html というキーになる。
+  # 特定のページ向けではなく、末尾スラッシュ・拡張子なしのリクエストすべてを
+  # index.html に解決する。これが無いと S3 にキーが存在せず全ページ403になる。
+  # 拡張子を含むパス（/ads.txt, /sitemap.xml, /_next/... など）は素通しする
   RewriteFunction:
     Type: AWS::CloudFront::Function
     Properties:
