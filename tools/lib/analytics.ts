@@ -15,7 +15,7 @@
  */
 
 /** GA4の測定ID（例: 'G-XXXXXXXXXX'）。空なら計測しない */
-export const GA_MEASUREMENT_ID = '';
+export const GA_MEASUREMENT_ID = 'G-2Z0K6Y2FX0';
 
 /** 計測が有効か */
 export function isAnalyticsEnabled(): boolean {
