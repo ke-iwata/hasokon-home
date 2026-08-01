@@ -3,16 +3,17 @@
 import { useRef, useState } from 'react'
 import type { Theme } from '@/lib/roulette/themes'
 import { shareCard } from '@/lib/roulette/resultImage'
-import Die3D from './Die3D'
+import DiceBowl from './DiceBowl'
 
 /** 立体表示にする面の数。立方体なので6のときだけ */
 const CUBE_FACES = 6
 /**
- * 転がるアニメーションの長さ。
- * CSSの transition（1.15s）と跳ねる動き（0.38s×3＝1.14s）の長いほうに
- * 少し余裕を足した値。短いと動いている途中で結果が出てしまう
+ * 投げ込むアニメーションの長さ。
+ * CSSの die-throw（0.92s）に、最後のサイコロの遅れ（個数×70ms）と
+ * 少しの余裕を足す。短いと動いている途中で結果が出てしまう
  */
-const ROLL_MS = 1250
+const THROW_MS = 920
+const throwDuration = (count: number) => THROW_MS + count * 70 + 120
 
 interface Props {
   theme: Theme
@@ -100,11 +101,14 @@ export default function DiceTool({ theme }: Props) {
     timers.current = []
 
     if (isCube) {
-      // 立体サイコロは出目を先に決めてしまい、その面が正面に来るまで回す。
-      // 途中で値を差し替えると回転と噛み合わないため
-      setValues(rollOnce())
+      // 立体サイコロは出目を先に決めてしまい、その面が上を向くまで転がす。
+      // 途中で値を差し替えると動きと噛み合わないため
+      const next = rollOnce()
+      setValues(next)
       setSpin((n) => n + 1)
-      timers.current.push(window.setTimeout(() => setRolling(false), ROLL_MS))
+      timers.current.push(
+        window.setTimeout(() => setRolling(false), throwDuration(next.length)),
+      )
       return
     }
 
@@ -203,15 +207,15 @@ export default function DiceTool({ theme }: Props) {
           <p className="mode-note">下のボタンで振ります</p>
         ) : kind === 'dice' ? (
           <>
-            <div className="dice-row">
-              {values.map((v, i) =>
-                isCube ? (
-                  <Die3D key={i} value={v} rolling={rolling} spin={spin} index={i} />
-                ) : (
+            {isCube ? (
+              <DiceBowl values={values} spin={spin} />
+            ) : (
+              <div className="dice-row">
+                {values.map((v, i) => (
                   <Die key={i} value={v} rolling={rolling} />
-                ),
-              )}
-            </div>
+                ))}
+              </div>
+            )}
             {values.length > 1 && !rolling && <p className="dice-total">合計 {total}</p>}
           </>
         ) : (
