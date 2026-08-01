@@ -140,6 +140,33 @@ CloudFrontのドメイン名（`dxxxx.cloudfront.net`）に直接アクセスし
 
 ---
 
+## ドメインの割り当て
+
+`hasokon.com` の配下は3つに分かれています。**このリポジトリが管理するのは
+`tool.hasokon.com` だけ**です。
+
+| ドメイン | 中身 | 配信 | 管理 |
+|---|---|---|---|
+| `tool.hasokon.com` | ツール本体 | S3 + CloudFront | このリポジトリ（`infra/`）|
+| `hasokon.com` | 1枚のランディングページ | GitHub Pages | [hasokon-home](https://github.com/ke-iwata/hasokon-home) |
+| `roulette.hasokon.com` | 旧ルーレットサイト。全パスを301転送 | CloudFront `E1BJH5AN100A2D` | 手動（下記）|
+
+### 旧ルーレットサイトからの301転送
+
+ルーレット系ツールは `roulette.hasokon.com`（Vite + GitHub Pages）から
+このサイトに移植しました。旧URLは CloudFront Function `roulette-legacy-redirect` で
+転送しています。**このFunctionは CloudFormation の管理外**なので、
+変更するときは AWS CLI かコンソールから直接操作してください。
+
+| 旧URL | 転送先 |
+|---|---|
+| `/` | `/roulette/` |
+| `/group/` `/dice/` `/r/*` `/guide/*` | 同じパス |
+| `/amida/` `/tournament/` | **404**（移植していないため転送しない）|
+
+あみだくじとトーナメント表は機能ごと削除したので、内容の違うページに送らず
+404で検索結果から自然に落としています。
+
 ## 公開後にやること
 
 ### Google Search Console
