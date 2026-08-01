@@ -59,7 +59,7 @@ export const tools: ToolDef[] = [
     slug: 'dice',
     icon: '🎲',
     name: 'サイコロ',
-    description: 'サイコロやコインをブラウザで。個数や面の数を変えて何度でも振れます。',
+    description: 'サイコロをブラウザで。1〜10個まで同時に振れて、合計も出ます。',
     category: '決める・選ぶ',
     ready: true,
     updatedAt: '2026-08-01',
