@@ -21,12 +21,25 @@ export default function PrivacyPage() {
       <h2>広告配信について</h2>
       <p>
         本サイトは、第三者配信の広告サービス（Google AdSense）を利用する場合があります。
-        広告配信事業者は、ユーザーの興味に応じた広告を表示するためにCookie（クッキー）を使用することがあります。
+        Googleなどの第三者配信事業者は、Cookie（クッキー）を使用して、
+        <strong>ユーザーが本サイトや他のサイトに過去にアクセスした際の情報にもとづく広告</strong>
+        を配信します。このCookieには氏名・住所・メールアドレス・電話番号などの個人情報は含まれません。
+      </p>
+      <p>
+        Googleが広告Cookieを使用することにより、Googleおよびそのパートナーは、
+        ユーザーが本サイトや他のサイトにアクセスした際の情報にもとづいて適切な広告を表示できます。
         パーソナライズド広告は
         <a href="https://adssettings.google.com/" target="_blank" rel="nofollow noopener noreferrer">
           広告設定
         </a>
-        で無効にできます。詳しくは
+        で無効にできます。また
+        <a href="https://www.aboutads.info/choices/" target="_blank" rel="nofollow noopener noreferrer">
+          www.aboutads.info
+        </a>
+        では、第三者配信事業者のCookieを使用したパーソナライズド広告を一括で無効にできます。
+        第三者配信事業者による広告配信を無効にしていない場合、本サイトでの広告配信時に
+        第三者配信事業者や広告ネットワークのCookieが使用されることがあります。
+        詳しくは
         <a
           href="https://policies.google.com/technologies/ads?hl=ja"
           target="_blank"

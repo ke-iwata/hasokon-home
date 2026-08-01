@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
+import { TAIKI_DAYS, calcShobyoTeate, SHORT_TENURE_CAP } from '@/lib/shobyo-teate';
 
 describe('calcShobyoTeate（日額の計算）', () => {
   it('標準報酬月額30万円 → 標準報酬日額10,000円 → 日額6,667円', () => {
@@ -74,5 +74,38 @@ describe('calcShobyoTeate（不正な入力）', () => {
     const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: -5 });
     expect(r.payableDays).toBe(0);
     expect(r.total).toBe(0);
+  });
+});
+
+describe('calcShobyoTeate（被保険者期間が12ヶ月未満）', () => {
+  it('12ヶ月未満かつ高収入は32万円が上限になる', () => {
+    // 月収60万（標準報酬59万）でも、12ヶ月未満なら32万円で算定される
+    const short = calcShobyoTeate({ monthlyIncome: 600_000, restDays: 33, under12Months: true });
+    expect(short.standardMonthly).toBe(SHORT_TENURE_CAP);
+    expect(short.capped).toBe(true);
+    // 320,000 ÷ 30 = 10,666.7 → 10円未満四捨五入で 10,670 → ×2/3 = 7,113.3 → 7,113
+    expect(short.standardDaily).toBe(10_670);
+    expect(short.dailyAmount).toBe(7_113);
+  });
+
+  it('12ヶ月以上なら上限は適用されない', () => {
+    const normal = calcShobyoTeate({ monthlyIncome: 600_000, restDays: 33 });
+    expect(normal.standardMonthly).toBe(590_000);
+    expect(normal.capped).toBe(false);
+    expect(normal.dailyAmount).toBeGreaterThan(
+      calcShobyoTeate({ monthlyIncome: 600_000, restDays: 33, under12Months: true }).dailyAmount
+    );
+  });
+
+  it('12ヶ月未満でも上限を下回る収入なら本来の標準報酬月額を使う', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 250_000, restDays: 33, under12Months: true });
+    expect(r.standardMonthly).toBe(260_000);
+    expect(r.capped).toBe(false);
+  });
+
+  it('上限ちょうど（標準報酬32万円）では上限適用フラグは立たない', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 320_000, restDays: 33, under12Months: true });
+    expect(r.standardMonthly).toBe(SHORT_TENURE_CAP);
+    expect(r.capped).toBe(false);
   });
 });

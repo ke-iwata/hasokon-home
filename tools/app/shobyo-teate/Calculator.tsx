@@ -1,17 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
+import { SHORT_TENURE_CAP, TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
 
 const fmtYen = (yen: number) => `${yen.toLocaleString('ja-JP')}円`;
 
 export default function Calculator() {
   const [monthlyIncome, setMonthlyIncome] = useState('300000');
   const [restDays, setRestDays] = useState('30');
+  const [under12Months, setUnder12Months] = useState(false);
 
   const r = calcShobyoTeate({
     monthlyIncome: Number(monthlyIncome) || 0,
     restDays: Number(restDays) || 0,
+    under12Months,
   });
 
   return (
@@ -38,6 +40,20 @@ export default function Calculator() {
             value={restDays}
             onChange={(e) => setRestDays(e.target.value)}
           />
+        </label>
+        <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.9rem' }}>
+          <input
+            type="checkbox"
+            checked={under12Months}
+            onChange={(e) => setUnder12Months(e.target.checked)}
+            style={{ width: 'auto', marginTop: 3 }}
+          />
+          <span>
+            健康保険の加入期間が12ヶ月未満
+            <span style={{ color: 'var(--muted)' }}>
+              （標準報酬月額は{fmtYen(SHORT_TENURE_CAP)}が上限になります）
+            </span>
+          </span>
         </label>
       </div>
 
@@ -67,7 +83,14 @@ export default function Calculator() {
         <tbody>
           <tr>
             <td style={{ textAlign: 'left' }}>標準報酬月額</td>
-            <td>{fmtYen(r.standardMonthly)}</td>
+            <td>
+              {fmtYen(r.standardMonthly)}
+              {r.capped && (
+                <span style={{ fontSize: '0.75rem', color: '#b45309', display: 'block' }}>
+                  加入12ヶ月未満のため上限を適用
+                </span>
+              )}
+            </td>
           </tr>
           <tr>
             <td style={{ textAlign: 'left' }}>標準報酬日額（÷30・10円単位）</td>

@@ -25,7 +25,12 @@ export interface ToolDef {
 }
 
 export const SITE_URL = 'https://tool.hasokon.com';
-export const SITE_NAME = 'hasokon tools';
+
+/** サイト名。ヘッダー・ページタイトル・OGPに表示される */
+export const SITE_NAME = '無料計算ツール集';
+
+/** 著作権表記に使う名称。表示名とは別に権利の帰属先を明示するためのもの */
+export const COPYRIGHT_HOLDER = 'hasokon tools';
 
 /** 固定ページ（トップ・プライバシー・お問い合わせ）の最終更新日 */
 export const SITE_UPDATED_AT = '2026-08-01';

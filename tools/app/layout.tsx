@@ -2,12 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
-import { SITE_NAME, SITE_URL } from '@/lib/registry';
+import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME}｜無料の計算・変換ツール集`,
+    default: `${SITE_NAME}｜年収の壁・支援金・電気代などをすぐ計算`,
     template: `%s｜${SITE_NAME}`,
   },
   description:
@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/contact/">お問い合わせ</Link>
             </p>
             <p>
-              © 2026 {SITE_NAME} All rights reserved.
+              © 2026 {COPYRIGHT_HOLDER} All rights reserved.
               <br />
               本サイトのコンテンツ（文章・プログラム等）の無断転載を禁じます。
             </p>
