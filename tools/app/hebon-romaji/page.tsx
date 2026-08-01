@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = 'ヘボン式ローマ字変換｜パスポート表記の氏名を自動変換';
@@ -70,7 +71,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>パスポートのヘボン式ローマ字とは</h2>
       <p>
@@ -142,7 +143,7 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
     </>
   );
 }

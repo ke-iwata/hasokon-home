@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = 'エアコン電気代 計算機｜1時間・1日・1ヶ月の電気代をすぐ計算';
@@ -70,7 +71,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>エアコンの電気代の計算方法</h2>
       <p>電気代は次の式で計算できます。</p>
@@ -108,7 +109,7 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
     </>
   );
 }

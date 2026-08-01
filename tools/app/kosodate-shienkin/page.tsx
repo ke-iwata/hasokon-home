@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = '子ども・子育て支援金 計算機｜月いくら引かれる？【2026年対応】';
@@ -76,7 +77,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>計算の仕組み</h2>
       <p>会社員・公務員（被用者保険）の場合、支援金は次の式で計算されます。</p>
@@ -126,7 +127,7 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         出典：

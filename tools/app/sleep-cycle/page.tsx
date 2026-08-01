@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = '睡眠サイクル計算機｜スッキリ起きられる就寝・起床時刻を90分サイクルで逆算';
@@ -70,7 +71,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>90分の睡眠サイクルとは</h2>
       <p>
@@ -103,7 +104,7 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
     </>
   );
 }

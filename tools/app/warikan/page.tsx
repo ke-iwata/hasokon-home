@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = '割り勘計算機｜端数は幹事が負担？切り上げ・切り捨ても選べる一人あたり計算';
@@ -70,7 +71,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>このツールの計算方法</h2>
       <p>
@@ -107,7 +108,7 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
     </>
   );
 }
