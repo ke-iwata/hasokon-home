@@ -2,7 +2,7 @@
  * ツールレジストリ
  * ここに追加すると、トップページの一覧と sitemap に自動反映される。
  */
-export type ToolCategory = 'お金・社会保険' | '生活・健康' | '計算・変換';
+export type ToolCategory = 'お金・社会保険' | '生活・健康' | '計算・変換' | '決める・選ぶ';
 
 export interface ToolDef {
   /** URLパス（先頭・末尾スラッシュなし） */
@@ -36,6 +36,51 @@ export const COPYRIGHT_HOLDER = 'hasokon tools';
 export const SITE_UPDATED_AT = '2026-08-01';
 
 export const tools: ToolDef[] = [
+  {
+    slug: 'roulette',
+    icon: '🎯',
+    name: 'ルーレット',
+    description: '項目を入れて回すだけ。ランチ・当番・順番決めに。全員に一巡させる決め方も選べます。',
+    category: '決める・選ぶ',
+    ready: true,
+    updatedAt: '2026-08-01',
+  },
+  {
+    slug: 'group',
+    icon: '👥',
+    name: 'グループ分け',
+    description: '名前を入れるだけで班分け・チーム分けをランダムに作成。人数は自動で均等に振り分けます。',
+    category: '決める・選ぶ',
+    ready: true,
+    updatedAt: '2026-08-01',
+  },
+  {
+    slug: 'amida',
+    icon: '🪜',
+    name: 'あみだくじ',
+    description: '参加者と当たりを入れるだけであみだくじを自動作成。線をたどるアニメーションで結果を確認。',
+    category: '決める・選ぶ',
+    ready: true,
+    updatedAt: '2026-08-01',
+  },
+  {
+    slug: 'dice',
+    icon: '🎲',
+    name: 'サイコロ',
+    description: 'サイコロやコインをブラウザで。個数や面の数を変えて何度でも振れます。',
+    category: '決める・選ぶ',
+    ready: true,
+    updatedAt: '2026-08-01',
+  },
+  {
+    slug: 'tournament',
+    icon: '🏆',
+    name: 'トーナメント表',
+    description: '参加者を入れるだけで組み合わせを自動作成。勝者を選んで勝ち上がりを記録できます。',
+    category: '決める・選ぶ',
+    ready: true,
+    updatedAt: '2026-08-01',
+  },
   {
     slug: 'kosodate-shienkin',
     icon: '👶',
@@ -112,4 +157,9 @@ export const tools: ToolDef[] = [
   },
 ];
 
-export const categories: ToolCategory[] = ['お金・社会保険', '生活・健康', '計算・変換'];
+export const categories: ToolCategory[] = [
+  'お金・社会保険',
+  '生活・健康',
+  '決める・選ぶ',
+  '計算・変換',
+];
