@@ -16,10 +16,10 @@ const COUNTS = Array.from({ length: 10 }, (_, i) => i + 1)
 
 /**
  * 転がるアニメーションの長さ。
- * CSSの die-roll（0.85s）に少し余裕を足す。
+ * CSSの die-roll（0.78s）に少し余裕を足す。
  * 短いと動いている途中で結果が出てしまう
  */
-const ROLL_MS = 960
+const ROLL_MS = 880
 
 export default function DiceTool({ theme }: Props) {
   const [count, setCount] = useState(2)
@@ -57,16 +57,20 @@ export default function DiceTool({ theme }: Props) {
   return (
     <section className="tool">
       <div className="tool-controls">
-        <label className="num-field">
-          個数
-          <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
-            {COUNTS.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="count-picker" role="group" aria-label="サイコロの個数">
+          <span className="count-label">個数</span>
+          {COUNTS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={`count-btn ${n === count ? 'active' : ''}`}
+              onClick={() => setCount(n)}
+              aria-pressed={n === count}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="dice-stage">

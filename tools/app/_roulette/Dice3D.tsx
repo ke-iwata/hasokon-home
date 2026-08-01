@@ -213,8 +213,10 @@ export default function Dice3D({ values, spin }: Props) {
           0.4 + Math.random() * 0.4,
           0.3 + Math.random() * 0.4,
         ] as [number, number, number],
-        // 速すぎると回っているのが見えず、ちらついて平面に見える
-        spin: (1.25 + Math.random() * 0.75) * 360,
+        // 回転量。多いほど勢いよく見える。
+        // ただし増やしすぎると1コマあたりの角度が大きくなり、
+        // 回っているというよりちらついて見えるので、この辺りが上限
+        spin: (3 + Math.random() * 1.5) * 360,
       })),
     // 振るたびに決め直す
     // eslint-disable-next-line react-hooks/exhaustive-deps

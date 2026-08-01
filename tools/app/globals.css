@@ -1648,26 +1648,28 @@ label {
   /* fill-mode は付けない。付けるとアニメーションが走らない状況
      （タブが裏、強い省電力など）で、サイコロが途中の姿勢で止まってしまう。
      付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
-  animation: die-roll 0.85s cubic-bezier(0.22, 0.72, 0.3, 1);
+  animation: die-roll 0.78s cubic-bezier(0.12, 0.66, 0.26, 1);
 }
 
-/* その場で転がって止まる。少し浮いたところから落ちて、軽く弾む。
-   回転は斜めの軸1本まわり。X軸とY軸を重ねると視線と揃った向きを
-   頻繁に通り、平たいコインが回っているように見えてしまう */
+/* その場で高速で回って止まる。少し浮いたところから落ちて、軽く弾む。
+   回転は序盤に大半を終わらせる配分にして、勢いよく回って
+   きゅっと止まる感じにしている。
+   軸は斜め1本。X軸とY軸を重ねると視線と揃った向きを頻繁に通り、
+   平たいコインが回っているように見えてしまう */
 @keyframes die-roll {
   0% {
-    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-26px)
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-22px)
       rotate3d(var(--ax), var(--ay), var(--az), var(--spin)) rotateX(var(--rx))
       rotateY(var(--ry));
   }
-  62% {
+  56% {
     transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0)
-      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.2)) rotateX(var(--rx))
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.12)) rotateX(var(--rx))
       rotateY(var(--ry));
   }
-  80% {
-    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-9px)
-      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.07)) rotateX(var(--rx))
+  76% {
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-7px)
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.03)) rotateX(var(--rx))
       rotateY(var(--ry));
   }
   100% {
@@ -1719,4 +1721,44 @@ label {
   .rl .die3d.rolling {
     animation: none;
   }
+}
+
+/* 個数の選択。セレクトより押すだけで済むボタンにする */
+.rl .count-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.rl .count-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+
+.rl .count-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+
+.rl .count-btn:hover {
+  border-color: var(--accent);
+}
+
+.rl .count-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
