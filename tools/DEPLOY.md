@@ -187,3 +187,32 @@ CloudFrontのドメイン名（`dxxxx.cloudfront.net`）に直接アクセスし
 | Actionsが認証で失敗 | Secretsの3つが登録されているか（`gh secret list`）、ロールの信頼ポリシーのリポジトリ名が合っているか確認する |
 | 更新が反映されない | CloudFrontのキャッシュ。ワークフローが invalidation まで実行できているか確認する |
 | スタック作成が `AlreadyExists` で失敗 | OIDCプロバイダが既にある。`infra/setup.sh` は自動判定するが、手動実行時は `CreateGitHubOIDCProvider=false` を渡す |
+| スタックが `ROLLBACK_COMPLETE` で再実行できない | 下記「作成に失敗したときのやり直し」を参照 |
+| IAMリソースが `failed to satisfy constraint` で失敗 | `Description` に日本語が入っている。IAMはLatin-1までしか受け付けないため英語にする |
+
+### 作成に失敗したときのやり直し
+
+`ROLLBACK_COMPLETE` のスタックは上書きできないため、削除してから再実行します。
+このとき **S3バケットは `DeletionPolicy: Retain` のため削除されずに残る**ので、
+中身が空であることを確認したうえで別途削除してください（残っていると再作成で失敗します）。
+
+```bash
+export AWS_PROFILE=developer
+
+aws cloudformation delete-stack --stack-name hasokon-tools-site --region ap-northeast-1
+aws cloudformation wait stack-delete-complete --stack-name hasokon-tools-site --region ap-northeast-1
+
+aws s3api list-objects-v2 --bucket tool-hasokon-com --query KeyCount   # 空か確認
+aws s3api delete-bucket --bucket tool-hasokon-com --region ap-northeast-1
+
+PROFILE=developer ./infra/setup.sh
+```
+
+失敗した原因は次のコマンドで確認できます。
+
+```bash
+aws cloudformation describe-stack-events \
+  --stack-name hasokon-tools-site --region ap-northeast-1 \
+  --query "reverse(StackEvents[?ResourceStatus=='CREATE_FAILED'].[LogicalResourceId,ResourceStatusReason])" \
+  --output text
+```

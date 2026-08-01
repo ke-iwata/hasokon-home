@@ -226,7 +226,9 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${AWS::StackName}-deploy'
-      Description: GitHub Actions から静的サイトをデプロイするためのロール（長期キー不要）
+      # IAMのdescriptionはLatin-1（ -ÿ）までしか受け付けず、
+      # 日本語を入れるとCREATE_FAILEDになる。ここだけ英語にすること
+      Description: Deploy role for GitHub Actions (OIDC, no long-lived keys)
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
