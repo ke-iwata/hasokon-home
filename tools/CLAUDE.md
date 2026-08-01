@@ -95,13 +95,12 @@ docs/CONCEPT.md       コンセプトと方針
   スクリプトが入っていれば自動広告は動く
 - 手動で広告枠を置きたくなったら、AdSense管理画面で広告ユニットを作って
   `AD_SLOTS` にスロットIDを入れる（`below-tool` = ツールの下、`below-faq` = 解説の下）
+- 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く。
+  スロット未設定のときは、開発中のみ破線のプレースホルダを出し、本番ビルドでは何も出力しない
 - `/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
   ルートドメイン（hasokon.com）側にも同じ内容が必要なので、変えるときは
   [hasokon-home](https://github.com/ke-iwata/hasokon-home) も直すこと
 - `ADSENSE_CLIENT` を空にすると、スクリプトも広告枠も ads.txt も出力されなくなる
-
-- 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く
-- 未設定時は、開発中のみ破線のプレースホルダを表示し、本番ビルドでは何も出力しない
 - **AdSenseのscriptは `app/layout.tsx` の `<head>` に生タグで置く**。`next/script` の
   `afterInteractive` だと静的HTMLにpreloadしか出ず、審査でコードを検出されない可能性があるため
 - **計算機より上に広告を置かない**（UX悪化 → 直帰率上昇 → 順位下落を避ける。docs/CONCEPT.md 5参照）
