@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
-import { SITE_NAME } from '@/lib/registry';
+import { SITE_NAME, SITE_URL } from '@/lib/registry';
 
 export const metadata: Metadata = {
   title: 'お問い合わせ',
   description: `${SITE_NAME}へのお問い合わせ方法のご案内です。`,
+  alternates: { canonical: `${SITE_URL}/contact/` },
 };
 
-// ★ 公開前にGoogleフォームを作成してURLを差し替えてください
-const CONTACT_FORM_URL = 'https://forms.gle/XXXXXXXXXXXX';
+/** 【データ更新箇所】お問い合わせ用のGoogleフォーム */
+const CONTACT_FORM_URL =
+  'https://docs.google.com/forms/d/e/1FAIpQLScNoh6HZoekO-nlb_BHSvk755ZAVXWEtsmF3ttZP-hRDTCOhw/viewform';
 
 export default function ContactPage() {
   return (

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = '傷病手当金 計算機｜月収からいくらもらえるかを自動計算';
@@ -70,7 +72,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>傷病手当金とは？ 支給の条件</h2>
       <p>
@@ -108,11 +110,23 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-        関連ツール：<a href="/nenshu-kabe/">年収の壁 計算機</a>／
-        <a href="/kosodate-shienkin/">子ども・子育て支援金 計算機</a>
+        関連ツール：<Link href="/nenshu-kabe/">年収の壁 計算機</Link>／
+        <Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>
+      </p>
+
+      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+        出典：
+        <a
+          href="https://www.kyoukaikenpo.or.jp/g6/cat620/r306/"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          全国健康保険協会（協会けんぽ）「病気やケガで会社を休んだとき（傷病手当金）」
+        </a>
+        にもとづき作成（最終更新：2026年8月）。端数処理は協会けんぽの算定方法によります。
       </p>
     </>
   );

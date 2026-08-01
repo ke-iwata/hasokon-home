@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
 import Calculator from './Calculator';
 
 const title = '年収の壁 計算機【2026年最新】106万・119万・130万・178万円の壁を判定';
@@ -70,7 +72,7 @@ export default function Page() {
 
       <Calculator />
 
-      <div className="adslot">{/* ad: below-tool */}</div>
+      <AdUnit position="below-tool" />
 
       <h2>2026年の年収の壁 早見表</h2>
       <table>
@@ -126,7 +128,9 @@ export default function Page() {
         </tbody>
       </table>
       <div className="note">
-        本ページは2026年7月時点の制度（令和7年度・令和8年度税制改正、年金制度改正法）にもとづきます。
+        本ページは令和8年度税制改正（所得税法等の一部を改正する法律・令和8年法律第12号）および年金制度改正法にもとづきます。
+        金額は令和8年分（2026年1月〜12月の収入）に適用されるもので、給与所得控除74万円・基礎控除104万円を前提としています。
+        住民税は前年の所得に課税されるため、2026年の収入は2027年度の住民税に反映されます。
         社会保険の扶養認定は加入する健康保険組合ごとに運用が異なる場合があります。正確な判定は勤務先・保険者にご確認ください。
       </div>
 
@@ -138,10 +142,38 @@ export default function Page() {
         </div>
       ))}
 
-      <div className="adslot">{/* ad: below-faq */}</div>
+      <AdUnit position="below-faq" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-        関連ツール：<a href="/kosodate-shienkin/">子ども・子育て支援金 計算機</a>
+        関連ツール：<Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>
+      </p>
+
+      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+        出典：
+        <a
+          href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          国税庁「No.1199 基礎控除」
+        </a>
+        ／
+        <a
+          href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1177.htm"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          国税庁「No.1177 特定親族特別控除」
+        </a>
+        ／
+        <a
+          href="https://www.mhlw.go.jp/tekiyoukakudai/"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          厚生労働省「社会保険適用拡大特設サイト」
+        </a>
+        ／所得税法等の一部を改正する法律（令和8年法律第12号）にもとづき作成（最終更新：2026年8月）。
       </p>
     </>
   );
