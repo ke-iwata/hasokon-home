@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import './globals.css';
 import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
+import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
+import Analytics from './Analytics';
 import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
 
 /**
@@ -47,8 +49,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             crossOrigin="anonymous"
           />
         )}
+
+        {/*
+          Google Analytics 4。lib/analytics.ts が未設定の間は出力しない。
+          send_page_view を切っているのは、next/link での移動が通常の
+          ページ読み込みを伴わないため。ページビューは app/Analytics.tsx から
+          パスの変化を見て送っている（初回表示も含めてそちらに一本化）。
+        */}
+        {isAnalyticsEnabled() && (
+          <>
+            <script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+            />
+            <script
+              dangerouslySetInnerHTML={{
+                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}',{send_page_view:false});`,
+              }}
+            />
+          </>
+        )}
       </head>
       <body>
+        <Analytics />
         <header className="site-header">
           <div className="inner">
             <Link className="brand" href="/">

@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import type { Theme } from '@/lib/roulette/themes'
 import { shareCard } from '@/lib/roulette/resultImage'
 import Dice3D from './Dice3D'
+import { trackToolUse } from '@/lib/analytics'
 
 interface Props {
   theme: Theme
@@ -32,6 +33,7 @@ export default function DiceTool({ theme }: Props) {
   const roll = () => {
     if (rolling) return
     setRolling(true)
+    trackToolUse('dice', 'roll')
     clearTimeout(timer.current)
 
     // 出目を先に決めてしまい、その面が手前に来るまで転がす。

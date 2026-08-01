@@ -36,6 +36,7 @@ app/
   privacy/ contact/   AdSense審査に必要な固定ページ
   not-found.tsx       404ページ（out/404.html になる）
   AdUnit.tsx          広告枠。lib/adsense.ts が未設定なら何も出さない
+  Analytics.tsx       ページビュー送信。lib/analytics.ts が未設定なら何もしない
   ads.txt/route.ts    /ads.txt を lib/adsense.ts から生成
   {slug}/
     page.tsx          サーバーコンポーネント（metadata / JSON-LD / 解説 / FAQ）
@@ -46,6 +47,7 @@ app/
 lib/
   registry.ts         ツールレジストリ（一覧・sitemapの単一の情報源）
   adsense.ts          AdSenseの設定。ここだけ埋めれば広告が出る
+  analytics.ts        GA4の設定。ここだけ埋めれば計測が始まる
   {slug}.ts           計算ロジック（純関数のみ。DOM/Reactに依存しない）
   roulette/           ルーレット系のロジックとデータ（純関数のみ）
 tests/
@@ -105,6 +107,22 @@ docs/CONCEPT.md       コンセプトと方針
   `afterInteractive` だと静的HTMLにpreloadしか出ず、審査でコードを検出されない可能性があるため
 - **計算機より上に広告を置かない**（UX悪化 → 直帰率上昇 → 順位下落を避ける。docs/CONCEPT.md 5参照）
 
+## アクセス解析（Googleアナリティクス）
+
+設定は `lib/analytics.ts` の1箇所。`GA_MEASUREMENT_ID` に測定ID（`G-` から始まる）を
+入れるだけで有効になり、空の間はスクリプトも計測処理も一切出力されない。
+
+- **`send_page_view: false` にしてある**。`next/link` の移動は通常のページ読み込みを
+  伴わないため、gtagの自動送信では2ページ目以降が記録されない。ページビューは
+  `app/Analytics.tsx` が `usePathname` の変化を見て送る（初回も含めてこちらに一本化）
+- **ページビューだけでは「開かれたが使われなかった」が分からない**ので、
+  主要な操作で `trackToolUse(slug, action)` を呼んでいる（ルーレットを回す・
+  サイコロを振る・グループ分けする・変換結果をコピーする）。
+  GA4では `tool_use` イベントに `tool` / `action` パラメータが付く形で集計される
+- 新しいツールを足したときは、押して結果が出る操作があれば同じように呼ぶ
+- **Cookieを使うのでプライバシーポリシーへの記載が必要**。`app/privacy/page.tsx` の
+  「アクセス解析について」に記載済み。オプトアウトの案内も置いている
+
 ## よく踏む落とし穴
 
 - **`app/sitemap.ts` / `app/robots.ts` には `export const dynamic = 'force-static'` が必須**。
@@ -122,7 +140,7 @@ docs/CONCEPT.md       コンセプトと方針
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在124件）
+npm test         # 計算ロジックのテスト（現在201件）
 npm run build    # out/ に静的出力
 ```
 
@@ -140,9 +158,10 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://tool.hasokon.com （S3 + CloudFront）
-- ツール11本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト124件
+- ツール13本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト201件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
-- 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加
+- 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
+  `lib/analytics.ts` にGA4の測定IDを設定
 - 中長期: 制度改正が出るたびに計算機を追加する（このサイトの本命戦略）
 
 ### 制度データの根拠と注意点

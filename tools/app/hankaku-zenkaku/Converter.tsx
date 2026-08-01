@@ -8,6 +8,7 @@ import {
   type Direction,
   type WidthOptions,
 } from '@/lib/hankaku-zenkaku';
+import { trackToolUse } from '@/lib/analytics';
 
 const TARGETS: { key: keyof WidthOptions; label: string; hint: string }[] = [
   { key: 'alnum', label: '英数字', hint: 'ＡＢ１２ ⇔ AB12' },
@@ -69,6 +70,7 @@ export default function Converter() {
     try {
       await navigator.clipboard.writeText(result);
       setCopied(true);
+      trackToolUse('hankaku-zenkaku', direction);
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // クリップボードが使えない環境（権限拒否・http接続など）では何もしない。

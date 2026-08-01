@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import type { Item } from '@/lib/roulette/types'
 import type { Theme } from '@/lib/roulette/themes'
 import { shareCard } from '@/lib/roulette/resultImage'
+import { trackToolUse } from '@/lib/analytics'
 
 interface Props {
   items: Item[]
@@ -57,6 +58,7 @@ export default function GroupTool({ items, theme }: Props) {
   const run = () => {
     if (!ready) return
     setResult(split(items, actualGroups))
+    trackToolUse('group', 'split')
   }
 
   const onShare = async () => {

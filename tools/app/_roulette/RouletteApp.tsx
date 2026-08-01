@@ -11,6 +11,7 @@ import { useLocalStorage } from '@/lib/roulette/useLocalStorage';
 import { itemsFromHash, shareUrl } from '@/lib/roulette/share';
 import { THEMES, themeById } from '@/lib/roulette/themes';
 import { guessEmoji } from '@/lib/roulette/emoji';
+import { trackToolUse } from '@/lib/analytics';
 import type { Item } from '@/lib/roulette/types';
 
 type Screen = 'setup' | 'play';
@@ -176,7 +177,10 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
               theme={theme}
               spinning={spinning}
               spinSignal={spinKey}
-              onSpinStart={() => setSpinning(true)}
+              onSpinStart={() => {
+                setSpinning(true);
+                trackToolUse('roulette', 'spin');
+              }}
               pick={(list) => pickWinner(list)}
               onResult={(item) => {
                 setSpinning(false);

@@ -46,7 +46,36 @@ export default function PrivacyPage() {
 
       <h2>アクセス解析について</h2>
       <p>
-        本サイトは、サービス向上のためアクセス解析ツールを利用する場合があります。解析データは匿名で収集されており、個人を特定するものではありません。
+        本サイトは、サービス向上のためGoogleが提供するアクセス解析ツール「Googleアナリティクス」を利用する場合があります。Googleアナリティクスはトラフィックデータの収集のためにCookieを使用します。収集されるのは、閲覧されたページ、滞在時間、参照元、大まかな地域、利用された端末やブラウザの種類、および各ツールが操作された回数などで、
+        <strong>氏名・住所・メールアドレスなど個人を特定する情報は含まれません</strong>
+        。また、各ツールに入力された数値や文字列が送信されることもありません。
+      </p>
+      <p>
+        収集されたデータはGoogleのプライバシーポリシーにもとづいて管理されます。詳しくは
+        <a
+          href="https://marketingplatform.google.com/about/analytics/terms/jp/"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          Googleアナリティクス利用規約
+        </a>
+        および
+        <a
+          href="https://policies.google.com/privacy?hl=ja"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          Googleのプライバシーポリシー
+        </a>
+        をご覧ください。データの収集を拒否したい場合は、
+        <a
+          href="https://tools.google.com/dlpage/gaoptout?hl=ja"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          Googleアナリティクス オプトアウト アドオン
+        </a>
+        をご利用ください。
       </p>
 
       <h2>免責事項</h2>
