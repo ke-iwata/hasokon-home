@@ -3,6 +3,16 @@
 import { useRef, useState } from 'react'
 import type { Theme } from '@/lib/roulette/themes'
 import { shareCard } from '@/lib/roulette/resultImage'
+import Die3D from './Die3D'
+
+/** 立体表示にする面の数。立方体なので6のときだけ */
+const CUBE_FACES = 6
+/**
+ * 転がるアニメーションの長さ。
+ * CSSの transition（1.15s）と跳ねる動き（0.38s×3＝1.14s）の長いほうに
+ * 少し余裕を足した値。短いと動いている途中で結果が出てしまう
+ */
+const ROLL_MS = 1250
 
 interface Props {
   theme: Theme
@@ -69,7 +79,12 @@ export default function DiceTool({ theme }: Props) {
   const [max, setMax] = useState(100)
   const [values, setValues] = useState<number[]>([])
   const [rolling, setRolling] = useState(false)
+  // 振った回数。立体サイコロはこれを見て回転量を増やす
+  const [spin, setSpin] = useState(0)
   const timers = useRef<number[]>([])
+
+  // 6面のサイコロだけ立体で転がす。それ以外は数字を切り替えて見せる
+  const isCube = kind === 'dice' && faces === CUBE_FACES
 
   const rollOnce = () =>
     kind === 'dice'
@@ -83,7 +98,17 @@ export default function DiceTool({ theme }: Props) {
     setRolling(true)
     timers.current.forEach(clearTimeout)
     timers.current = []
-    // 転がっている見た目を作るため、短い間隔で値を差し替える
+
+    if (isCube) {
+      // 立体サイコロは出目を先に決めてしまい、その面が正面に来るまで回す。
+      // 途中で値を差し替えると回転と噛み合わないため
+      setValues(rollOnce())
+      setSpin((n) => n + 1)
+      timers.current.push(window.setTimeout(() => setRolling(false), ROLL_MS))
+      return
+    }
+
+    // 立体にしない表示は、短い間隔で値を差し替えて転がっている感じを出す
     for (let i = 0; i < 8; i++) {
       timers.current.push(window.setTimeout(() => setValues(rollOnce()), i * 70))
     }
@@ -179,11 +204,15 @@ export default function DiceTool({ theme }: Props) {
         ) : kind === 'dice' ? (
           <>
             <div className="dice-row">
-              {values.map((v, i) => (
-                <Die key={i} value={v} rolling={rolling} />
-              ))}
+              {values.map((v, i) =>
+                isCube ? (
+                  <Die3D key={i} value={v} rolling={rolling} spin={spin} index={i} />
+                ) : (
+                  <Die key={i} value={v} rolling={rolling} />
+                ),
+              )}
             </div>
-            {values.length > 1 && <p className="dice-total">合計 {total}</p>}
+            {values.length > 1 && !rolling && <p className="dice-total">合計 {total}</p>}
           </>
         ) : (
           <p className={`range-value ${rolling ? 'rolling' : ''}`}>{values[0]}</p>
