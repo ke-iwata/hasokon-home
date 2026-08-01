@@ -12,17 +12,26 @@
 
 ### 前提
 
-- AWS CLI v2 で認証済み（`aws sts get-caller-identity` が通ること）
+- AWS CLI v2 で認証済み
 - `gh` CLI でログイン済み（`gh auth status`）
 - `hasokon.com` が **Route 53** で管理されていること
 
+SSO を使う場合はセッションを更新しておきます。
+
 ```bash
-brew install awscli gh   # 未インストールの場合
-aws configure            # 認証情報の設定
-gh auth login
+aws sso login --profile developer
 ```
 
 ### 実行
+
+**`default` プロファイルが無い環境では `PROFILE` の指定が必須です。**
+SSO（`aws configure sso --profile developer`）で運用している場合は次のようになります。
+
+```bash
+PROFILE=developer ./infra/setup.sh
+```
+
+`default` プロファイルがある場合や `AWS_PROFILE` を設定済みの場合は、そのまま実行できます。
 
 ```bash
 ./infra/setup.sh
@@ -46,7 +55,7 @@ gh auth login
 ドメインやバケット名を変える場合は環境変数で上書きできます。
 
 ```bash
-DOMAIN=tool.example.com BUCKET=my-bucket REPO=user/repo ./infra/setup.sh
+DOMAIN=tool.example.com BUCKET=my-bucket REPO=user/repo PROFILE=developer ./infra/setup.sh
 ```
 
 ### 設定を変更したいとき
@@ -138,6 +147,8 @@ CloudFrontのドメイン名（`dxxxx.cloudfront.net`）に直接アクセスし
 
 | 症状 | 原因と対処 |
 |---|---|
+| `The config profile (default) could not be found` | `PROFILE=developer ./infra/setup.sh` のようにプロファイルを指定する |
+| `Token has expired` / SSO関連のエラー | `aws sso login --profile developer` でセッションを更新する |
 | 全ページ403 | CloudFront Function が関連付いていない。`infra/setup.sh` を再実行する |
 | 存在しないURLでXMLが出る | カスタムエラーレスポンスが未設定。同上 |
 | Actionsが `npm ci` で失敗 | `package-lock.json` がコミットされているか確認する |

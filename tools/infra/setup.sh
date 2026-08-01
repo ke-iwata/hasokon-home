@@ -7,9 +7,17 @@
 # 証明書スタック（us-east-1）→ サイトスタック（ap-northeast-1）の順に作り、
 # 最後に GitHub Secrets を設定する。何度実行しても同じ結果になる（差分だけ更新される）。
 #
-# 前提: AWS CLI v2 で認証済み（aws sts get-caller-identity が通ること）、gh CLI でログイン済み。
+# SSO（aws configure sso）を使っていて default プロファイルが無い場合は、
+# 必ずプロファイルを指定すること:
+#
+#   PROFILE=developer ./infra/setup.sh
+#
+# 前提: AWS CLI v2 で認証済み、gh CLI でログイン済み。
 
 set -euo pipefail
+
+# 使用するAWSプロファイル。未指定なら AWS_PROFILE、それも無ければ default が使われる
+PROFILE="${PROFILE:-${AWS_PROFILE:-}}"
 
 DOMAIN="${DOMAIN:-tool.hasokon.com}"
 PARENT_DOMAIN="${PARENT_DOMAIN:-hasokon.com}"
@@ -33,9 +41,26 @@ info "前提条件を確認しています"
 command -v aws >/dev/null || die "AWS CLI がありません。 brew install awscli で入れてください"
 command -v gh  >/dev/null || die "gh CLI がありません。 brew install gh で入れてください"
 
-account="$(aws sts get-caller-identity --query Account --output text)" \
-  || die "AWSの認証情報が設定されていません。 aws configure を実行してください"
-echo "AWSアカウント: ${account}"
+# 以降の aws コマンドすべてに効かせる
+if [ -n "${PROFILE}" ]; then
+  export AWS_PROFILE="${PROFILE}"
+fi
+
+if ! account="$(aws sts get-caller-identity --query Account --output text 2>/dev/null)"; then
+  profiles="$(aws configure list-profiles 2>/dev/null | tr '\n' ' ')"
+  die "AWSの認証に失敗しました（プロファイル: ${PROFILE:-default}）。
+
+  SSOのセッションが切れている場合:
+    aws sso login --profile ${PROFILE:-<プロファイル名>}
+
+  プロファイルを指定していない場合（default が無い環境ではこれが原因）:
+    PROFILE=<プロファイル名> ./infra/setup.sh
+
+  利用可能なプロファイル: ${profiles:-（なし）}"
+fi
+
+echo "AWSアカウント : ${account}"
+echo "プロファイル  : ${PROFILE:-default}"
 echo "デプロイ先    : ${DOMAIN} (${REGION})"
 
 gh auth status >/dev/null 2>&1 || die "gh にログインしていません。 gh auth login を実行してください"
