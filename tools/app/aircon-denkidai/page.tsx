@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = 'エアコン電気代 計算機｜1時間・1日・1ヶ月の電気代をすぐ計算';
+const title = 'エアコン電気代 計算機｜1時間・1日・1ヶ月分をすぐ計算';
 const description =
   'エアコンの消費電力と使用時間から電気代を自動計算。6畳〜18畳の畳数プリセット付きで、1時間・1日・1ヶ月あたりの電気代の目安がすぐわかります。単価は目安単価31円/kWh対応。';
 
@@ -103,6 +104,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="aircon-denkidai" />
     </>
   );
 }

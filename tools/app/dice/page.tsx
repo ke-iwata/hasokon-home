@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import ToolClient from '@/app/_roulette/ToolClient';
 import { SITE_URL } from '@/lib/registry';
 
-const title = 'サイコロを振る | 1〜10個をまとめて振れる無料ツール';
+const title = 'サイコロを振る｜1〜10個をまとめて振れる無料ツール';
 const description =
   'サイコロをブラウザで振れる無料ツール。1〜10個まで同時に振れて合計も出ます。登録もアプリも不要で、スマホからそのまま使えます。';
 
@@ -70,6 +71,8 @@ export default function Page() {
       <p>サイコロは同じ目が続けて出ることがあります。重複させたくない場合は、ルーレットに数字を入れて、当たった数字を「これを除いてまわす」で外しながら回すと、重複せずに番号を配れます。</p>
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="dice" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         関連ツール：<Link href="/roulette/">ルーレット</Link>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Converter from './Converter';
 
 const title = '半角⇔全角 変換ツール｜英数字・カタカナ・記号をまとめて変換';
@@ -155,6 +156,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="hankaku-zenkaku" />
 
       <p style={{ fontSize: '0.9rem' }}>
         関連ツール：

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = '年収の壁 計算機【2026年最新】106万・119万・130万・178万円の壁を判定';
+const title = '年収の壁 計算機【2026年】106万・130万・178万円の壁を判定';
 const description =
   '2026年の税制改正対応。年収と立場を入れるだけで、あなたに関係する「年収の壁」（106万・119万・130万・136万・159万・169万・178万円）と超えたときの影響を判定します。';
 
@@ -140,6 +141,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="nenshu-kabe" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         関連ツール：<Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>

@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = 'ふるさと納税 控除額計算機｜所得税・住民税からいくら引かれるか内訳まで';
+const title = 'ふるさと納税 控除額計算機｜上限額と所得税・住民税の内訳';
 const description =
   'ふるさと納税の控除上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住民税の基本分・特例分、ワンストップ特例にも対応。2026年（令和8年）の税制改正に対応しています。';
 
@@ -180,6 +181,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="furusato-nozei" />
 
       <p style={{ fontSize: '0.9rem' }}>
         関連ツール：

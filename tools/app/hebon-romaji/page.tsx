@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
 const title = 'ヘボン式ローマ字変換｜パスポート表記の氏名を自動変換';
@@ -138,6 +139,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="hebon-romaji" />
     </>
   );
 }

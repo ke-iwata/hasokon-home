@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = '睡眠サイクル計算機｜スッキリ起きられる就寝・起床時刻を90分サイクルで逆算';
+const title = '睡眠サイクル計算機｜スッキリ起きられる就寝・起床時刻を逆算';
 const description =
   '起きたい時刻を入れるだけで、90分の睡眠サイクルにもとづいてスッキリ起きやすい就寝時刻を逆算。今から寝る場合の起床時刻の計算にも対応。入眠時間も考慮した無料の睡眠時間計算ツールです。';
 
@@ -97,6 +98,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="sleep-cycle" />
     </>
   );
 }

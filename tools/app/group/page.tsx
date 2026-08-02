@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import ToolClient from '@/app/_roulette/ToolClient';
 import { SITE_URL } from '@/lib/registry';
 
-const title = 'グループ分けツール | 班分け・チーム分けをランダムに';
+const title = 'グループ分けツール｜班分け・チーム分けをランダムに';
 const description =
   '名前を入れるだけで、班分け・チーム分けをランダムに作れる無料ツール。人数を揃えて自動で振り分けます。登録不要・アプリ不要でスマホからも使えます。';
 
@@ -71,6 +72,8 @@ export default function Page() {
       <p>気に入らない結果が出たら「もう一度分ける」で作り直せます。ただし、やり直しを繰り返すと公平さの根拠が薄れるので、回数を先に決めておくのがおすすめです。</p>
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="group" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         関連ツール：<Link href="/roulette/">ルーレット</Link>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
 const title = '傷病手当金 計算機｜月収からいくらもらえるかを自動計算';
@@ -113,6 +114,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="shobyo-teate" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         関連ツール：<Link href="/nenshu-kabe/">年収の壁 計算機</Link>／

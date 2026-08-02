@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import RouletteApp from '@/app/_roulette/RouletteApp';
 import { SITE_URL } from '@/lib/registry';
 import { TOOLS } from '@/lib/roulette/tools';
@@ -120,6 +121,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="roulette" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         ほかのツール：

@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   verification: { google: GOOGLE_SITE_VERIFICATION },
   title: {
     default: `${SITE_NAME}｜年収の壁・支援金・電気代などをすぐ計算`,
-    template: `%s｜${SITE_NAME}`,
+    // 接尾辞にサイト名を足さない。日本語の検索結果で表示されるのは全角30字前後で、
+    // 「｜無料計算ツール集」の9字はブランド認知がつくまでは keyword に回したほうがよい。
+    // 認知が出てきたら `%s｜${SITE_NAME}` に戻す。
+    template: '%s',
   },
   description:
     '子ども・子育て支援金計算機など、暮らしと仕事に役立つ無料のWebツール集。すべてブラウザ内で完結し、入力データは送信されません。',
@@ -51,23 +54,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         )}
 
         {/*
-          Google Analytics 4。lib/analytics.ts が未設定の間は出力しない。
-          send_page_view を切っているのは、next/link での移動が通常の
-          ページ読み込みを伴わないため。ページビューは app/Analytics.tsx から
-          パスの変化を見て送っている（初回表示も含めてそちらに一本化）。
+          Google Analytics 4 本体。lib/analytics.ts が未設定の間は出力しない。
+
+          初期化（dataLayer / config）はここに書かず app/Analytics.tsx で行う。
+          AdSenseが実行時に <head> へ <script> を差し込むため、インラインscriptを
+          Reactの子として置くとハイドレーションで食い違い、描画がやり直しになる。
+          <script async src> は React 19 が hoistable として個別に扱うので影響を受けない。
         */}
         {isAnalyticsEnabled() && (
-          <>
-            <script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-            />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_MEASUREMENT_ID}',{send_page_view:false});`,
-              }}
-            />
-          </>
+          <script
+            async
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+          />
         )}
       </head>
       <body>

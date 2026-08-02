@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = 'アスペクト比計算機｜幅×高さから16:9などの比率を計算・CSSコード生成';
+const title = 'アスペクト比 計算機｜16:9などの比率とリサイズ後のサイズ';
 const description =
   '幅と高さ(px)を入れるだけで、アスペクト比（16:9・4:3など）を最簡分数で計算。よく使う比率との一致判定、比率を保ったままのサイズ変換、CSSのaspect-ratioコピー用コードにも対応した無料ツールです。';
 
@@ -143,6 +144,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="aspect-ratio" />
     </>
   );
 }

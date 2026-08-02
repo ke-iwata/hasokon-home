@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { isAnalyticsEnabled, trackPageView } from '@/lib/analytics';
+import { initAnalytics, isAnalyticsEnabled, trackPageView } from '@/lib/analytics';
 
 /**
  * ページビューの送信。
@@ -16,6 +16,8 @@ export default function Analytics() {
 
   useEffect(() => {
     if (!isAnalyticsEnabled()) return;
+    // 初回だけ gtag を初期化する（2回目以降は何もしない）
+    initAnalytics();
     trackPageView(pathname);
   }, [pathname]);
 

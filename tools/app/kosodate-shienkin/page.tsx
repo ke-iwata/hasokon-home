@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = '子ども・子育て支援金 計算機｜月いくら引かれる？【2026年対応】';
+const title = '子ども・子育て支援金 計算機｜月いくら引かれる？【2026年】';
 const description =
   '「独身税」とも呼ばれる子ども・子育て支援金が給与からいくら天引きされるかを無料で計算。月収と賞与を入れるだけで2026・2027・2028年度の負担額がわかります。';
 
@@ -126,6 +127,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="kosodate-shienkin" />
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
         出典：

@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import RelatedTools from '@/app/RelatedTools';
 import Calculator from './Calculator';
 
-const title = '割り勘計算機｜端数は幹事が負担？切り上げ・切り捨ても選べる一人あたり計算';
+const title = '割り勘計算機｜一人あたりいくら？端数の調整も選べる';
 const description =
   '飲み会の合計金額と人数を入れるだけで一人あたりの支払額を計算。端数の丸め単位（10円・100円・500円・1000円）と幹事の負担方法（多め・少なめ・均等）を選べる無料の割り勘計算ツールです。';
 
@@ -102,6 +103,8 @@ export default function Page() {
       ))}
 
       <AdUnit position="below-faq" />
+
+      <RelatedTools current="warikan" />
     </>
   );
 }

@@ -76,12 +76,18 @@ jobs:
             --size-only \
             --cache-control "public,max-age=31536000,immutable"
 
+      # s-maxage（CDN側のキャッシュ時間）を必ず入れること。
+      # CloudFront は自分がキャッシュしたオブジェクトしか圧縮しないため、
+      # max-age=0 だけだとHTMLがgzip/brで配信されず、素のサイズのまま飛ぶ。
+      # デプロイの最後に /* を無効化しているので、s-maxage を延ばしても
+      # 更新が遅れて見えることはない。
+      # max-age=0 はブラウザ側。毎回問い合わせるので利用者には常に最新が出る。
       - name: S3へ同期（HTML・その他）
         run: |
           aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
             --delete \
             --exclude "_next/static/*" \
-            --cache-control "public,max-age=0,must-revalidate"
+            --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
       - name: CloudFrontのキャッシュを削除
         run: |

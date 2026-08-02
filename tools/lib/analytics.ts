@@ -31,6 +31,7 @@ type Gtag = (command: string, ...args: unknown[]) => void;
 declare global {
   interface Window {
     gtag?: Gtag;
+    dataLayer?: IArguments[];
   }
 }
 
@@ -38,6 +39,39 @@ declare global {
 function gtag(): Gtag | undefined {
   if (typeof window === 'undefined') return undefined;
   return window.gtag;
+}
+
+/** 初期化済みかどうか。React StrictMode で effect が2回走っても二重に設定しない */
+let initialized = false;
+
+/**
+ * gtag の初期化。
+ *
+ * 一般的なGA4のスニペットは `<head>` にインラインの <script> を置くが、
+ * このサイトではそれをしていない。AdSense のスクリプトが実行時に
+ * `<head>` へ別の <script> を差し込むため、Reactがハイドレーション時に
+ * 自前のインラインscriptと突き合わせて食い違いを起こすからである
+ * （React が「一致しない」と判断すると描画をやり直し、表示が遅くなる）。
+ *
+ * `<script async src>` は React 19 が hoistable として個別に扱うので
+ * `<head>` に置いたままで問題ない。初期化だけをここに移している。
+ *
+ * dataLayer 経由で積むので、gtag.js の読み込みが先でも後でも取りこぼさない。
+ */
+export function initAnalytics(): void {
+  if (initialized || !isAnalyticsEnabled() || typeof window === 'undefined') return;
+  initialized = true;
+  window.dataLayer = window.dataLayer || [];
+  // gtag.js が既に本物を入れていればそれを使う。まだならキューに積むだけの関数を置く
+  if (!window.gtag) {
+    window.gtag = function (...args: unknown[]) {
+      // gtag は arguments オブジェクトをそのまま積む仕様（配列だと解釈されない）
+      // eslint-disable-next-line prefer-rest-params
+      window.dataLayer?.push(arguments);
+    } as Gtag;
+  }
+  window.gtag('js', new Date());
+  window.gtag('config', GA_MEASUREMENT_ID, { send_page_view: false });
 }
 
 /**
