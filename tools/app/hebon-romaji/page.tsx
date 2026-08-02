@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = 'ヘボン式ローマ字変換｜パスポート表記の氏名を自動変換';
@@ -42,6 +44,10 @@ const jsonLd = {
       url: `${SITE_URL}/hebon-romaji/`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('hebon-romaji'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -141,6 +147,18 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="hebon-romaji" />
+
+      <ToolMeta slug="hebon-romaji">
+        パスポート用ヘボン式ローマ字の表記ルールにもとづく参考表示です。パスポートは各都道府県が発給しており、綴りの一覧は
+        <a
+          href="https://www.pref.osaka.lg.jp/o070140/passport/top/romaji.html"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          大阪府「ヘボン式ローマ字」
+        </a>
+        などで公開されています。非ヘボン式表記を希望する場合など、正式な確認は申請窓口へお問い合わせください。
+      </ToolMeta>
     </>
   );
 }

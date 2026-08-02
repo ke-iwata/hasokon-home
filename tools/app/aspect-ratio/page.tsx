@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = 'アスペクト比 計算機｜16:9などの比率とリサイズ後のサイズ';
@@ -42,6 +44,10 @@ const jsonLd = {
       url: `${SITE_URL}/aspect-ratio/`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('aspect-ratio'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -146,6 +152,8 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="aspect-ratio" />
+
+      <ToolMeta slug="aspect-ratio" />
     </>
   );
 }

@@ -1,14 +1,31 @@
 import type { Metadata } from 'next';
-import { SITE_NAME } from '@/lib/registry';
+import { SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
+import { PUBLISHER_REF } from '@/lib/jsonld';
 
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
   description: `${SITE_NAME}のプライバシーポリシー。入力データの取り扱い、広告配信、アクセス解析、著作権についてのご案内です。`,
 };
 
+/** 運営主体を機械可読にも示す。発行者の実体はトップページ側にある */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'プライバシーポリシー',
+  url: `${SITE_URL}/privacy/`,
+  inLanguage: 'ja',
+  dateModified: SITE_UPDATED_AT,
+  publisher: PUBLISHER_REF,
+};
+
 export default function PrivacyPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <h1>プライバシーポリシー</h1>
       <p className="lead">本サイト（{SITE_NAME}）における情報の取り扱いについて定めます。</p>
 
@@ -96,7 +113,9 @@ export default function PrivacyPage() {
         本ポリシーの内容は、法令の変更やサービス内容の変更に応じて、予告なく改定することがあります。変更後のポリシーは、本ページに掲載した時点で効力を生じるものとします。
       </p>
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>制定日：2026年7月</p>
+      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+        制定日：2026年7月／最終更新：2026年8月2日（アクセス解析の項目を追記）
+      </p>
     </>
   );
 }

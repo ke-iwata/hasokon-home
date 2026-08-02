@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = 'ふるさと納税 控除額計算機｜上限額と所得税・住民税の内訳';
@@ -59,6 +61,10 @@ const jsonLd = {
       url: `${SITE_URL}/furusato-nozei/`,
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('furusato-nozei'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -190,7 +196,7 @@ export default function Page() {
         （2026年の改正後の各種控除のラインを判定します）
       </p>
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <ToolMeta slug="furusato-nozei" ymyl>
         出典：
         <a
           href="https://www.soumu.go.jp/main_sosiki/jichi_zeisei/czaisei/czaisei_seido/furusato/mechanism/deduction.html"
@@ -215,8 +221,8 @@ export default function Page() {
         >
           国税庁「No.2260 所得税の税率」
         </a>
-        ほか公的資料にもとづき作成。基礎控除・給与所得控除の額は所得税法等の一部を改正する法律（令和8年法律第12号）による令和8年分の内容です（最終更新：2026年8月）。
-      </p>
+        ほか公的資料にもとづき作成。基礎控除・給与所得控除の額は所得税法等の一部を改正する法律（令和8年法律第12号）による令和8年分の内容です。
+      </ToolMeta>
     </>
   );
 }

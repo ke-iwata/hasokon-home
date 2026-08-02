@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AdUnit from '@/app/AdUnit';
 import { SITE_URL } from '@/lib/registry';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import ToolMeta from '@/app/ToolMeta';
 import GUIDES from '@/lib/roulette/guides.json';
 import PRESETS from '@/lib/roulette/presets.json';
 
@@ -58,6 +60,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     headline: guide.heading,
     description: guide.description,
     url: `${SITE_URL}/guide/${guide.slug}/`,
+    inLanguage: 'ja',
+    dateModified: toolUpdatedAt('roulette'),
+    author: PUBLISHER_REF,
+    publisher: PUBLISHER_REF,
   };
 
   return (
@@ -97,6 +103,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             </li>
           ))}
       </ul>
+
+      <ToolMeta slug="roulette" />
     </>
   );
 }

@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Converter from './Converter';
 
 const title = '半角⇔全角 変換ツール｜英数字・カタカナ・記号をまとめて変換';
@@ -51,6 +53,10 @@ const jsonLd = {
       url: `${SITE_URL}/hankaku-zenkaku/`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('hankaku-zenkaku'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -164,6 +170,8 @@ export default function Page() {
         <Link href="/hebon-romaji/">ヘボン式ローマ字変換</Link>
         （ふりがなをパスポート表記のローマ字に変換します）
       </p>
+
+      <ToolMeta slug="hankaku-zenkaku" />
     </>
   );
 }

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = 'エアコン電気代 計算機｜1時間・1日・1ヶ月分をすぐ計算';
@@ -42,6 +44,10 @@ const jsonLd = {
       url: `${SITE_URL}/aircon-denkidai/`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('aircon-denkidai'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -106,6 +112,18 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="aircon-denkidai" />
+
+      <ToolMeta slug="aircon-denkidai" ymyl>
+        電気料金の目安単価31円/kWhは、公益社団法人 全国家庭電気製品公正取引協議会が定める
+        <a
+          href="https://www.eftc.or.jp/qa/"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          「電力料金目安単価」（令和4年7月22日改定）
+        </a>
+        にもとづきます。畳数別の消費電力は主要メーカーの冷房時の定格消費電力の目安です。
+      </ToolMeta>
     </>
   );
 }

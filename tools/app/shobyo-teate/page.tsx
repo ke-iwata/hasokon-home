@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = '傷病手当金 計算機｜月収からいくらもらえるかを自動計算';
@@ -47,6 +49,10 @@ const jsonLd = {
       url: `${SITE_URL}/shobyo-teate/`,
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('shobyo-teate'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -122,7 +128,7 @@ export default function Page() {
         <Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>
       </p>
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <ToolMeta slug="shobyo-teate" ymyl>
         出典：
         <a
           href="https://www.kyoukaikenpo.or.jp/g6/cat620/r306/"
@@ -131,8 +137,8 @@ export default function Page() {
         >
           全国健康保険協会（協会けんぽ）「病気やケガで会社を休んだとき（傷病手当金）」
         </a>
-        にもとづき作成（最終更新：2026年8月）。端数処理は協会けんぽの算定方法によります。
-      </p>
+        にもとづき作成。端数処理は協会けんぽの算定方法によります。
+      </ToolMeta>
     </>
   );
 }

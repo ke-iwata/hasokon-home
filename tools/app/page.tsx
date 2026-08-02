@@ -1,9 +1,35 @@
 import Link from 'next/link';
-import { categories, tools } from '@/lib/registry';
+import { categories, tools, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { PUBLISHER } from '@/lib/jsonld';
+
+/**
+ * サイト全体の発行者と、サイトそのものを表す構造化データ。
+ * 各ページの publisher はここで定義した @id を参照している。
+ * トップに実体を置くことで「同じ運営者による一連のページ」として結び付けられる。
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    PUBLISHER,
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: SITE_NAME,
+      url: `${SITE_URL}/`,
+      inLanguage: 'ja',
+      publisher: { '@id': `${SITE_URL}/#publisher` },
+    },
+  ],
+};
 
 export default function Home() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <section className="hero">
         <h1>
           暮らしと仕事の<span className="grad">計算ツール</span>を、

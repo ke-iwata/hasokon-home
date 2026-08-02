@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = '睡眠サイクル計算機｜スッキリ起きられる就寝・起床時刻を逆算';
@@ -42,6 +44,10 @@ const jsonLd = {
       url: `${SITE_URL}/sleep-cycle/`,
       applicationCategory: 'LifestyleApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('sleep-cycle'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -100,6 +106,18 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="sleep-cycle" />
+
+      <ToolMeta slug="sleep-cycle" ymyl>
+        睡眠サイクルの考え方は、厚生労働省
+        <a
+          href="https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/kenkou/suimin/index.html"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          「睡眠対策」（健康づくりのための睡眠ガイド2023）
+        </a>
+        ほか一般的な知見にもとづいています。必要な睡眠時間には個人差が大きく、90分サイクルはあくまで目安です。
+      </ToolMeta>
     </>
   );
 }

@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = '年収の壁 計算機【2026年】106万・130万・178万円の壁を判定';
@@ -43,6 +45,10 @@ const jsonLd = {
       url: `${SITE_URL}/nenshu-kabe/`,
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('nenshu-kabe'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -148,7 +154,7 @@ export default function Page() {
         関連ツール：<Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>
       </p>
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <ToolMeta slug="nenshu-kabe" ymyl>
         出典：
         <a
           href="https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1199.htm"
@@ -173,8 +179,8 @@ export default function Page() {
         >
           厚生労働省「社会保険適用拡大特設サイト」
         </a>
-        ／所得税法等の一部を改正する法律（令和8年法律第12号）にもとづき作成（最終更新：2026年8月）。
-      </p>
+        ／所得税法等の一部を改正する法律（令和8年法律第12号）にもとづき作成。
+      </ToolMeta>
     </>
   );
 }

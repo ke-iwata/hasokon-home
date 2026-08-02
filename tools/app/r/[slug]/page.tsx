@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import AdUnit from '@/app/AdUnit';
 import RouletteApp from '@/app/_roulette/RouletteApp';
 import { SITE_URL } from '@/lib/registry';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import ToolMeta from '@/app/ToolMeta';
 import PRESETS from '@/lib/roulette/presets.json';
 
 interface Preset {
@@ -52,6 +54,10 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     url: `${SITE_URL}/r/${preset.slug}/`,
     applicationCategory: 'UtilitiesApplication',
     operatingSystem: 'Web',
+    inLanguage: 'ja',
+    isAccessibleForFree: true,
+    dateModified: toolUpdatedAt('roulette'),
+    publisher: PUBLISHER_REF,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
     description: preset.description,
   };
@@ -94,6 +100,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
             </li>
           ))}
       </ul>
+
+      <ToolMeta slug="roulette" />
     </>
   );
 }

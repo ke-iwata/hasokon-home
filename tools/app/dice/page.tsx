@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import ToolClient from '@/app/_roulette/ToolClient';
 import { SITE_URL } from '@/lib/registry';
 
@@ -35,6 +37,10 @@ const jsonLd = {
       url: `${SITE_URL}/dice/`,
       applicationCategory: 'UtilitiesApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('dice'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -79,6 +85,8 @@ export default function Page() {
         ／
         <Link href="/group/">グループ分け</Link>
       </p>
+
+      <ToolMeta slug="dice" />
     </>
   );
 }

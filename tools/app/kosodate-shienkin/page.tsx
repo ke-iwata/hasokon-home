@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = '子ども・子育て支援金 計算機｜月いくら引かれる？【2026年】';
@@ -47,6 +49,10 @@ const jsonLd = {
       url: `${SITE_URL}/kosodate-shienkin/`,
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('kosodate-shienkin'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -130,7 +136,7 @@ export default function Page() {
 
       <RelatedTools current="kosodate-shienkin" />
 
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <ToolMeta slug="kosodate-shienkin" ymyl>
         出典：
         <a
           href="https://www.cfa.go.jp/policies/kodomokosodateshienkinseido"
@@ -139,8 +145,8 @@ export default function Page() {
         >
           こども家庭庁「子ども・子育て支援金制度について」
         </a>
-        ほか公的資料にもとづき作成（最終更新：2026年7月）。
-      </p>
+        ほか公的資料にもとづき作成。
+      </ToolMeta>
     </>
   );
 }

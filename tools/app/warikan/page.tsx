@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
 const title = '割り勘計算機｜一人あたりいくら？端数の調整も選べる';
@@ -42,6 +44,10 @@ const jsonLd = {
       url: `${SITE_URL}/warikan/`,
       applicationCategory: 'FinanceApplication',
       operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('warikan'),
+      publisher: PUBLISHER_REF,
       offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
       description,
     },
@@ -105,6 +111,8 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="warikan" />
+
+      <ToolMeta slug="warikan" />
     </>
   );
 }

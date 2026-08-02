@@ -33,7 +33,7 @@ export const SITE_NAME = '無料計算ツール集';
 export const COPYRIGHT_HOLDER = 'hasokon tools';
 
 /** 固定ページ（トップ・プライバシー・お問い合わせ）の最終更新日 */
-export const SITE_UPDATED_AT = '2026-08-01';
+export const SITE_UPDATED_AT = '2026-08-02';
 
 export const tools: ToolDef[] = [
   {

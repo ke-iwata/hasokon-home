@@ -23,6 +23,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
+      // 運営者情報。YMYLのページから参照されるので優先度は他の固定ページより高くする
+      url: `${SITE_URL}/about/`,
+      lastModified: SITE_UPDATED_AT,
+      changeFrequency: 'yearly',
+      priority: 0.5,
+    },
+    {
       url: `${SITE_URL}/privacy/`,
       lastModified: SITE_UPDATED_AT,
       changeFrequency: 'yearly',
