@@ -33,9 +33,15 @@
  * 【データ更新箇所】税制改正があったら SALARY_DEDUCTION / BASIC_DEDUCTION_INCOME /
  * BASIC_DEDUCTION_RESIDENT / INCOME_TAX_BRACKETS / 各控除額の定数を更新する。
  *
+ * ■ 住宅ローン控除との関係
+ * よく「住宅ローン控除があると上限額が下がる」と説明されるが正確ではない。
+ * 特例分の20%上限の基礎になる所得割額は「調整控除後・住宅ローン控除前」の額なので、
+ * 上限額そのものは変わらない（applyHousingLoan のコメント参照）。
+ * 変わるのは確定申告をした場合の戻り方で、寄附金控除で課税所得が下がるぶん
+ * 住宅ローン控除を引ききれなくなることがある。
+ *
  * 注意: 給与収入のみ・所得控除は下記の入力分のみという前提の概算。
- * 住宅ローン控除や配当控除など税額控除がある場合、住民税所得割額が変わるため
- * 実際の上限額は下がる。
+ * 配当控除など住宅ローン控除以外の税額控除には対応していない。
  */
 
 /** 自己負担額（制度上、必ず自己負担になる額） */
@@ -96,15 +102,15 @@ export function basicDeductionResidentTax(totalIncome: number): number {
   return 0;
 }
 
-/** 所得税の速算表（課税総所得金額の上限と税率） */
-const INCOME_TAX_BRACKETS: { upTo: number; rate: number }[] = [
-  { upTo: 1_950_000, rate: 0.05 },
-  { upTo: 3_300_000, rate: 0.1 },
-  { upTo: 6_950_000, rate: 0.2 },
-  { upTo: 9_000_000, rate: 0.23 },
-  { upTo: 18_000_000, rate: 0.33 },
-  { upTo: 40_000_000, rate: 0.4 },
-  { upTo: Infinity, rate: 0.45 },
+/** 所得税の速算表（課税総所得金額の上限・税率・控除額） */
+const INCOME_TAX_BRACKETS: { upTo: number; rate: number; deduction: number }[] = [
+  { upTo: 1_950_000, rate: 0.05, deduction: 0 },
+  { upTo: 3_300_000, rate: 0.1, deduction: 97_500 },
+  { upTo: 6_950_000, rate: 0.2, deduction: 427_500 },
+  { upTo: 9_000_000, rate: 0.23, deduction: 636_000 },
+  { upTo: 18_000_000, rate: 0.33, deduction: 1_536_000 },
+  { upTo: 40_000_000, rate: 0.4, deduction: 2_796_000 },
+  { upTo: Infinity, rate: 0.45, deduction: 4_796_000 },
 ];
 
 /**
@@ -114,6 +120,19 @@ const INCOME_TAX_BRACKETS: { upTo: number; rate: number }[] = [
 export function incomeTaxRate(taxableIncome: number): number {
   if (taxableIncome <= 0) return 0;
   return INCOME_TAX_BRACKETS.find((b) => taxableIncome < b.upTo)?.rate ?? 0.45;
+}
+
+/**
+ * 所得税額（復興特別所得税を含まない）を速算表から求める。
+ *
+ * 住宅ローン控除は税額控除なので、税率だけでなく税額そのものが必要になる。
+ * 復興特別所得税は基準所得税額に対してかかるため、住宅ローン控除を引く前の
+ * この額をもとに計算する。
+ */
+export function incomeTaxAmount(taxableIncome: number): number {
+  if (taxableIncome <= 0) return 0;
+  const b = INCOME_TAX_BRACKETS.find((x) => taxableIncome < x.upTo) ?? INCOME_TAX_BRACKETS[6];
+  return Math.max(0, Math.floor(taxableIncome * b.rate - b.deduction));
 }
 
 /** 配偶者控除の区分 */
@@ -227,6 +246,81 @@ export function estimateSocialInsurance(income: number, kaigo = false): number {
   return Math.round(health + pension + employment);
 }
 
+/**
+ * 住宅ローン控除の住民税側の控除限度額の区分。
+ * 【データ更新箇所】入居時期の区分が増えたらここ。
+ */
+export type HousingLoanTier =
+  /** 令和4年1月〜令和12年12月入居: 課税総所得金額等 × 5%（上限97,500円） */
+  | 'rate5'
+  /** 平成28年1月〜令和3年12月入居（消費税8%・10%の取得）: × 7%（上限136,500円） */
+  | 'rate7';
+
+/** 住宅ローン控除がどう使われたか */
+export interface HousingLoanResult {
+  /** 住宅ローン控除額（入力値） */
+  credit: number;
+  /** 所得税から引かれる額 */
+  fromIncomeTax: number;
+  /** 住民税から引かれる額 */
+  fromResidentTax: number;
+  /** 住民税側の控除限度額 */
+  residentCap: number;
+  /** 実際に使えた合計 */
+  used: number;
+  /** 引ききれず切り捨てになる額 */
+  wasted: number;
+}
+
+/**
+ * 住宅ローン控除の住民税側の控除限度額。
+ *
+ * 「前年の所得税の課税総所得金額等 × 5%（上限97,500円）」。
+ * 平成28年1月〜令和3年12月入居で消費税8%・10%が課された取得は 7%（上限136,500円）。
+ *
+ * 【データ更新箇所】率と上限が変わったらここ。
+ */
+export function housingLoanResidentCap(
+  taxableIncomeTax: number,
+  tier: HousingLoanTier,
+): number {
+  const [rate, cap] = tier === 'rate7' ? [0.07, 136_500] : [0.05, 97_500];
+  return Math.min(Math.floor(Math.max(0, taxableIncomeTax) * rate), cap);
+}
+
+/**
+ * 住宅ローン控除を所得税→住民税の順に当てはめる。
+ *
+ * 住宅ローン控除は税額控除で、まず所得税から引き、引ききれなかった分だけを
+ * 住民税から引ける。住民税側には限度額があり、それも超えた分は切り捨てになる。
+ *
+ * ふるさと納税を確定申告すると寄附金控除で課税所得が下がるため、
+ * (1) 所得税額そのものが減って引ける枠が小さくなり、
+ * (2) 住民税側の限度額（課税総所得金額等に比例）も小さくなる。
+ * この2つが重なって、住宅ローン控除の一部が使えなくなることがある。
+ */
+export function applyHousingLoan({
+  credit,
+  incomeTax,
+  taxableIncomeTax,
+  tier,
+}: {
+  credit: number;
+  /** 所得税額（住宅ローン控除を引く前） */
+  incomeTax: number;
+  /** 所得税の課税総所得金額等（住民税側の限度額の算定に使う） */
+  taxableIncomeTax: number;
+  tier: HousingLoanTier;
+}): HousingLoanResult {
+  const c = Math.max(0, credit);
+  const fromIncomeTax = Math.min(c, Math.max(0, incomeTax));
+  const remaining = c - fromIncomeTax;
+  const residentCap = housingLoanResidentCap(taxableIncomeTax, tier);
+  const fromResidentTax = Math.min(remaining, residentCap);
+  const used = fromIncomeTax + fromResidentTax;
+  return { credit: c, fromIncomeTax, fromResidentTax, residentCap, used, wasted: c - used };
+}
+
 export interface FurusatoInput {
   /** 給与収入（額面・年間・円） */
   income: number;
@@ -249,6 +343,10 @@ export interface FurusatoInput {
   donation: number;
   /** ワンストップ特例を使う（確定申告をしない） */
   onestop: boolean;
+  /** 住宅ローン控除額（年間・円）。0 なら利用なし */
+  housingLoanCredit: number;
+  /** 住宅ローン控除の住民税側の限度額の区分 */
+  housingLoanTier: HousingLoanTier;
 }
 
 /** 寄付額に対する控除の内訳 */
@@ -266,6 +364,12 @@ export interface FurusatoBreakdown {
   residentTotal: number;
   /** 控除の合計 */
   total: number;
+  /**
+   * 住宅ローン控除が目減りする額。
+   * 確定申告すると課税所得が下がり、住宅ローン控除を引ききれなくなることがある。
+   * この分は実質的な自己負担の増加になる。
+   */
+  housingLoanLoss: number;
   /** 自己負担額（2,000円で収まっているかの確認に使う） */
   outOfPocket: number;
   /** 特例分が上限（所得割額の20%）に達したか。達していると自己負担が増える */
@@ -291,6 +395,8 @@ export interface FurusatoResult {
     taxableIncome: number;
     /** 所得税率（0〜0.45） */
     rate: number;
+    /** 所得税額（住宅ローン控除を引く前・復興特別所得税を含まない） */
+    amount: number;
   };
   residentTax: {
     basicDeduction: number;
@@ -306,6 +412,15 @@ export interface FurusatoResult {
   limit: number;
   /** 寄付額に対する控除の内訳 */
   breakdown: FurusatoBreakdown;
+  /** 住宅ローン控除の使われ方（寄付をしなかった場合） */
+  housingLoanBase: HousingLoanResult | null;
+  /** 住宅ローン控除の使われ方（この寄付額・この申告方法の場合） */
+  housingLoan: HousingLoanResult | null;
+  /**
+   * ワンストップ特例にすると自己負担がいくら軽くなるか。
+   * 住宅ローン控除を使っていないときは0。
+   */
+  onestopAdvantage: number;
 }
 
 /** 課税所得は1,000円未満を切り捨てる */
@@ -378,13 +493,49 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
   const limit = Math.max(0, Math.floor(Math.min(fromSpecial, fromBasicCap)));
 
   const donation = input.donation > 0 ? Math.max(0, input.donation) : limit;
+  const incomeTaxAmt = incomeTaxAmount(taxableIncomeTax);
+
+  // 住宅ローン控除。寄付をしなかった場合と、この寄付をした場合とを比べて
+  // 「使えなくなった額」を出す。それがそのまま自己負担の増加になる
+  const credit = Math.max(0, input.housingLoanCredit);
+  const tier = input.housingLoanTier;
+  const housingLoanBase =
+    credit > 0
+      ? applyHousingLoan({ credit, incomeTax: incomeTaxAmt, taxableIncomeTax, tier })
+      : null;
+
+  /** 指定した申告方法での住宅ローン控除の使われ方を求める */
+  const housingLoanFor = (onestop: boolean): HousingLoanResult | null => {
+    if (credit <= 0) return null;
+    // ワンストップ特例では寄附金控除が使われないので課税所得は下がらない。
+    // 確定申告では（寄付額 − 2,000円）だけ課税所得が下がり、
+    // 所得税額も住民税側の控除限度額も小さくなる
+    const reduced = onestop ? 0 : Math.max(0, donation - SELF_PAY);
+    const taxable = floorTo1000(taxableIncomeTax - reduced);
+    return applyHousingLoan({
+      credit,
+      incomeTax: incomeTaxAmount(taxable),
+      taxableIncomeTax: taxable,
+      tier,
+    });
+  };
+
+  const housingLoan = housingLoanFor(input.onestop);
+  const lossFor = (h: HousingLoanResult | null) =>
+    housingLoanBase && h ? Math.max(0, housingLoanBase.used - h.used) : 0;
+
   const breakdown = calcBreakdown({
     donation,
     rate,
     incomeLevy,
     totalIncome,
     onestop: input.onestop,
+    housingLoanLoss: lossFor(housingLoan),
   });
+
+  // ワンストップ特例なら課税所得が下がらないため、住宅ローン控除が目減りしない。
+  // その差が「ワンストップにすると得する額」になる
+  const onestopAdvantage = credit > 0 ? lossFor(housingLoanFor(false)) - lossFor(housingLoanFor(true)) : 0;
 
   return {
     salaryDeduction: Math.floor(deduction),
@@ -397,6 +548,7 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
       deductionTotal: Math.floor(deductionTotalIncomeTax),
       taxableIncome: taxableIncomeTax,
       rate,
+      amount: incomeTaxAmt,
     },
     residentTax: {
       basicDeduction: basicResidentTax,
@@ -408,6 +560,9 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
     },
     limit,
     breakdown,
+    housingLoanBase,
+    housingLoan,
+    onestopAdvantage: Math.max(0, onestopAdvantage),
   };
 }
 
@@ -423,12 +578,15 @@ function calcBreakdown({
   incomeLevy,
   totalIncome,
   onestop,
+  housingLoanLoss,
 }: {
   donation: number;
   rate: number;
   incomeLevy: number;
   totalIncome: number;
   onestop: boolean;
+  /** 住宅ローン控除が使えなくなった額。そのまま自己負担の増加になる */
+  housingLoanLoss: number;
 }): FurusatoBreakdown {
   const base = Math.max(0, donation - SELF_PAY);
   if (base === 0) {
@@ -440,6 +598,7 @@ function calcBreakdown({
       residentOnestop: 0,
       residentTotal: 0,
       total: 0,
+      housingLoanLoss: 0,
       outOfPocket: donation,
       specialCapped: false,
     };
@@ -474,7 +633,9 @@ function calcBreakdown({
     residentOnestop,
     residentTotal,
     total,
-    outOfPocket: donation - total,
+    housingLoanLoss,
+    // 住宅ローン控除が目減りした分は、戻ってこないお金なので自己負担に足す
+    outOfPocket: donation - total + housingLoanLoss,
     specialCapped,
   };
 }

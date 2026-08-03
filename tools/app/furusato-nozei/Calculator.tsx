@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { calcFurusato, type SpouseType } from '@/lib/furusato-nozei';
+import {
+  calcFurusato,
+  type HousingLoanTier,
+  type SpouseType,
+} from '@/lib/furusato-nozei';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
 const manToYen = (v: string) => (Number(v) || 0) * 10_000;
@@ -96,6 +100,8 @@ export default function Calculator() {
   const [otherResidentTaxMan, setOtherResidentTaxMan] = useState('');
   const [donationInput, setDonationInput] = useState('');
   const [onestop, setOnestop] = useState(false);
+  const [loanMan, setLoanMan] = useState('');
+  const [loanTier, setLoanTier] = useState<HousingLoanTier>('rate5');
 
   const r = calcFurusato({
     income: manToYen(incomeMan),
@@ -109,6 +115,8 @@ export default function Calculator() {
     otherDeductionsResidentTax: manToYen(otherResidentTaxMan),
     donation: Number(donationInput) || 0,
     onestop,
+    housingLoanCredit: manToYen(loanMan),
+    housingLoanTier: loanTier,
   });
   const b = r.breakdown;
   const usingLimit = !donationInput || Number(donationInput) <= 0;
@@ -210,6 +218,39 @@ export default function Calculator() {
 
         <details>
           <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+            住宅ローン控除を使っている
+          </summary>
+          <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
+            <label style={{ fontSize: '0.85rem' }}>
+              住宅ローン控除額（年間・万円）
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={loanMan}
+                onChange={(e) => setLoanMan(e.target.value)}
+                placeholder="例: 20（万円）"
+              />
+            </label>
+            <label style={{ fontSize: '0.85rem' }}>
+              入居した時期
+              <select
+                value={loanTier}
+                onChange={(e) => setLoanTier(e.target.value as HousingLoanTier)}
+              >
+                <option value="rate5">令和4年（2022年）1月以降</option>
+                <option value="rate7">平成28年〜令和3年（2016〜2021年）</option>
+              </select>
+            </label>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)' }}>
+              控除額は源泉徴収票の「住宅借入金等特別控除の額」、または年末残高 ×
+              控除率で確認できます。入居時期で住民税から引ける上限が変わります。
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
             その他の所得控除を入れる（生命保険料控除・医療費控除・iDeCoなど）
           </summary>
           <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
@@ -305,9 +346,22 @@ export default function Calculator() {
           value={yen(b.residentTotal)}
         />
         <Row label="控除の合計" value={yen(b.total)} strong />
+        {b.housingLoanLoss > 0 && (
+          <Row
+            label="住宅ローン控除が使えなくなる分"
+            sub="確定申告で課税所得が下がり、引ききれなくなった額。戻ってこないので自己負担になります"
+            value={`− ${yen(b.housingLoanLoss)}`}
+          />
+        )}
         <Row
           label="実質の自己負担額"
-          sub={b.outOfPocket <= 2_100 ? '制度上の自己負担2,000円（端数を含む）' : '上限を超えた分は自己負担になります'}
+          sub={
+            b.outOfPocket <= 2_100
+              ? '制度上の自己負担2,000円（端数を含む）'
+              : b.specialCapped
+                ? '上限を超えた分は自己負担になります'
+                : '住宅ローン控除が使えなくなった分を含みます'
+          }
           value={yen(b.outOfPocket)}
           strong
         />
@@ -318,6 +372,62 @@ export default function Calculator() {
           <strong>上限額を超えています。</strong>
           特例分が住民税所得割額の20%（{yen(Math.floor(r.residentTax.incomeLevy * 0.2))}）で頭打ちになったため、超えた分はほとんど戻ってきません。自己負担は {yen(b.outOfPocket)} です。上限額の {yen(r.limit)} 以内に収めることをおすすめします。
         </div>
+      )}
+
+      {r.onestopAdvantage > 0 && (
+        <div className="note" style={{ marginTop: 14 }}>
+          <strong>ワンストップ特例を使うと {yen(r.onestopAdvantage)} 得します。</strong>
+          確定申告をすると寄附金控除で課税所得が下がり、住宅ローン控除を引ききれなくなります。ワンストップ特例なら課税所得が下がらないため、住宅ローン控除をそのまま使えます。寄付先が5自治体以内で、他に確定申告の必要がなければワンストップ特例をおすすめします。
+        </div>
+      )}
+
+      {r.housingLoan && (
+        <details style={{ marginTop: 14 }}>
+          <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+            住宅ローン控除の内訳を見る
+          </summary>
+          <table style={{ marginTop: 10, fontSize: '0.85rem' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>　</th>
+                <th>寄付しない場合</th>
+                <th>この寄付をした場合</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th style={{ textAlign: 'left' }}>所得税から</th>
+                <td>{yen(r.housingLoanBase!.fromIncomeTax)}</td>
+                <td>{yen(r.housingLoan.fromIncomeTax)}</td>
+              </tr>
+              <tr>
+                <th style={{ textAlign: 'left' }}>住民税から</th>
+                <td>{yen(r.housingLoanBase!.fromResidentTax)}</td>
+                <td>{yen(r.housingLoan.fromResidentTax)}</td>
+              </tr>
+              <tr>
+                <th style={{ textAlign: 'left' }}>住民税から引ける上限</th>
+                <td>{yen(r.housingLoanBase!.residentCap)}</td>
+                <td>{yen(r.housingLoan.residentCap)}</td>
+              </tr>
+              <tr>
+                <th style={{ textAlign: 'left' }}>実際に使えた額</th>
+                <td>{yen(r.housingLoanBase!.used)}</td>
+                <td>{yen(r.housingLoan.used)}</td>
+              </tr>
+              <tr>
+                <th style={{ textAlign: 'left' }}>使えず切り捨てになる額</th>
+                <td>{yen(r.housingLoanBase!.wasted)}</td>
+                <td>{yen(r.housingLoan.wasted)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 8 }}>
+            住宅ローン控除はまず所得税から引き、引ききれない分だけを住民税から引けます。住民税側には上限（所得税の課税総所得金額等の
+            {loanTier === 'rate7' ? '7%・最高136,500円' : '5%・最高97,500円'}
+            ）があり、それも超えた分は切り捨てになります。
+          </p>
+        </details>
       )}
 
       {r.limit === 0 && (

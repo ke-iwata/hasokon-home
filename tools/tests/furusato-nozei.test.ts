@@ -5,6 +5,8 @@ import {
   basicDeductionResidentTax,
   calcFurusato,
   estimateSocialInsurance,
+  applyHousingLoan,
+  housingLoanResidentCap,
   incomeTaxRate,
   salaryDeduction,
   salaryIncome,
@@ -27,6 +29,8 @@ const base = (over: Partial<FurusatoInput> = {}): FurusatoInput => ({
   otherDeductionsResidentTax: 0,
   donation: 0,
   onestop: false,
+  housingLoanCredit: 0,
+  housingLoanTier: 'rate5',
   ...over,
 });
 
@@ -327,5 +331,115 @@ describe('calcFurusato 異常値', () => {
     const r = calcFurusato(base({ socialInsurance: null }));
     expect(r.socialInsuranceEstimated).toBe(true);
     expect(r.socialInsurance).toBe(734_500);
+  });
+});
+
+describe('housingLoanResidentCap（住宅ローン控除の住民税側の限度額）', () => {
+  it('令和4年以降の入居は課税総所得金額等の5%・上限97,500円', () => {
+    expect(housingLoanResidentCap(1_000_000, 'rate5')).toBe(50_000);
+    expect(housingLoanResidentCap(1_950_000, 'rate5')).toBe(97_500);
+    // 上限に達したらそれ以上は増えない
+    expect(housingLoanResidentCap(10_000_000, 'rate5')).toBe(97_500);
+  });
+
+  it('平成28年〜令和3年入居（消費税8%・10%）は7%・上限136,500円', () => {
+    expect(housingLoanResidentCap(1_000_000, 'rate7')).toBe(70_000);
+    expect(housingLoanResidentCap(10_000_000, 'rate7')).toBe(136_500);
+  });
+
+  it('課税所得0なら0', () => {
+    expect(housingLoanResidentCap(0, 'rate5')).toBe(0);
+  });
+});
+
+describe('applyHousingLoan（所得税→住民税の順に当てはめる）', () => {
+  const args = { incomeTax: 89_250, taxableIncomeTax: 1_785_000, tier: 'rate5' as const };
+
+  it('所得税額の範囲内なら全額を所得税から引く', () => {
+    const r = applyHousingLoan({ ...args, credit: 50_000 });
+    expect(r.fromIncomeTax).toBe(50_000);
+    expect(r.fromResidentTax).toBe(0);
+    expect(r.wasted).toBe(0);
+  });
+
+  it('所得税で引ききれない分は住民税から引く', () => {
+    const r = applyHousingLoan({ ...args, credit: 150_000 });
+    expect(r.fromIncomeTax).toBe(89_250);
+    expect(r.fromResidentTax).toBe(60_750);
+    expect(r.wasted).toBe(0);
+  });
+
+  it('住民税側の限度額を超えた分は切り捨てになる', () => {
+    const r = applyHousingLoan({ ...args, credit: 200_000 });
+    expect(r.residentCap).toBe(89_250); // 1,785,000 × 5%（97,500円の上限には未達）
+    expect(r.fromIncomeTax).toBe(89_250);
+    expect(r.fromResidentTax).toBe(89_250);
+    expect(r.used).toBe(178_500);
+    expect(r.wasted).toBe(21_500);
+  });
+});
+
+describe('calcFurusato 住宅ローン控除との併用', () => {
+  const withLoan = (credit: number, over: Partial<FurusatoInput> = {}) =>
+    calcFurusato(base({ donation: 57_833, housingLoanCredit: credit, ...over }));
+
+  it('住宅ローン控除を使っていなければ情報は返さない', () => {
+    const r = calcFurusato(base({ donation: 57_833 }));
+    expect(r.housingLoan).toBeNull();
+    expect(r.housingLoanBase).toBeNull();
+    expect(r.onestopAdvantage).toBe(0);
+    expect(r.breakdown.housingLoanLoss).toBe(0);
+  });
+
+  it('控除上限額そのものは変わらない（20%上限は住宅ローン控除前の所得割額で決まる）', () => {
+    // 特例控除額の上限の基礎になるのは「調整控除後」の所得割額であり、
+    // 住宅ローン控除は差し引かない
+    expect(withLoan(200_000).limit).toBe(calcFurusato(base()).limit);
+  });
+
+  it('住民税側の限度額に余裕があれば目減りしない', () => {
+    // 所得税額89,250円に対して控除15万円。住民税側の枠（89,250円）に収まる
+    const r = withLoan(150_000);
+    expect(r.housingLoanBase?.wasted).toBe(0);
+    expect(r.breakdown.housingLoanLoss).toBe(0);
+    expect(r.onestopAdvantage).toBe(0);
+  });
+
+  it('限度額いっぱいの人は、確定申告すると住宅ローン控除が目減りする', () => {
+    const r = withLoan(200_000);
+    // 寄付で課税所得が下がり、所得税額と住民税側の限度額の両方が小さくなる。
+    // どちらも（寄付額 − 2,000円）× 税率5% ＝ 2,800円ずつ減る
+    expect(r.housingLoanBase?.used).toBe(178_500);
+    expect(r.housingLoan?.used).toBe(172_900);
+    expect(r.breakdown.housingLoanLoss).toBe(5_600);
+  });
+
+  it('目減りした分は自己負担に加算される', () => {
+    const withoutLoan = calcFurusato(base({ donation: 57_833 }));
+    const r = withLoan(200_000);
+    expect(r.breakdown.outOfPocket).toBe(withoutLoan.breakdown.outOfPocket + 5_600);
+  });
+
+  it('ワンストップ特例なら課税所得が下がらないので目減りしない', () => {
+    const r = withLoan(200_000, { onestop: true });
+    expect(r.housingLoan?.used).toBe(178_500);
+    expect(r.breakdown.housingLoanLoss).toBe(0);
+  });
+
+  it('ワンストップ特例にすると得する額を出せる', () => {
+    expect(withLoan(200_000).onestopAdvantage).toBe(5_600);
+    // 目減りしないケースでは差が出ない
+    expect(withLoan(150_000).onestopAdvantage).toBe(0);
+  });
+
+  it('7%区分のほうが住民税側の枠が広く、目減りしにくい', () => {
+    const r5 = withLoan(200_000, { housingLoanTier: 'rate5' });
+    const r7 = withLoan(200_000, { housingLoanTier: 'rate7' });
+    expect(r7.housingLoanBase!.used).toBeGreaterThan(r5.housingLoanBase!.used);
+    expect(r7.breakdown.housingLoanLoss).toBeLessThanOrEqual(r5.breakdown.housingLoanLoss);
+  });
+
+  it('所得税額は速算表どおり', () => {
+    expect(calcFurusato(base()).incomeTax.amount).toBe(89_250); // 1,785,000 × 5%
   });
 });
