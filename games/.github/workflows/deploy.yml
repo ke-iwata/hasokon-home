@@ -1,0 +1,99 @@
+name: Deploy to S3 + CloudFront
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  test:
+    name: テスト & ビルド
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - run: npm ci
+
+      - name: 計算ロジックのテスト
+        run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
+
+      - name: ビルド成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: site
+          path: out/
+          retention-days: 3
+
+  deploy:
+    name: S3へデプロイ
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: ビルド成果物をダウンロード
+        uses: actions/download-artifact@v4
+        with:
+          name: site
+          path: out
+
+      - name: AWS認証（OIDC・長期キー不要）
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # 先にアセットを上げてからHTMLを差し替える。逆にすると、新しいHTMLが
+      # まだ存在しないJSを参照する瞬間ができてしまう。
+      # ここで --delete しないのは、古いHTMLをキャッシュしている利用者が
+      # 直後にJSを404にされるのを避けるため。使われなくなったファイルは
+      # そのまま残るが、1ビルドあたり数百KB程度なので保管料は無視できる。
+      # ファイル名にハッシュが入っていて内容が変われば名前も変わるので --size-only で十分
+      - name: S3へ同期（ハッシュ付きアセット・先に上げる）
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+            --exclude "*" \
+            --include "_next/static/*" \
+            --size-only \
+            --cache-control "public,max-age=31536000,immutable"
+
+      # s-maxage（CDN側のキャッシュ時間）を必ず入れること。
+      # CloudFront は自分がキャッシュしたオブジェクトしか圧縮しないため、
+      # max-age=0 だけだとHTMLがgzip/brで配信されず、素のサイズのまま飛ぶ。
+      # デプロイの最後に /* を無効化しているので、s-maxage を延ばしても
+      # 更新が遅れて見えることはない。
+      # max-age=0 はブラウザ側。毎回問い合わせるので利用者には常に最新が出る。
+      - name: S3へ同期（HTML・その他）
+        run: |
+          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+            --delete \
+            --exclude "_next/static/*" \
+            --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
+
+      - name: CloudFrontのキャッシュを削除
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+
+      - name: デプロイ完了
+        run: echo "https://game.hasokon.com/ に反映されました"
