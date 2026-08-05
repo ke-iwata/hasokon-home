@@ -59,3 +59,4 @@ AWSの構成はコンソールで直接いじらず、`infra/*.yaml` を直し�
 | [docs/CONCEPT.md](./docs/CONCEPT.md) | コンセプト・SEO戦略・収益化方針・ロードマップ（**まずこれ**） |
 | [CLAUDE.md](./CLAUDE.md) | 実装ガイド・設計上の約束・ツール追加手順・落とし穴 |
 | [DEPLOY.md](./DEPLOY.md) | AWSセットアップとデプロイ手順 |
+
