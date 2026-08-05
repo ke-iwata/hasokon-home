@@ -50,8 +50,12 @@
 
 ```bash
 aws sso login --profile developer
-PROFILE=developer ./infra/setup.sh   # ACM証明書 → S3/CloudFront/Route53/IAM → GitHub Secrets
+PROFILE=developer ./infra/setup.sh   # 証明書(本番/テスト) → サイト(本番/テスト) → GitHub Secrets
 ```
+
+デプロイの流れ（tools / home と共通）:
+- main にマージ → game.test.hasokon.com（Basic認証つきテスト環境）
+- `git tag v1.0.0 && git push origin v1.0.0` → game.hasokon.com（本番）
 
 - GitHub OIDCプロバイダはアカウントに1つ（tools のスタックが管理）。
   setup.sh が既存を検知して作成をスキップする

@@ -1,8 +1,11 @@
-name: Deploy to S3 + CloudFront
+name: Deploy
 
+# main へのマージ → テスト環境（Basic認証つき）
+# v* タグのpush → 本番
 on:
   push:
     branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -10,12 +13,14 @@ permissions:
   id-token: write
 
 concurrency:
-  group: deploy-production
+  group: deploy-${{ startsWith(github.ref, 'refs/tags/') && 'production' || 'test' }}
   cancel-in-progress: true
 
 env:
   NODE_VERSION: '22'
   AWS_REGION: ap-northeast-1
+  PROD_URL: https://game.hasokon.com/
+  TEST_URL: https://game.test.hasokon.com/
 
 jobs:
   test:
@@ -31,7 +36,7 @@ jobs:
 
       - run: npm ci
 
-      - name: 計算ロジックのテスト
+      - name: ゲームロジックのテスト
         run: npm test
 
       - name: 静的サイトのビルド
@@ -45,18 +50,47 @@ jobs:
           retention-days: 3
 
   deploy:
-    name: S3へデプロイ
+    name: ${{ startsWith(github.ref, 'refs/tags/') && '本番へデプロイ' || 'テスト環境へデプロイ' }}
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     steps:
+      # タグなら本番、mainならテスト環境に振り分ける。
+      # infra/setup.sh 実行前（Secrets未設定）はスキップして成功扱いにする
+      - name: デプロイ先を判定
+        id: target
+        env:
+          IS_RELEASE: ${{ startsWith(github.ref, 'refs/tags/') }}
+          PROD_BUCKET: ${{ secrets.S3_BUCKET }}
+          PROD_DIST: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+          TEST_BUCKET: ${{ secrets.TEST_S3_BUCKET }}
+          TEST_DIST: ${{ secrets.TEST_CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          if [ "${IS_RELEASE}" = "true" ]; then
+            bucket="${PROD_BUCKET}"; dist="${PROD_DIST}"; url="${PROD_URL}"
+          else
+            bucket="${TEST_BUCKET}"; dist="${TEST_DIST}"; url="${TEST_URL}"
+          fi
+          if [ -z "${bucket}" ] || [ -z "${dist}" ]; then
+            echo "::warning::デプロイ先のSecretsが未設定のためスキップします（infra/setup.sh を実行してください）"
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          {
+            echo "skip=false"
+            echo "bucket=${bucket}"
+            echo "dist=${dist}"
+            echo "url=${url}"
+          } >> "${GITHUB_OUTPUT}"
+
       - name: ビルド成果物をダウンロード
+        if: steps.target.outputs.skip != 'true'
         uses: actions/download-artifact@v4
         with:
           name: site
           path: out
 
       - name: AWS認証（OIDC・長期キー不要）
+        if: steps.target.outputs.skip != 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
@@ -64,36 +98,35 @@ jobs:
 
       # 先にアセットを上げてからHTMLを差し替える。逆にすると、新しいHTMLが
       # まだ存在しないJSを参照する瞬間ができてしまう。
-      # ここで --delete しないのは、古いHTMLをキャッシュしている利用者が
-      # 直後にJSを404にされるのを避けるため。使われなくなったファイルは
-      # そのまま残るが、1ビルドあたり数百KB程度なので保管料は無視できる。
-      # ファイル名にハッシュが入っていて内容が変われば名前も変わるので --size-only で十分
+      # --delete しないのは、古いHTMLをキャッシュしている利用者が
+      # 直後にJSを404にされるのを避けるため。
       - name: S3へ同期（ハッシュ付きアセット・先に上げる）
+        if: steps.target.outputs.skip != 'true'
         run: |
-          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/ \
             --exclude "*" \
             --include "_next/static/*" \
             --size-only \
             --cache-control "public,max-age=31536000,immutable"
 
-      # s-maxage（CDN側のキャッシュ時間）を必ず入れること。
-      # CloudFront は自分がキャッシュしたオブジェクトしか圧縮しないため、
-      # max-age=0 だけだとHTMLがgzip/brで配信されず、素のサイズのまま飛ぶ。
-      # デプロイの最後に /* を無効化しているので、s-maxage を延ばしても
-      # 更新が遅れて見えることはない。
-      # max-age=0 はブラウザ側。毎回問い合わせるので利用者には常に最新が出る。
+      # s-maxage を必ず入れること。CloudFront は自分がキャッシュした
+      # オブジェクトしか圧縮しないため、無いとHTMLが非圧縮で配信される。
+      # 最後に /* を無効化するので更新が遅れて見えることはない
       - name: S3へ同期（HTML・その他）
+        if: steps.target.outputs.skip != 'true'
         run: |
-          aws s3 sync out/ s3://${{ secrets.S3_BUCKET }}/ \
+          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/ \
             --delete \
             --exclude "_next/static/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
       - name: CloudFrontのキャッシュを削除
+        if: steps.target.outputs.skip != 'true'
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id ${{ steps.target.outputs.dist }} \
             --paths "/*"
 
       - name: デプロイ完了
-        run: echo "https://game.hasokon.com/ に反映されました"
+        if: steps.target.outputs.skip != 'true'
+        run: echo "${{ steps.target.outputs.url }} に反映されました"

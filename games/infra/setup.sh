@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# hasokon tools - AWS配信基盤の構築
+# hasokon games - AWS配信基盤の構築
 #
 #   ./infra/setup.sh
 #
@@ -20,13 +20,20 @@ set -euo pipefail
 PROFILE="${PROFILE:-${AWS_PROFILE:-}}"
 
 DOMAIN="${DOMAIN:-game.hasokon.com}"
+TEST_DOMAIN="${TEST_DOMAIN:-game.test.hasokon.com}"
 PARENT_DOMAIN="${PARENT_DOMAIN:-hasokon.com}"
-BUCKET="${BUCKET:-tool-hasokon-com}"
+BUCKET="${BUCKET:-game-hasokon-com}"
+TEST_BUCKET="${TEST_BUCKET:-${BUCKET}-test}"
 REPO="${REPO:-ke-iwata/hasokon-games}"
 REGION="${REGION:-ap-northeast-1}"
+# テスト環境のBasic認証（user:pass）。閲覧ゲートであり機密用途ではない。
+# 変えるときは BASIC_AUTH="user:pass" ./infra/setup.sh で再実行すれば反映される
+BASIC_AUTH="${BASIC_AUTH:-hasokon:preview2026}"
 
 CERT_STACK="hasokon-games-certificate"
 SITE_STACK="hasokon-games-site"
+TEST_CERT_STACK="${CERT_STACK}-test"
+TEST_SITE_STACK="${SITE_STACK}-test"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -118,28 +125,35 @@ fi
 
 # ---------------------------------------------------------------- 1. 証明書（us-east-1）
 
-info "1/3 ACM証明書を作成しています（us-east-1）"
+info "1/5 ACM証明書を作成しています（us-east-1・本番）"
 echo "DNS検証のレコードは自動で作られます。数分かかることがあります。"
 
-aws cloudformation deploy \
-  --region us-east-1 \
-  --stack-name "${CERT_STACK}" \
-  --template-file "${here}/certificate.yaml" \
-  --no-fail-on-empty-changeset \
-  --parameter-overrides \
-    "DomainName=${DOMAIN}" \
-    "HostedZoneId=${zone_id}"
+deploy_cert() { # stack domain
+  aws cloudformation deploy \
+    --region us-east-1 \
+    --stack-name "$1" \
+    --template-file "${here}/certificate.yaml" \
+    --no-fail-on-empty-changeset \
+    --parameter-overrides \
+      "DomainName=$2" \
+      "HostedZoneId=${zone_id}"
+  aws cloudformation describe-stacks \
+    --region us-east-1 \
+    --stack-name "$1" \
+    --query "Stacks[0].Outputs[?OutputKey=='CertificateArn'].OutputValue | [0]" \
+    --output text
+}
 
-cert_arn="$(aws cloudformation describe-stacks \
-  --region us-east-1 \
-  --stack-name "${CERT_STACK}" \
-  --query "Stacks[0].Outputs[?OutputKey=='CertificateArn'].OutputValue | [0]" \
-  --output text)"
-echo "証明書: ${cert_arn}"
+cert_arn="$(deploy_cert "${CERT_STACK}" "${DOMAIN}" | tail -1)"
+echo "証明書（本番）: ${cert_arn}"
+
+info "2/5 ACM証明書を作成しています（us-east-1・テスト）"
+test_cert_arn="$(deploy_cert "${TEST_CERT_STACK}" "${TEST_DOMAIN}" | tail -1)"
+echo "証明書（テスト）: ${test_cert_arn}"
 
 # ---------------------------------------------------------------- 2. サイト本体
 
-info "2/3 S3・CloudFront・DNS・IAMロールを作成しています（${REGION}）"
+info "3/5 本番のS3・CloudFront・DNS・IAMロールを作成しています（${REGION}）"
 echo "CloudFrontの配信開始まで10〜20分かかることがあります。"
 
 aws cloudformation deploy \
@@ -155,28 +169,61 @@ aws cloudformation deploy \
     "CertificateArn=${cert_arn}" \
     "GitHubRepository=${REPO}" \
     "OIDCThumbprint=${thumbprint}" \
-    "CreateGitHubOIDCProvider=${create_oidc}"
+    "CreateGitHubOIDCProvider=${create_oidc}" \
+    "CreateDeployRole=true" \
+    "ExtraDeployBucketName=${TEST_BUCKET}" \
+    "BasicAuthString="
 
-get_output() {
+# ---------------------------------------------------------------- 4. テスト環境
+
+info "4/5 テスト環境（${TEST_DOMAIN}・Basic認証つき）を作成しています"
+
+# Authorization ヘッダの期待値（Basic base64(user:pass)）
+auth_string="Basic $(printf '%s' "${BASIC_AUTH}" | base64)"
+
+# テストスタックはロールもOIDCプロバイダも作らない（本番スタックのものを共用）
+aws cloudformation deploy \
+  --region "${REGION}" \
+  --stack-name "${TEST_SITE_STACK}" \
+  --template-file "${here}/site.yaml" \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --no-fail-on-empty-changeset \
+  --parameter-overrides \
+    "DomainName=${TEST_DOMAIN}" \
+    "BucketName=${TEST_BUCKET}" \
+    "HostedZoneId=${zone_id}" \
+    "CertificateArn=${test_cert_arn}" \
+    "GitHubRepository=${REPO}" \
+    "OIDCThumbprint=${thumbprint}" \
+    "CreateGitHubOIDCProvider=false" \
+    "CreateDeployRole=false" \
+    "ExtraDeployBucketName=" \
+    "BasicAuthString=${auth_string}"
+
+get_output() { # stack key
   aws cloudformation describe-stacks \
     --region "${REGION}" \
-    --stack-name "${SITE_STACK}" \
-    --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue | [0]" \
+    --stack-name "$1" \
+    --query "Stacks[0].Outputs[?OutputKey=='$2'].OutputValue | [0]" \
     --output text
 }
 
-bucket="$(get_output BucketName)"
-dist_id="$(get_output DistributionId)"
-role_arn="$(get_output DeployRoleArn)"
-dist_domain="$(get_output DistributionDomainName)"
+bucket="$(get_output "${SITE_STACK}" BucketName)"
+dist_id="$(get_output "${SITE_STACK}" DistributionId)"
+role_arn="$(get_output "${SITE_STACK}" DeployRoleArn)"
+dist_domain="$(get_output "${SITE_STACK}" DistributionDomainName)"
+test_bucket="$(get_output "${TEST_SITE_STACK}" BucketName)"
+test_dist_id="$(get_output "${TEST_SITE_STACK}" DistributionId)"
 
-# ---------------------------------------------------------------- 3. GitHub Secrets
+# ---------------------------------------------------------------- 5. GitHub Secrets
 
-info "3/3 GitHub Secrets を設定しています（${REPO}）"
+info "5/5 GitHub Secrets を設定しています（${REPO}）"
 
-gh secret set AWS_DEPLOY_ROLE_ARN         --repo "${REPO}" --body "${role_arn}"
-gh secret set S3_BUCKET                   --repo "${REPO}" --body "${bucket}"
-gh secret set CLOUDFRONT_DISTRIBUTION_ID  --repo "${REPO}" --body "${dist_id}"
+gh secret set AWS_DEPLOY_ROLE_ARN              --repo "${REPO}" --body "${role_arn}"
+gh secret set S3_BUCKET                        --repo "${REPO}" --body "${bucket}"
+gh secret set CLOUDFRONT_DISTRIBUTION_ID       --repo "${REPO}" --body "${dist_id}"
+gh secret set TEST_S3_BUCKET                   --repo "${REPO}" --body "${test_bucket}"
+gh secret set TEST_CLOUDFRONT_DISTRIBUTION_ID  --repo "${REPO}" --body "${test_dist_id}"
 
 echo "設定しました:"
 gh secret list --repo "${REPO}"
@@ -185,15 +232,18 @@ gh secret list --repo "${REPO}"
 
 info "構築が完了しました"
 cat <<EOF
-  バケット          : ${bucket}
-  ディストリビューション: ${dist_id}
+  本番バケット      : ${bucket}
+  本番配信          : ${dist_id}（https://${DOMAIN}/）
+  テストバケット    : ${test_bucket}
+  テスト配信        : ${test_dist_id}（https://${TEST_DOMAIN}/）
+  テストBasic認証   : ${BASIC_AUTH}
   デプロイロール    : ${role_arn}
-  CloudFrontドメイン: ${dist_domain}
-  公開URL           : https://${DOMAIN}/
 
-次にやること:
-  1. main にpushするとGitHub Actionsがデプロイします
-       git push origin main
-  2. 反映を確認
-       curl -I https://${DOMAIN}/
+デプロイの流れ:
+  - main にマージ         → テスト環境（https://${TEST_DOMAIN}/）
+  - v* タグをpush          → 本番（https://${DOMAIN}/）
+      git tag v1.0.0 && git push origin v1.0.0
+
+テスト環境の確認:
+  curl -I -u '${BASIC_AUTH}' https://${TEST_DOMAIN}/
 EOF
