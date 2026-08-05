@@ -8,14 +8,15 @@
  * 1. Googleアナリティクスで「データストリーム」を作る（ウェブ／https://game.hasokon.com）
  * 2. 発行された測定ID（G-から始まる）を下の GA_MEASUREMENT_ID に貼る
  * 3. hasokon.com（ルートドメイン）も同じIDで計測するなら、
- *    ツール集とは別のデータストリームを作ること（サイト別に集計するため）
+ *    tool.hasokon.com と同じストリームで計測している。
+ *    サイト別に見るときはGA4のレポートでホスト名で絞り込む
  *
  * GA_MEASUREMENT_ID が空の間は、スクリプトも計測処理も一切出力されない。
  * 未設定のままデプロイしても害はない。
  */
 
 /** GA4の測定ID（例: 'G-XXXXXXXXXX'）。空なら計測しない */
-export const GA_MEASUREMENT_ID = '';
+export const GA_MEASUREMENT_ID = 'G-2Z0K6Y2FX0';
 
 /** 計測が有効か */
 export function isAnalyticsEnabled(): boolean {
