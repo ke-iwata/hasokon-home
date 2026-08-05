@@ -21,3 +21,4 @@ npm run build  # out/ に静的出力
 - ホスティング: AWS S3 + CloudFront（`infra/`、GitHub Actions でデプロイ）
 
 詳細は [CLAUDE.md](./CLAUDE.md) を参照。姉妹サイト: [無料計算ツール集](https://tool.hasokon.com/)
+
