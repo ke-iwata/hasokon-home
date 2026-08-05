@@ -15,8 +15,8 @@ Next.js + S3 + CloudFront で動いており、ビルドもデプロイ先も別
 | ファイル | 役割 |
 |---|---|
 | `index.html` | ページ本体。CSSもインラインで持つ |
-| `CNAME` | GitHub Pages に独自ドメインを伝える |
-| `.github/workflows/deploy.yml` | main への push で GitHub Pages にデプロイ |
+| `CNAME` | AWS S3 + CloudFront に独自ドメインを伝える |
+| `.github/workflows/deploy.yml` | main への push で AWS S3 + CloudFront にデプロイ |
 
 ## リンク先
 
@@ -26,7 +26,7 @@ Next.js + S3 + CloudFront で動いており、ビルドもデプロイ先も別
 
 1. GitHub でリポジトリを作り push する
 2. Settings → Pages → Source を **GitHub Actions** にする
-3. Route 53 の `hasokon.com` の A レコードを GitHub Pages に向ける
+3. Route 53 の `hasokon.com` の A レコードを AWS S3 + CloudFront に向ける
    （もしくは既存の CloudFront のオリジンを差し替える）
 
 ## 動作確認
