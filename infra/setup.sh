@@ -157,13 +157,14 @@ echo "証明書（テスト）: ${test_cert_arn}"
 # CloudFormation のレコード作成が衝突して失敗する。
 # CloudFrontのエイリアスでない（=旧Pages向けの）レコードだけを削除する
 for rtype in A AAAA; do
+  query="ResourceRecordSets[?Name=='"'"'${DOMAIN}.'"'"' && Type=='"'"'${rtype}'"'"'] | [0]"
   record="$(aws route53 list-resource-record-sets --hosted-zone-id "${zone_id}" \
-    --query "ResourceRecordSets[?Name=='"'"'${DOMAIN}.'"'"' && Type=='"'"'${rtype}'"'"'] | [0]" \
-    --output json)"
+    --query "${query}" --output json)"
   if [ "${record}" != "null" ] && ! printf '%s' "${record}" | grep -q cloudfront; then
     warn "旧GitHub Pages向けの ${rtype} レコードを削除します"
+    printf '{"Changes":[{"Action":"DELETE","ResourceRecordSet":%s}]}' "${record}" > /tmp/rr-delete.json
     aws route53 change-resource-record-sets --hosted-zone-id "${zone_id}" \
-      --change-batch "{\"Changes\":[{\"Action\":\"DELETE\",\"ResourceRecordSet\":${record}}]}"
+      --change-batch file:///tmp/rr-delete.json >/dev/null
   fi
 done
 
