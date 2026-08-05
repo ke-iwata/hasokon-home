@@ -27,14 +27,6 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-04',
   },
   {
-    slug: 'reversi',
-    icon: '⚫',
-    name: 'リバーシ',
-    description: 'コンピュータと対戦できるリバーシ。挟んで返して、角を取ったほうが勝ち。',
-    ready: true,
-    updatedAt: '2026-08-04',
-  },
-  {
     slug: 'breakout',
     icon: '🧱',
     name: 'ブロック崩し',

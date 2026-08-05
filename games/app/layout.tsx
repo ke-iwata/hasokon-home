@@ -9,13 +9,13 @@ import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME}｜ナンプレ・リバーシ・ブロック崩しをブラウザで`,
+    default: `${SITE_NAME}｜ナンプレ・ブロック崩しをブラウザで`,
     // 検索結果に出るのは全角30字前後。認知がつくまでサイト名の接尾辞は付けない
     // （hasokon-tools と同じ判断）
     template: '%s',
   },
   description:
-    'インストール不要・登録不要でそのまま遊べる無料ミニゲーム集。ナンプレ・リバーシ・ブロック崩しをブラウザだけで。',
+    'インストール不要・登録不要でそのまま遊べる無料ミニゲーム集。ナンプレ・ブロック崩しなどをブラウザだけで。',
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,
