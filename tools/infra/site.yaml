@@ -45,8 +45,35 @@ Parameters:
       GitHubのOIDCプロバイダをこのスタックで作るか。
       アカウントに既に登録済みの場合は false にすること（重複作成はエラーになる）。
 
+  CreateDeployRole:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: >
+      GitHub Actions用のデプロイロールをこのスタックで作るか。
+      テスト環境スタックでは false にして、本番スタックのロールを共用する
+      （本番スタック側の ExtraDeployBucketName でテストバケットへの権限を足す）。
+
+  ExtraDeployBucketName:
+    Type: String
+    Default: ''
+    Description: >
+      デプロイロールに追加で読み書きを許可するバケット名（テスト環境のバケット）。
+      空なら自分のバケットだけ。
+
+  BasicAuthString:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: >
+      Basic認証をかける場合の Authorization ヘッダ期待値
+      （例: "Basic dXNlcjpwYXNz"）。空なら認証なし。
+      テスト環境の閲覧ゲートであり、機密を守るためのものではない。
+
 Conditions:
   ShouldCreateOIDCProvider: !Equals [!Ref CreateGitHubOIDCProvider, 'true']
+  ShouldCreateDeployRole: !Equals [!Ref CreateDeployRole, 'true']
+  HasExtraBucket: !Not [!Equals [!Ref ExtraDeployBucketName, '']]
 
 Resources:
   # ---------------------------------------------------------------- S3
@@ -133,9 +160,23 @@ Resources:
       FunctionConfig:
         Comment: サブディレクトリURLをindex.htmlに書き換える
         Runtime: cloudfront-js-2.0
-      FunctionCode: |
+      # BasicAuthString が空でなければBasic認証をかける（テスト環境用）。
+      # !Sub は ${BasicAuthString} だけを差し替える。JS側にテンプレートリテラルを
+      # 書くと誤って置換されるので、この関数内では文字列連結だけを使うこと
+      FunctionCode: !Sub |
         function handler(event) {
           var request = event.request;
+          var expected = '${BasicAuthString}';
+          if (expected !== '') {
+            var auth = request.headers.authorization;
+            if (!auth || auth.value !== expected) {
+              return {
+                statusCode: 401,
+                statusDescription: 'Unauthorized',
+                headers: { 'www-authenticate': { value: 'Basic realm="test"' } }
+              };
+            }
+          }
           var uri = request.uri;
           if (uri.endsWith('/')) {
             request.uri = uri + 'index.html';
@@ -236,6 +277,7 @@ Resources:
 
   DeployRole:
     Type: AWS::IAM::Role
+    Condition: ShouldCreateDeployRole
     Properties:
       RoleName: !Sub '${AWS::StackName}-deploy'
       # IAMのdescriptionはLatin-1（ -ÿ）までしか受け付けず、
@@ -270,15 +312,26 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: s3:ListBucket
-                Resource: !GetAtt SiteBucket.Arn
+                Resource: !If
+                  - HasExtraBucket
+                  - - !GetAtt SiteBucket.Arn
+                    - !Sub 'arn:aws:s3:::${ExtraDeployBucketName}'
+                  - - !GetAtt SiteBucket.Arn
               - Effect: Allow
                 Action:
                   - s3:PutObject
                   - s3:DeleteObject
-                Resource: !Sub '${SiteBucket.Arn}/*'
+                Resource: !If
+                  - HasExtraBucket
+                  - - !Sub '${SiteBucket.Arn}/*'
+                    - !Sub 'arn:aws:s3:::${ExtraDeployBucketName}/*'
+                  - - !Sub '${SiteBucket.Arn}/*'
+              # テスト環境のディストリビューションは別スタックにあるため、
+              # ID単位ではなくアカウント内の全ディストリビューションを許可する。
+              # CreateInvalidation はキャッシュ削除しかできず、悪用の余地が小さい
               - Effect: Allow
                 Action: cloudfront:CreateInvalidation
-                Resource: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/${Distribution}'
+                Resource: !Sub 'arn:aws:cloudfront::${AWS::AccountId}:distribution/*'
 
 Outputs:
   BucketName:
@@ -290,8 +343,8 @@ Outputs:
     Value: !Ref Distribution
 
   DeployRoleArn:
-    Description: GitHub Secrets の AWS_DEPLOY_ROLE_ARN に設定する値
-    Value: !GetAtt DeployRole.Arn
+    Description: GitHub Secrets の AWS_DEPLOY_ROLE_ARN に設定する値（ロールを作らないスタックでは空）
+    Value: !If [ShouldCreateDeployRole, !GetAtt DeployRole.Arn, '']
 
   DistributionDomainName:
     Description: CloudFrontのドメイン名（DNS切り替え前の動作確認用）
