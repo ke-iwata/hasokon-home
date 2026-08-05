@@ -323,59 +323,6 @@ ol {
   color: #0f172a;
 }
 
-/* ---- リバーシ ---- */
-
-.rv-board {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  aspect-ratio: 1;
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto;
-  background: #14532d;
-  border: 3px solid #052e16;
-  border-radius: 8px;
-  overflow: hidden;
-  user-select: none;
-}
-
-.rv-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(5, 46, 22, 0.6);
-  cursor: pointer;
-  background: transparent;
-  padding: 0;
-}
-
-.rv-stone {
-  width: 78%;
-  height: 78%;
-  border-radius: 50%;
-  transition: background 0.25s, transform 0.25s;
-}
-
-.rv-stone.black {
-  background: radial-gradient(circle at 35% 30%, #475569, #0b1220 70%);
-}
-
-.rv-stone.white {
-  background: radial-gradient(circle at 35% 30%, #ffffff, #cbd5e1 70%);
-}
-
-.rv-hint {
-  width: 26%;
-  height: 26%;
-  border-radius: 50%;
-  background: rgba(251, 191, 36, 0.55);
-}
-
-.rv-last {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
 /* ---- ブロック崩し ---- */
 
 .bk-stage {
@@ -413,4 +360,162 @@ ol {
   h1 {
     font-size: 1.25rem;
   }
+}
+
+/* ---- 2048 ---- */
+
+.g2048-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 8px;
+  touch-action: none; /* スワイプ操作をスクロールに取られない */
+  user-select: none;
+}
+
+.g2048-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+  font-weight: 800;
+  font-size: clamp(1rem, 6vw, 1.7rem);
+  color: #0f172a;
+}
+
+/* ---- マインスイーパー ---- */
+
+.ms-board {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin: 0 auto;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.ms-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  font-size: clamp(0.65rem, 2.6vw, 1rem);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ms-cell.revealed {
+  background: rgba(148, 163, 184, 0.1);
+  cursor: default;
+}
+
+.ms-cell.exploded {
+  background: var(--danger);
+}
+
+/* 数字の色（Windows版に倣った慣習的な配色） */
+.ms-n1 { color: #60a5fa; }
+.ms-n2 { color: #4ade80; }
+.ms-n3 { color: #f87171; }
+.ms-n4 { color: #a78bfa; }
+.ms-n5 { color: #fbbf24; }
+.ms-n6 { color: #2dd4bf; }
+.ms-n7 { color: #f472b6; }
+.ms-n8 { color: #94a3b8; }
+
+/* ---- トランプ（ソリティア・スパイダー共通） ---- */
+
+.cardgame {
+  user-select: none;
+}
+
+.cardgame .top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cardgame .piles {
+  display: flex;
+  gap: 8px;
+}
+
+.tableau {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.tableau.cols7 { grid-template-columns: repeat(7, 1fr); }
+.tableau.cols10 { grid-template-columns: repeat(10, 1fr); }
+
+.pile {
+  position: relative;
+  min-height: 60px;
+}
+
+.playing-card {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #f8fafc;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 2px 3px;
+  font-weight: 700;
+  font-size: clamp(0.6rem, 2.6vw, 0.95rem);
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.playing-card.red { color: #dc2626; }
+
+.playing-card.back {
+  background: repeating-linear-gradient(
+    45deg,
+    #1d4ed8,
+    #1d4ed8 4px,
+    #1e40af 4px,
+    #1e40af 8px
+  );
+  border-color: #1e3a8a;
+}
+
+.playing-card.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.playing-card.empty {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed var(--border);
+  box-shadow: none;
+  color: var(--muted);
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+/* 列の中で重ねて表示する（上端だけずらす） */
+.pile .stacked {
+  position: absolute;
+  left: 0;
+  right: 0;
 }

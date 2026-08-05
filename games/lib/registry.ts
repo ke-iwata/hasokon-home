@@ -19,8 +19,40 @@ export const SITE_UPDATED_AT = '2026-08-04';
 
 export const games: GameDef[] = [
   {
-    slug: 'nanpre',
+    slug: 'solitaire',
+    icon: '🃏',
+    name: 'ソリティア',
+    description: '定番のクロンダイク。タップで自動移動の簡単操作。もどす機能つき。',
+    ready: true,
+    updatedAt: '2026-08-04',
+  },
+  {
+    slug: 'spider',
+    icon: '🕷️',
+    name: 'スパイダーソリティア',
+    description: '1スート〜4スートの3段階。KからAまで揃えて8組完成を目指します。',
+    ready: true,
+    updatedAt: '2026-08-04',
+  },
+  {
+    slug: 'minesweeper',
+    icon: '💣',
+    name: 'マインスイーパー',
+    description: '数字をヒントに地雷を避ける定番パズル。初手は必ず安全。初級〜上級。',
+    ready: true,
+    updatedAt: '2026-08-04',
+  },
+  {
+    slug: '2048',
     icon: '🔢',
+    name: '2048',
+    description: 'スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコア保存。',
+    ready: true,
+    updatedAt: '2026-08-04',
+  },
+  {
+    slug: 'nanpre',
+    icon: '✏️',
     name: 'ナンプレ',
     description: '定番の数字パズル。かんたん・ふつう・むずかしいの3段階。答えは必ず1通りです。',
     ready: true,
