@@ -28,53 +28,132 @@ const TILE_COLORS: Record<number, string> = {
 };
 
 const BEST_KEY = 'g2048:best';
+/** スライドアニメーションの長さ（CSSの transition と揃える） */
+const SLIDE_MS = 130;
+
+/** 画面上のタイル。盤面とは別に、アニメーションのため位置と状態を個別に持つ */
+interface Tile {
+  id: number;
+  value: number;
+  /** 盤面上の位置（0〜15） */
+  cell: number;
+  /** 湧いた直後（出現アニメーション用） */
+  isNew?: boolean;
+  /** 合体でできた直後（ポップアニメーション用） */
+  isMerged?: boolean;
+}
+
+let nextId = 1;
+
+/** 盤面からタイル一覧を作る（初期化・リセット用） */
+function tilesFrom(board: Board2048): Tile[] {
+  return board
+    .map((v, cell) => ({ id: nextId++, value: v, cell }))
+    .filter((t) => t.value !== 0);
+}
 
 export default function Game() {
   const [board, setBoard] = useState<Board2048 | null>(null);
+  const [tiles, setTiles] = useState<Tile[]>([]);
   const [score, setScore] = useState(0);
   const [best, setBest] = useState(0);
   const [won, setWon] = useState(false);
   const [wonNotified, setWonNotified] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  // アニメーション中は次の入力を捨てる（連打で状態が壊れるのを防ぐ）
+  const animating = useRef(false);
+  // 盤面の正本。stateのクロージャ経由だと、連打時に古い盤面で
+  // move が走ってタイルが二重に残る競合が起きるため、refを正とする
+  const boardRef = useRef<Board2048 | null>(null);
 
-  // 盤面の生成はマウント後（サーバー描画と食い違わせない）
   useEffect(() => {
-    setBoard(newBoard());
+    const b = newBoard();
+    boardRef.current = b;
+    setBoard(b);
+    setTiles(tilesFrom(b));
     const saved = Number(localStorage.getItem(BEST_KEY) || 0);
     if (saved > 0) setBest(saved);
   }, []);
 
   const reset = () => {
-    setBoard(newBoard());
+    const b = newBoard();
+    boardRef.current = b;
+    setBoard(b);
+    setTiles(tilesFrom(b));
     setScore(0);
     setWon(false);
     setWonNotified(false);
+    animating.current = false;
     trackToolUse('2048', 'new');
   };
 
   const move = useCallback(
     (dir: Direction) => {
-      if (!board) return;
-      const r = slide(board, dir);
+      const current = boardRef.current;
+      if (!current || animating.current) return;
+      const r = slide(current, dir);
       if (!r.moved) return;
-      const next = spawn(r.board);
-      setBoard(next);
-      setScore((s) => {
-        const ns = s + r.gained;
-        setBest((b) => {
-          const nb = Math.max(b, ns);
-          localStorage.setItem(BEST_KEY, String(nb));
-          return nb;
-        });
-        return ns;
-      });
-      if (!wonNotified && hasWon(next)) {
-        setWon(true);
-        setWonNotified(true);
-        trackToolUse('2048', 'win');
+      animating.current = true;
+
+      // 1. スライド: 各タイルを移動先へ動かす（CSS transition が効く）。
+      //    合体で消える側は dying を付けて、移動後に取り除く
+      setTiles((ts) =>
+        ts.map((t) => {
+          const m = r.moves.find((mv) => mv.from === t.cell);
+          if (!m) return t;
+          return { ...t, cell: m.to, isNew: undefined, isMerged: undefined };
+        }),
+      );
+      // 合体が起きるセルの一覧（タイムアウト後に2枚→1枚へ差し替える）
+      const mergeTargets = new Map<number, number[]>();
+      for (const m of r.moves) {
+        if (m.merged) mergeTargets.set(m.to, [...(mergeTargets.get(m.to) ?? []), m.from]);
       }
+
+      // 2. スライドが終わったら: 合体の後始末 + 新タイルを湧かせる
+      window.setTimeout(() => {
+        const spawned = spawn(r.board);
+        const spawnCell = spawned.findIndex((v, i) => v !== r.board[i]);
+        boardRef.current = spawned;
+
+        setTiles((ts) => {
+          let out = ts;
+          // 合体セルごとに1枚だけ残して値を2倍にし、もう1枚を消す
+          for (const [cell] of mergeTargets) {
+            const pair = out.filter((t) => t.cell === cell);
+            if (pair.length === 2) {
+              const [keep, remove] = pair;
+              out = out
+                .filter((t) => t.id !== remove.id)
+                .map((t) =>
+                  t.id === keep.id ? { ...t, value: t.value * 2, isMerged: true } : t,
+                );
+            }
+          }
+          if (spawnCell !== -1) {
+            out = [...out, { id: nextId++, value: spawned[spawnCell], cell: spawnCell, isNew: true }];
+          }
+          return out;
+        });
+        setBoard(spawned);
+        setScore((s) => {
+          const ns = s + r.gained;
+          setBest((b) => {
+            const nb = Math.max(b, ns);
+            localStorage.setItem(BEST_KEY, String(nb));
+            return nb;
+          });
+          return ns;
+        });
+        if (!wonNotified && hasWon(spawned)) {
+          setWon(true);
+          setWonNotified(true);
+          trackToolUse('2048', 'win');
+        }
+        animating.current = false;
+      }, SLIDE_MS);
     },
-    [board, wonNotified],
+    [wonNotified],
   );
 
   // キーボード
@@ -129,16 +208,22 @@ export default function Game() {
         </button>
       </div>
 
-      {won && (
-        <p className="status-bar" style={{ color: 'var(--ok)', fontWeight: 700 }}>
-          🎉 2048達成！そのまま続けられます。
-        </p>
-      )}
-      {over && (
-        <p className="status-bar" style={{ color: 'var(--danger)', fontWeight: 700 }}>
-          動かせるマスがなくなりました。スコア: {score}
-        </p>
-      )}
+      {/* 高さを固定して、メッセージの出入りで盤面が動かないようにする */}
+      <p
+        className="status-bar"
+        style={{
+          minHeight: '1.6em',
+          margin: '4px 0 10px',
+          fontWeight: 700,
+          color: over ? 'var(--danger)' : 'var(--ok)',
+        }}
+      >
+        {over
+          ? `動かせるマスがなくなりました。スコア: ${score}`
+          : won
+            ? '🎉 2048達成！そのまま続けられます。'
+            : ' '}
+      </p>
 
       <div
         className="g2048-board"
@@ -147,20 +232,26 @@ export default function Game() {
         role="grid"
         aria-label="2048の盤面"
       >
-        {board.map((v, i) => (
+        {/* 下敷きの空セル（常に16個で固定） */}
+        {Array.from({ length: 16 }, (_, i) => (
           <div
             key={i}
-            className="g2048-tile"
-            style={
-              v === 0
-                ? undefined
-                : {
-                    background: TILE_COLORS[v] ?? '#0ea5e9',
-                    fontSize: v >= 1024 ? 'clamp(0.8rem, 5vw, 1.3rem)' : undefined,
-                  }
-            }
+            className="g2048-bg"
+            style={{ transform: `translate(${(i % 4) * 100}%, ${Math.floor(i / 4) * 100}%)` }}
+          />
+        ))}
+        {/* タイル層。位置は transform で動かし、transition でスライドさせる */}
+        {tiles.map((t) => (
+          <div
+            key={t.id}
+            className={`g2048-tile ${t.isNew ? 'new' : ''} ${t.isMerged ? 'merged' : ''}`}
+            style={{
+              transform: `translate(${(t.cell % 4) * 100}%, ${Math.floor(t.cell / 4) * 100}%)`,
+            }}
           >
-            {v || ''}
+            <div className="g2048-face" style={{ background: TILE_COLORS[t.value] ?? '#0ea5e9' }}>
+              {t.value}
+            </div>
           </div>
         ))}
       </div>

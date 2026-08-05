@@ -42,7 +42,12 @@ export interface BreakoutState {
   status: 'ready' | 'playing' | 'cleared' | 'gameover';
 }
 
-export const PADDLE_Y = 0.93;
+/**
+ * パドルの高さ。画面の下端ではなく82%の位置に置き、下の18%を
+ * 「指を置くための余白」にする。スマホで指がパドルに重なって
+ * 見えなくなるのを防ぐ（操作はcanvas全体のどこを触ってもよい）
+ */
+export const PADDLE_Y = 0.82;
 export const PADDLE_HEIGHT = 0.02;
 const BALL_RADIUS = 0.015;
 /** 初速。面が進むごとに SPEED_STEP ずつ速くなる */

@@ -362,32 +362,77 @@ ol {
   }
 }
 
-/* ---- 2048 ---- */
+/* ---- 2048 ----
+   タイルは絶対配置にして transform で動かす。transition がスライドの
+   アニメーションになる。下敷きの空セル（.g2048-bg）は常に16個で固定なので、
+   盤面の大きさは一切変わらない */
 
 .g2048-board {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  position: relative;
   width: 100%;
   max-width: 380px;
   margin: 0 auto;
   aspect-ratio: 1;
   background: var(--surface-2);
   border-radius: 10px;
-  padding: 8px;
+  overflow: hidden;
   touch-action: none; /* スワイプ操作をスクロールに取られない */
   user-select: none;
 }
 
+.g2048-bg,
 .g2048-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25%;
+  height: 25%;
+}
+
+.g2048-bg::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.g2048-tile {
+  transition: transform 130ms ease-in-out; /* SLIDE_MS と揃える */
+}
+
+.g2048-face {
+  position: absolute;
+  inset: 4px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(148, 163, 184, 0.12);
   font-weight: 800;
-  font-size: clamp(1rem, 6vw, 1.7rem);
   color: #0f172a;
+  /* 4桁でも収まる固定サイズ。値によって変えない（レイアウトが動くため） */
+  font-size: clamp(0.95rem, 5.5vw, 1.4rem);
+}
+
+.g2048-tile.new .g2048-face {
+  animation: g2048-appear 150ms ease-out;
+}
+
+.g2048-tile.merged .g2048-face {
+  animation: g2048-pop 170ms ease-out;
+}
+
+@keyframes g2048-appear {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes g2048-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
 }
 
 /* ---- マインスイーパー ---- */
@@ -406,9 +451,11 @@ ol {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
   border-radius: 4px;
-  background: var(--surface-2);
+  /* 閉じたマスは浮き上がったボタンに見せる（明るい面 + ベベル） */
+  background: #45587a;
+  border: 1px solid;
+  border-color: #64799e #2a3a56 #2a3a56 #64799e;
   color: var(--text);
   font-weight: 700;
   font-size: clamp(0.65rem, 2.6vw, 1rem);
@@ -417,7 +464,9 @@ ol {
 }
 
 .ms-cell.revealed {
-  background: rgba(148, 163, 184, 0.1);
+  /* 開いたマスは沈んだ平面。閉じたマスと明度差をはっきり付ける */
+  background: #101a2c;
+  border: 1px solid #1f2c44;
   cursor: default;
 }
 
@@ -459,8 +508,15 @@ ol {
   width: 100%;
 }
 
-.tableau.cols7 { grid-template-columns: repeat(7, 1fr); }
-.tableau.cols10 { grid-template-columns: repeat(10, 1fr); }
+.tableau.cols7 { grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.tableau.cols10 { grid-template-columns: repeat(10, 1fr); gap: 3px; }
+
+/* スパイダーは10列で1枚が細いので、文字を小さくして数字を読めるようにする */
+.cols10 .playing-card {
+  font-size: clamp(0.58rem, 2.7vw, 0.85rem);
+  padding: 1px 2px;
+  border-radius: 4px;
+}
 
 .pile {
   position: relative;
@@ -501,6 +557,13 @@ ol {
 .playing-card.selected {
   outline: 3px solid var(--accent);
   outline-offset: -1px;
+  filter: brightness(1.08);
+}
+
+/* 置き先の候補（選択中に表示）。うっすら光らせて誘導する */
+.playing-card.droppable,
+.playing-card.empty.droppable {
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.7);
 }
 
 .playing-card.empty {

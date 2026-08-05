@@ -15,31 +15,58 @@
 export type Board2048 = number[];
 export type Direction = 'left' | 'right' | 'up' | 'down';
 
+/** タイル1枚の移動。合体は2つの from が同じ to を持つ */
+export interface TileMove {
+  from: number;
+  to: number;
+  /** この移動の到達先で合体が起きるか（アニメーション後に値を差し替える合図） */
+  merged: boolean;
+}
+
 export interface SlideResult {
   board: Board2048;
   /** このスライドで合体してできたタイルの合計（スコア加算分） */
   gained: number;
   /** 1枚でもタイルが動いたか。動いていないスライドは無効（新タイルも湧かない） */
   moved: boolean;
+  /** UIのスライドアニメーション用。全タイルの移動元→移動先（盤面index） */
+  moves: TileMove[];
 }
 
-/** 1列を左に詰めて合体する。長さ4を保つ */
-export function slideLine(line: number[]): { line: number[]; gained: number } {
-  const packed = line.filter((v) => v !== 0);
+/**
+ * 1列を左に詰めて合体する。長さ4を保つ。
+ * sources[k] は「出力スロットkに入った入力位置」の一覧（合体なら2要素）。
+ */
+export function slideLine(line: number[]): {
+  line: number[];
+  gained: number;
+  sources: number[][];
+} {
+  // 位置付きで詰める
+  const packed: { v: number; src: number }[] = [];
+  line.forEach((v, i) => {
+    if (v !== 0) packed.push({ v, src: i });
+  });
   const out: number[] = [];
+  const sources: number[][] = [];
   let gained = 0;
   for (let i = 0; i < packed.length; i += 1) {
-    if (i + 1 < packed.length && packed[i] === packed[i + 1]) {
-      const merged = packed[i] * 2;
+    if (i + 1 < packed.length && packed[i].v === packed[i + 1].v) {
+      const merged = packed[i].v * 2;
       out.push(merged);
+      sources.push([packed[i].src, packed[i + 1].src]);
       gained += merged;
       i += 1; // 合体に使った次のタイルを飛ばす（二重合体の防止）
     } else {
-      out.push(packed[i]);
+      out.push(packed[i].v);
+      sources.push([packed[i].src]);
     }
   }
-  while (out.length < 4) out.push(0);
-  return { line: out, gained };
+  while (out.length < 4) {
+    out.push(0);
+    sources.push([]);
+  }
+  return { line: out, gained, sources };
 }
 
 /** 方向ごとの「行の取り出し順」。left を基準に、他は並びを変えて同じ処理を通す */
@@ -75,6 +102,7 @@ export function slide(board: Board2048, dir: Direction): SlideResult {
   const next = [...board];
   let gained = 0;
   let moved = false;
+  const moves: TileMove[] = [];
   for (const indices of LINE_INDICES[dir]) {
     const line = indices.map((i) => board[i]);
     const r = slideLine(line);
@@ -82,9 +110,16 @@ export function slide(board: Board2048, dir: Direction): SlideResult {
     indices.forEach((boardIndex, k) => {
       if (next[boardIndex] !== r.line[k]) moved = true;
       next[boardIndex] = r.line[k];
+      for (const src of r.sources[k]) {
+        moves.push({
+          from: indices[src],
+          to: boardIndex,
+          merged: r.sources[k].length === 2,
+        });
+      }
     });
   }
-  return { board: next, gained, moved };
+  return { board: next, gained, moved, moves };
 }
 
 /**

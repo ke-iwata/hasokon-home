@@ -171,3 +171,42 @@ describe('newBoard', () => {
     expect(b.filter((v) => v !== 0)).toHaveLength(2);
   });
 });
+
+describe('slide の移動追跡（アニメーション用）', () => {
+  it('移動元→移動先が正しい', () => {
+    const b: Board2048 = [
+      0, 2, 0, 4,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+    ];
+    const r = slide(b, 'left');
+    expect(r.moves).toContainEqual({ from: 1, to: 0, merged: false });
+    expect(r.moves).toContainEqual({ from: 3, to: 1, merged: false });
+  });
+
+  it('合体は2つのfromが同じtoを指し merged=true', () => {
+    const b: Board2048 = [
+      2, 0, 0, 2,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+    ];
+    const r = slide(b, 'left');
+    const merges = r.moves.filter((m) => m.merged);
+    expect(merges).toHaveLength(2);
+    expect(merges.every((m) => m.to === 0)).toBe(true);
+    expect(merges.map((m) => m.from).sort()).toEqual([0, 3]);
+  });
+
+  it('動かないタイルも from===to で含まれる', () => {
+    const b: Board2048 = [
+      2, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+      0, 0, 0, 0,
+    ];
+    const r = slide(b, 'left');
+    expect(r.moves).toContainEqual({ from: 0, to: 0, merged: false });
+  });
+});

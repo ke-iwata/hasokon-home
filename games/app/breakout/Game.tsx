@@ -121,7 +121,7 @@ export default function Game() {
                   タップ / クリックでスタート
                 </p>
                 <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-                  マウスや指を左右に動かしてパドルを操作
+                  パドルの下の余白に指を置いて左右に動かす（指で隠れません）
                 </p>
               </>
             )}

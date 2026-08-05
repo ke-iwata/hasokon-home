@@ -69,5 +69,5 @@ export function EmptySlot({
  */
 export function stackMargin(index: number, prevFaceUp: boolean | undefined): React.CSSProperties {
   if (index === 0) return {};
-  return { marginTop: prevFaceUp ? '-112%' : '-130%' };
+  return { marginTop: prevFaceUp ? '-106%' : '-127%' };
 }
