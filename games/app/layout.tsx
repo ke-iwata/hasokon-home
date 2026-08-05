@@ -6,8 +6,16 @@ import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
 import Analytics from './Analytics';
 import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
 
+/**
+ * Google Search Console の所有権確認用トークン。
+ * tool.hasokon.com と同じアカウントなのでトークンも同じ。
+ * 【削除しないこと】確認後に消すと所有権の確認が外れる。
+ */
+const GOOGLE_SITE_VERIFICATION = 'Q3DpEEDOkoxOZDuQwfCl_kDDbsdaqLxHDJrCcJOZvnU';
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  verification: { google: GOOGLE_SITE_VERIFICATION },
   title: {
     default: `${SITE_NAME}｜ナンプレ・ブロック崩しをブラウザで`,
     // 検索結果に出るのは全角30字前後。認知がつくまでサイト名の接尾辞は付けない
