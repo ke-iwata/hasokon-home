@@ -12,7 +12,9 @@
 
 - **完全静的サイト**（Next.js App Router + `output: 'export'`）
 - **計算はすべてクライアントサイド**。サーバーもDBもなく、入力値は外部に送信しない
-- ホスティングは **AWS S3 + CloudFront**、デプロイは main への push で GitHub Actions が実行
+- ホスティングは **AWS S3 + CloudFront**。デプロイは2段階:
+  - main にマージ → **tool.test.hasokon.com**（Basic認証つきテスト環境）
+  - `v*` タグを push → **tool.hasokon.com**（本番）。`git tag v1.0.0 && git push origin v1.0.0`
 
 ## 技術構成
 
