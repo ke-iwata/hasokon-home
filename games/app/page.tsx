@@ -45,13 +45,6 @@ export default function Home() {
             </Link>
           ))}
       </div>
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-        姉妹サイト:{' '}
-        <a href="https://tool.hasokon.com/" rel="noopener">
-          無料計算ツール集
-        </a>
-        （年収の壁・ふるさと納税などの計算機）
-      </p>
     </>
   );
 }

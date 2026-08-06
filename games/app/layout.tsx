@@ -75,8 +75,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/">ゲーム一覧</Link>
               <Link href="/privacy/">プライバシーポリシー</Link>
               <Link href="/contact/">お問い合わせ</Link>
-              <a href="https://tool.hasokon.com/" rel="noopener">
-                計算ツール集
+              <a href="https://hasokon.com/" rel="noopener">
+                hasokon.com
               </a>
             </p>
             <p>© 2026 {COPYRIGHT_HOLDER} All rights reserved.</p>
