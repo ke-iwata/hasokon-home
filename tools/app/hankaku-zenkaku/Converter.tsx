@@ -17,7 +17,8 @@ const TARGETS: { key: keyof WidthOptions; label: string; hint: string }[] = [
   { key: 'space', label: 'スペース', hint: '全角空白 ⇔ 半角空白' },
 ];
 
-const SAMPLE = 'ﾔﾏﾀﾞ ﾀﾛｳ\n東京都渋谷区１−２−３　渋谷ビル４Ｆ\nTEL：０３−１２３４−５６７８';
+/** 入力欄のプレースホルダー。初期値としては入れない（消す手間をかけさせない） */
+const PLACEHOLDER = 'ここに貼り付けてください\n例: ﾔﾏﾀﾞ ﾀﾛｳ → ヤマダ　タロウ\n例: １−２−３ → 1−2−3';
 
 /** 向きの切り替えボタン。選択中は塗りつぶす */
 function DirectionButton({
@@ -51,7 +52,7 @@ function DirectionButton({
 }
 
 export default function Converter() {
-  const [text, setText] = useState(SAMPLE);
+  const [text, setText] = useState('');
   const [direction, setDirection] = useState<Direction>('toFull');
   const [options, setOptions] = useState<WidthOptions>(DEFAULT_OPTIONS);
   const [copied, setCopied] = useState(false);
@@ -124,7 +125,7 @@ export default function Converter() {
             onChange={(e) => setText(e.target.value)}
             rows={5}
             spellCheck={false}
-            placeholder="ここに貼り付けてください"
+            placeholder={PLACEHOLDER}
             style={{ marginTop: 6 }}
           />
           <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
