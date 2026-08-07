@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <!-- Google Search Console の所有権確認用。確認後も削除しないこと -->
     <meta name="google-site-verification" content="Q3DpEEDOkoxOZDuQwfCl_kDDbsdaqLxHDJrCcJOZvnU" />
-    <title>hasokon｜無料のWebツール</title>
+    <title>hasokon｜ブラウザだけで使える無料の計算ツールとミニゲーム</title>
     <meta
       name="description"
-      content="ブラウザだけで動く無料のWebツールを公開しています。年収の壁・子ども・子育て支援金などの計算機から、ルーレット・グループ分けまで。登録不要で、入力内容は送信されません。"
+      content="年収の壁・ふるさと納税・傷病手当金などの計算機13本と、ソリティア・マインスイーパー・2048などのミニゲーム6本。すべて無料・登録不要で、入力内容は送信されません。"
     />
     <link rel="canonical" href="https://hasokon.com/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="hasokon｜無料のWebツール" />
+    <meta property="og:title" content="hasokon｜無料の計算ツールとミニゲーム" />
     <meta
       property="og:description"
-      content="ブラウザだけで動く無料のWebツールを公開しています。登録不要、入力内容は送信されません。"
+      content="ブラウザだけで動く無料の計算ツール13本とミニゲーム6本。登録不要、入力内容は送信されません。"
     />
     <meta property="og:url" content="https://hasokon.com/" />
     <meta property="og:locale" content="ja_JP" />
@@ -23,6 +23,16 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230ea5e9'/%3E%3Cstop offset='1' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='14' fill='url(%23g)'/%3E%3Ctext x='32' y='33' fill='%23fff' font-family='Helvetica,Arial,sans-serif' font-size='40' font-weight='700' text-anchor='middle' dominant-baseline='central'%3Eh%3C/text%3E%3C/svg%3E"
     />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "hasokon",
+        "url": "https://hasokon.com/",
+        "inLanguage": "ja",
+        "description": "ブラウザだけで動く無料の計算ツールとミニゲームを公開しています。"
+      }
+    </script>
     <style>
       :root {
         --bg: #f7f8fb;
@@ -45,15 +55,16 @@
         background: var(--bg);
         color: var(--text);
         line-height: 1.8;
-        display: grid;
-        place-items: center;
-        min-height: 100vh;
-        padding: 24px;
+        padding: 40px 20px 32px;
       }
       main {
         width: 100%;
-        max-width: 34rem;
+        max-width: 46rem;
+        margin: 0 auto;
+      }
+      header {
         text-align: center;
+        margin-bottom: 36px;
       }
       h1 {
         font-size: 1.9rem;
@@ -67,19 +78,34 @@
       }
       .lead {
         color: var(--muted);
-        margin: 12px 0 28px;
+        margin: 12px 0 0;
         font-size: 0.98rem;
+      }
+      h2 {
+        font-size: 1.2rem;
+        margin: 36px 0 4px;
+        border-left: 4px solid var(--brand);
+        padding-left: 10px;
+      }
+      .section-desc {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin: 0 0 14px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+        gap: 10px;
       }
       .card {
         display: block;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 20px 22px;
+        border-radius: 12px;
+        padding: 14px 16px;
         text-align: left;
         text-decoration: none;
         color: inherit;
-        margin-bottom: 12px;
         transition: border-color 0.15s, transform 0.15s;
       }
       .card:hover {
@@ -88,51 +114,186 @@
       }
       .card .name {
         font-weight: 700;
-        font-size: 1.05rem;
+        font-size: 0.98rem;
         color: var(--brand);
       }
       .card .desc {
         color: var(--muted);
-        font-size: 0.9rem;
-        margin-top: 4px;
+        font-size: 0.83rem;
+        margin-top: 2px;
+      }
+      .about {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        font-size: 0.92rem;
+      }
+      .about p {
+        margin: 6px 0;
       }
       footer {
         color: var(--muted);
         font-size: 0.8rem;
-        margin-top: 28px;
+        margin-top: 36px;
+        text-align: center;
+      }
+      footer a {
+        color: var(--muted);
+        margin: 0 8px;
       }
       @media (max-width: 480px) {
         h1 {
           font-size: 1.5rem;
+        }
+        body {
+          padding-top: 28px;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>hasokon<span>.com</span></h1>
-      <p class="lead">
-        ブラウザだけで動く無料のWebツールを公開しています。<br />
-        登録不要、入力した内容が送信されることはありません。
+      <header>
+        <h1>hasokon<span>.com</span></h1>
+        <p class="lead">
+          ブラウザだけで動く無料のWebツールとミニゲームを公開しています。<br />
+          登録不要・インストール不要。入力した内容が送信されることはありません。
+        </p>
+      </header>
+
+      <!--
+        カード一覧は tool.hasokon.com / game.hasokon.com のレジストリと手動で同期している。
+        ツールやゲームを追加・削除したらここも更新すること。
+      -->
+      <h2>お金・社会保険の計算機</h2>
+      <p class="section-desc">
+        制度改正に合わせて更新している計算機です。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。
+        <a href="https://tool.hasokon.com/">→ 無料計算ツール集</a>
       </p>
+      <div class="grid">
+        <a class="card" href="https://tool.hasokon.com/nenshu-kabe/">
+          <div class="name">年収の壁 計算機</div>
+          <div class="desc">106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/furusato-nozei/">
+          <div class="name">ふるさと納税 控除額計算機</div>
+          <div class="desc">上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/kosodate-shienkin/">
+          <div class="name">子ども・子育て支援金 計算機</div>
+          <div class="desc">「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/shobyo-teate/">
+          <div class="name">傷病手当金 計算機</div>
+          <div class="desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</div>
+        </a>
+      </div>
 
-      <a class="card" href="https://tool.hasokon.com/">
-        <div class="name">無料計算ツール集 →</div>
-        <div class="desc">
-          年収の壁・子ども・子育て支援金・傷病手当金などの計算機と、
-          ルーレット・グループ分け・サイコロなどの「決める」道具。
-        </div>
-      </a>
+      <h2>生活の計算機・変換ツール</h2>
+      <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
+      <div class="grid">
+        <a class="card" href="https://tool.hasokon.com/sleep-cycle/">
+          <div class="name">睡眠サイクル計算機</div>
+          <div class="desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/aircon-denkidai/">
+          <div class="name">エアコン電気代 計算機</div>
+          <div class="desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/warikan/">
+          <div class="name">割り勘計算機</div>
+          <div class="desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/hebon-romaji/">
+          <div class="name">ヘボン式ローマ字変換</div>
+          <div class="desc">氏名のふりがなをパスポート表記のローマ字に変換</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/hankaku-zenkaku/">
+          <div class="name">半角⇔全角 変換</div>
+          <div class="desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/aspect-ratio/">
+          <div class="name">アスペクト比計算機</div>
+          <div class="desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</div>
+        </a>
+      </div>
 
-      <a class="card" href="https://game.hasokon.com/">
-        <div class="name">無料ミニゲーム集 →</div>
-        <div class="desc">
-          ソリティア・スパイダーソリティア・マインスイーパー・2048・
-          ナンプレ・ブロック崩し。インストール不要でそのまま遊べます。
-        </div>
-      </a>
+      <h2>決める・選ぶツール</h2>
+      <p class="section-desc">迷ったときにその場で決めるための道具です。</p>
+      <div class="grid">
+        <a class="card" href="https://tool.hasokon.com/roulette/">
+          <div class="name">ルーレット</div>
+          <div class="desc">項目を入れて回すだけ。ランチ・当番・順番決めに</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/group/">
+          <div class="name">グループ分け</div>
+          <div class="desc">名前を入れるだけで班分け・チーム分けをランダムに作成</div>
+        </a>
+        <a class="card" href="https://tool.hasokon.com/dice/">
+          <div class="name">サイコロ</div>
+          <div class="desc">1〜10個まで同時に振れて、合計も出ます</div>
+        </a>
+      </div>
 
-      <footer>© 2026 hasokon tools All rights reserved.</footer>
+      <h2>ミニゲーム</h2>
+      <p class="section-desc">
+        開いたらすぐ遊べる定番ゲームです。スマホでもPCでも。
+        <a href="https://game.hasokon.com/">→ 無料ミニゲーム集</a>
+      </p>
+      <div class="grid">
+        <a class="card" href="https://game.hasokon.com/solitaire/">
+          <div class="name">ソリティア</div>
+          <div class="desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</div>
+        </a>
+        <a class="card" href="https://game.hasokon.com/spider/">
+          <div class="name">スパイダーソリティア</div>
+          <div class="desc">1スート〜4スートの3段階。じっくり遊べる本格ルール</div>
+        </a>
+        <a class="card" href="https://game.hasokon.com/minesweeper/">
+          <div class="name">マインスイーパー</div>
+          <div class="desc">数字をヒントに地雷を避ける定番パズル。初手は必ず安全</div>
+        </a>
+        <a class="card" href="https://game.hasokon.com/2048/">
+          <div class="name">2048</div>
+          <div class="desc">スワイプで同じ数字を合体。シンプルで中毒性のあるパズル</div>
+        </a>
+        <a class="card" href="https://game.hasokon.com/nanpre/">
+          <div class="name">ナンプレ</div>
+          <div class="desc">定番の数字パズル。3段階の難易度、答えは必ず1通り</div>
+        </a>
+        <a class="card" href="https://game.hasokon.com/breakout/">
+          <div class="name">ブロック崩し</div>
+          <div class="desc">マウスやタッチで操作する定番アクション。面が進むと加速</div>
+        </a>
+      </div>
+
+      <h2>このサイトについて</h2>
+      <div class="about">
+        <p>
+          hasokon.com は、個人（ソフトウェアエンジニア）が運営する無料Webツールのサイト群です。「調べるより先に、答えが出る」道具を目指して、計算機やゲームを1ページ1機能で公開しています。
+        </p>
+        <p>
+          すべてのツールはブラウザの中だけで動作し、<strong>入力した内容がサーバーに送信されることはありません</strong>。会員登録も不要です。
+        </p>
+        <p>
+          税金・社会保険など制度に関わる計算機は、法令や官公庁の一次資料にもとづいて作成し、計算根拠と出典を各ページに明記しています。制度改正があれば追随して更新します。誤りを見つけた場合は、お問い合わせフォームからご指摘いただけると助かります。
+        </p>
+      </div>
+
+      <footer>
+        <p>
+          <a href="/privacy.html">プライバシーポリシー</a>
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLScNoh6HZoekO-nlb_BHSvk755ZAVXWEtsmF3ttZP-hRDTCOhw/viewform"
+            rel="nofollow noopener noreferrer"
+            target="_blank"
+            >お問い合わせ</a
+          >
+          <a href="https://tool.hasokon.com/about/">運営者情報</a>
+        </p>
+        <p>© 2026 hasokon tools All rights reserved.</p>
+      </footer>
     </main>
   </body>
 </html>
