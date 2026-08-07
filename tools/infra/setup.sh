@@ -172,7 +172,8 @@ aws cloudformation deploy \
     "CreateGitHubOIDCProvider=${create_oidc}" \
     "CreateDeployRole=true" \
     "ExtraDeployBucketName=${TEST_BUCKET}" \
-    "BasicAuthString="
+    "BasicAuthString=" \
+    "RedirectTo=${REDIRECT_TO:-}"
 
 # ---------------------------------------------------------------- 4. テスト環境
 
@@ -198,7 +199,8 @@ aws cloudformation deploy \
     "CreateGitHubOIDCProvider=false" \
     "CreateDeployRole=false" \
     "ExtraDeployBucketName=" \
-    "BasicAuthString=${auth_string}"
+    "BasicAuthString=${auth_string}" \
+    "RedirectTo=${TEST_REDIRECT_TO:-}"
 
 get_output() { # stack key
   aws cloudformation describe-stacks \
@@ -208,12 +210,17 @@ get_output() { # stack key
     --output text
 }
 
-bucket="$(get_output "${SITE_STACK}" BucketName)"
-dist_id="$(get_output "${SITE_STACK}" DistributionId)"
 role_arn="$(get_output "${SITE_STACK}" DeployRoleArn)"
 dist_domain="$(get_output "${SITE_STACK}" DistributionDomainName)"
-test_bucket="$(get_output "${TEST_SITE_STACK}" BucketName)"
-test_dist_id="$(get_output "${TEST_SITE_STACK}" DistributionId)"
+
+# ドメイン統合後のデプロイ先は hasokon.com 本体（hasokon-home-site スタック）。
+# バケットは prefix 配下に同期し、無効化も本体の配信に対して行う
+bucket="hasokon-com"
+test_bucket="hasokon-com-test"
+dist_id="$(get_output hasokon-home-site DistributionId)"
+test_dist_id="$(get_output hasokon-home-site-test DistributionId)"
+[ -n "${dist_id}" ] && [ "${dist_id}" != "None" ] \
+  || die "hasokon-home-site スタックが見つかりません。先に hasokon-home の setup.sh を実行してください"
 
 # ---------------------------------------------------------------- 5. GitHub Secrets
 

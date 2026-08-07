@@ -24,7 +24,8 @@ export interface ToolDef {
   updatedAt: string;
 }
 
-export const SITE_URL = 'https://tool.hasokon.com';
+// basePath込みのサイトURL。canonical・sitemap・JSON-LDはすべてここから作られる
+export const SITE_URL = 'https://hasokon.com/tools';
 
 /** サイト名。ヘッダー・ページタイトル・OGPに表示される */
 export const SITE_NAME = '無料計算ツール集';

@@ -70,6 +70,22 @@ Parameters:
       （例: "Basic dXNlcjpwYXNz"）。空なら認証なし。
       テスト環境の閲覧ゲートであり、機密を守るためのものではない。
 
+  SharedDeployBucket:
+    Type: String
+    Default: 'hasokon-com'
+    Description: >
+      ドメイン統合後のデプロイ先バケット（hasokon.com本体）。
+      デプロイロールに {バケット}/tools/* と {バケット}-test/tools/* への
+      書き込みを許可する。
+
+  RedirectTo:
+    Type: String
+    Default: ''
+    Description: >
+      設定すると、このディストリビューションは配信をやめて
+      「この値 + リクエストパス」へ301リダイレクトする
+      （例: https://hasokon.com/tools）。旧サブドメインの評価引き継ぎ用。
+
 Conditions:
   ShouldCreateOIDCProvider: !Equals [!Ref CreateGitHubOIDCProvider, 'true']
   ShouldCreateDeployRole: !Equals [!Ref CreateDeployRole, 'true']
@@ -166,6 +182,14 @@ Resources:
       FunctionCode: !Sub |
         function handler(event) {
           var request = event.request;
+          var redirectBase = '${RedirectTo}';
+          if (redirectBase !== '') {
+            return {
+              statusCode: 301,
+              statusDescription: 'Moved Permanently',
+              headers: { location: { value: redirectBase + request.uri } }
+            };
+          }
           var expected = '${BasicAuthString}';
           if (expected !== '') {
             var auth = request.headers.authorization;
@@ -316,7 +340,11 @@ Resources:
                   - HasExtraBucket
                   - - !GetAtt SiteBucket.Arn
                     - !Sub 'arn:aws:s3:::${ExtraDeployBucketName}'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}-test'
                   - - !GetAtt SiteBucket.Arn
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}-test'
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -325,7 +353,11 @@ Resources:
                   - HasExtraBucket
                   - - !Sub '${SiteBucket.Arn}/*'
                     - !Sub 'arn:aws:s3:::${ExtraDeployBucketName}/*'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}/tools/*'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}-test/tools/*'
                   - - !Sub '${SiteBucket.Arn}/*'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}/tools/*'
+                    - !Sub 'arn:aws:s3:::${SharedDeployBucket}-test/tools/*'
               # テスト環境のディストリビューションは別スタックにあるため、
               # ID単位ではなくアカウント内の全ディストリビューションを許可する。
               # CreateInvalidation はキャッシュ削除しかできず、悪用の余地が小さい

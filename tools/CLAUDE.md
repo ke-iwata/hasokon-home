@@ -7,14 +7,14 @@
 
 ## プロジェクト概要
 
-`https://tool.hasokon.com` で公開している無料Webツール集。
+`https://hasokon.com/tools/` で公開している無料Webツール集（basePath: /tools でドメイン統合済み。旧 tool.hasokon.com は301）。
 1ページ = 1ツールで、SEOで検索上位を狙い、AdSenseで収益化する。
 
 - **完全静的サイト**（Next.js App Router + `output: 'export'`）
 - **計算はすべてクライアントサイド**。サーバーもDBもなく、入力値は外部に送信しない
 - ホスティングは **AWS S3 + CloudFront**。デプロイは2段階:
-  - main にマージ → **tool.test.hasokon.com**（Basic認証つきテスト環境）
-  - `v*` タグを push → **tool.hasokon.com**（本番）。`git tag v1.0.0 && git push origin v1.0.0`
+  - main にマージ → **test.hasokon.com/tools/**（Basic認証つきテスト環境）
+  - `v*` タグを push → **hasokon.com/tools/**（本番）。`git tag v1.0.0 && git push origin v1.0.0`
 
 ## 技術構成
 
@@ -159,7 +159,7 @@ npm run build    # out/ に静的出力
 
 ## 現在の状態と次の一手
 
-- 公開済み: https://tool.hasokon.com （S3 + CloudFront）
+- 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
 - ツール13本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト201件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、

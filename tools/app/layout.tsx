@@ -88,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/about/">運営者情報</Link>
               <Link href="/privacy/">プライバシーポリシー</Link>
               <Link href="/contact/">お問い合わせ</Link>
-              <a href="https://hasokon.com/" rel="noopener">
+              <a href="/">
                 hasokon.com
               </a>
             </p>

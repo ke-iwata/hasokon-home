@@ -121,7 +121,7 @@ export function drawShareCard(card: ShareCard): HTMLCanvasElement {
   // フッター
   ctx.fillStyle = '#a8b0c2'
   ctx.font = "500 26px 'Hiragino Sans','Noto Sans JP',system-ui,sans-serif"
-  ctx.fillText('roulette.hasokon.com', W / 2, H - 46)
+  ctx.fillText('hasokon.com', W / 2, H - 46)
 
   return canvas
 }
