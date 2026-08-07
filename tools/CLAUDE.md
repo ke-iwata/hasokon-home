@@ -54,16 +54,12 @@ lib/
   roulette/           ルーレット系のロジックとデータ（純関数のみ）
 tests/
   {slug}.test.ts      lib/{slug}.ts のテスト
-infra/
-  certificate.yaml    ACM証明書（us-east-1でないとCloudFrontで使えない）
-  site.yaml           S3 + CloudFront + Route53 + デプロイ用IAMロール
-  setup.sh            上記2つを順に構築しGitHub Secretsまで設定する
+infra/README.md       インフラの所在（hasokon-infra リポジトリに移行済み）
 docs/CONCEPT.md       コンセプトと方針
 ```
 
-**AWSの構成はコンソールで直接いじらない。** `infra/*.yaml` を直して
-`./infra/setup.sh` を再実行する（何度実行しても同じ結果になる）。
-手で変更すると次回の実行で巻き戻る。
+**AWSの構成は [hasokon-infra](https://github.com/ke-iwata/hasokon-infra)（Terraform）で一元管理。**
+コンソールで直接いじらず、hasokon-infra を変更して `terraform apply` する。
 
 ## 設計上の約束
 
