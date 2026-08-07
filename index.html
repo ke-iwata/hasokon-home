@@ -122,6 +122,35 @@
         font-size: 0.83rem;
         margin-top: 2px;
       }
+      .card .icon {
+        font-size: 1.05rem;
+        margin-right: 6px;
+      }
+      .app-card {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        max-width: 460px;
+      }
+      .app-card img {
+        width: 72px;
+        height: 72px;
+        /* iOSのアイコンと同じ角丸率（約22%） */
+        border-radius: 16px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
+      }
+      .app-card .name,
+      .app-card .desc,
+      .app-card .store {
+        display: block;
+      }
+      .app-card .store {
+        color: var(--muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-top: 4px;
+      }
       .about {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -170,19 +199,19 @@
       </p>
       <div class="grid">
         <a class="card" href="https://tool.hasokon.com/nenshu-kabe/">
-          <div class="name">年収の壁 計算機</div>
+          <div class="name"><span class="icon">🧱</span>年収の壁 計算機</div>
           <div class="desc">106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/furusato-nozei/">
-          <div class="name">ふるさと納税 控除額計算機</div>
+          <div class="name"><span class="icon">🎁</span>ふるさと納税 控除額計算機</div>
           <div class="desc">上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/kosodate-shienkin/">
-          <div class="name">子ども・子育て支援金 計算機</div>
+          <div class="name"><span class="icon">👶</span>子ども・子育て支援金 計算機</div>
           <div class="desc">「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/shobyo-teate/">
-          <div class="name">傷病手当金 計算機</div>
+          <div class="name"><span class="icon">🏥</span>傷病手当金 計算機</div>
           <div class="desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</div>
         </a>
       </div>
@@ -191,27 +220,27 @@
       <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
       <div class="grid">
         <a class="card" href="https://tool.hasokon.com/sleep-cycle/">
-          <div class="name">睡眠サイクル計算機</div>
+          <div class="name"><span class="icon">😴</span>睡眠サイクル計算機</div>
           <div class="desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/aircon-denkidai/">
-          <div class="name">エアコン電気代 計算機</div>
+          <div class="name"><span class="icon">❄️</span>エアコン電気代 計算機</div>
           <div class="desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/warikan/">
-          <div class="name">割り勘計算機</div>
+          <div class="name"><span class="icon">🍻</span>割り勘計算機</div>
           <div class="desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/hebon-romaji/">
-          <div class="name">ヘボン式ローマ字変換</div>
+          <div class="name"><span class="icon">🔤</span>ヘボン式ローマ字変換</div>
           <div class="desc">氏名のふりがなをパスポート表記のローマ字に変換</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/hankaku-zenkaku/">
-          <div class="name">半角⇔全角 変換</div>
+          <div class="name"><span class="icon">🔡</span>半角⇔全角 変換</div>
           <div class="desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/aspect-ratio/">
-          <div class="name">アスペクト比計算機</div>
+          <div class="name"><span class="icon">📐</span>アスペクト比計算機</div>
           <div class="desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</div>
         </a>
       </div>
@@ -220,15 +249,15 @@
       <p class="section-desc">迷ったときにその場で決めるための道具です。</p>
       <div class="grid">
         <a class="card" href="https://tool.hasokon.com/roulette/">
-          <div class="name">ルーレット</div>
+          <div class="name"><span class="icon">🎯</span>ルーレット</div>
           <div class="desc">項目を入れて回すだけ。ランチ・当番・順番決めに</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/group/">
-          <div class="name">グループ分け</div>
+          <div class="name"><span class="icon">👥</span>グループ分け</div>
           <div class="desc">名前を入れるだけで班分け・チーム分けをランダムに作成</div>
         </a>
         <a class="card" href="https://tool.hasokon.com/dice/">
-          <div class="name">サイコロ</div>
+          <div class="name"><span class="icon">🎲</span>サイコロ</div>
           <div class="desc">1〜10個まで同時に振れて、合計も出ます</div>
         </a>
       </div>
@@ -240,44 +269,52 @@
       </p>
       <div class="grid">
         <a class="card" href="https://game.hasokon.com/solitaire/">
-          <div class="name">ソリティア</div>
+          <div class="name"><span class="icon">🃏</span>ソリティア</div>
           <div class="desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</div>
         </a>
         <a class="card" href="https://game.hasokon.com/spider/">
-          <div class="name">スパイダーソリティア</div>
+          <div class="name"><span class="icon">🕷️</span>スパイダーソリティア</div>
           <div class="desc">1スート〜4スートの3段階。じっくり遊べる本格ルール</div>
         </a>
         <a class="card" href="https://game.hasokon.com/minesweeper/">
-          <div class="name">マインスイーパー</div>
+          <div class="name"><span class="icon">💣</span>マインスイーパー</div>
           <div class="desc">数字をヒントに地雷を避ける定番パズル。初手は必ず安全</div>
         </a>
         <a class="card" href="https://game.hasokon.com/2048/">
-          <div class="name">2048</div>
+          <div class="name"><span class="icon">🔢</span>2048</div>
           <div class="desc">スワイプで同じ数字を合体。シンプルで中毒性のあるパズル</div>
         </a>
         <a class="card" href="https://game.hasokon.com/nanpre/">
-          <div class="name">ナンプレ</div>
+          <div class="name"><span class="icon">✏️</span>ナンプレ</div>
           <div class="desc">定番の数字パズル。3段階の難易度、答えは必ず1通り</div>
         </a>
         <a class="card" href="https://game.hasokon.com/breakout/">
-          <div class="name">ブロック崩し</div>
+          <div class="name"><span class="icon">🧱</span>ブロック崩し</div>
           <div class="desc">マウスやタッチで操作する定番アクション。面が進むと加速</div>
         </a>
       </div>
 
       <h2>スマホアプリ</h2>
       <p class="section-desc">App Store で公開しているアプリです。</p>
-      <div class="grid">
-        <a
-          class="card"
-          href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <div class="name">4 classic board games in one</div>
-          <div class="desc">将棋・リバーシ・チェス・五目並べを1つのアプリで。無料（iOS）</div>
-        </a>
-      </div>
+      <a
+        class="card app-card"
+        href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <img
+          src="/app-icon-boardgames.jpg"
+          alt="4 classic board games in one のアプリアイコン"
+          width="72"
+          height="72"
+          loading="lazy"
+        />
+        <span>
+          <span class="name">4 classic board games in one</span>
+          <span class="desc">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
+          <span class="store">無料 ･ App Store で入手 →</span>
+        </span>
+      </a>
 
       <h2>このサイトについて</h2>
       <div class="about">
