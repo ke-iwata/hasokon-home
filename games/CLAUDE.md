@@ -4,7 +4,7 @@
 
 ## プロジェクト概要
 
-`https://game.hasokon.com` で公開する無料ミニゲーム集。
+`https://hasokon.com/games/` で公開する無料ミニゲーム集。
 [hasokon-tools](https://github.com/ke-iwata/hasokon-tools)（tool.hasokon.com）の姉妹サイトで、
 技術構成・インフラ・運用方針はすべて tools と同じ。**迷ったら tools の CLAUDE.md に従う。**
 
@@ -39,14 +39,14 @@
 ## AdSense / アクセス解析
 
 - `lib/adsense.ts`（tools と同じパブリッシャーID・配信中）。
-  **AdSense管理画面に game.hasokon.com のサイト追加が必要**
+  **AdSense管理画面に hasokon.com/games/ のサイト追加が必要**
 - `lib/analytics.ts` の `GA_MEASUREMENT_ID` は未設定。
   tools とは**別のデータストリーム**を作って測定IDを入れる（サイト別に集計するため）
 - 主要な操作で `trackToolUse(slug, action)` を呼ぶ（開始・クリア・勝敗など実装済み）
 
 ## インフラ
 
-`infra/` は tools のテンプレートを game.hasokon.com 用に調整したもの。
+`infra/` は tools のテンプレートを hasokon.com/games/ 用に調整したもの。
 
 ```bash
 aws sso login --profile developer
@@ -54,8 +54,8 @@ PROFILE=developer ./infra/setup.sh   # 証明書(本番/テスト) → サイト
 ```
 
 デプロイの流れ（tools / home と共通）:
-- main にマージ → game.test.hasokon.com（Basic認証つきテスト環境）
-- `git tag v1.0.0 && git push origin v1.0.0` → game.hasokon.com（本番）
+- main にマージ → test.hasokon.com/games/（Basic認証つきテスト環境）
+- `git tag v1.0.0 && git push origin v1.0.0` → hasokon.com/games/（本番）
 
 - GitHub OIDCプロバイダはアカウントに1つ（tools のスタックが管理）。
   setup.sh が既存を検知して作成をスキップする

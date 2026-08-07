@@ -12,7 +12,8 @@ export interface GameDef {
   updatedAt: string;
 }
 
-export const SITE_URL = 'https://game.hasokon.com';
+// basePath込みのサイトURL。canonical・sitemap・JSON-LDはすべてここから作られる
+export const SITE_URL = 'https://hasokon.com/games';
 export const SITE_NAME = '無料ミニゲーム集';
 export const COPYRIGHT_HOLDER = 'hasokon tools';
 export const SITE_UPDATED_AT = '2026-08-04';

@@ -19,8 +19,8 @@ concurrency:
 env:
   NODE_VERSION: '22'
   AWS_REGION: ap-northeast-1
-  PROD_URL: https://game.hasokon.com/
-  TEST_URL: https://game.test.hasokon.com/
+  PROD_URL: https://hasokon.com/games/
+  TEST_URL: https://test.hasokon.com/games/
 
 jobs:
   test:
@@ -96,17 +96,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # テスト環境では、他サイトへの絶対リンクをテスト側ドメインへ書き換える。
-      # （フッターの hasokon.com など。本番のデプロイでは何もしない）
-      - name: テスト環境向けにサイト間リンクを書き換え
-        if: steps.target.outputs.skip != 'true' && !startsWith(github.ref, 'refs/tags/')
-        run: |
-          find out -name "*.html" -exec sed -i \
-            -e 's|https://hasokon\.com|https://test.hasokon.com|g' \
-            -e 's|tool\.hasokon\.com|tool.test.hasokon.com|g' \
-            -e 's|game\.hasokon\.com|game.test.hasokon.com|g' \
-            {} +
-
       # 先にアセットを上げてからHTMLを差し替える。逆にすると、新しいHTMLが
       # まだ存在しないJSを参照する瞬間ができてしまう。
       # --delete しないのは、古いHTMLをキャッシュしている利用者が
@@ -114,7 +103,7 @@ jobs:
       - name: S3へ同期（ハッシュ付きアセット・先に上げる）
         if: steps.target.outputs.skip != 'true'
         run: |
-          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/ \
+          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/games/ \
             --exclude "*" \
             --include "_next/static/*" \
             --size-only \
@@ -126,7 +115,7 @@ jobs:
       - name: S3へ同期（HTML・その他）
         if: steps.target.outputs.skip != 'true'
         run: |
-          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/ \
+          aws s3 sync out/ s3://${{ steps.target.outputs.bucket }}/games/ \
             --delete \
             --exclude "_next/static/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
@@ -136,7 +125,7 @@ jobs:
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ steps.target.outputs.dist }} \
-            --paths "/*"
+            --paths "/games/*"
 
       - name: デプロイ完了
         if: steps.target.outputs.skip != 'true'
