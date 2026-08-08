@@ -2,5 +2,3 @@ User-agent: *
 Allow: /
 
 Sitemap: https://hasokon.com/sitemap.xml
-Sitemap: https://hasokon.com/tools/sitemap.xml
-Sitemap: https://hasokon.com/games/sitemap.xml
