@@ -1,0 +1,27 @@
+name: Test
+
+# scripts/ の計測スクリプトのテスト。
+# サイト本体はビルド工程のない素の静的HTMLなので、テストの対象はここだけ。
+# ネットワークもGoogleの認証情報も要らない（すべて差し替えて動かしている）。
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: scripts のテスト
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: node --test
+        run: node --test "scripts/test/*.test.mjs"

@@ -8,6 +8,26 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-10：検索インデックス統合の進み具合を数えるスクリプトを置いた
+
+`scripts/gsc-canonical-audit.mjs`。サイトマップに載っている全URLを Search Console の
+URL検査APIにかけ、`googleCanonical` が旧サブドメインを指したままのページを数える。
+仕様は [features/search-index-consolidation.md](./features/search-index-consolidation.md)。
+
+**理由**：仕様書の「効果の測り方」が、実施前・1週間後・4週間後に全URLの `googleCanonical` を
+数え直す、というもの。手でやると86ページ分の検査を3回繰り返すことになり、
+数え間違いも起きる。判定条件（legacy が0件なら完了）が機械的に書けるので、
+スクリプトにして終了コードで答えさせることにした。
+
+**依存パッケージを入れなかった理由**：このリポジトリは「ビルド工程のない素の静的HTML」で
+通してきた。google-auth-library を入れれば JWT の署名は省けるが、そのために
+package.json と lock ファイルと更新の面倒を抱えるのは、スクリプト1本には見合わない。
+RS256 の署名1回は `node:crypto` で足りる。
+
+**運用作業（GSCへの旧サブドメイン登録・アドレス変更ツールの実行）はまだ未実施。**
+サービスアカウントは読み取り権限しか持たず、アドレス変更ツールはAPIから実行できないため、
+運営者が管理画面で操作する必要がある。手順は仕様書に書いてある。
+
 ## 2026-08-08：サイトマップをインデックス化して tools / games を束ねた
 
 `/sitemap.xml` を sitemapindex にし、`/sitemap-home.xml`・`/tools/sitemap.xml`・`/games/sitemap.xml`

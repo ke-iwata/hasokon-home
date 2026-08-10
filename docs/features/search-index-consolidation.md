@@ -1,6 +1,7 @@
 # 検索インデックス統合の完了（旧サブドメイン → hasokon.com）
 
-**状態**：未実装（提案）
+**状態**：一部実装。計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) は追加済み（2026-08-10）。
+**Search Console 上の運用作業（手順1〜4）は未実施**で、運営者の操作待ち。
 **対象**：hasokon.com 全体（運用作業が中心。コード変更はほぼ無い）
 **起票**：2026-08-10
 
@@ -153,6 +154,11 @@ POST https://searchconsole.googleapis.com/v1/urlInspection/index:inspect
 `googleCanonical` が旧サブドメインを指すURLの件数を数える。**この件数が0になったら統合完了。**
 現在の件数は、抽出した7URL中2件（`nenshu-kabe`, `minesweeper`）。
 全86URLでの正確な件数は未計測なので、実施前にベースラインとして取っておくこと。
+
+この数え上げは [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) で自動化してある
+（`node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json`）。
+旧サブドメインを指すURLが0件なら終了コード0を返すので、統合完了の判定はこれで足りる。
+使い方は [scripts/README.md](../../scripts/README.md) を参照。
 
 なお、**この作業で検索順位そのものが上がるわけではない**。
 「本来つくはずの評価が正しい場所につく」だけである。順位を上げるのは中身の仕事。
