@@ -24,3 +24,4 @@
 | ファイル | 内容 | 状態 |
 |---|---|---|
 | [search-index-consolidation.md](./search-index-consolidation.md) | 旧サブドメインからの検索インデックス統合を完了させる | 一部実装（計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) のみ。GSCでの運用作業は未実施） |
+| [trailing-slash-canonicalization.md](./trailing-slash-canonicalization.md) | 末尾スラッシュ・index.html を301で正規URLに寄せる（実装は hasokon-infra 側） | 提案（未実装） |
