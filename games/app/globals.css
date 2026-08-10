@@ -1,0 +1,584 @@
+/* hasokon-games 全スタイル。ここ以外にCSSを増やさない */
+
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #283548;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --border: #334155;
+  --brand: #38bdf8;
+  --brand-2: #a78bfa;
+  --accent: #fbbf24;
+  --danger: #f87171;
+  --ok: #4ade80;
+  --radius: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* ゲーム中のダブルタップ拡大を防ぐ */
+  touch-action: manipulation;
+}
+
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+}
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+a {
+  color: var(--brand);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 8px 0 4px;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 8px;
+  border-left: 4px solid var(--brand);
+  padding-left: 10px;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 18px 0 6px;
+}
+
+p {
+  margin: 8px 0;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+  margin: 8px 0;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ---- ヘッダー・フッター ---- */
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.site-header .inner,
+.site-footer .inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.brand span {
+  background: linear-gradient(90deg, var(--brand), var(--brand-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 40px;
+}
+
+.site-footer a {
+  color: var(--muted);
+  margin-right: 14px;
+}
+
+/* ---- ゲーム一覧 ---- */
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.game-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.game-card:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+.game-card .icon {
+  font-size: 1.8rem;
+}
+
+.game-card .name {
+  font-weight: 700;
+  margin-top: 6px;
+  color: var(--brand);
+}
+
+.game-card .desc {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ---- 共通UI ---- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 16px 0;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn:hover {
+  border-color: var(--brand);
+}
+
+.btn-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #0f172a;
+}
+
+.btn-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.seg button {
+  padding: 8px 16px;
+  background: var(--surface);
+  color: var(--muted);
+  border: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.seg button.active {
+  background: var(--brand);
+  color: #0f172a;
+}
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 10px 0;
+}
+
+.note {
+  background: rgba(251, 191, 36, 0.08);
+  border-left: 4px solid var(--accent);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin: 14px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.adslot {
+  min-height: 90px;
+  margin: 24px 0;
+  text-align: center;
+}
+
+/* ---- ナンプレ ---- */
+
+.np-board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border: 2px solid var(--muted);
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.np-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.9rem, 4vw, 1.3rem);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  color: var(--brand);
+  font-weight: 600;
+  padding: 0;
+}
+
+/* 3列・3行ごとの太い区切り線 */
+.np-cell:nth-child(9n + 4),
+.np-cell:nth-child(9n + 7) {
+  border-left: 2px solid var(--muted);
+}
+
+.np-cell.row-sep {
+  border-top: 2px solid var(--muted);
+}
+
+.np-cell.given {
+  color: var(--text);
+  cursor: default;
+}
+
+.np-cell.selected {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+.np-cell.same-number {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.np-cell.conflict {
+  color: var(--danger);
+}
+
+.np-pad {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin: 14px auto 0;
+}
+
+.np-pad button {
+  padding: 12px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.np-pad button:active {
+  background: var(--brand);
+  color: #0f172a;
+}
+
+/* ---- ブロック崩し ---- */
+
+.bk-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  aspect-ratio: 4 / 5;
+  touch-action: none; /* ドラッグ操作をスクロールに取られない */
+}
+
+.bk-stage canvas {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b1220;
+  display: block;
+}
+
+.bk-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 8px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  h1 {
+    font-size: 1.25rem;
+  }
+}
+
+/* ---- 2048 ----
+   タイルは絶対配置にして transform で動かす。transition がスライドの
+   アニメーションになる。下敷きの空セル（.g2048-bg）は常に16個で固定なので、
+   盤面の大きさは一切変わらない */
+
+.g2048-board {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  margin: 0 auto;
+  aspect-ratio: 1;
+  background: var(--surface-2);
+  border-radius: 10px;
+  overflow: hidden;
+  touch-action: none; /* スワイプ操作をスクロールに取られない */
+  user-select: none;
+}
+
+.g2048-bg,
+.g2048-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 25%;
+  height: 25%;
+}
+
+.g2048-bg::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.g2048-tile {
+  transition: transform 130ms ease-in-out; /* SLIDE_MS と揃える */
+}
+
+.g2048-face {
+  position: absolute;
+  inset: 4px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #0f172a;
+  /* 4桁でも収まる固定サイズ。値によって変えない（レイアウトが動くため） */
+  font-size: clamp(0.95rem, 5.5vw, 1.4rem);
+}
+
+.g2048-tile.new .g2048-face {
+  animation: g2048-appear 150ms ease-out;
+}
+
+.g2048-tile.merged .g2048-face {
+  animation: g2048-pop 170ms ease-out;
+}
+
+@keyframes g2048-appear {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes g2048-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+
+/* ---- マインスイーパー ---- */
+
+.ms-board {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin: 0 auto;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.ms-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  /* 閉じたマスは浮き上がったボタンに見せる（明るい面 + ベベル） */
+  background: #45587a;
+  border: 1px solid;
+  border-color: #64799e #2a3a56 #2a3a56 #64799e;
+  color: var(--text);
+  font-weight: 700;
+  font-size: clamp(0.65rem, 2.6vw, 1rem);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ms-cell.revealed {
+  /* 開いたマスは沈んだ平面。閉じたマスと明度差をはっきり付ける */
+  background: #101a2c;
+  border: 1px solid #1f2c44;
+  cursor: default;
+}
+
+.ms-cell.exploded {
+  background: var(--danger);
+}
+
+/* 数字の色（Windows版に倣った慣習的な配色） */
+.ms-n1 { color: #60a5fa; }
+.ms-n2 { color: #4ade80; }
+.ms-n3 { color: #f87171; }
+.ms-n4 { color: #a78bfa; }
+.ms-n5 { color: #fbbf24; }
+.ms-n6 { color: #2dd4bf; }
+.ms-n7 { color: #f472b6; }
+.ms-n8 { color: #94a3b8; }
+
+/* ---- トランプ（ソリティア・スパイダー共通） ---- */
+
+.cardgame {
+  user-select: none;
+}
+
+.cardgame .top-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.cardgame .piles {
+  display: flex;
+  gap: 8px;
+}
+
+.tableau {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+}
+
+.tableau.cols7 { grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.tableau.cols10 { grid-template-columns: repeat(10, 1fr); gap: 3px; }
+
+/* スパイダーは10列で1枚が細いので、文字を小さくして数字を読めるようにする */
+.cols10 .playing-card {
+  font-size: clamp(0.58rem, 2.7vw, 0.85rem);
+  padding: 1px 2px;
+  border-radius: 4px;
+}
+
+.pile {
+  position: relative;
+  min-height: 60px;
+}
+
+.playing-card {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 6px;
+  border: 1px solid #475569;
+  background: #f8fafc;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 2px 3px;
+  font-weight: 700;
+  font-size: clamp(0.6rem, 2.6vw, 0.95rem);
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.playing-card.red { color: #dc2626; }
+
+.playing-card.back {
+  background: repeating-linear-gradient(
+    45deg,
+    #1d4ed8,
+    #1d4ed8 4px,
+    #1e40af 4px,
+    #1e40af 8px
+  );
+  border-color: #1e3a8a;
+}
+
+.playing-card.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+  filter: brightness(1.08);
+}
+
+/* 置き先の候補（選択中に表示）。うっすら光らせて誘導する */
+.playing-card.droppable,
+.playing-card.empty.droppable {
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.7);
+}
+
+.playing-card.empty {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed var(--border);
+  box-shadow: none;
+  color: var(--muted);
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+/* 列の中で重ねて表示する（上端だけずらす） */
+.pile .stacked {
+  position: absolute;
+  left: 0;
+  right: 0;
+}

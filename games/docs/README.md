@@ -1,0 +1,26 @@
+# docs の使い方
+
+このフォルダは **「どういう理由で、何を作った／作らなかったのか」を残し続ける場所**です。
+コードを読めば「何をしているか」は分かりますが、「なぜそうしたか」は残しておかないと失われます。
+
+## 置くもの
+
+| ファイル | 内容 |
+|---|---|
+| [DECISIONS.md](./DECISIONS.md) | 実装した機能と、その理由の記録。**新しく何か作ったら必ず追記する** |
+
+## 書き方の約束
+
+1. **理由を書く。** 何をしたかはgit履歴に残る。ここに書くのは「なぜそれを選んだか」
+   と「他の選択肢をなぜ採らなかったか」
+2. **数字を根拠にする。** 計測データがあるなら、取得日と数値を残す。
+   あとから「その判断は正しかったか」を検証できるようにするため
+3. **やらなかったことも書く。** 提案を見送った場合、見送った理由を書いておかないと
+   半年後に同じ提案が繰り返される
+
+## 関連
+
+- 技術構成・運用方針の基準は [hasokon-tools](https://github.com/ke-iwata/hasokon-tools)。
+  **迷ったら tools の [CLAUDE.md](https://github.com/ke-iwata/hasokon-tools/blob/main/CLAUDE.md) と
+  [docs/CONCEPT.md](https://github.com/ke-iwata/hasokon-tools/blob/main/docs/CONCEPT.md) に従う**
+- サイト全体を横断する提案は、ハブである [hasokon-home/docs](https://github.com/ke-iwata/hasokon-home/tree/main/docs) に置く
