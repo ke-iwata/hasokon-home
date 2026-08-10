@@ -73,4 +73,5 @@ main へのpushで test.hasokon.com/games/、`v*` タグのpushで本番。
 ## 提案中（未実施）
 
 - [2026-08-10 SEO / UI・UX 改善提案](./proposals/2026-08-10-seo-uiux.md)
-  — games は9ページすべてが未インデックス。相互リンク・パンくず・関連リンクの共通化
+  — games は9ページすべてが未インデックス。相互リンク・パンくず・関連リンクの共通化と、
+  `prefers-reduced-motion` の対応
