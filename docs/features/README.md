@@ -23,4 +23,4 @@
 
 | ファイル | 内容 | 状態 |
 |---|---|---|
-| [search-index-consolidation.md](./search-index-consolidation.md) | 旧サブドメインからの検索インデックス統合を完了させる | 未実装（提案） |
+| [search-index-consolidation.md](./search-index-consolidation.md) | 旧サブドメインからの検索インデックス統合を完了させる | 一部実装（計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) のみ。GSCでの運用作業は未実施） |
