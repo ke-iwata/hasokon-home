@@ -24,3 +24,4 @@
 | ファイル | 内容 | 状態 |
 |---|---|---|
 | [search-index-consolidation.md](./search-index-consolidation.md) | 旧サブドメインからの検索インデックス統合を完了させる | 一部実装（計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) のみ。GSCでの運用作業は未実施） |
+| [game-freecell.md](./game-freecell.md) | 新ゲーム「フリーセル」を追加する | 提案（未実装） |
