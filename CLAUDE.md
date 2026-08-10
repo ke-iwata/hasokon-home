@@ -38,6 +38,7 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 1. main への push（テスト環境への反映）までは自律的に行ってよい
 2. テスト環境のURLと確認ポイントを運営者に提示する
 3. 運営者の承認を得てからタグを打つ（運営者が自分で打つ場合もある）
+4. タグを打ってからリリースもpublishする
 
 テスト環境の Basic認証: hasokon / preview2026
 
