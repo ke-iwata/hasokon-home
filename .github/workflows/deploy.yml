@@ -73,6 +73,8 @@ jobs:
             --exclude ".github/*" \
             --exclude "infra/*" \
             --exclude "README.md" \
+            --exclude "CLAUDE.md" \
+            --exclude "docs/*" \
             --exclude ".gitignore" \
             --exclude "tools/*" \
             --exclude "games/*" \
