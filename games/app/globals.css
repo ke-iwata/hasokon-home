@@ -509,13 +509,25 @@ ol {
 }
 
 .tableau.cols7 { grid-template-columns: repeat(7, 1fr); gap: 5px; }
-.tableau.cols10 { grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.tableau.cols10 { grid-template-columns: repeat(10, 1fr); gap: 2px; }
 
-/* スパイダーは10列で1枚が細いので、文字を小さくして数字を読めるようにする */
+/* スパイダーは10列で1枚が細いので、角丸だけ小さくする */
 .cols10 .playing-card {
-  font-size: clamp(0.58rem, 2.7vw, 0.85rem);
-  padding: 1px 2px;
   border-radius: 4px;
+}
+
+/* スマホではカードゲームの外枠を画面幅いっぱいに広げて1枚を大きくする。
+   10列のスパイダーで1枚あたり+20%ほど効く */
+@media (max-width: 520px) {
+  .cardgame {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
 }
 
 .pile {
@@ -524,33 +536,37 @@ ol {
 }
 
 .playing-card {
+  /* 重ねた札はDOM順に「札ごと」前面へ。position:static のままだと
+     ボタン背景とSVG中身の描画段階が分かれ、下の札のSVGが上の札の
+     背景より手前に描かれてしまう（CSSの描画順序の仕様） */
+  position: relative;
   width: 100%;
   aspect-ratio: 5 / 7;
   border-radius: 6px;
   border: 1px solid #475569;
-  background: #f8fafc;
+  background: #fdfdfd;
   color: #0f172a;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  padding: 2px 3px;
+  align-items: stretch;
+  padding: 0;
   font-weight: 700;
   font-size: clamp(0.6rem, 2.6vw, 0.95rem);
   line-height: 1.1;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
 }
 
-.playing-card.red { color: #dc2626; }
+/* カードの絵柄はSVGで描く。ボタン全面に敷く */
+.playing-card svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
 .playing-card.back {
-  background: repeating-linear-gradient(
-    45deg,
-    #1d4ed8,
-    #1d4ed8 4px,
-    #1e40af 4px,
-    #1e40af 8px
-  );
+  background: #1d4ed8;
   border-color: #1e3a8a;
 }
 

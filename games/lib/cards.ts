@@ -19,11 +19,13 @@ export interface Card {
 
 export const SUITS: readonly Suit[] = ['spade', 'heart', 'diamond', 'club'];
 
+// 値の末尾にはテキスト表示セレクタ（U+FE0E）を付けている。
+// iOSが ♥ ♦ を絵文字として描画して色指定が効かなくなるのを防ぐ
 export const SUIT_SYMBOL: Record<Suit, string> = {
-  spade: '♠',
-  heart: '♥',
-  diamond: '♦',
-  club: '♣',
+  spade: '♠︎',
+  heart: '♥︎',
+  diamond: '♦︎',
+  club: '♣︎',
 };
 
 export const RANK_LABEL: Record<Rank, string> = {
