@@ -105,6 +105,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-01',
   },
   {
+    slug: 'interval-timer',
+    icon: '⏱️',
+    name: 'インターバルタイマー',
+    description:
+      'トレーニング用のインターバルタイマー。タバタ式・HIITのプリセット付きで、運動・休憩・セット数を自由に設定。ビープ音で切り替えを知らせます。',
+    category: '生活・健康',
+    ready: true,
+    updatedAt: '2026-08-11',
+  },
+  {
     slug: 'sleep-cycle',
     icon: '😴',
     name: '睡眠サイクル計算機',
