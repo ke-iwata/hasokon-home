@@ -1,0 +1,144 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { SITE_URL } from '@/lib/registry';
+import AdUnit from '@/app/AdUnit';
+import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import RelatedTools from '@/app/RelatedTools';
+import ToolMeta from '@/app/ToolMeta';
+import Calculator from './Calculator';
+
+const title = '傷病手当金 計算機｜月収からいくらもらえるかを自動計算';
+const description =
+  '病気やケガで会社を休んだときにもらえる傷病手当金を計算。月収と休んだ日数を入れるだけで、日額（標準報酬日額×2/3）・待期3日を除いた支給日数・支給総額・月額の目安がわかります。';
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: `${SITE_URL}/shobyo-teate/` },
+};
+
+const faq = [
+  {
+    q: '傷病手当金はいつからもらえますか？',
+    a: '連続して3日間休んだあと（待期期間）、4日目以降の仕事に就けなかった日から支給されます。待期の3日間には土日祝日や有給休暇を使った日も含まれます。飛び飛びの欠勤では待期が完成しないため、まず「連続3日」休むことが条件です。',
+  },
+  {
+    q: '傷病手当金はいくらもらえますか？',
+    a: '1日あたり、支給開始日以前12ヶ月の各月の標準報酬月額の平均を30で割った額（標準報酬日額）の3分の2です。たとえば標準報酬月額30万円なら日額は約6,667円、1ヶ月（30日）休むと約18万円が目安になります。給与のおよそ3分の2と覚えておくとよいでしょう。',
+  },
+  {
+    q: '傷病手当金はいつまでもらえますか？',
+    a: '支給開始日から通算して1年6ヶ月です。2022年1月の改正で「支給開始から暦の上で1年6ヶ月」ではなく「通算1年6ヶ月」に変わったため、途中で復職して再び休んだ場合は、復職していた期間は数えずに支給を受けられます。',
+  },
+  {
+    q: '入社して1年経っていない場合はどうなりますか？',
+    a: '支給開始日以前の被保険者期間が12ヶ月に満たない場合は、「その期間の標準報酬月額の平均」と「全被保険者の標準報酬月額の平均額（協会けんぽでは支給開始日が2025年4月1日以降で32万円）」を比べ、低いほうを使って計算します。そのため給与が高い方でも、加入して間もない時期は日額がおよそ7,113円で頭打ちになります。本ツールではチェックボックスでこの上限を反映できます。',
+  },
+  {
+    q: '有給休暇を使った日や給与が出る日はどうなりますか？',
+    a: '傷病手当金は「給与が支払われないこと」が支給条件のため、有給休暇を取得した日や給与が支払われる日は支給されません。ただし支払われる給与が傷病手当金の日額より少ない場合は、差額が支給されます。待期3日間には有給を充てても問題ありません。',
+  },
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebApplication',
+      name: '傷病手当金 計算機',
+      url: `${SITE_URL}/shobyo-teate/`,
+      applicationCategory: 'FinanceApplication',
+      operatingSystem: 'Web',
+      inLanguage: 'ja',
+      isAccessibleForFree: true,
+      dateModified: toolUpdatedAt('shobyo-teate'),
+      publisher: PUBLISHER_REF,
+      offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
+      description,
+    },
+    {
+      '@type': 'FAQPage',
+      mainEntity: faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    },
+  ],
+};
+
+export default function Page() {
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <h1>傷病手当金 計算機</h1>
+      <p className="lead">
+        病気やケガで会社を休んだときにもらえる傷病手当金の目安を計算します。月収と休んだ日数を入れるだけで、日額・支給日数・支給総額がわかります。
+      </p>
+
+      <Calculator />
+
+      <AdUnit position="below-tool" />
+
+      <h2>傷病手当金とは？ 支給の条件</h2>
+      <p>
+        傷病手当金は、健康保険（協会けんぽ・健康保険組合）の被保険者が
+        <strong>業務外</strong>の病気やケガで働けなくなったときに、生活を保障するために支給される給付です。次の条件をすべて満たすと支給されます。
+      </p>
+      <ul>
+        <li>業務外の病気やケガの療養のため働けないこと（業務上・通勤中は労災保険の対象）</li>
+        <li>連続する3日間の待期期間を含み、4日以上仕事に就けなかったこと</li>
+        <li>休んだ期間について給与の支払いがないこと（一部支払いがある場合は差額支給）</li>
+      </ul>
+      <p>
+        支給額は「支給開始日以前12ヶ月の標準報酬月額の平均 ÷ 30日 ×
+        2/3」で、おおむね給与の3分の2にあたります。÷30の時点で10円未満を、×2/3の時点で1円未満をそれぞれ四捨五入して計算します。
+      </p>
+      <p>
+        ただし<strong>被保険者期間が12ヶ月に満たない場合は上限があります</strong>。その期間の標準報酬月額の平均と、全被保険者の標準報酬月額の平均額（協会けんぽでは32万円）のうち低いほうで計算されるため、給与が高い方でも日額は約7,113円で頭打ちになります。転職・入社から1年以内の方は計算機のチェックボックスをオンにしてください。
+      </p>
+
+      <h2>支給期間は「通算」1年6ヶ月</h2>
+      <p>
+        支給期間は支給開始日から<strong>通算1年6ヶ月</strong>です。2022年1月の制度改正で、それまでの「支給開始から暦の上で1年6ヶ月」から「支給された期間を通算して1年6ヶ月」に変わりました。これにより、がん治療などで入退院を繰り返す場合でも、復職して給与が出ていた期間は支給期間にカウントされず、実際に休んだ期間の合計で1年6ヶ月分まで受け取れます。
+      </p>
+
+      <div className="note">
+        本ツールの計算は目安です。実際の支給額は支給開始日以前12ヶ月の各月の標準報酬月額の平均から算定されるため、昇給・降給があった場合は結果と異なることがあります。また、健康保険組合によっては法定の傷病手当金に上乗せされる「付加給付」がある場合があります。正確な金額は加入している健康保険にご確認ください。なお、国民健康保険（自営業・フリーランス等）には原則として傷病手当金の制度はありません。
+      </div>
+
+      <h2>よくある質問</h2>
+      {faq.map((f) => (
+        <div key={f.q}>
+          <h3>{f.q}</h3>
+          <p>{f.a}</p>
+        </div>
+      ))}
+
+      <AdUnit position="below-faq" />
+
+      <RelatedTools current="shobyo-teate" />
+
+      <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+        関連ツール：<Link href="/nenshu-kabe/">年収の壁 計算機</Link>／
+        <Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link>
+      </p>
+
+      <ToolMeta slug="shobyo-teate" ymyl>
+        出典：
+        <a
+          href="https://www.kyoukaikenpo.or.jp/g6/cat620/r306/"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          全国健康保険協会（協会けんぽ）「病気やケガで会社を休んだとき（傷病手当金）」
+        </a>
+        にもとづき作成。端数処理は協会けんぽの算定方法によります。
+      </ToolMeta>
+    </>
+  );
+}

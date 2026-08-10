@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# ローカルの開発ツール設定（LANに開く dev server 起動設定など。共有しない）
+.claude/
