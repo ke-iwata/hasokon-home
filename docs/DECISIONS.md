@@ -70,5 +70,5 @@ main へのpushで test.hasokon.com（Basic認証つき）、`v*` タグのpush�
 
 ## 提案中（未実施）
 
-- [2026-08-10 SEO / UI・UX 改善提案](./proposals/2026-08-10-seo-uiux.md)
-  — 旧ドメインの再クロール加速、ルートドメインのGA4計測、内部リンク、OGP画像
+- [2026-08-10 SEO / UI・UX / 正確性の改善提案](./proposals/2026-08-10-seo-uiux.md)
+  — 年収の壁の判定誤り（tools）、10月の「週20時間の壁」対応、内部リンク、ルートドメインのGA4計測
