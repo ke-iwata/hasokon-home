@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  beepsBetween,
   buildSchedule,
   clampSettings,
   formatTime,
   LIMITS,
   positionAt,
   PRESETS,
+  sameSettings,
   totalDurationSec,
   type TimerSettings,
 } from '@/lib/interval-timer';
@@ -120,6 +122,67 @@ describe('clampSettings', () => {
     expect(s.workSec).toBe(LIMITS.workSec.min);
     expect(s.restSec).toBe(10);
     expect(s.sets).toBe(3);
+  });
+
+  it('+Infinityは上限、-Infinityは下限（number inputは「9e999」を受け付ける）', () => {
+    const s = clampSettings({
+      prepareSec: Infinity,
+      workSec: Infinity,
+      restSec: -Infinity,
+      sets: Infinity,
+    });
+    expect(s).toEqual({
+      prepareSec: LIMITS.prepareSec.max,
+      workSec: LIMITS.workSec.max,
+      restSec: LIMITS.restSec.min,
+      sets: LIMITS.sets.max,
+    });
+  });
+});
+
+describe('beepsBetween', () => {
+  const schedule = buildSchedule(tabata); // 準備10 + (20+10)×8 − 最後の休憩 = 240秒
+
+  it('開始直後（同一フェーズ内・残り4秒以上）は鳴らない', () => {
+    expect(beepsBetween(schedule, 0, 0.1)).toEqual([]);
+  });
+
+  it('準備→トレーニングの境界を跨ぐと work-start', () => {
+    expect(beepsBetween(schedule, 9.9, 10.1)).toEqual(['work-start']);
+  });
+
+  it('トレーニング→休憩の境界を跨ぐと rest-start', () => {
+    expect(beepsBetween(schedule, 29.5, 30.2)).toEqual(['rest-start']);
+  });
+
+  it('境界を大きく遅れて跨いでも鳴る（バックグラウンドのtick間引き耐性）', () => {
+    // 前回tickが準備中(5秒)、次のtickが55秒後: 複数フェーズを一気に跨ぐ
+    // 65秒時点はセット2の休憩(60〜70秒)なので rest-start が1回だけ返る
+    expect(beepsBetween(schedule, 5, 65)).toEqual(['rest-start']);
+  });
+
+  it('残り3秒からカウントダウン音、同じ秒では繰り返さない', () => {
+    expect(beepsBetween(schedule, 26.5, 27.2)).toEqual(['countdown']); // 残り4→3
+    expect(beepsBetween(schedule, 27.2, 27.4)).toEqual([]); // 同じ残り3秒
+    expect(beepsBetween(schedule, 27.4, 28.1)).toEqual(['countdown']); // 残り3→2
+  });
+
+  it('完了を跨ぐと finish、完了後は何も鳴らない', () => {
+    expect(beepsBetween(schedule, 239, 241)).toEqual(['finish']);
+    expect(beepsBetween(schedule, 241, 242)).toEqual([]);
+  });
+
+  it('フェーズ開始と残り3秒以下が同時なら開始音を優先する', () => {
+    // 休憩なし・トレーニング5秒: 2セット目の開始時点で残り5秒 → work-start のみ
+    const short = buildSchedule({ prepareSec: 0, workSec: 5, restSec: 0, sets: 2 });
+    expect(beepsBetween(short, 4.9, 5.1)).toEqual(['work-start']);
+  });
+});
+
+describe('sameSettings', () => {
+  it('全フィールド一致で true、1つでも違えば false', () => {
+    expect(sameSettings(tabata, { ...tabata })).toBe(true);
+    expect(sameSettings(tabata, { ...tabata, sets: 7 })).toBe(false);
   });
 });
 

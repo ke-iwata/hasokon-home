@@ -83,8 +83,9 @@ export const PRESETS: Preset[] = [
 export function clampSettings(s: TimerSettings): TimerSettings {
   const clamp = (v: number, key: keyof typeof LIMITS): number => {
     const { min, max } = LIMITS[key];
-    const n = Math.round(Number.isFinite(v) ? v : min);
-    return Math.min(max, Math.max(min, n));
+    if (Number.isNaN(v)) return min;
+    // ±Infinity は Math.min/max がそのまま上限・下限に収める
+    return Math.min(max, Math.max(min, Math.round(v)));
   };
   return {
     prepareSec: clamp(s.prepareSec, 'prepareSec'),
@@ -144,6 +145,43 @@ export function positionAt(schedule: Phase[], elapsedSec: number): TimerPosition
   }
   // e < total なので到達しないが、型のための保険
   return { phase: null, phaseIndex: schedule.length, remainingSec: 0, done: true };
+}
+
+/** 2つの設定が同じ値か（プリセットの選択状態の表示に使う） */
+export function sameSettings(a: TimerSettings, b: TimerSettings): boolean {
+  return (
+    a.prepareSec === b.prepareSec &&
+    a.workSec === b.workSec &&
+    a.restSec === b.restSec &&
+    a.sets === b.sets
+  );
+}
+
+export type BeepKind = 'work-start' | 'rest-start' | 'countdown' | 'finish';
+
+/**
+ * 経過秒が prevSec → nowSec に進んだときに鳴らすべき音を返す。
+ *
+ * tick の間隔に依存させないための設計。バックグラウンドのタブでは
+ * setInterval が1秒以上に間引かれるため、「境界の直後に tick が来る」
+ * 前提で判定すると切り替え音を取りこぼす。フェーズ番号の変化で見れば、
+ * どれだけ遅れて呼ばれても現在のフェーズの開始音は必ず1回返る。
+ */
+export function beepsBetween(
+  schedule: Phase[],
+  prevSec: number,
+  nowSec: number,
+): BeepKind[] {
+  const prev = positionAt(schedule, prevSec);
+  const now = positionAt(schedule, nowSec);
+  if (now.done) return prev.done ? [] : ['finish'];
+  if (now.phaseIndex !== prev.phaseIndex) {
+    return [now.phase?.type === 'work' ? 'work-start' : 'rest-start'];
+  }
+  if (now.remainingSec !== prev.remainingSec && now.remainingSec <= 3) {
+    return ['countdown'];
+  }
+  return [];
 }
 
 /** 秒 → 「M:SS」表記（1時間以上は「H:MM:SS」） */

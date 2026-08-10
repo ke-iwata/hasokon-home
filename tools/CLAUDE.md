@@ -137,7 +137,7 @@ docs/CONCEPT.md       コンセプトと方針
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在201件）
+npm test         # 計算ロジックのテスト（現在246件）
 npm run build    # out/ に静的出力
 ```
 
@@ -155,7 +155,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール13本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト201件
+- ツール14本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト246件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
   `lib/analytics.ts` にGA4の測定IDを設定
