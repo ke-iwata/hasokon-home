@@ -23,4 +23,4 @@
 ## 関連
 
 - サイト全体を横断する提案は、ハブである [hasokon-home/docs](https://github.com/ke-iwata/hasokon-home/tree/main/docs) に置く
-- 姉妹サイト: [hasokon-games/docs](https://github.com/ke-iwata/hasokon-games/tree/main/docs)
+- 姉妹サイト: [games/docs](../../games/docs)

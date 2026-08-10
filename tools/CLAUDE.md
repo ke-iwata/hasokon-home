@@ -1,6 +1,7 @@
-# CLAUDE.md
+# CLAUDE.md（tools）
 
-このリポジトリで作業するAIエージェント・開発者向けのガイドです。
+hasokon.com モノレポの `tools/` で作業するAIエージェント・開発者向けのガイドです。
+npmコマンドはすべて `tools/` ディレクトリ内で実行します。
 **なぜこのサイトを作っているか**は [docs/CONCEPT.md](./docs/CONCEPT.md) を先に読んでください。
 
 ---
@@ -12,9 +13,9 @@
 
 - **完全静的サイト**（Next.js App Router + `output: 'export'`）
 - **計算はすべてクライアントサイド**。サーバーもDBもなく、入力値は外部に送信しない
-- ホスティングは **AWS S3 + CloudFront**。デプロイは2段階:
-  - main にマージ → **test.hasokon.com/tools/**（Basic認証つきテスト環境）
-  - `v*` タグを push → **hasokon.com/tools/**（本番）。`git tag v1.0.0 && git push origin v1.0.0`
+- ホスティングは **AWS S3 + CloudFront**。デプロイはリポジトリルートの
+  `.github/workflows/deploy.yml` が home + tools + games をまとめて行う
+  （main → test.hasokon.com/tools/、`v*` タグ → 本番。1タグでサイト全体）
 
 ## 技術構成
 
@@ -24,7 +25,7 @@
 | 言語 | TypeScript | **6系に固定**。7系はNext.jsのコンパイラAPI非対応でビルドが落ちる |
 | テスト | Vitest | 計算ロジック（純関数）のみを対象 |
 | スタイル | 素のCSS（`app/globals.css`） | CSS-in-JSやTailwindは導入していない |
-| ホスティング | S3 + CloudFront (OIDC経由でデプロイ) | [DEPLOY.md](./DEPLOY.md) |
+| ホスティング | S3 + CloudFront (OIDC経由でデプロイ) | ルートの deploy.yml |
 
 ## ディレクトリ構成
 
@@ -54,7 +55,6 @@ lib/
   roulette/           ルーレット系のロジックとデータ（純関数のみ）
 tests/
   {slug}.test.ts      lib/{slug}.ts のテスト
-infra/README.md       インフラの所在（hasokon-infra リポジトリに移行済み）
 docs/CONCEPT.md       コンセプトと方針
 ```
 
@@ -98,8 +98,7 @@ docs/CONCEPT.md       コンセプトと方針
 - 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く。
   スロット未設定のときは、開発中のみ破線のプレースホルダを出し、本番ビルドでは何も出力しない
 - `/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
-  ルートドメイン（hasokon.com）側にも同じ内容が必要なので、変えるときは
-  [hasokon-home](https://github.com/ke-iwata/hasokon-home) も直すこと
+  ルートドメイン側にも同じ内容が必要なので、変えるときは `home/ads.txt` も直すこと
 - `ADSENSE_CLIENT` を空にすると、スクリプトも広告枠も ads.txt も出力されなくなる
 - **AdSenseのscriptは `app/layout.tsx` の `<head>` に生タグで置く**。`next/script` の
   `afterInteractive` だと静的HTMLにpreloadしか出ず、審査でコードを検出されない可能性があるため
@@ -127,8 +126,8 @@ docs/CONCEPT.md       コンセプトと方針
   `output: 'export'` ではこれがないとビルドが落ちる
 - **CloudFront に URL書き換え Function が必要**。`trailingSlash: true` のため全ページが
   `{slug}/index.html` というキーで出力される。S3にはディレクトリの概念がなく `/{slug}/` という
-  キーは存在しないので、変換しないと全ページ403になる（`infra/site.yaml` の RewriteFunction）。
-  特定ページ向けの対応ではなく全ページ共通
+  キーは存在しないので、変換しないと全ページ403になる（hasokon-infra の
+  CloudFront Function が変換している）。特定ページ向けの対応ではなく全ページ共通
 - **TypeScript を 7系に上げない**（上記のとおりビルドが落ちる）
 - **Vitest のエイリアス**は `vitest.config.ts` の `resolve.alias` で `@` を解決している。
   `fileURLToPath(new URL('.', import.meta.url))` を使うこと（`__dirname` はESMで未定義）
@@ -178,10 +177,4 @@ npm run build    # out/ に静的出力
 
 ## リリースの約束
 
-**本番へのリリース（v* タグのpush）は運営者の承認が必要。AIエージェントは勝手にタグを打たないこと。**
-
-1. main への push（テスト環境への反映）までは自律的に行ってよい
-2. テスト環境のURLと確認ポイントを運営者に提示する
-3. 運営者の承認を得てからタグを打つ（運営者が自分で打つ場合もある）
-
-テスト環境の Basic認証: hasokon / preview2026
+ルートの CLAUDE.md を参照。**本番タグは運営者の承認必須**（mainへのpushまでが自律範囲）。

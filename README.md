@@ -1,38 +1,32 @@
 # hasokon-home
 
-`https://hasokon.com`（apex）に置く1枚だけのランディングページ。
-ここから各ツールサイトへ案内する。
+[hasokon.com](https://hasokon.com/) のモノレポ。個人開発の無料Webツール・ミニゲームを公開しています。
 
-## なぜ別リポジトリなのか
+| ディレクトリ | 公開先 | 内容 |
+|---|---|---|
+| `home/` | https://hasokon.com/ | ポータル（素の静的HTML） |
+| `tools/` | https://hasokon.com/tools/ | 無料計算ツール集（Next.js 静的エクスポート） |
+| `games/` | https://hasokon.com/games/ | 無料ミニゲーム集（Next.js 静的エクスポート） |
 
-中身は静的HTML 1枚だけで、ビルドもテストも要らない。
-ツール本体（[hasokon-tools](https://github.com/ke-iwata/hasokon-tools)）は
-Next.js + S3 + CloudFront で動いており、ビルドもデプロイ先も別物なので、
-同じリポジトリに入れると設定が二重になる。
+もとは3リポジトリに分かれていましたが、2026年8月に統合しました。
+旧 hasokon-tools / hasokon-games の全履歴はこのリポジトリに取り込み済みです。
 
-## 構成
-
-| ファイル | 役割 |
-|---|---|
-| `index.html` | ページ本体。CSSもインラインで持つ |
-| `CNAME` | AWS S3 + CloudFront に独自ドメインを伝える |
-| `.github/workflows/deploy.yml` | main への push で AWS S3 + CloudFront にデプロイ |
-
-## リンク先
-
-- `https://tool.hasokon.com/` — 無料計算ツール集（計算機・ルーレットなど）
-
-## 公開までの設定
-
-1. GitHub でリポジトリを作り push する
-2. Settings → Pages → Source を **GitHub Actions** にする
-3. Route 53 の `hasokon.com` の A レコードを AWS S3 + CloudFront に向ける
-   （もしくは既存の CloudFront のオリジンを差し替える）
-
-## 動作確認
-
-ビルド不要なのでブラウザで直接開ける。
+## 開発
 
 ```bash
-open index.html
+cd tools   # または games
+npm install
+npm run dev    # tools: :3000 / games: :3001
+npm test
+npm run build  # out/ に静的出力
 ```
+
+home/ はビルド不要。`open home/index.html` で直接確認できます。
+
+## デプロイ
+
+- main にマージ → テスト環境（test.hasokon.com、Basic認証つき）
+- `v*` タグを push → 本番（hasokon.com）。1タグでサイト全体をリリース
+
+ホスティングは S3 + CloudFront。AWSリソースは
+[hasokon-infra](https://github.com/ke-iwata/hasokon-infra)（Terraform）で管理しています。

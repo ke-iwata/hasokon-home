@@ -20,5 +20,5 @@
 
 ## 関連
 
-- 姉妹サイトのドキュメント: [hasokon-tools/docs](https://github.com/ke-iwata/hasokon-tools/tree/main/docs) / [hasokon-games/docs](https://github.com/ke-iwata/hasokon-games/tree/main/docs)
+- 各サイトのドキュメント: [tools/docs](../tools/docs) / [games/docs](../games/docs)
 - サイト全体を横断する提案は、ハブであるこのリポジトリ（hasokon-home）に置く

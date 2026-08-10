@@ -2,7 +2,7 @@ name: Deploy
 
 # main へのマージ → テスト環境（Basic認証つき）
 # v* タグのpush → 本番
-# ビルド工程のない素の静的HTMLなので、リポジトリの中身をそのまま同期する
+# 1つのタグで home + tools + games をまとめてリリースする
 on:
   push:
     branches: [main]
@@ -18,19 +18,76 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  NODE_VERSION: '22'
   AWS_REGION: ap-northeast-1
-  PROD_URL: https://hasokon.com/
-  TEST_URL: https://test.hasokon.com/
 
 jobs:
+  build-tools:
+    name: tools テスト & ビルド
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: tools/package-lock.json
+
+      - run: npm ci
+
+      - name: 計算ロジックのテスト
+        run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tools-site
+          path: tools/out/
+          retention-days: 3
+
+  build-games:
+    name: games テスト & ビルド
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: games
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: games/package-lock.json
+
+      - run: npm ci
+
+      - name: ゲームロジックのテスト
+        run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: games-site
+          path: games/out/
+          retention-days: 3
+
   deploy:
     name: ${{ startsWith(github.ref, 'refs/tags/') && '本番へデプロイ' || 'テスト環境へデプロイ' }}
+    needs: [build-tools, build-games]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # タグなら本番、mainならテスト環境。
-      # infra/setup.sh 実行前（Secrets未設定）はスキップして成功扱いにする
+      # タグなら本番、mainならテスト環境
       - name: デプロイ先を判定
         id: target
         env:
@@ -41,52 +98,75 @@ jobs:
           TEST_DIST: ${{ secrets.TEST_CLOUDFRONT_DISTRIBUTION_ID }}
         run: |
           if [ "${IS_RELEASE}" = "true" ]; then
-            bucket="${PROD_BUCKET}"; dist="${PROD_DIST}"; url="${PROD_URL}"
+            bucket="${PROD_BUCKET}"; dist="${PROD_DIST}"; url="https://hasokon.com/"
           else
-            bucket="${TEST_BUCKET}"; dist="${TEST_DIST}"; url="${TEST_URL}"
+            bucket="${TEST_BUCKET}"; dist="${TEST_DIST}"; url="https://test.hasokon.com/"
           fi
           if [ -z "${bucket}" ] || [ -z "${dist}" ]; then
-            echo "::warning::デプロイ先のSecretsが未設定のためスキップします（infra/setup.sh を実行してください）"
-            echo "skip=true" >> "${GITHUB_OUTPUT}"
-            exit 0
+            echo "::error::デプロイ先のSecretsが未設定です"
+            exit 1
           fi
           {
-            echo "skip=false"
             echo "bucket=${bucket}"
             echo "dist=${dist}"
             echo "url=${url}"
           } >> "${GITHUB_OUTPUT}"
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: tools-site
+          path: tools-out
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: games-site
+          path: games-out
+
       - name: AWS認証（OIDC・長期キー不要）
-        if: steps.target.outputs.skip != 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: S3へ同期
-        if: steps.target.outputs.skip != 'true'
+      # 先にアセットを上げてからHTMLを差し替える。逆にすると、新しいHTMLが
+      # まだ存在しないJSを参照する瞬間ができてしまう。
+      # アセット同期で --delete しないのは、古いHTMLをキャッシュしている
+      # 利用者が直後にJSを404にされるのを避けるため。
+      # s-maxage は必須。CloudFront は自分がキャッシュしたオブジェクトしか
+      # 圧縮しないため、無いとHTMLが非圧縮で配信される
+      - name: S3へ同期（tools）
         run: |
-          aws s3 sync . s3://${{ steps.target.outputs.bucket }}/ \
+          aws s3 sync tools-out/ s3://${{ steps.target.outputs.bucket }}/tools/ \
+            --exclude "*" --include "_next/static/*" --size-only \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync tools-out/ s3://${{ steps.target.outputs.bucket }}/tools/ \
+            --delete --exclude "_next/static/*" \
+            --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
+
+      - name: S3へ同期（games）
+        run: |
+          aws s3 sync games-out/ s3://${{ steps.target.outputs.bucket }}/games/ \
+            --exclude "*" --include "_next/static/*" --size-only \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync games-out/ s3://${{ steps.target.outputs.bucket }}/games/ \
+            --delete --exclude "_next/static/*" \
+            --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
+
+      # バケット直下は home/ の中身だけ。tools/ games/ は上の同期が管理
+      # しているので削除対象から除外する
+      - name: S3へ同期（home）
+        run: |
+          aws s3 sync home/ s3://${{ steps.target.outputs.bucket }}/ \
             --delete \
-            --exclude ".git/*" \
-            --exclude ".github/*" \
-            --exclude "infra/*" \
-            --exclude "README.md" \
-            --exclude "CLAUDE.md" \
-            --exclude "docs/*" \
-            --exclude ".gitignore" \
             --exclude "tools/*" \
             --exclude "games/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
       - name: CloudFrontのキャッシュを削除
-        if: steps.target.outputs.skip != 'true'
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ steps.target.outputs.dist }} \
             --paths "/*"
 
       - name: デプロイ完了
-        if: steps.target.outputs.skip != 'true'
-        run: echo "${{ steps.target.outputs.url }} に反映されました"
+        run: echo "デプロイ完了 → ${{ steps.target.outputs.url }}"

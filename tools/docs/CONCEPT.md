@@ -1,7 +1,7 @@
 # プロジェクトのコンセプトと方針
 
 このドキュメントは、**なぜこのサイトを作っているのか / どういう判断でこの形になったのか**を残すものです。
-実装の進め方は [CLAUDE.md](../CLAUDE.md)、デプロイ手順は [DEPLOY.md](../DEPLOY.md) を参照してください。
+実装の進め方は [CLAUDE.md](../CLAUDE.md) を参照してください。
 
 ---
 
@@ -130,7 +130,7 @@ AIでツールを量産できるようになったこの1〜2年で埋まった�
 - [x] ツール13本の実装（テスト201件）
 - [x] sitemap / robots / 構造化データ
 - [x] GitHub Actions によるデプロイ設定
-- [x] AWS リソース作成 + 初回デプロイ（CloudFormation。`infra/setup.sh` で再現できる）
+- [x] AWS リソース作成 + 初回デプロイ（現在は hasokon-infra の Terraform で管理）
 - [x] roulette.hasokon.com の統合と旧URLの301リダイレクト
 - [x] hasokon.com（ルートドメイン）に案内ページを設置（別リポジトリ + GitHub Pages）
 - [x] AdSense 配信開始（旧サイトのアカウントを引き継ぎ）

@@ -20,7 +20,7 @@
 
 ## 関連
 
-- 技術構成・運用方針の基準は [hasokon-tools](https://github.com/ke-iwata/hasokon-tools)。
-  **迷ったら tools の [CLAUDE.md](https://github.com/ke-iwata/hasokon-tools/blob/main/CLAUDE.md) と
-  [docs/CONCEPT.md](https://github.com/ke-iwata/hasokon-tools/blob/main/docs/CONCEPT.md) に従う**
+- 技術構成・運用方針の基準は同じモノレポの [tools/](../../tools)。
+  **迷ったら [tools/CLAUDE.md](../../tools/CLAUDE.md) と
+  [tools/docs/CONCEPT.md](../../tools/docs/CONCEPT.md) に従う**
 - サイト全体を横断する提案は、ハブである [hasokon-home/docs](https://github.com/ke-iwata/hasokon-home/tree/main/docs) に置く

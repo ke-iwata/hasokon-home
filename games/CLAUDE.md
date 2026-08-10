@@ -1,12 +1,13 @@
-# CLAUDE.md
+# CLAUDE.md（games）
 
-このリポジトリで作業するAIエージェント・開発者向けのガイドです。
+hasokon.com モノレポの `games/` で作業するAIエージェント・開発者向けのガイドです。
+npmコマンドはすべて `games/` ディレクトリ内で実行します。
 
 ## プロジェクト概要
 
 `https://hasokon.com/games/` で公開する無料ミニゲーム集。
-[hasokon-tools](https://github.com/ke-iwata/hasokon-tools)（tool.hasokon.com）の姉妹サイトで、
-技術構成・インフラ・運用方針はすべて tools と同じ。**迷ったら tools の CLAUDE.md に従う。**
+同じモノレポの `tools/` と技術構成・運用方針はすべて共通。
+**迷ったら tools/CLAUDE.md に従う。**
 
 - 完全静的サイト（Next.js App Router + `output: 'export'`、TypeScriptは6系に固定）
 - ゲームはすべてクライアントサイドで動く。サーバーもDBもない
@@ -46,20 +47,15 @@
 
 ## インフラ
 
-`infra/` は tools のテンプレートを hasokon.com/games/ 用に調整したもの。
+AWSリソース（S3 / CloudFront / Route53 / IAM）は
+[hasokon-infra](https://github.com/ke-iwata/hasokon-infra)（Terraform）で管理。
 
-```bash
-aws sso login --profile developer
-PROFILE=developer ./infra/setup.sh   # 証明書(本番/テスト) → サイト(本番/テスト) → GitHub Secrets
-```
-
-デプロイの流れ（tools / home と共通）:
+デプロイはリポジトリルートの `.github/workflows/deploy.yml` が
+home + tools + games をまとめて行う:
 - main にマージ → test.hasokon.com/games/（Basic認証つきテスト環境）
-- `git tag v1.0.0 && git push origin v1.0.0` → hasokon.com/games/（本番）
+- `v*` タグ → hasokon.com/games/（本番。1タグでサイト全体）
 
-- GitHub OIDCプロバイダはアカウントに1つ（tools のスタックが管理）。
-  setup.sh が既存を検知して作成をスキップする
-- **AWSはコンソールで直接いじらない**。`infra/*.yaml` を直して setup.sh を再実行
+**AWSはコンソールで直接いじらない**。hasokon-infra（Terraform）にPRを出す
 
 ## コマンド
 
@@ -72,10 +68,4 @@ npm run build    # out/ に静的出力
 
 ## リリースの約束
 
-**本番へのリリース（v* タグのpush）は運営者の承認が必要。AIエージェントは勝手にタグを打たないこと。**
-
-1. main への push（テスト環境への反映）までは自律的に行ってよい
-2. テスト環境のURLと確認ポイントを運営者に提示する
-3. 運営者の承認を得てからタグを打つ（運営者が自分で打つ場合もある）
-
-テスト環境の Basic認証: hasokon / preview2026
+ルートの CLAUDE.md を参照。**本番タグは運営者の承認必須**（mainへのpushまでが自律範囲）。

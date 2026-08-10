@@ -40,10 +40,10 @@ lib/
   roulette/         # ルーレット系のロジックとデータ
 tests/
   {tool-slug}.test.ts
-infra/              # CloudFormation（S3 + CloudFront + Route53 + IAM）
 ```
 
-AWSの構成はコンソールで直接いじらず、`infra/*.yaml` を直して `./infra/setup.sh` を再実行します。
+AWSの構成はコンソールで直接いじらず、
+[hasokon-infra](https://github.com/ke-iwata/hasokon-infra)（Terraform）にPRを出します。
 
 ## ツールの追加手順
 
@@ -58,5 +58,4 @@ AWSの構成はコンソールで直接いじらず、`infra/*.yaml` を直し�
 |---|---|
 | [docs/CONCEPT.md](./docs/CONCEPT.md) | コンセプト・SEO戦略・収益化方針・ロードマップ（**まずこれ**） |
 | [CLAUDE.md](./CLAUDE.md) | 実装ガイド・設計上の約束・ツール追加手順・落とし穴 |
-| [DEPLOY.md](./DEPLOY.md) | AWSセットアップとデプロイ手順 |
 
