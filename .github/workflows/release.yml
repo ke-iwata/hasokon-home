@@ -1,0 +1,72 @@
+name: Release
+
+# 本番リリース（タグ作成 → GitHub Release公開 → 本番デプロイ）を1回の起動で行う。
+#
+# AIエージェントのgit認証はブランチのpushしか許可されておらず、タグを直接
+# pushできない。運営者が「リリースして」と指示したとき、エージェントは
+# このワークフローを起動することでリリースを完結させる（CLAUDE.md 参照）。
+# もちろん運営者が手でタグをpushする従来の方法も引き続き使える。
+#
+# GITHUB_TOKEN が作ったタグは push イベントを発火しない（GitHubの再帰防止仕様）ため、
+# deploy.yml をタグrefで明示的に dispatch している。deploy.yml は
+# 「ref がタグなら本番」と判定するので、これで通常のタグpushと同じ動きになる。
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'リリースするバージョン（例: 1.7.0 または v1.7.0）'
+        required: true
+        type: string
+
+permissions:
+  contents: write # タグとReleaseの作成
+  actions: write # deploy.yml の起動
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: タグ作成 → Release公開 → 本番デプロイ起動
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: バージョンを検証してタグ名を決める
+        id: tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          tag="v${VERSION#v}"
+          if ! printf '%s' "${tag}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::バージョンは 1.7.0 の形式で指定してください（入力: ${VERSION}）"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: 同名タグが存在しないことを確認
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if gh api "repos/${GH_REPO}/git/ref/tags/${TAG}" --silent 2>/dev/null; then
+            echo "::error::タグ ${TAG} は既に存在します。バージョンを上げてください"
+            exit 1
+          fi
+
+      - name: タグを作成してReleaseを公開（main の先頭に対して）
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh release create "${TAG}" \
+            --target main \
+            --title "${TAG}" \
+            --generate-notes
+
+      - name: 本番デプロイを起動
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          gh workflow run deploy.yml --ref "${TAG}"
+          echo "デプロイを起動しました。進行状況: https://github.com/${GH_REPO}/actions/workflows/deploy.yml"
