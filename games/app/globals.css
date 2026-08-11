@@ -509,6 +509,7 @@ ol {
 }
 
 .tableau.cols7 { grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.tableau.cols8 { grid-template-columns: repeat(8, 1fr); gap: 4px; }
 .tableau.cols10 { grid-template-columns: repeat(10, 1fr); gap: 2px; }
 
 /* スパイダーは10列で1枚が細いので、角丸だけ小さくする */

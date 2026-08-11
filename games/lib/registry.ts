@@ -36,6 +36,14 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-04',
   },
   {
+    slug: 'freecell',
+    icon: '♠️',
+    name: 'フリーセル',
+    description: '全部の札が最初から見えている実力型のトランプパズル。まとめて移動にも対応。',
+    ready: true,
+    updatedAt: '2026-08-11',
+  },
+  {
     slug: 'minesweeper',
     icon: '💣',
     name: 'マインスイーパー',

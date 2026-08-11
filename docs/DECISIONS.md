@@ -8,6 +8,19 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-11：ゲームに「フリーセル」を追加した
+
+`games/lib/freecell.ts`（ルール）・`games/app/freecell/`（画面）・
+`games/tests/freecell.test.ts`（36件）。`lib/registry.ts` と `home/index.html` の
+一覧にも足した。仕様は [features/game-freecell.md](./features/game-freecell.md)。
+
+**理由**：ソリティア・スパイダーで作った共有基盤（`lib/cards.ts`・`app/_cards/CardView.tsx`）
+をそのまま使えるので、新規ゲームとしては最も安く出せる定番だった。
+複数枚移動は「(空きフリーセル数 + 1) × 2 ^ (空き列数)」の上限だけを見て一度に動かしている
+（1枚ずつ手で動かさせるとスマホでの操作数が多すぎるため）。
+マイクロソフト版のゲーム番号は再現せず、`seededRng` を使った自前の配り番号を表示している。
+解けるかどうかのソルバーは持たず、「動かせる手が1つも無い」ことの検出だけを入れた。
+
 ## 2026-08-11：GA4のページビューから `page_path` を外した
 
 `tools/lib/analytics.ts`・`games/lib/analytics.ts` の `trackPageView()` から引数と
