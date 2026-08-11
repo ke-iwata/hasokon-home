@@ -228,6 +228,59 @@
         margin-bottom: 20px;
       }
 
+      /* ---- スマホアプリ（1件だけの特別扱い） ----
+         ここだけは実物のアプリアイコンがあり、Webのツールとは種類が違うので
+         横長のリッチなカードにする。他のセクションは共通カードに揃える。 */
+
+      .app-card {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        max-width: 30rem;
+        padding: 18px 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        transition:
+          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.18s;
+      }
+
+      .app-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+      }
+
+      .app-card img {
+        width: 68px;
+        height: 68px;
+        /* iOSのアイコンと同じ角丸率（約22%） */
+        border-radius: 15px;
+        flex-shrink: 0;
+      }
+
+      .app-name {
+        display: block;
+        font-weight: 700;
+      }
+
+      .app-sub {
+        display: block;
+        color: var(--muted);
+        font-size: 0.86rem;
+        margin-top: 2px;
+      }
+
+      .app-store {
+        display: block;
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 700;
+        margin-top: 6px;
+      }
+
       /* ---- カード（全セクション共通） ----
          ポータルは「並んでいるものから1つ選ぶ」ページなので、項目はすべて対等。
          セクションごとに見た目を変えると、大きさの違いが重要度の違いに見えて
@@ -336,6 +389,9 @@
         .grid {
           grid-template-columns: 1fr;
         }
+        .app-card {
+          max-width: none;
+        }
         footer {
           padding: 20px 18px 36px;
         }
@@ -391,13 +447,25 @@
           <h2>スマホアプリ</h2>
           <p class="section-desc">App Store で公開しているアプリです。</p>
         </div>
-        <div class="grid">
-          <a class="card" href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871" rel="noopener noreferrer" target="_blank">
-            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"></path></svg></span>
-            <span class="card-name">4 classic board games in one</span>
-            <span class="card-desc">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
-          </a>
-        </div>
+        <a
+          class="app-card"
+          href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <img
+            src="/app-icon-boardgames.jpg"
+            alt="4 classic board games in one のアプリアイコン"
+            width="68"
+            height="68"
+            loading="lazy"
+          />
+          <span>
+            <span class="app-name">4 classic board games in one</span>
+            <span class="app-sub">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
+            <span class="app-store">無料 ･ App Store で入手 →</span>
+          </span>
+        </a>
       </section>
 
       <section>
