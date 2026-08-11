@@ -72,10 +72,10 @@ export default function Calculator() {
                 key={r.cycles}
                 style={{
                   border: '1px solid var(--border)',
-                  borderLeft: `4px solid ${r.recommended ? 'var(--brand)' : 'var(--border)'}`,
+                  borderLeft: `4px solid ${r.recommended ? 'var(--accent)' : 'var(--border)'}`,
                   borderRadius: 10,
                   padding: '10px 14px',
-                  background: r.recommended ? '#eef2ff' : '#fff',
+                  background: r.recommended ? 'var(--accent-soft)' : 'var(--surface)',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'baseline',
@@ -90,8 +90,8 @@ export default function Calculator() {
                       style={{
                         marginLeft: 8,
                         fontSize: '0.72rem',
-                        color: '#fff',
-                        background: 'var(--brand)',
+                        color: 'var(--on-accent)',
+                        background: 'var(--accent)',
                         borderRadius: 999,
                         padding: '2px 10px',
                         fontWeight: 600,

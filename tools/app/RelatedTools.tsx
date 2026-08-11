@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { tools, type ToolCategory } from '@/lib/registry';
+import ToolIcon from '@/app/ToolIcon';
 
 /**
  * ページ下部に置く関連ツールの一覧。
@@ -40,8 +41,8 @@ export default function RelatedTools({
       <div className="tool-grid">
         {list.map((t) => (
           <Link key={t.slug} className="tool-card" href={`/${t.slug}/`}>
-            <div className="icon" aria-hidden="true">
-              {t.icon}
+            <div className="icon">
+              <ToolIcon name={t.icon} />
             </div>
             <div className="name">{t.name}</div>
             <div className="desc">{t.description}</div>

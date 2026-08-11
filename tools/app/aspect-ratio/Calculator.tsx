@@ -68,7 +68,7 @@ export default function Calculator() {
           <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
             アスペクト比（最簡分数）
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--brand)' }}>
+          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--accent)' }}>
             {ratio.w} : {ratio.h}
           </div>
 
@@ -76,7 +76,7 @@ export default function Calculator() {
             style={{
               margin: '12px 0 0',
               padding: '10px 14px',
-              background: '#eef2ff',
+              background: 'var(--accent-soft)',
               borderRadius: 10,
               fontSize: '0.95rem',
             }}
@@ -100,8 +100,8 @@ export default function Calculator() {
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
               <code
                 style={{
-                  background: '#0f172a',
-                  color: '#e2e8f0',
+                  background: 'var(--code-bg)',
+                  color: 'var(--code-fg)',
                   padding: '8px 14px',
                   borderRadius: 8,
                   fontSize: '0.9rem',
@@ -165,7 +165,7 @@ export default function Calculator() {
                 {scaleMode === 'width' ? (
                   <>
                     幅 {sv.toLocaleString('ja-JP')}px のとき、高さは{' '}
-                    <strong style={{ color: 'var(--brand)', fontSize: '1.1rem' }}>
+                    <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
                       {scaled.toLocaleString('ja-JP')}px
                     </strong>{' '}
                     です（四捨五入）。
@@ -173,7 +173,7 @@ export default function Calculator() {
                 ) : (
                   <>
                     高さ {sv.toLocaleString('ja-JP')}px のとき、幅は{' '}
-                    <strong style={{ color: 'var(--brand)', fontSize: '1.1rem' }}>
+                    <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
                       {scaled.toLocaleString('ja-JP')}px
                     </strong>{' '}
                     です（四捨五入）。

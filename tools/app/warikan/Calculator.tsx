@@ -84,7 +84,7 @@ export default function Calculator() {
             borderLeft: '4px solid var(--brand)',
             borderRadius: 10,
             padding: '12px 16px',
-            background: '#eef2ff',
+            background: 'var(--accent-soft)',
           }}
         >
           <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
@@ -97,7 +97,7 @@ export default function Calculator() {
             border: '1px solid var(--border)',
             borderRadius: 10,
             padding: '12px 16px',
-            background: '#fff',
+            background: 'var(--surface)',
           }}
         >
           <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>幹事の支払額</div>

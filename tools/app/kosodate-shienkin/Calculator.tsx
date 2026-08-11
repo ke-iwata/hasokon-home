@@ -65,7 +65,7 @@ export default function Calculator() {
                 <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{r.status}</span>
               </td>
               <td>
-                <strong style={{ fontSize: '1.15rem', color: 'var(--brand)' }}>
+                <strong style={{ fontSize: '1.15rem', color: 'var(--accent)' }}>
                   {fmt(r.monthly)}円
                 </strong>
               </td>

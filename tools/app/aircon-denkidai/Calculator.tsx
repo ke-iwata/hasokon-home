@@ -102,13 +102,13 @@ export default function Calculator() {
         style={{
           marginTop: 18,
           padding: '14px 16px',
-          background: '#eef2ff',
+          background: 'var(--accent-soft)',
           borderRadius: 10,
           textAlign: 'center',
         }}
       >
         <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>1ヶ月あたりの電気代</div>
-        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--brand)' }}>
+        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent)' }}>
           約{Math.round(r.perMonth).toLocaleString('ja-JP')}円
         </div>
       </div>

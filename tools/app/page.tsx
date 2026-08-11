@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { categories, tools, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { PUBLISHER } from '@/lib/jsonld';
+import ToolIcon from '@/app/ToolIcon';
 
 /**
  * サイト全体の発行者と、サイトそのものを表す構造化データ。
@@ -59,16 +60,16 @@ export default function Home() {
               {list.map((t) =>
                 t.ready ? (
                   <Link key={t.slug} className="tool-card" href={`/${t.slug}/`}>
-                    <div className="icon" aria-hidden="true">
-                      {t.icon}
+                    <div className="icon">
+                      <ToolIcon name={t.icon} />
                     </div>
                     <div className="name">{t.name}</div>
                     <div className="desc">{t.description}</div>
                   </Link>
                 ) : (
                   <div key={t.slug} className="tool-card coming" aria-disabled="true">
-                    <div className="icon" aria-hidden="true">
-                      {t.icon}
+                    <div className="icon">
+                      <ToolIcon name={t.icon} />
                     </div>
                     <div className="name">
                       {t.name}

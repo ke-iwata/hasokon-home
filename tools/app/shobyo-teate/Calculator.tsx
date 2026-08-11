@@ -61,7 +61,7 @@ export default function Calculator() {
         style={{
           marginTop: 18,
           padding: '14px 16px',
-          background: '#eef2ff',
+          background: 'var(--accent-soft)',
           borderRadius: 10,
           textAlign: 'center',
         }}
@@ -69,7 +69,7 @@ export default function Calculator() {
         <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
           傷病手当金の支給額（{r.payableDays}日分）
         </div>
-        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--brand)' }}>
+        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent)' }}>
           {fmtYen(r.total)}
         </div>
         {r.payableDays === 0 && (

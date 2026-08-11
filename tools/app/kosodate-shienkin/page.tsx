@@ -91,7 +91,7 @@ export default function Page() {
         style={{
           textAlign: 'center',
           fontWeight: 600,
-          background: '#eef2ff',
+          background: 'var(--accent-soft)',
           padding: 12,
           borderRadius: 10,
         }}

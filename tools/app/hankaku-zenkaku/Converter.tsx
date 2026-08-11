@@ -38,9 +38,9 @@ function DirectionButton({
       style={{
         padding: '8px 18px',
         borderRadius: 999,
-        border: `1px solid ${active ? 'var(--brand)' : 'var(--border)'}`,
-        background: active ? 'var(--brand)' : 'var(--surface)',
-        color: active ? '#fff' : 'var(--text)',
+        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+        background: active ? 'var(--accent)' : 'var(--surface)',
+        color: active ? 'var(--on-accent)' : 'var(--text)',
         fontSize: '0.9rem',
         fontWeight: 600,
         cursor: 'pointer',
@@ -166,7 +166,7 @@ export default function Converter() {
             readOnly
             rows={5}
             spellCheck={false}
-            style={{ marginTop: 6, background: '#eef2ff' }}
+            style={{ marginTop: 6, background: 'var(--accent-soft)' }}
           />
           <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
             {after.total}文字（全角 {after.full} / 半角 {after.half}）

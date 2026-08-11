@@ -79,12 +79,12 @@ export default function Calculator() {
           style={{
             margin: '18px 0 4px',
             padding: '10px 14px',
-            background: '#eef2ff',
+            background: 'var(--accent-soft)',
             borderRadius: 10,
             fontSize: '0.95rem',
           }}
         >
-          次の壁は <strong style={{ color: 'var(--brand)' }}>{next.label}</strong>
+          次の壁は <strong style={{ color: 'var(--accent)' }}>{next.label}</strong>
           {next.diff === 0 ? '（ちょうど到達）' : <>（あと <strong>{fmtMan(next.diff)}</strong>）</>}
         </p>
       ) : (
@@ -99,10 +99,10 @@ export default function Calculator() {
             key={r.label}
             style={{
               border: '1px solid var(--border)',
-              borderLeft: `4px solid ${r.over ? '#f59e0b' : r.impact === 'high' ? 'var(--brand)' : 'var(--border)'}`,
+              borderLeft: `4px solid ${r.over ? '#f59e0b' : r.impact === 'high' ? 'var(--accent)' : 'var(--border)'}`,
               borderRadius: 10,
               padding: '10px 14px',
-              background: '#fff',
+              background: 'var(--surface)',
               fontSize: '0.9rem',
             }}
           >

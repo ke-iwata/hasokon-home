@@ -24,10 +24,10 @@ type InputValues = Record<keyof TimerSettings, string>;
 
 /** フェーズごとの表示（ラベルと色）。休憩は緑、トレーニングは赤系で直感的に */
 const PHASE_VIEW: Record<PhaseType | 'done', { label: string; bg: string; fg: string }> = {
-  prepare: { label: '準備', bg: '#eff6ff', fg: '#1d4ed8' },
-  work: { label: 'トレーニング', bg: '#fef2f2', fg: '#dc2626' },
-  rest: { label: '休憩', bg: '#f0fdf4', fg: '#16a34a' },
-  done: { label: '完了！', bg: '#eef2ff', fg: 'var(--brand)' },
+  prepare: { label: '準備', bg: 'var(--info-soft)', fg: 'var(--info-fg)' },
+  work: { label: 'トレーニング', bg: 'var(--danger-soft)', fg: 'var(--danger-fg)' },
+  rest: { label: '休憩', bg: 'var(--ok-soft)', fg: 'var(--ok-fg)' },
+  done: { label: '完了！', bg: 'var(--accent-soft)', fg: 'var(--accent)' },
 };
 
 const FIELDS: { key: keyof TimerSettings; label: string; unit: string }[] = [
@@ -64,8 +64,8 @@ const BTN_BASE: React.CSSProperties = {
 const BTN_PRIMARY: React.CSSProperties = {
   ...BTN_BASE,
   border: 'none',
-  background: 'var(--brand)',
-  color: '#fff',
+  background: 'var(--accent)',
+  color: 'var(--on-accent)',
 };
 const BTN_SECONDARY: React.CSSProperties = {
   ...BTN_BASE,
@@ -333,7 +333,7 @@ export default function Timer() {
                     padding: '8px 14px',
                     borderRadius: 999,
                     border: active ? '2px solid var(--brand)' : '1px solid var(--border)',
-                    background: active ? '#eef2ff' : 'var(--surface)',
+                    background: active ? 'var(--accent-soft)' : 'var(--surface)',
                     fontWeight: active ? 700 : 500,
                     cursor: 'pointer',
                   }}

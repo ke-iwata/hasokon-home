@@ -288,7 +288,7 @@ export default function Calculator() {
         style={{
           marginTop: 20,
           padding: '16px 18px',
-          background: '#eef2ff',
+          background: 'var(--accent-soft)',
           borderRadius: 12,
           textAlign: 'center',
         }}
@@ -296,7 +296,7 @@ export default function Calculator() {
         <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
           自己負担2,000円で寄付できる上限額
         </div>
-        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--brand)', lineHeight: 1.3 }}>
+        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent)', lineHeight: 1.3 }}>
           {r.limit.toLocaleString('ja-JP')}
           <span style={{ fontSize: '1rem', marginLeft: 2 }}>円</span>
         </div>

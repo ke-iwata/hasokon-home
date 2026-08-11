@@ -47,11 +47,11 @@ export default function Calculator() {
           style={{
             marginTop: 16,
             padding: '10px 14px',
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
+            background: 'var(--danger-soft)',
+            border: '1px solid var(--danger)',
             borderRadius: 10,
             fontSize: '0.9rem',
-            color: '#b91c1c',
+            color: 'var(--danger-fg)',
           }}
         >
           {seiResult && !seiResult.ok && <div>姓: {seiResult.error}</div>}
@@ -69,7 +69,7 @@ export default function Calculator() {
               fontSize: '1.9rem',
               fontWeight: 800,
               letterSpacing: '0.04em',
-              color: 'var(--brand)',
+              color: 'var(--accent)',
               margin: '4px 0 0',
             }}
           >
@@ -80,7 +80,7 @@ export default function Calculator() {
               style={{
                 marginTop: 12,
                 padding: '10px 14px',
-                background: '#eef2ff',
+                background: 'var(--accent-soft)',
                 borderRadius: 10,
                 fontSize: '0.9rem',
               }}
