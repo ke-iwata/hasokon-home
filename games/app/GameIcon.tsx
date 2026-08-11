@@ -2,6 +2,7 @@ import {
   BombIcon,
   CardsIcon,
   ClubIcon,
+  GridFourIcon,
   GridNineIcon,
   RacquetIcon,
   SpadeIcon,
@@ -30,6 +31,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Bomb: BombIcon,
   SquaresFour: SquaresFourIcon,
   GridNine: GridNineIcon,
+  GridFour: GridFourIcon,
   Racquet: RacquetIcon,
 };
 
