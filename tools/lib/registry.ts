@@ -94,10 +94,10 @@ export const tools: ToolDef[] = [
     icon: 'Wall',
     name: '年収の壁 計算機',
     description:
-      '106万・119万・130万・178万…あなたに関係する「年収の壁」と影響を判定。2026年改正対応。',
+      '119万・130万・178万…あなたに関係する「年収の壁」と影響を判定。2026年10月の106万円の壁撤廃（週20時間の壁）に対応。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-01',
+    updatedAt: '2026-08-11',
   },
   {
     slug: 'shobyo-teate',

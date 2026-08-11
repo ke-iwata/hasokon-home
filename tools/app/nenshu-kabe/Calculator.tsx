@@ -1,7 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { evaluateKabe, nextWall, type Position } from '@/lib/nenshu-kabe';
+import { useEffect, useState } from 'react';
+import {
+  DAYTIME_STUDENT_EXCLUSION_NOTE,
+  evaluateKabe,
+  evaluateShaho,
+  nextWall,
+  type Position,
+} from '@/lib/nenshu-kabe';
 
 const fmtMan = (yen: number) => {
   const man = yen / 10_000;
@@ -15,16 +21,32 @@ const POSITIONS: { value: Position; label: string }[] = [
   { value: 'none', label: '扶養には入っていない' },
 ];
 
-export default function Calculator() {
+/**
+ * @param buildDate ビルド時刻（ISO文字列）。静的書き出しなので、サーバ描画と
+ *   ハイドレーション直後はこの固定値で判定し（両者が一致しないとReactが警告を出す）、
+ *   マウント後に実際の「画面を開いた日」で評価し直す。こうしないと、8月にビルドした
+ *   HTMLを10月に開いたとき、106万円の壁が消えないまま表示されてしまう。
+ */
+export default function Calculator({ buildDate }: { buildDate: string }) {
   const [incomeMan, setIncomeMan] = useState('120');
   const [position, setPosition] = useState<Position>('spouse');
   const [size51, setSize51] = useState(false);
   const [hours20, setHours20] = useState(false);
+  const [asOf, setAsOf] = useState(() => new Date(buildDate));
+
+  useEffect(() => {
+    setAsOf(new Date());
+  }, []);
 
   const income = (Number(incomeMan) || 0) * 10_000;
-  const results = evaluateKabe({ income, position, size51, hours20 });
+  const input = { income, position, size51, hours20, asOf };
+  const results = evaluateKabe(input);
   const next = nextWall(results);
+  const shaho = evaluateShaho(input);
   const showShahoInputs = position !== 'none';
+  // 昼間部の学生は適用除外だが、この選択肢だけでは昼間部かどうかが分からないので
+  // 判定は変えず、加入の可能性を出しているときに注記だけ添える（施行の前後どちらも）
+  const showStudentNote = position === 'student' && shaho.kind !== 'not-applicable';
 
   return (
     <div className="card">
@@ -73,6 +95,30 @@ export default function Calculator() {
           </div>
         )}
       </div>
+
+      {/*
+        賃金要件の撤廃後（2026年10月1日〜）は「106万円を超えないように」が誤った助言になる。
+        金額の壁の一覧より先に、加入が確定していることを出す
+      */}
+      {shaho.kind === 'enrolled' && (
+        <div className="note" style={{ margin: '18px 0 4px', fontSize: 'var(--fs-md)' }}>
+          <strong>勤務先の社会保険に加入します（年収の多少にかかわらず）。</strong>
+          <div style={{ marginTop: 4, lineHeight: 1.6 }}>
+            2026年10月1日に賃金要件（月8.8万円＝年収106万円相当）が撤廃されました。
+            従業員51人以上の勤務先で週20時間以上働く方は、年収がいくらでも厚生年金・健康保険に加入します。
+            手取りを気にするなら、調整すべきは年収ではなく<strong>週の所定労働時間</strong>です。
+          </div>
+        </div>
+      )}
+
+      {showStudentNote && (
+        <div
+          className="note"
+          style={{ margin: '10px 0 4px', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}
+        >
+          ※ {DAYTIME_STUDENT_EXCLUSION_NOTE}
+        </div>
+      )}
 
       {next ? (
         <p
