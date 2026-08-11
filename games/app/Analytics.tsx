@@ -18,7 +18,12 @@ export default function Analytics() {
     if (!isAnalyticsEnabled()) return;
     // 初回だけ gtag を初期化する（2回目以降は何もしない）
     initAnalytics();
-    trackPageView(pathname);
+    // pathname は「移動が起きたこと」の検知にだけ使い、値は渡さない。
+    // usePathname() は basePath（/games）を取り除いたパスを返すため、
+    // GA4に渡すと実際のURLと食い違う（docs/features/ga4-page-path.md）。
+    // URLの確定は history への push が済んだあとなので、この時点の
+    // window.location.href は移動後のURLになっている。
+    trackPageView();
   }, [pathname]);
 
   return null;

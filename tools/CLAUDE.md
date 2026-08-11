@@ -112,6 +112,11 @@ docs/CONCEPT.md       コンセプトと方針
 - **`send_page_view: false` にしてある**。`next/link` の移動は通常のページ読み込みを
   伴わないため、gtagの自動送信では2ページ目以降が記録されない。ページビューは
   `app/Analytics.tsx` が `usePathname` の変化を見て送る（初回も含めてこちらに一本化）
+- **`page_path` を GA4 に送り返さないこと。** `usePathname()` は basePath（`/tools`）を
+  取り除いたパスを返すため、渡すとGA4上のURLが実際のURLと食い違う。`page_location`
+  （`window.location.href`）だけで送る。`usePathname` は移動の検知にだけ使う
+  （経緯は [docs/features/ga4-page-path.md](../docs/features/ga4-page-path.md)。
+  `tests/analytics.test.ts` が回帰を見張っている）
 - **ページビューだけでは「開かれたが使われなかった」が分からない**ので、
   主要な操作で `trackToolUse(slug, action)` を呼んでいる（ルーレットを回す・
   サイコロを振る・グループ分けする・変換結果をコピーする）。
