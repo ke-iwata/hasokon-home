@@ -33,322 +33,722 @@
       }
     </script>
     <style>
+      /* ===================================================================
+         デザイントークン
+         原典は /design/tokens.css（リポジトリ内）。値を変えるときは
+         tools/app/globals.css と games/app/globals.css も同じ値に更新すること。
+         =================================================================== */
       :root {
-        --bg: #f7f8fb;
-        --surface: #fff;
-        --text: #0f172a;
-        --muted: #64748b;
-        --border: #e2e8f0;
-        --brand: #4f46e5;
-        --brand-from: #0ea5e9;
-        --brand-to: #6366f1;
+        color-scheme: light dark;
+
+        --bg: #faf9f7;
+        --surface: #ffffff;
+        --surface-2: #f3f1ed;
+        --text: #1c1917;
+        --muted: #6f6a65;
+        --border: #e5e2dd;
+
+        --accent: #15803d;
+        --accent-strong: #14532d;
+        --accent-soft: #edf7f0;
+        --on-accent: #ffffff;
+
+        --radius: 12px;
+        --radius-sm: 8px;
+        --radius-pill: 999px;
+
+        --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06);
+        --shadow-md: 0 10px 30px rgb(28 25 23 / 0.1);
       }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a1817;
+          --surface: #242120;
+          --surface-2: #2f2b29;
+          --text: #f2efec;
+          --muted: #a8a29c;
+          --border: #3d3835;
+
+          --accent: #4ade80;
+          --accent-strong: #86efac;
+          --accent-soft: #17251c;
+          --on-accent: #0c1a10;
+
+          --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+          --shadow-md: 0 10px 30px rgb(0 0 0 / 0.45);
+        }
+      }
+
       * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
+
       body {
+        /* 日本語Webフォントは数MBありLCPを壊すので端末標準を使う。
+           palt で約物のアキを詰めると見出しの締まりが出る */
         font-family:
           'Hiragino Sans', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+        font-feature-settings: 'palt' 1;
         background: var(--bg);
         color: var(--text);
-        line-height: 1.8;
-        padding: 40px 20px 32px;
+        line-height: 1.85;
+        -webkit-font-smoothing: antialiased;
       }
+
       main {
         width: 100%;
-        max-width: 46rem;
+        max-width: 60rem;
         margin: 0 auto;
+        padding: 0 24px 40px;
       }
-      header {
-        text-align: center;
-        margin-bottom: 36px;
+
+      a {
+        color: inherit;
       }
-      h1 {
-        font-size: 1.9rem;
-        letter-spacing: 0.02em;
-      }
-      h1 span {
-        background: linear-gradient(90deg, var(--brand-from), var(--brand-to));
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
-      }
-      .lead {
+
+      /* ---- サイト名 ---- */
+
+      .masthead {
+        max-width: 60rem;
+        margin: 0 auto;
+        padding: 28px 24px 0;
+        font-size: 0.9rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
         color: var(--muted);
-        margin: 12px 0 0;
-        font-size: 0.98rem;
       }
+
+      .masthead b {
+        color: var(--text);
+      }
+
+      /* ---- 1. ヒーロー（左寄せ。中央寄せにしない） ---- */
+
+      .hero {
+        padding: 56px 0 12px;
+        max-width: 40rem;
+      }
+
+      .hero h1 {
+        font-size: clamp(2rem, 6.4vw, 3.1rem);
+        line-height: 1.28;
+        letter-spacing: -0.02em;
+        font-weight: 800;
+      }
+
+      /* 日本語は単語の区切りがないので、意味のかたまりを inline-block にして
+         「ぜ／んぶ」のような不自然な位置で折り返さないようにする。
+         幅に応じてかたまり単位で折り返すので固定の <br> より柔軟 */
+      .hero h1 span {
+        display: inline-block;
+      }
+
+      .hero p {
+        color: var(--muted);
+        margin-top: 16px;
+        font-size: 1.02rem;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 12px 26px;
+        border-radius: var(--radius-pill);
+        font-weight: 700;
+        font-size: 0.96rem;
+        text-decoration: none;
+        white-space: nowrap;
+        border: 1px solid transparent;
+        transition:
+          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+          background-color 0.18s,
+          border-color 0.18s;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: var(--on-accent);
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-strong);
+      }
+
+      .btn-ghost {
+        border-color: var(--border);
+        background: var(--surface);
+        color: var(--text);
+      }
+
+      .btn-ghost:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .btn:active {
+        transform: translateY(1px);
+      }
+
+      /* ---- セクション共通 ---- */
+
+      section {
+        margin-top: 64px;
+      }
+
       h2 {
-        font-size: 1.2rem;
-        margin: 36px 0 4px;
-        border-left: 4px solid var(--brand);
-        padding-left: 10px;
+        font-size: 1.28rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
       }
+
       .section-desc {
         color: var(--muted);
-        font-size: 0.9rem;
-        margin: 0 0 14px;
+        font-size: 0.92rem;
+        margin-top: 4px;
+        max-width: 38rem;
       }
-      .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-        gap: 10px;
+
+      .section-head {
+        margin-bottom: 20px;
       }
-      .card {
-        display: block;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px 16px;
-        text-align: left;
-        text-decoration: none;
-        color: inherit;
-        transition: border-color 0.15s, transform 0.15s;
-      }
-      .card:hover {
-        border-color: var(--brand);
-        transform: translateY(-2px);
-      }
-      .card .name {
-        font-weight: 700;
-        font-size: 0.98rem;
-        color: var(--brand);
-      }
-      .card .desc {
-        color: var(--muted);
-        font-size: 0.83rem;
-        margin-top: 2px;
-      }
-      .card .icon {
-        font-size: 1.05rem;
-        margin-right: 6px;
-      }
+
+      /* ---- 2. アプリ（横長の単独カード） ---- */
+
       .app-card {
         display: flex;
         align-items: center;
-        gap: 14px;
-        max-width: 460px;
-      }
-      .app-card img {
-        width: 72px;
-        height: 72px;
-        /* iOSのアイコンと同じ角丸率（約22%） */
-        border-radius: 16px;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
-      }
-      .app-card .name,
-      .app-card .desc,
-      .app-card .store {
-        display: block;
-      }
-      .app-card .store {
-        color: var(--muted);
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin-top: 4px;
-      }
-      .about {
+        gap: 18px;
+        max-width: 30rem;
+        padding: 18px 20px;
         background: var(--surface);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 18px 20px;
-        font-size: 0.92rem;
+        border-radius: var(--radius);
+        text-decoration: none;
+        box-shadow: var(--shadow-sm);
+        transition:
+          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.18s;
       }
-      .about p {
-        margin: 6px 0;
+
+      .app-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
       }
-      footer {
+
+      .app-card img {
+        width: 68px;
+        height: 68px;
+        /* iOSのアイコンと同じ角丸率（約22%） */
+        border-radius: 15px;
+        flex-shrink: 0;
+      }
+
+      .app-card .title {
+        font-weight: 700;
+        display: block;
+      }
+
+      .app-card .sub {
         color: var(--muted);
-        font-size: 0.8rem;
-        margin-top: 36px;
-        text-align: center;
+        font-size: 0.86rem;
+        display: block;
+        margin-top: 2px;
       }
+
+      .app-card .store {
+        color: var(--accent);
+        font-size: 0.82rem;
+        font-weight: 700;
+        display: block;
+        margin-top: 6px;
+      }
+
+      /* ---- 3. お金の計算機（1本を大きく + 残りは行リスト） ---- */
+
+      .featured {
+        display: block;
+        padding: 26px 28px;
+        background: var(--accent-soft);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        text-decoration: none;
+        transition: border-color 0.18s;
+      }
+
+      .featured:hover {
+        border-color: var(--accent);
+      }
+
+      .featured .title {
+        display: block;
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.01em;
+      }
+
+      .featured .desc {
+        display: block;
+        color: var(--muted);
+        font-size: 0.94rem;
+        margin-top: 6px;
+        max-width: 34rem;
+      }
+
+      .featured .go {
+        display: inline-block;
+        margin-top: 14px;
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+
+      /* 行リスト。カードを増やさずに区切り線で並べる */
+      .rows {
+        margin-top: 8px;
+        border-top: 1px solid var(--border);
+      }
+
+      .row {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+        padding: 15px 4px;
+        border-bottom: 1px solid var(--border);
+        text-decoration: none;
+        transition: padding-left 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .row:hover {
+        padding-left: 10px;
+      }
+
+      .row .title {
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+
+      .row:hover .title {
+        color: var(--accent);
+      }
+
+      .row .desc {
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.6;
+      }
+
+      /* ---- 4. 生活のツール（2列の行リスト） ---- */
+
+      .rows-2col {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        column-gap: 32px;
+        border-top: 1px solid var(--border);
+        margin-top: 8px;
+      }
+
+      /* ---- 5. 決める・選ぶ（小さめの3タイル） ---- */
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .tile {
+        padding: 16px 18px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        text-decoration: none;
+        transition:
+          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.18s;
+      }
+
+      .tile:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+      }
+
+      .tile .title {
+        font-weight: 700;
+        font-size: 0.98rem;
+      }
+
+      .tile .desc {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-top: 3px;
+        line-height: 1.6;
+      }
+
+      /* ---- 6. ゲーム（塗りのグリッド。1本目を大きく） ---- */
+
+      .games {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .game {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        min-height: 116px;
+        padding: 16px 18px;
+        background: var(--surface-2);
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        text-decoration: none;
+        transition:
+          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+          border-color 0.18s;
+      }
+
+      .game:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent);
+      }
+
+      .game.wide {
+        grid-column: span 2;
+        background: var(--accent-soft);
+      }
+
+      .game .title {
+        font-weight: 700;
+      }
+
+      .game .desc {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-top: 3px;
+        line-height: 1.6;
+      }
+
+      /* ---- 7. このサイトについて（カードを使わない散文） ---- */
+
+      .about {
+        border-top: 1px solid var(--border);
+        padding-top: 24px;
+        font-size: 0.94rem;
+        color: var(--muted);
+        max-width: 40rem;
+      }
+
+      .about p + p {
+        margin-top: 10px;
+      }
+
+      .about a {
+        color: var(--accent);
+        font-weight: 700;
+      }
+
+      /* ---- フッター ---- */
+
+      footer {
+        max-width: 60rem;
+        margin: 56px auto 0;
+        padding: 20px 24px 40px;
+        border-top: 1px solid var(--border);
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
       footer a {
         color: var(--muted);
-        margin: 0 8px;
+        margin-right: 16px;
       }
-      @media (max-width: 480px) {
-        h1 {
-          font-size: 1.5rem;
+
+      /* ---- モバイル（768px未満はすべて1列） ---- */
+
+      @media (max-width: 767px) {
+        main {
+          padding: 0 18px 32px;
         }
-        body {
-          padding-top: 28px;
+        .masthead {
+          padding: 22px 18px 0;
+        }
+        .hero {
+          padding: 36px 0 8px;
+        }
+        section {
+          margin-top: 48px;
+        }
+        .rows-2col,
+        .tiles,
+        .games {
+          grid-template-columns: 1fr;
+        }
+        .game.wide {
+          grid-column: span 1;
+        }
+        .row {
+          flex-direction: column;
+          gap: 2px;
+        }
+        .app-card {
+          max-width: none;
+        }
+        footer {
+          padding: 20px 18px 36px;
+        }
+      }
+
+      /* 入場は控えめに1回だけ。動きを減らす設定の人には出さない */
+      @media (prefers-reduced-motion: no-preference) {
+        .hero > * {
+          animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+        }
+        .hero h1 {
+          animation-delay: 0.04s;
+        }
+        .hero p {
+          animation-delay: 0.1s;
+        }
+        .hero-actions {
+          animation-delay: 0.16s;
+        }
+        @keyframes rise {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+          animation: none !important;
         }
       }
     </style>
   </head>
   <body>
+    <div class="masthead"><b>hasokon</b>.com</div>
+
     <main>
-      <header>
-        <h1>hasokon<span>.com</span></h1>
-        <p class="lead">個人開発で作ったものを置いています。</p>
-      </header>
+      <!-- 1. ヒーロー -->
+      <div class="hero">
+        <h1><span>計算ツールと</span><span>ミニゲームを、</span><span>ぜんぶ無料で。</span></h1>
+        <p>
+          個人開発でつくっています。登録もインストールも不要で、ブラウザだけで動きます。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="/tools/">ツールを見る</a>
+          <a class="btn btn-ghost" href="/games/">ゲームで遊ぶ</a>
+        </div>
+      </div>
 
       <!--
-        カード一覧は tool.hasokon.com / game.hasokon.com のレジストリと手動で同期している。
-        ツールやゲームを追加・削除したらここも更新すること。
+        以下のカード一覧は tools/lib/registry.ts と games/lib/registry.ts の
+        内容と手動で同期している。ツールやゲームを追加・削除したらここも更新すること。
       -->
-      <h2>スマホアプリ</h2>
-      <p class="section-desc">App Store で公開しているアプリです。</p>
+
+      <!-- 2. アプリ -->
+      <section>
+        <div class="section-head">
+          <h2>スマホアプリ</h2>
+          <p class="section-desc">App Store で公開しているアプリです。</p>
+        </div>
+        <a
+          class="app-card"
+          href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <img
+            src="/app-icon-boardgames.jpg"
+            alt="4 classic board games in one のアプリアイコン"
+            width="68"
+            height="68"
+            loading="lazy"
+          />
+          <span>
+            <span class="title">4 classic board games in one</span>
+            <span class="sub">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
+            <span class="store">無料 ･ App Store で入手 →</span>
+          </span>
+        </a>
+      </section>
+
+      <!-- 3. お金の計算機（1本を大きく + 行リスト） -->
+      <section>
+        <div class="section-head">
+          <h2>お金・社会保険の計算機</h2>
+          <p class="section-desc">
+            制度改正に合わせて更新しています。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。
+          </p>
+        </div>
+
+        <a class="featured" href="/tools/nenshu-kabe/">
+          <span class="title">年収の壁 計算機</span>
+          <span class="desc"
+            >106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</span
+          >
+          <span class="go">計算してみる →</span>
+        </a>
+
+        <div class="rows">
+          <a class="row" href="/tools/furusato-nozei/">
+            <span class="title">ふるさと納税 控除額計算機</span>
+            <span class="desc"
+              >上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</span
+            >
+          </a>
+          <a class="row" href="/tools/kosodate-shienkin/">
+            <span class="title">子ども・子育て支援金 計算機</span>
+            <span class="desc"
+              >「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</span
+            >
+          </a>
+          <a class="row" href="/tools/shobyo-teate/">
+            <span class="title">傷病手当金 計算機</span>
+            <span class="desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- 4. 生活のツール（2列の行リスト） -->
+      <section>
+        <div class="section-head">
+          <h2>生活の計算機・変換ツール</h2>
+          <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
+        </div>
+        <div class="rows-2col">
+          <a class="row" href="/tools/interval-timer/">
+            <span class="title">インターバルタイマー</span>
+            <span class="desc">タバタ式・HIIT対応のトレーニングタイマー。ビープ音つき</span>
+          </a>
+          <a class="row" href="/tools/sleep-cycle/">
+            <span class="title">睡眠サイクル計算機</span>
+            <span class="desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</span>
+          </a>
+          <a class="row" href="/tools/aircon-denkidai/">
+            <span class="title">エアコン電気代 計算機</span>
+            <span class="desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</span>
+          </a>
+          <a class="row" href="/tools/warikan/">
+            <span class="title">割り勘計算機</span>
+            <span class="desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</span>
+          </a>
+          <a class="row" href="/tools/hebon-romaji/">
+            <span class="title">ヘボン式ローマ字変換</span>
+            <span class="desc">氏名のふりがなをパスポート表記のローマ字に変換</span>
+          </a>
+          <a class="row" href="/tools/hankaku-zenkaku/">
+            <span class="title">半角⇔全角 変換</span>
+            <span class="desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</span>
+          </a>
+          <a class="row" href="/tools/aspect-ratio/">
+            <span class="title">アスペクト比計算機</span>
+            <span class="desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- 5. 決める・選ぶ（小さめの3タイル） -->
+      <section>
+        <div class="section-head">
+          <h2>決める・選ぶツール</h2>
+          <p class="section-desc">迷ったときに、その場で決めるための道具です。</p>
+        </div>
+        <div class="tiles">
+          <a class="tile" href="/tools/roulette/">
+            <div class="title">ルーレット</div>
+            <div class="desc">項目を入れて回すだけ。ランチ・当番・順番決めに</div>
+          </a>
+          <a class="tile" href="/tools/group/">
+            <div class="title">グループ分け</div>
+            <div class="desc">名前を入れるだけで班分け・チーム分けをランダムに作成</div>
+          </a>
+          <a class="tile" href="/tools/dice/">
+            <div class="title">サイコロ</div>
+            <div class="desc">1〜10個まで同時に振れて、合計も出ます</div>
+          </a>
+        </div>
+      </section>
+
+      <!-- 6. ゲーム（塗りのグリッド） -->
+      <section>
+        <div class="section-head">
+          <h2>ミニゲーム</h2>
+          <p class="section-desc">
+            権利を気にせず遊べる定番だけを、広告なしの操作感で作っています。
+          </p>
+        </div>
+        <div class="games">
+          <a class="game wide" href="/games/solitaire/">
+            <div class="title">ソリティア</div>
+            <div class="desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</div>
+          </a>
+          <a class="game" href="/games/spider/">
+            <div class="title">スパイダーソリティア</div>
+            <div class="desc">1スート〜4スートの3段階</div>
+          </a>
+          <a class="game" href="/games/freecell/">
+            <div class="title">フリーセル</div>
+            <div class="desc">全部の札が最初から見えている実力型</div>
+          </a>
+          <a class="game" href="/games/minesweeper/">
+            <div class="title">マインスイーパー</div>
+            <div class="desc">数字をヒントに地雷を避ける。初手は必ず安全</div>
+          </a>
+          <a class="game" href="/games/2048/">
+            <div class="title">2048</div>
+            <div class="desc">スワイプで同じ数字を合体</div>
+          </a>
+          <a class="game" href="/games/nanpre/">
+            <div class="title">ナンプレ</div>
+            <div class="desc">3段階の難易度、答えは必ず1通り</div>
+          </a>
+          <!-- wide を2枚にして 3列 × 3行をぴったり埋める（空きセルを作らない） -->
+          <a class="game wide" href="/games/breakout/">
+            <div class="title">ブロック崩し</div>
+            <div class="desc">バーで跳ね返して全部消す。指で隠れないよう下に余裕をとってあります</div>
+          </a>
+        </div>
+      </section>
+
+      <!-- 7. このサイトについて（カードを使わない散文） -->
+      <section>
+        <div class="section-head">
+          <h2>このサイトについて</h2>
+        </div>
+        <div class="about">
+          <p>
+            会社ではなく個人でつくっています。制度に関わる計算機は、法令や官公庁の資料を読んで自分で検算したうえで公開し、根拠へのリンクと最終更新日を各ページに置いています。
+          </p>
+          <p>
+            計算はすべてブラウザの中だけで完結します。入力した内容がサーバーに送られることはありません。
+          </p>
+          <p>
+            <a href="/tools/about/">運営者について</a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <a href="/privacy.html">プライバシーポリシー</a>
       <a
-        class="card app-card"
-        href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
+        href="https://docs.google.com/forms/d/e/1FAIpQLScNoh6HZoekO-nlb_BHSvk755ZAVXWEtsmF3ttZP-hRDTCOhw/viewform"
         rel="noopener noreferrer"
         target="_blank"
+        >お問い合わせ</a
       >
-        <img
-          src="/app-icon-boardgames.jpg"
-          alt="4 classic board games in one のアプリアイコン"
-          width="72"
-          height="72"
-          loading="lazy"
-        />
-        <span>
-          <span class="name">4 classic board games in one</span>
-          <span class="desc">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
-          <span class="store">無料 ･ App Store で入手 →</span>
-        </span>
-      </a>
-
-      <h2>お金・社会保険の計算機</h2>
-      <p class="section-desc">
-        制度改正に合わせて更新している計算機です。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。
-        <a href="/tools/">→ 無料計算ツール集</a>
-      </p>
-      <div class="grid">
-        <a class="card" href="/tools/nenshu-kabe/">
-          <div class="name"><span class="icon">🧱</span>年収の壁 計算機</div>
-          <div class="desc">106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</div>
-        </a>
-        <a class="card" href="/tools/furusato-nozei/">
-          <div class="name"><span class="icon">🎁</span>ふるさと納税 控除額計算機</div>
-          <div class="desc">上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</div>
-        </a>
-        <a class="card" href="/tools/kosodate-shienkin/">
-          <div class="name"><span class="icon">👶</span>子ども・子育て支援金 計算機</div>
-          <div class="desc">「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</div>
-        </a>
-        <a class="card" href="/tools/shobyo-teate/">
-          <div class="name"><span class="icon">🏥</span>傷病手当金 計算機</div>
-          <div class="desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</div>
-        </a>
-      </div>
-
-      <h2>生活の計算機・変換ツール</h2>
-      <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
-      <div class="grid">
-        <a class="card" href="/tools/interval-timer/">
-          <div class="name"><span class="icon">⏱️</span>インターバルタイマー</div>
-          <div class="desc">タバタ式・HIIT対応のトレーニングタイマー。ビープ音つき</div>
-        </a>
-        <a class="card" href="/tools/sleep-cycle/">
-          <div class="name"><span class="icon">😴</span>睡眠サイクル計算機</div>
-          <div class="desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</div>
-        </a>
-        <a class="card" href="/tools/aircon-denkidai/">
-          <div class="name"><span class="icon">❄️</span>エアコン電気代 計算機</div>
-          <div class="desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</div>
-        </a>
-        <a class="card" href="/tools/warikan/">
-          <div class="name"><span class="icon">🍻</span>割り勘計算機</div>
-          <div class="desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</div>
-        </a>
-        <a class="card" href="/tools/hebon-romaji/">
-          <div class="name"><span class="icon">🔤</span>ヘボン式ローマ字変換</div>
-          <div class="desc">氏名のふりがなをパスポート表記のローマ字に変換</div>
-        </a>
-        <a class="card" href="/tools/hankaku-zenkaku/">
-          <div class="name"><span class="icon">🔡</span>半角⇔全角 変換</div>
-          <div class="desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</div>
-        </a>
-        <a class="card" href="/tools/aspect-ratio/">
-          <div class="name"><span class="icon">📐</span>アスペクト比計算機</div>
-          <div class="desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</div>
-        </a>
-      </div>
-
-      <h2>決める・選ぶツール</h2>
-      <p class="section-desc">迷ったときにその場で決めるための道具です。</p>
-      <div class="grid">
-        <a class="card" href="/tools/roulette/">
-          <div class="name"><span class="icon">🎯</span>ルーレット</div>
-          <div class="desc">項目を入れて回すだけ。ランチ・当番・順番決めに</div>
-        </a>
-        <a class="card" href="/tools/group/">
-          <div class="name"><span class="icon">👥</span>グループ分け</div>
-          <div class="desc">名前を入れるだけで班分け・チーム分けをランダムに作成</div>
-        </a>
-        <a class="card" href="/tools/dice/">
-          <div class="name"><span class="icon">🎲</span>サイコロ</div>
-          <div class="desc">1〜10個まで同時に振れて、合計も出ます</div>
-        </a>
-      </div>
-
-      <h2>ミニゲーム</h2>
-      <p class="section-desc">
-        開いたらすぐ遊べる定番ゲームです。スマホでもPCでも。
-        <a href="/games/">→ 無料ミニゲーム集</a>
-      </p>
-      <div class="grid">
-        <a class="card" href="/games/solitaire/">
-          <div class="name"><span class="icon">🃏</span>ソリティア</div>
-          <div class="desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</div>
-        </a>
-        <a class="card" href="/games/spider/">
-          <div class="name"><span class="icon">🕷️</span>スパイダーソリティア</div>
-          <div class="desc">1スート〜4スートの3段階。じっくり遊べる本格ルール</div>
-        </a>
-        <a class="card" href="/games/freecell/">
-          <div class="name"><span class="icon">♠️</span>フリーセル</div>
-          <div class="desc">全部の札が最初から見えている実力型のトランプパズル</div>
-        </a>
-        <a class="card" href="/games/minesweeper/">
-          <div class="name"><span class="icon">💣</span>マインスイーパー</div>
-          <div class="desc">数字をヒントに地雷を避ける定番パズル。初手は必ず安全</div>
-        </a>
-        <a class="card" href="/games/2048/">
-          <div class="name"><span class="icon">🔢</span>2048</div>
-          <div class="desc">スワイプで同じ数字を合体。シンプルで中毒性のあるパズル</div>
-        </a>
-        <a class="card" href="/games/nanpre/">
-          <div class="name"><span class="icon">✏️</span>ナンプレ</div>
-          <div class="desc">定番の数字パズル。3段階の難易度、答えは必ず1通り</div>
-        </a>
-        <a class="card" href="/games/breakout/">
-          <div class="name"><span class="icon">🧱</span>ブロック崩し</div>
-          <div class="desc">マウスやタッチで操作する定番アクション。面が進むと加速</div>
-        </a>
-      </div>
-
-      <h2>このサイトについて</h2>
-      <div class="about">
-        <p>
-          hasokon.com は、個人（ソフトウェアエンジニア）が開発したものを公開している場所です。Webの計算ツールとゲーム、スマホアプリなどを、すべて無料で公開しています。
-        </p>
-        <p>
-          Webのツール・ゲームはブラウザの中だけで動作し、<strong>入力した内容がサーバーに送信されることはありません</strong>。会員登録も不要です。
-        </p>
-        <p>
-          税金・社会保険など制度に関わる計算機は、法令や官公庁の一次資料にもとづいて作成し、計算根拠と出典を各ページに明記しています。制度改正があれば追随して更新します。誤りを見つけた場合は、お問い合わせフォームからご指摘いただけると助かります。
-        </p>
-      </div>
-
-      <footer>
-        <p>
-          <a href="/privacy.html">プライバシーポリシー</a>
-          <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLScNoh6HZoekO-nlb_BHSvk755ZAVXWEtsmF3ttZP-hRDTCOhw/viewform"
-            rel="nofollow noopener noreferrer"
-            target="_blank"
-            >お問い合わせ</a
-          >
-          <a href="/tools/about/">運営者情報</a>
-        </p>
-        <p>© 2026 hasokon tools All rights reserved.</p>
-      </footer>
-    </main>
+    </footer>
   </body>
 </html>

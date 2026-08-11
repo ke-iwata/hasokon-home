@@ -1,0 +1,91 @@
+/* hasokon.com 共通デザイントークン（原典）
+ *
+ * home / tools / games の3面が同じ見た目になるための唯一の基準。
+ * ビルドが3つに分かれている（home は素のHTML、tools と games は別々のNext.js
+ * プロジェクト）ため import で共有できない。値を変えるときは次の3箇所すべてを
+ * 同じ値に更新すること:
+ *
+ *   home/index.html        … <style> 内の :root と @media (prefers-color-scheme: dark)
+ *   tools/app/globals.css  … 冒頭の :root と dark ブロック
+ *   games/app/globals.css  … 冒頭の :root と dark ブロック
+ *
+ * ── 配色の考え方 ────────────────────────────────────────────
+ * 中立色は warm stone（温かいグレー）。日本の計算サイトはほぼ全部が青みグレー
+ * ＋青系アクセントなので、温かい中立色にするだけで静かに差がつく。
+ *
+ * アクセントは forest green の1色だけ。全面・全セクションで同じ色を使う。
+ * お金の計算（安全・確定のイメージ）ともカードゲームの盤面とも相性がよく、
+ * 以前使っていた青紫グラデーション（#4f46e5 + #0ea5e9→#6366f1）から離れられる。
+ * グラデーションの見出し文字は使わない。
+ *
+ * ── コントラスト（WCAG AA = 4.5:1 以上、実測値）─────────────
+ *   ライト  本文 --muted / --bg      5.10:1
+ *           --accent / --surface     5.02:1
+ *           --on-accent / --accent   5.02:1
+ *   ダーク  --accent / --bg         10.16:1
+ *           --on-accent / --accent  10.30:1
+ *           --muted / --bg           7.01:1
+ */
+
+:root {
+  /* フォームコントロールなどブラウザ標準UIも追従させる */
+  color-scheme: light dark;
+
+  /* 中立色 */
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --text: #1c1917;
+  --muted: #6f6a65;
+  --border: #e5e2dd;
+
+  /* アクセント（1色のみ。セクションごとに変えない） */
+  --accent: #15803d;
+  --accent-strong: #14532d;
+  --accent-soft: #edf7f0;
+  --on-accent: #ffffff;
+
+  /* 状態色。意味があるときだけ使う（装飾には使わない） */
+  --danger: #b91c1c;
+  --warn-bg: #fdf6e7;
+  --warn-border: #c98a13;
+
+  /* 形。角丸は3段階だけ。混ぜない */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* 影は背景の色みに寄せる（真っ黒の影は使わない） */
+  --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06);
+  --shadow-md: 0 10px 30px rgb(28 25 23 / 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1817;
+    --surface: #242120;
+    --surface-2: #2f2b29;
+    --text: #f2efec;
+    --muted: #a8a29c;
+    --border: #3d3835;
+
+    --accent: #4ade80;
+    --accent-strong: #86efac;
+    --accent-soft: #17251c;
+    --on-accent: #0c1a10;
+
+    --danger: #f87171;
+    --warn-bg: #2a2213;
+    --warn-border: #b98a2a;
+
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 10px 30px rgb(0 0 0 / 0.45);
+  }
+}
+
+/* ── 日本語タイポグラフィ ────────────────────────────────────
+ * 日本語のWebフォントは数MBあり、読み込むとLCPが確実に悪化する。
+ * 端末標準（Mac/iOS = Hiragino Sans、Android/Windows = Noto Sans JP）を使い、
+ * font-feature-settings の palt（プロポーショナルメトリクス）で
+ * 約物のアキを詰める。これだけで見出しの締まりがかなり変わる。
+ */
