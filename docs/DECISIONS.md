@@ -31,6 +31,24 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 （ナンプレと同じ約束。唯一解でない絵は当てずっぽうを強いる悪問になる）。
 解いた問題は `localStorage` に記録し、解き切るまで同じ問題を出さない。
 
+## 2026-08-11：ポータルにGA4を入れ、本番ホスト以外への送信を止めた
+
+`home/analytics.js`（新規）を `home/index.html`・`home/404.html` から読み込む形にして、
+未計測だったポータルを計測対象にした。あわせて `tools/lib/analytics.ts`・
+`games/lib/analytics.ts` に `shouldTrack()` を足し、`hasokon.com` 以外のホスト
+（test.hasokon.com・localhost）では1件も送らないようにした。
+仕様は [features/measurement-hygiene.md](./features/measurement-hygiene.md)。
+
+**理由**：サイトの入口であるポータルが未計測で、離脱率も遷移先も分からなかった。
+さらにGA4の30日分の page_view の3割が開発・テスト環境の分で、レポートが歪んでいた。
+GA4側のフィルタではなくコードで止めているのは、管理画面の手作業がリポジトリに残らず、
+開発機のIPも固定ではないため。
+
+**ホストの判定を `isAnalyticsEnabled()` に混ぜていない**のは、これが静的書き出しの
+ビルド時（`window` が無い）に評価されて gtag.js の `<script>` を出すかどうかを決めており、
+ホスト条件を入れると本番のHTMLからタグごと消えてしまうため。判定は
+「タグを出すか（ビルド時）」と「送ってよいか（実行時）」の2つに分けてある。
+
 ## 2026-08-11：ゲームに「フリーセル」を追加した
 
 `games/lib/freecell.ts`（ルール）・`games/app/freecell/`（画面）・

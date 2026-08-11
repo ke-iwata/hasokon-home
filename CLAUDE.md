@@ -39,18 +39,25 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 
 ## リリースの約束
 
-**本番へのリリース（v* タグのpush）は運営者の承認が必要。AIエージェントは勝手にタグを打たないこと。**
+**本番へのリリース（v* タグ）は運営者の承認が必要。AIエージェントは自発的にリリースしないこと。**
 
 1. main への push（テスト環境への反映）までは自律的に行ってよい
 2. テスト環境のURLと確認ポイントを運営者に提示する
-3. 運営者の承認を得てからタグを打つ（運営者が自分で打つ場合もある）
-4. タグを打ってからリリースもpublishする
+3. 運営者の明示的な指示（「リリースして」等）を得てから、Actions の
+   `release.yml` を起動する。バージョンを渡すと、タグ作成 → GitHub Release公開 →
+   本番デプロイまで自動で行われる（運営者が自分でタグを打ってもよい）
+4. AIエージェントのgit認証はブランチのpushのみでタグを直接pushできない。
+   リリースは必ず `release.yml` か運営者の手で行う
 
 テスト環境の Basic認証: hasokon / preview2026
 
 ## home/ の注意
 
 - ads.txt は AdSense 用。tools/games 側の `lib/adsense.ts` と内容を揃えること
+- GA4のタグは `index.html` / `404.html` の2枚に入っていて、中身は `analytics.js` に集約。
+  測定IDと送信先ホスト（`hasokon.com`）は tools/games の `lib/analytics.ts` と揃えること
+  （`scripts/test/home-analytics.test.mjs` がずれを検知する）。
+  仕様は [docs/features/measurement-hygiene.md](./docs/features/measurement-hygiene.md)
 - `index.html` / `404.html` のサイト一覧は、ツールやゲームを増やしたら両方更新する
 - `sitemap.xml` はインデックス形式で home / tools / games の3本を指す。
   home のページを増やしたら `sitemap-home.xml` を更新する

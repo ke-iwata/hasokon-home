@@ -6,18 +6,47 @@
  *
  * 測定IDは設定済み。games と同じIDで、ドメイン統合後は1プロパティで計測している。
  * tools だけを見るときは、GA4のレポートでページパス（/tools/）で絞り込む。
- * ルートドメイン側（home/index.html・404.html）にはまだタグを入れていない。
- * 入れる場合は同じ測定IDのgtagスニペットを両ファイルに置く。
+ * ルートドメイン側（home/index.html・404.html）にも同じ測定IDのタグが入っている
+ * （実装は home/analytics.js。ホストの判定条件もここと揃えること）。
  *
  * GA_MEASUREMENT_ID を空にすると、スクリプトも計測処理も一切出力されなくなる。
+ *
+ * 判定が2つあるのは、**効くタイミングが違う**ため（docs/features/measurement-hygiene.md）。
+ * - `isAnalyticsEnabled()`：測定IDが設定されているか。**静的書き出しのビルド時**に評価され、
+ *   gtag.js の <script> をHTMLに出すかどうかを決める（app/layout.tsx）
+ * - `shouldTrack()`：いま送ってよいか。**ブラウザ**で評価され、本番ホスト以外では送らない
+ *
+ * ビルド時には window が無いので、`isAnalyticsEnabled()` にホスト条件を混ぜてはいけない。
+ * 混ぜると静的HTMLから gtag.js のタグごと消え、本番でも計測できなくなる。
  */
 
 /** GA4の測定ID（例: 'G-XXXXXXXXXX'）。空なら計測しない */
 export const GA_MEASUREMENT_ID = 'G-2Z0K6Y2FX0';
 
-/** 計測が有効か */
+/**
+ * 計測を送ってよいホスト。
+ * ここ以外（test.hasokon.com・localhost・プレビュー）では1件も送らない。
+ * GA4の30日分の page_view の3割が開発・テスト環境で、レポートが歪んでいたため
+ * （docs/features/measurement-hygiene.md の実測）。
+ */
+export const MEASURED_HOST = 'hasokon.com';
+
+/** 計測が設定されているか（測定IDの有無だけを見るビルド時の判定） */
 export function isAnalyticsEnabled(): boolean {
   return GA_MEASUREMENT_ID.startsWith('G-');
+}
+
+/**
+ * いま計測を送ってよいか（ブラウザで評価される実行時の判定）。
+ *
+ * GA4側のフィルタではなくコードで止めているのは、管理画面での手作業がリポジトリに
+ * 残らないうえ、開発機のIPが固定でないため（docs/features/measurement-hygiene.md）。
+ */
+export function shouldTrack(): boolean {
+  if (!isAnalyticsEnabled()) return false;
+  // 静的書き出しのビルド時。実際の送信はブラウザでしか起きない
+  if (typeof window === 'undefined') return false;
+  return window.location.hostname === MEASURED_HOST;
 }
 
 /**
@@ -33,9 +62,15 @@ declare global {
   }
 }
 
-/** gtag が使えるなら返す。使えなければ undefined */
+/**
+ * gtag が使えて、かつ送ってよいホストなら返す。それ以外は undefined。
+ *
+ * gtag.js の <script> は本番以外のホストにも出るので、そこで読み込まれた
+ * `window.gtag` がそのまま使えてしまう。送信経路をこの1か所に通すことで、
+ * trackPageView / trackEvent / trackToolUse のすべてがホスト条件に従う。
+ */
 function gtag(): Gtag | undefined {
-  if (typeof window === 'undefined') return undefined;
+  if (!shouldTrack()) return undefined;
   return window.gtag;
 }
 
@@ -57,7 +92,7 @@ let initialized = false;
  * dataLayer 経由で積むので、gtag.js の読み込みが先でも後でも取りこぼさない。
  */
 export function initAnalytics(): void {
-  if (initialized || !isAnalyticsEnabled() || typeof window === 'undefined') return;
+  if (initialized || !shouldTrack()) return;
   initialized = true;
   window.dataLayer = window.dataLayer || [];
   // gtag.js が既に本物を入れていればそれを使う。まだならキューに積むだけの関数を置く

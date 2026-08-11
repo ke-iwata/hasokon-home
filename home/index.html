@@ -22,6 +22,14 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--
+      Google Analytics 4。測定IDは tools/games と同じで、1プロパティでサイト全体を見る。
+      送信の可否（本番ホストか）とイベントの実装は /analytics.js 側にある。
+      404.html からも同じファイルを読むのでパスは絶対で書くこと（404はどのURLでも出るため）。
+      仕様: docs/features/measurement-hygiene.md
+    -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2Z0K6Y2FX0"></script>
+    <script defer src="/analytics.js"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
