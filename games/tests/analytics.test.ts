@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   GA_MEASUREMENT_ID,
+  MEASURED_HOST,
   initAnalytics,
   isAnalyticsEnabled,
+  shouldTrack,
   trackEvent,
   trackPageView,
   trackToolUse,
@@ -11,10 +13,14 @@ import {
 /**
  * lib/analytics.ts のテスト。
  *
- * このテストの主目的は **page_view に page_path を混ぜないこと** の担保。
- * 両方渡すとGA4は page_path を優先してURLを組み立てるが、呼び出し元が持っている
- * `usePathname()` の値は basePath（/games）が取り除かれたパスなので、実際のURLと
- * 食い違う（docs/features/ga4-page-path.md）。
+ * 見張っているのは2つ。
+ *
+ * 1. **page_view に page_path を混ぜないこと**。両方渡すとGA4は page_path を優先して
+ *    URLを組み立てるが、呼び出し元が持っている `usePathname()` の値は basePath（/games）が
+ *    取り除かれたパスなので、実際のURLと食い違う（docs/features/ga4-page-path.md）
+ * 2. **本番ホスト以外へ1件も送らないこと**。game.test.hasokon.com と localhost の分が
+ *    GA4のレポートの3割を占めて数字が使えなくなっていた
+ *    （docs/features/measurement-hygiene.md）
  *
  * このリポジトリの vitest は jsdom を入れていないので、window / document は
  * 最小限のスタブを globalThis に置いて、gtag の呼び出し内容を記録する。
@@ -27,11 +33,11 @@ const globals = globalThis as unknown as { window?: unknown; document?: unknown 
 
 let calls: GtagCall[] = [];
 
-/** gtag が使えるブラウザ環境を模す */
+/** gtag が使えるブラウザ環境を模す。hostname は href から取る（実物と食い違わせない） */
 function stubBrowser(href: string, title = 'テストページ'): void {
   calls = [];
   globals.window = {
-    location: { href },
+    location: { href, hostname: new URL(href).hostname },
     gtag: (...args: GtagCall) => {
       calls.push(args);
     },
@@ -115,7 +121,7 @@ describe('trackPageView', () => {
 
   it('gtag がまだ無いときは何もしない（読み込み前でも落ちない）', () => {
     calls = [];
-    globals.window = { location: { href: 'https://hasokon.com/games/' } };
+    globals.window = { location: { href: 'https://hasokon.com/games/', hostname: 'hasokon.com' } };
     globals.document = { title: 'テストページ' };
 
     expect(() => trackPageView()).not.toThrow();
@@ -149,10 +155,67 @@ describe('trackEvent / trackToolUse', () => {
 
   it('gtag が無いときは何もしない', () => {
     calls = [];
-    globals.window = { location: { href: 'https://hasokon.com/games/' } };
+    globals.window = { location: { href: 'https://hasokon.com/games/', hostname: 'hasokon.com' } };
 
     expect(() => trackToolUse('breakout', 'start')).not.toThrow();
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe('送信先ホストの判定', () => {
+  it('本番ホストなら送る', () => {
+    stubBrowser('https://hasokon.com/games/');
+
+    expect(shouldTrack()).toBe(true);
+  });
+
+  it.each([
+    ['https://test.hasokon.com/games/', 'テスト環境'],
+    ['http://localhost:3001/games/', 'ローカル開発'],
+    ['http://127.0.0.1:3001/games/', 'ローカル開発（IP）'],
+    ['https://game.hasokon.com/minesweeper/', '旧サブドメイン'],
+    ['https://game.test.hasokon.com/minesweeper/', '旧サブドメインのテスト環境'],
+  ])('%s（%s）では送らない', (href) => {
+    stubBrowser(href);
+
+    expect(shouldTrack()).toBe(false);
+  });
+
+  it('window が無いビルド時は送らない', () => {
+    delete globals.window;
+
+    expect(shouldTrack()).toBe(false);
+  });
+
+  it.each([
+    ['trackPageView', () => trackPageView()],
+    ['trackEvent', () => trackEvent('tool_use', { tool: 'minesweeper' })],
+    ['trackToolUse', () => trackToolUse('minesweeper', 'start')],
+    ['initAnalytics', () => initAnalytics()],
+  ])('本番以外では %s が1件も送らない', (_name, send) => {
+    // gtag.js の <script> は本番以外にも出るので、window.gtag は存在しうる。
+    // それでも送らないことをここで担保する。
+    // なお本番以外の initAnalytics は初期化済みフラグを立てずに戻るので、
+    // 後段の「設定」の initAnalytics（ファイル内で唯一の実行）を潰さない
+    stubBrowser('https://game.test.hasokon.com/minesweeper/');
+
+    send();
+
+    expect(calls).toHaveLength(0);
+  });
+
+  it('gtag.js のタグを出すかどうか（isAnalyticsEnabled）はホストを見ない', () => {
+    // ここにホスト条件を混ぜると、静的書き出しのビルド時（window なし）に false になり、
+    // 本番のHTMLからも gtag.js のタグが消えてしまう
+    stubBrowser('https://test.hasokon.com/games/');
+    expect(isAnalyticsEnabled()).toBe(true);
+
+    delete globals.window;
+    expect(isAnalyticsEnabled()).toBe(true);
+  });
+
+  it('計測するホストは1つだけ（home/analytics.js と揃える）', () => {
+    expect(MEASURED_HOST).toBe('hasokon.com');
   });
 });
 

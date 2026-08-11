@@ -41,10 +41,18 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
 
 - `lib/adsense.ts`（tools と同じパブリッシャーID・配信中）。
   **AdSense管理画面に hasokon.com/games/ のサイト追加が必要**
-- `lib/analytics.ts` の `GA_MEASUREMENT_ID` は設定済み（tools と同じID）。
+- `lib/analytics.ts` の `GA_MEASUREMENT_ID` は設定済み（tools・home と同じID）。
   ドメイン統合で1プロパティに集約したため、games だけを見るときは
   GA4のレポートでページパス（`/games/`）で絞り込む
 - 主要な操作で `trackToolUse(slug, action)` を呼ぶ（開始・クリア・勝敗など実装済み）
+- **判定が2つあるので取り違えないこと**（[docs/features/measurement-hygiene.md](../docs/features/measurement-hygiene.md)）。
+  `isAnalyticsEnabled()` は測定IDの有無だけを見る**ビルド時**の判定で、
+  gtag.js の `<script>` を出すかどうかを決める（`app/layout.tsx`）。
+  `shouldTrack()` は**ブラウザ**での判定で、`MEASURED_HOST`（`hasokon.com`）以外では false。
+  `isAnalyticsEnabled()` にホスト条件を足すと、ビルド時に `window` が無いため
+  本番のHTMLからも gtag.js のタグが消える
+- test.hasokon.com と localhost では1件も送らない（GA4の3割がこの分だった）。
+  テスト環境で計測を確かめたいときは、DevToolsで「送られていないこと」を見る
 - **`page_path` を GA4 に送り返さないこと。** `usePathname()` は basePath（`/games`）を
   取り除いたパスを返すため、渡すとGA4上のURLが実際のURLと食い違う。`page_location`
   （`window.location.href`）だけで送る。`usePathname` は移動の検知にだけ使う
