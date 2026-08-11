@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DAYTIME_STUDENT_EXCLUSION_NOTE,
   evaluateKabe,
   evaluateShaho,
   nextWall,
@@ -199,6 +200,38 @@ describe('evaluateShaho（勤務先の社会保険に加入するか）', () => 
 
   it('扶養に入っていない人は対象外', () => {
     expect(evaluateShaho({ ...kanyu, position: 'none', asOf: ON }).kind).toBe('not-applicable');
+  });
+});
+
+// 昼間部の学生は社会保険の適用除外だが、position: 'student' は昼間部とは限らないので
+// 判定からは外さず注記で補っている（DAYTIME_STUDENT_EXCLUSION_NOTE）。
+// 「注記に逃がした」という判断そのものを、あとから読んで分かる形で固定しておく。
+describe('昼間部の学生の適用除外（注記で補う）', () => {
+  const gakusei: KabeInput = { ...base, position: 'student', size51: true, hours20: true };
+
+  it('注記が昼間部の除外と、夜間部などが対象であることの両方に触れている', () => {
+    expect(DAYTIME_STUDENT_EXCLUSION_NOTE).toContain('昼間部');
+    expect(DAYTIME_STUDENT_EXCLUSION_NOTE).toContain('夜間部');
+  });
+
+  it('判定は変えていない: 学生も施行前は賃金要件つき、施行後は加入', () => {
+    expect(evaluateShaho({ ...gakusei, asOf: BEFORE }).kind).toBe('wage-gate');
+    expect(evaluateShaho({ ...gakusei, asOf: ON }).kind).toBe('enrolled');
+  });
+
+  it('要件を満たさない学生は施行後も対象外のまま（注記を出す場面ではない）', () => {
+    expect(evaluateShaho({ ...gakusei, hours20: false, asOf: ON }).kind).toBe('not-applicable');
+    expect(evaluateShaho({ ...gakusei, size51: false, asOf: ON }).kind).toBe('not-applicable');
+  });
+
+  it('150万円の壁（学生）の扱いも変わっていない', () => {
+    // 施行前: 106万円の壁とあわせて出る / 施行後: 加入するので扶養の壁には到達しない
+    expect(evaluateKabe({ ...gakusei, asOf: BEFORE }).map((r) => r.label)).toContain(
+      '150万円の壁（学生）'
+    );
+    expect(evaluateKabe({ ...gakusei, asOf: ON }).map((r) => r.label)).not.toContain(
+      '150万円の壁（学生）'
+    );
   });
 });
 

@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { evaluateKabe, evaluateShaho, nextWall, type Position } from '@/lib/nenshu-kabe';
+import {
+  DAYTIME_STUDENT_EXCLUSION_NOTE,
+  evaluateKabe,
+  evaluateShaho,
+  nextWall,
+  type Position,
+} from '@/lib/nenshu-kabe';
 
 const fmtMan = (yen: number) => {
   const man = yen / 10_000;
@@ -38,6 +44,9 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const next = nextWall(results);
   const shaho = evaluateShaho(input);
   const showShahoInputs = position !== 'none';
+  // 昼間部の学生は適用除外だが、この選択肢だけでは昼間部かどうかが分からないので
+  // 判定は変えず、加入の可能性を出しているときに注記だけ添える（施行の前後どちらも）
+  const showStudentNote = position === 'student' && shaho.kind !== 'not-applicable';
 
   return (
     <div className="card">
@@ -99,6 +108,15 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             従業員51人以上の勤務先で週20時間以上働く方は、年収がいくらでも厚生年金・健康保険に加入します。
             手取りを気にするなら、調整すべきは年収ではなく<strong>週の所定労働時間</strong>です。
           </div>
+        </div>
+      )}
+
+      {showStudentNote && (
+        <div
+          className="note"
+          style={{ margin: '10px 0 4px', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}
+        >
+          ※ {DAYTIME_STUDENT_EXCLUSION_NOTE}
         </div>
       )}
 
