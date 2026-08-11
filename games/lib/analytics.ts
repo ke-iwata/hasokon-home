@@ -82,10 +82,18 @@ export function initAnalytics(): void {
  * クライアント側のルーティングで、通常のページ読み込みが発生しない。
  * そのため gtag の自動送信は切って（send_page_view: false）、
  * ここから明示的に送っている（app/Analytics.tsx）。
+ *
+ * **page_path は渡さない。** GA4が本来見るのは page_location で、page_path は
+ * ユニバーサルアナリティクス時代の名残だが、両方あるとGA4は page_path を優先して
+ * ページのURLを組み立ててしまう。呼び出し元の app/Analytics.tsx が持っているのは
+ * `usePathname()` の値で、これは basePath（/tools・/games）を取り除いたパスなので
+ * （Next.js の仕様）、渡すと実際のURLと食い違う。ドメイン統合で basePath を
+ * 設定した 2026-08-08 以降、page_view だけが `/minesweeper/` のような
+ * basePath 欠けのURLで記録されていた（docs/features/ga4-page-path.md）。
+ * page_location（window.location.href）だけを渡せば常に実際のURLになる。
  */
-export function trackPageView(path: string): void {
+export function trackPageView(): void {
   gtag()?.('event', 'page_view', {
-    page_path: path,
     page_location: window.location.href,
     page_title: document.title,
   });

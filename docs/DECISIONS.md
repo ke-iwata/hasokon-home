@@ -8,6 +8,39 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-11：ゲームに「フリーセル」を追加した
+
+`games/lib/freecell.ts`（ルール）・`games/app/freecell/`（画面）・
+`games/tests/freecell.test.ts`（36件）。`lib/registry.ts` と `home/index.html` の
+一覧にも足した。仕様は [features/game-freecell.md](./features/game-freecell.md)。
+
+**理由**：ソリティア・スパイダーで作った共有基盤（`lib/cards.ts`・`app/_cards/CardView.tsx`）
+をそのまま使えるので、新規ゲームとしては最も安く出せる定番だった。
+複数枚移動は「(空きフリーセル数 + 1) × 2 ^ (空き列数)」の上限だけを見て一度に動かしている
+（1枚ずつ手で動かさせるとスマホでの操作数が多すぎるため）。
+マイクロソフト版のゲーム番号は再現せず、`seededRng` を使った自前の配り番号を表示している。
+解けるかどうかのソルバーは持たず、「動かせる手が1つも無い」ことの検出だけを入れた。
+
+## 2026-08-11：GA4のページビューから `page_path` を外した
+
+`tools/lib/analytics.ts`・`games/lib/analytics.ts` の `trackPageView()` から引数と
+`page_path` を廃止し、`page_location`（`window.location.href`）だけで送るようにした。
+仕様は [features/ga4-page-path.md](./features/ga4-page-path.md)。
+
+**理由**：呼び出し元の `app/Analytics.tsx` が渡していたのは `usePathname()` の値で、
+これは Next.js の仕様で basePath（`/tools`・`/games`）を取り除いたパスを返す。
+GA4は `page_path` と `page_location` の両方があると `page_path` を優先するため、
+ドメイン統合（2026-08-08）で basePath を設定して以降、`page_view` だけが
+`/minesweeper/` のような basePath 欠けのURLで記録されていた。`page_path` は
+ユニバーサルアナリティクス時代の名残で、GA4が本来見るのは `page_location` なので、
+`basePath` を `lib/analytics.ts` にも書いて二重管理するより消すほうが素直。
+
+**⚠️ 2026-08-08 から本修正が本番に出るまでの `pagePath` は信用しないこと。**
+GA4に遡及変更の手段はないので、この期間を含む分析では `pagePath` ではなく
+`fullPageUrl` を使う（旧データも実際のURLで読める）。同じ期間、
+tools と games の `privacy`・`contact` は `/privacy/`・`/contact/` に潰れていて、
+どちら側のページかは `pagePath` からは区別できない。
+
 ## 2026-08-10：検索インデックス統合の進み具合を数えるスクリプトを置いた
 
 `scripts/gsc-canonical-audit.mjs`。サイトマップに載っている全URLを Search Console の

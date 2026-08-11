@@ -17,7 +17,7 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
 
 1. **ゲームロジックとUIを分離する** — ロジックは `lib/{slug}.ts` の純関数
    （ブロック崩しの物理も含む）。`Game.tsx` は入力と描画だけ。
-   これによりロジックがテストできる（現在111件）
+   これによりロジックがテストできる（現在164件）
 2. **`lib/registry.ts` が単一の情報源** — トップ一覧・sitemapはここから生成
 3. **CSSは `app/globals.css` だけ** — 新しいファイルを増やさない
 4. **名称の商標に注意する**（このリポジトリ固有の約束）
@@ -44,6 +44,11 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
 - `lib/analytics.ts` の `GA_MEASUREMENT_ID` は未設定。
   tools とは**別のデータストリーム**を作って測定IDを入れる（サイト別に集計するため）
 - 主要な操作で `trackToolUse(slug, action)` を呼ぶ（開始・クリア・勝敗など実装済み）
+- **`page_path` を GA4 に送り返さないこと。** `usePathname()` は basePath（`/games`）を
+  取り除いたパスを返すため、渡すとGA4上のURLが実際のURLと食い違う。`page_location`
+  （`window.location.href`）だけで送る。`usePathname` は移動の検知にだけ使う
+  （経緯は [docs/features/ga4-page-path.md](../docs/features/ga4-page-path.md)。
+  `tests/analytics.test.ts` が回帰を見張っている）
 
 ## インフラ
 
