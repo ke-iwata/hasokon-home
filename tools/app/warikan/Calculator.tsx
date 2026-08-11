@@ -79,18 +79,12 @@ export default function Calculator() {
 
       <div style={{ marginTop: 18, display: 'grid', gap: 10 }}>
         <div
-          style={{
-            border: '1px solid var(--border)',
-            borderLeft: '4px solid var(--brand)',
-            borderRadius: 10,
-            padding: '12px 16px',
-            background: 'var(--accent-soft)',
-          }}
+          className="panel" style={{borderLeft: '4px solid var(--brand)'}}
         >
-          <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             参加者一人あたり{participants > 0 ? `（${participants}人）` : ''}
           </div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{fmtYen(r.perPerson)}</div>
+          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800 }}>{fmtYen(r.perPerson)}</div>
         </div>
         <div
           style={{
@@ -100,12 +94,12 @@ export default function Calculator() {
             background: 'var(--surface)',
           }}
         >
-          <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>幹事の支払額</div>
-          <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>幹事の支払額</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700 }}>
             {kanjiIsChange ? (
               <>
                 0円{' '}
-                <span style={{ fontSize: '0.9rem', color: '#b45309', fontWeight: 600 }}>
+                <span style={{ fontSize: 'var(--fs-sm)', color: '#b45309', fontWeight: 600 }}>
                   （集めすぎ: お釣り{fmtYen(-r.kanji)}）
                 </span>
               </>
@@ -114,7 +108,7 @@ export default function Calculator() {
             )}
           </div>
         </div>
-        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--muted)' }}>
+        <p style={{ margin: 0, fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
           検算: {fmtYen(r.perPerson)} × {participants}人 + 幹事{fmtYen(r.kanji)} ={' '}
           <strong>{fmtYen(r.collected)}</strong>
           {r.collected === total ? '（合計と一致）' : ''}

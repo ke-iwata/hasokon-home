@@ -65,21 +65,16 @@ export default function Calculator() {
 
       {ratio && nearest ? (
         <div style={{ marginTop: 18 }}>
-          <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', fontWeight: 600 }}>
             アスペクト比（最簡分数）
           </div>
-          <div style={{ fontSize: '1.9rem', fontWeight: 800, color: 'var(--accent)' }}>
+          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--accent)' }}>
             {ratio.w} : {ratio.h}
           </div>
 
           <p
-            style={{
-              margin: '12px 0 0',
-              padding: '10px 14px',
-              background: 'var(--accent-soft)',
-              borderRadius: 10,
-              fontSize: '0.95rem',
-            }}
+            className="panel" style={{margin: '12px 0 0',
+              fontSize: 'var(--fs-md)'}}
           >
             {nearest.exact ? (
               <>
@@ -94,7 +89,7 @@ export default function Calculator() {
           </p>
 
           <div style={{ marginTop: 14 }}>
-            <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', fontWeight: 600 }}>
               CSSコピー用コード
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
@@ -104,7 +99,7 @@ export default function Calculator() {
                   color: 'var(--code-fg)',
                   padding: '8px 14px',
                   borderRadius: 8,
-                  fontSize: '0.9rem',
+                  fontSize: 'var(--fs-sm)',
                 }}
               >
                 {cssCode}
@@ -117,7 +112,7 @@ export default function Calculator() {
                   borderRadius: 8,
                   border: '1px solid var(--border)',
                   background: copied ? '#dcfce7' : 'var(--surface)',
-                  fontSize: '0.85rem',
+                  fontSize: 'var(--fs-sm)',
                   fontWeight: 600,
                   cursor: 'pointer',
                 }}
@@ -134,7 +129,7 @@ export default function Calculator() {
               borderTop: '1px solid var(--border)',
             }}
           >
-            <div style={{ fontSize: '0.9rem', fontWeight: 700, marginBottom: 8 }}>
+            <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, marginBottom: 8 }}>
               この比率のままサイズを変えると？
             </div>
             <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
@@ -161,11 +156,11 @@ export default function Calculator() {
               </label>
             </div>
             {scaled !== null && (
-              <p style={{ margin: '10px 0 0', fontSize: '0.95rem' }}>
+              <p style={{ margin: '10px 0 0', fontSize: 'var(--fs-md)' }}>
                 {scaleMode === 'width' ? (
                   <>
                     幅 {sv.toLocaleString('ja-JP')}px のとき、高さは{' '}
-                    <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+                    <strong style={{ color: 'var(--accent)', fontSize: 'var(--fs-lg)' }}>
                       {scaled.toLocaleString('ja-JP')}px
                     </strong>{' '}
                     です（四捨五入）。
@@ -173,7 +168,7 @@ export default function Calculator() {
                 ) : (
                   <>
                     高さ {sv.toLocaleString('ja-JP')}px のとき、幅は{' '}
-                    <strong style={{ color: 'var(--accent)', fontSize: '1.1rem' }}>
+                    <strong style={{ color: 'var(--accent)', fontSize: 'var(--fs-lg)' }}>
                       {scaled.toLocaleString('ja-JP')}px
                     </strong>{' '}
                     です（四捨五入）。
@@ -184,7 +179,7 @@ export default function Calculator() {
           </div>
         </div>
       ) : (
-        <p style={{ marginTop: 16, fontSize: '0.9rem', color: 'var(--muted)' }}>
+        <p style={{ marginTop: 16, fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
           幅・高さに1以上の数値を入力してください。
         </p>
       )}

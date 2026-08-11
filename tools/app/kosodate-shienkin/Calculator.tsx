@@ -40,11 +40,11 @@ export default function Calculator() {
           />
         </label>
       </div>
-      <p style={{ fontSize: '0.85rem', color: 'var(--muted)', margin: '8px 0 0' }}>
+      <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', margin: '8px 0 0' }}>
         ※ 交通費等を含む額面の月収を入力してください（手取りではありません）
       </p>
 
-      <p style={{ margin: '16px 0 4px', fontSize: '0.85rem', color: 'var(--muted)' }}>
+      <p style={{ margin: '16px 0 4px', fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
         標準報酬月額 {fmt(results[0].standardMonthly)}円として計算
       </p>
       <table>
@@ -62,10 +62,10 @@ export default function Calculator() {
               <td>
                 {r.fiscalYear}年度
                 <br />
-                <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{r.status}</span>
+                <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>{r.status}</span>
               </td>
               <td>
-                <strong style={{ fontSize: '1.15rem', color: 'var(--accent)' }}>
+                <strong style={{ fontSize: 'var(--fs-lg)', color: 'var(--accent)' }}>
                   {fmt(r.monthly)}円
                 </strong>
               </td>

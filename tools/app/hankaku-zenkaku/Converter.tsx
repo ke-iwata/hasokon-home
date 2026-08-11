@@ -41,7 +41,7 @@ function DirectionButton({
         border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
         background: active ? 'var(--accent)' : 'var(--surface)',
         color: active ? 'var(--on-accent)' : 'var(--text)',
-        fontSize: '0.9rem',
+        fontSize: 'var(--fs-sm)',
         fontWeight: 600,
         cursor: 'pointer',
       }}
@@ -83,7 +83,7 @@ export default function Converter() {
     <div className="card">
       <div style={{ display: 'grid', gap: 16 }}>
         <div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: 6 }}>変換の向き</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 6 }}>変換の向き</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <DirectionButton active={direction === 'toFull'} onClick={() => setDirection('toFull')}>
               半角 → 全角
@@ -95,10 +95,10 @@ export default function Converter() {
         </div>
 
         <div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 600, marginBottom: 6 }}>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, marginBottom: 6 }}>
             変換する文字の種類
           </div>
-          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.9rem' }}>
+          <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
             {TARGETS.map((t) => (
               <label
                 key={t.key}
@@ -111,7 +111,7 @@ export default function Converter() {
                   style={{ width: 'auto' }}
                 />
                 {t.label}
-                <span style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>{t.hint}</span>
+                <span style={{ color: 'var(--muted)', fontSize: 'var(--fs-xs)' }}>{t.hint}</span>
               </label>
             ))}
           </div>
@@ -128,7 +128,7 @@ export default function Converter() {
             placeholder={PLACEHOLDER}
             style={{ marginTop: 6 }}
           />
-          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
+          <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             {before.total}文字（全角 {before.full} / 半角 {before.half}）
           </p>
         </div>
@@ -152,7 +152,7 @@ export default function Converter() {
                 borderRadius: 8,
                 border: '1px solid var(--border)',
                 background: copied ? '#dcfce7' : 'var(--surface)',
-                fontSize: '0.85rem',
+                fontSize: 'var(--fs-sm)',
                 fontWeight: 600,
                 cursor: 'pointer',
               }}
@@ -166,9 +166,9 @@ export default function Converter() {
             readOnly
             rows={5}
             spellCheck={false}
-            style={{ marginTop: 6, background: 'var(--accent-soft)' }}
+            className="panel" style={{marginTop: 6}}
           />
-          <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
+          <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             {after.total}文字（全角 {after.full} / 半角 {after.half}）
           </p>
         </div>

@@ -29,15 +29,15 @@ function CountSelect({
   onChange: (v: number) => void;
 }) {
   return (
-    <label style={{ fontSize: '0.85rem' }}>
+    <label style={{ fontSize: 'var(--fs-sm)' }}>
       {label}
-      <span style={{ display: 'block', color: 'var(--muted)', fontWeight: 400, fontSize: '0.75rem' }}>
+      <span style={{ display: 'block', color: 'var(--muted)', fontWeight: 400, fontSize: 'var(--fs-xs)' }}>
         {hint}
       </span>
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        style={{ marginTop: 4, fontSize: '0.95rem' }}
+        style={{ marginTop: 4, fontSize: 'var(--fs-md)' }}
       >
         {[0, 1, 2, 3, 4, 5].map((n) => (
           <option key={n} value={n}>
@@ -77,7 +77,7 @@ function Row({
       <span>
         {label}
         {sub && (
-          <span style={{ display: 'block', color: 'var(--muted)', fontSize: '0.75rem', fontWeight: 400 }}>
+          <span style={{ display: 'block', color: 'var(--muted)', fontSize: 'var(--fs-xs)', fontWeight: 400 }}>
             {sub}
           </span>
         )}
@@ -152,12 +152,12 @@ export default function Calculator() {
           <CountSelect label="うち19〜22歳" hint="特定扶養親族" value={depSpecific} onChange={setDepSpecific} />
           <CountSelect label="うち70歳以上" hint="老人扶養親族" value={depElderly} onChange={setDepElderly} />
         </div>
-        <p style={{ margin: '-6px 0 0', fontSize: '0.78rem', color: 'var(--muted)' }}>
+        <p style={{ margin: '-6px 0 0', fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
           16歳未満の子どもは扶養控除の対象外なので、人数に含めないでください。
         </p>
 
         <div>
-          <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'flex-start', fontSize: '0.9rem' }}>
+          <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'flex-start', fontSize: 'var(--fs-sm)' }}>
             <input
               type="checkbox"
               checked={!useEstimate}
@@ -167,7 +167,7 @@ export default function Calculator() {
             社会保険料を自分で入力する（源泉徴収票の「社会保険料等の金額」）
           </label>
           {useEstimate ? (
-            <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center', fontSize: '0.9rem', marginTop: 8 }}>
+            <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center', fontSize: 'var(--fs-sm)', marginTop: 8 }}>
               <input
                 type="checkbox"
                 checked={kaigo}
@@ -204,7 +204,7 @@ export default function Calculator() {
           />
         </label>
 
-        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: '0.9rem' }}>
+        <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
           <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
             <input
               type="checkbox"
@@ -217,11 +217,11 @@ export default function Calculator() {
         </div>
 
         <details>
-          <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
             住宅ローン控除を使っている
           </summary>
           <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-            <label style={{ fontSize: '0.85rem' }}>
+            <label style={{ fontSize: 'var(--fs-sm)' }}>
               住宅ローン控除額（年間・万円）
               <input
                 type="number"
@@ -232,7 +232,7 @@ export default function Calculator() {
                 placeholder="例: 20（万円）"
               />
             </label>
-            <label style={{ fontSize: '0.85rem' }}>
+            <label style={{ fontSize: 'var(--fs-sm)' }}>
               入居した時期
               <select
                 value={loanTier}
@@ -242,7 +242,7 @@ export default function Calculator() {
                 <option value="rate7">平成28年〜令和3年（2016〜2021年）</option>
               </select>
             </label>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)' }}>
+            <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
               控除額は源泉徴収票の「住宅借入金等特別控除の額」、または年末残高 ×
               控除率で確認できます。入居時期で住民税から引ける上限が変わります。
             </p>
@@ -250,11 +250,11 @@ export default function Calculator() {
         </details>
 
         <details>
-          <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
             その他の所得控除を入れる（生命保険料控除・医療費控除・iDeCoなど）
           </summary>
           <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-            <label style={{ fontSize: '0.85rem' }}>
+            <label style={{ fontSize: 'var(--fs-sm)' }}>
               所得税の控除額（万円）
               <input
                 type="number"
@@ -265,7 +265,7 @@ export default function Calculator() {
                 placeholder="0"
               />
             </label>
-            <label style={{ fontSize: '0.85rem' }}>
+            <label style={{ fontSize: 'var(--fs-sm)' }}>
               住民税の控除額（万円）
               <input
                 type="number"
@@ -276,7 +276,7 @@ export default function Calculator() {
                 placeholder="0"
               />
             </label>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)' }}>
+            <p style={{ margin: 0, fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
               生命保険料控除は所得税が最大12万円・住民税が最大7万円というように、同じ控除でも住民税のほうが上限が低いものがあります。源泉徴収票や住民税決定通知書の額を入れてください。
             </p>
           </div>
@@ -285,30 +285,25 @@ export default function Calculator() {
 
       {/* 結果 */}
       <div
-        style={{
-          marginTop: 20,
-          padding: '16px 18px',
-          background: 'var(--accent-soft)',
-          borderRadius: 12,
-          textAlign: 'center',
-        }}
+        className="panel" style={{marginTop: 20,
+          textAlign: 'center'}}
       >
-        <div style={{ fontSize: '0.85rem', color: 'var(--muted)', fontWeight: 600 }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', fontWeight: 600 }}>
           自己負担2,000円で寄付できる上限額
         </div>
-        <div style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--accent)', lineHeight: 1.3 }}>
+        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--accent)', lineHeight: 1.3 }}>
           {r.limit.toLocaleString('ja-JP')}
-          <span style={{ fontSize: '1rem', marginLeft: 2 }}>円</span>
+          <span style={{ fontSize: 'var(--fs-md)', marginLeft: 2 }}>円</span>
         </div>
-        <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
+        <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
           住民税の所得割額 {yen(r.residentTax.incomeLevy)} をもとに計算しています
         </div>
       </div>
 
-      <h3 style={{ fontSize: '1rem', margin: '22px 0 2px' }}>
+      <h3 style={{ fontSize: 'var(--fs-md)', margin: '22px 0 2px' }}>
         {yen(b.donation)} 寄付したときの内訳
       </h3>
-      <p style={{ margin: '0 0 8px', fontSize: '0.8rem', color: 'var(--muted)' }}>
+      <p style={{ margin: '0 0 8px', fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
         {usingLimit
           ? '寄付額が空欄なので、上限額いっぱいで計算しています。'
           : '寄付額の欄に入れた金額で計算しています。'}
@@ -383,10 +378,10 @@ export default function Calculator() {
 
       {r.housingLoan && (
         <details style={{ marginTop: 14 }}>
-          <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+          <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
             住宅ローン控除の内訳を見る
           </summary>
-          <table style={{ marginTop: 10, fontSize: '0.85rem' }}>
+          <table style={{ marginTop: 10, fontSize: 'var(--fs-sm)' }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left' }}>　</th>
@@ -422,7 +417,7 @@ export default function Calculator() {
               </tr>
             </tbody>
           </table>
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 8 }}>
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: 8 }}>
             住宅ローン控除はまず所得税から引き、引ききれない分だけを住民税から引けます。住民税側には上限（所得税の課税総所得金額等の
             {loanTier === 'rate7' ? '7%・最高136,500円' : '5%・最高97,500円'}
             ）があり、それも超えた分は切り捨てになります。
@@ -437,10 +432,10 @@ export default function Calculator() {
       )}
 
       <details style={{ marginTop: 16 }}>
-        <summary style={{ cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600 }}>
+        <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
           計算の途中経過を見る
         </summary>
-        <table style={{ marginTop: 10, fontSize: '0.85rem' }}>
+        <table style={{ marginTop: 10, fontSize: 'var(--fs-sm)' }}>
           <tbody>
             <tr>
               <th style={{ textAlign: 'left' }}>給与収入</th>
@@ -493,7 +488,7 @@ export default function Calculator() {
           </tbody>
         </table>
         {r.socialInsuranceEstimated && (
-          <p style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 8 }}>
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: 8 }}>
             社会保険料は健康保険4.99%・厚生年金9.15%・雇用保険0.55%（本人負担分）で概算しています。厚生年金には上限があるため、高収入ほど負担率は下がります。正確に出したい場合は源泉徴収票の「社会保険料等の金額」を入力してください。
           </p>
         )}

@@ -41,7 +41,7 @@ export default function Calculator() {
             onChange={(e) => setRestDays(e.target.value)}
           />
         </label>
-        <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: '0.9rem' }}>
+        <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--fs-sm)' }}>
           <input
             type="checkbox"
             checked={under12Months}
@@ -58,22 +58,17 @@ export default function Calculator() {
       </div>
 
       <div
-        style={{
-          marginTop: 18,
-          padding: '14px 16px',
-          background: 'var(--accent-soft)',
-          borderRadius: 10,
-          textAlign: 'center',
-        }}
+        className="panel" style={{marginTop: 18,
+          textAlign: 'center'}}
       >
-        <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
           傷病手当金の支給額（{r.payableDays}日分）
         </div>
-        <div style={{ fontSize: '1.7rem', fontWeight: 800, color: 'var(--accent)' }}>
+        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--accent)' }}>
           {fmtYen(r.total)}
         </div>
         {r.payableDays === 0 && (
-          <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             休業が連続{TAIKI_DAYS}日以内は待期期間のため支給されません（4日目から支給）
           </div>
         )}
@@ -86,7 +81,7 @@ export default function Calculator() {
             <td>
               {fmtYen(r.standardMonthly)}
               {r.capped && (
-                <span style={{ fontSize: '0.75rem', color: '#b45309', display: 'block' }}>
+                <span style={{ fontSize: 'var(--fs-xs)', color: '#b45309', display: 'block' }}>
                   加入12ヶ月未満のため上限を適用
                 </span>
               )}

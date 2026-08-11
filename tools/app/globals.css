@@ -32,6 +32,13 @@
   --warn-bg: #fdf6e7;
   --warn-border: #c98a13;
 
+  /* 文字サイズ。ツールごとに好きな値を書くとサイズが増えるのでこの5段階だけ使う */
+  --fs-xs: 0.78rem;
+  --fs-sm: 0.86rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.25rem;
+  --fs-xl: 1.9rem;
+
   --radius: 12px;
   --radius-sm: 8px;
   --radius-pill: 999px;
@@ -407,9 +414,141 @@ select:focus {
 }
 
 label {
-  font-size: 0.9rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
-}@media (max-width: 600px) {
+}
+
+/* ===================================================================
+   計算機パネルの共通部品
+   ===================================================================
+   14本のツールをそれぞれ別々に作った結果、結果パネルの余白が4種類、
+   角丸が10pxと12pxの混在、文字サイズが17種類…と細かくズレていた。
+   見た目の部品はここに集約し、ツール側ではインラインstyleを書かない。
+
+   使い方:
+     <div className="field">        ラベル + 入力のまとまり
+     <p className="hint">           小さい補足
+     <div className="panel">        結果パネル（アクセント地）
+     <div className="panel quiet">  結果パネル（中立地）
+     <div className="metric">       大きな数値
+     <dl className="kv">            キーと値の行リスト
+     <span className="chip">        小さなバッジ
+   =================================================================== */
+
+/* ラベル + コントロール。縦の間隔をツール間で揃える */
+.field {
+  display: block;
+  margin-bottom: 14px;
+}
+
+.field > label,
+.field > .field-label {
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* 入力を横に並べる場合。狭い画面では必ず1列に落とす */
+.field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+/* 補足・注記。小さい文字はこの1種類だけにする */
+.hint {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+/* 結果パネル。余白・角丸・地色をここで固定する */
+.panel {
+  background: var(--accent-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+
+.panel.quiet {
+  background: var(--surface-2);
+}
+
+.panel + .panel {
+  margin-top: 10px;
+}
+
+/* 結果の大きな数値。tabular-nums で桁が揺れないようにする */
+.metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.metric .value {
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.metric .unit {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.metric .label {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* キーと値の行。表組みで作っていたツールもこれに寄せる */
+.kv {
+  margin: 0;
+}
+
+.kv > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.kv > div:last-child {
+  border-bottom: none;
+}
+
+.kv dt {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.kv dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 小さなバッジ（「税金」「社会保険」など） */
+.chip {
+  display: inline-block;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 1px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
   .hero h1 {
     font-size: 1.5rem;
   }

@@ -55,7 +55,7 @@ export default function Calculator() {
 
       {valid ? (
         <div style={{ marginTop: 18 }}>
-          <p style={{ margin: '0 0 8px', fontSize: '0.95rem' }}>
+          <p style={{ margin: '0 0 8px', fontSize: 'var(--fs-md)' }}>
             {mode === 'wake' ? (
               <>
                 <strong>{minutesToTime(baseMinutes)}</strong> に起きるなら、この時刻に布団へ：
@@ -84,12 +84,12 @@ export default function Calculator() {
                 }}
               >
                 <span>
-                  <strong style={{ fontSize: '1.25rem' }}>{minutesToTime(r.minutes)}</strong>
+                  <strong style={{ fontSize: 'var(--fs-lg)' }}>{minutesToTime(r.minutes)}</strong>
                   {r.recommended && (
                     <span
                       style={{
                         marginLeft: 8,
-                        fontSize: '0.72rem',
+                        fontSize: 'var(--fs-xs)',
                         color: 'var(--on-accent)',
                         background: 'var(--accent)',
                         borderRadius: 999,
@@ -102,18 +102,18 @@ export default function Calculator() {
                     </span>
                   )}
                 </span>
-                <span style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>
+                <span style={{ color: 'var(--muted)', fontSize: 'var(--fs-sm)' }}>
                   {r.cycles}サイクル・睡眠{formatDuration(r.sleepMinutes)}
                 </span>
               </div>
             ))}
           </div>
-          <p style={{ margin: '10px 0 0', fontSize: '0.8rem', color: 'var(--muted)' }}>
+          <p style={{ margin: '10px 0 0', fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             ※ 睡眠時間は入眠時間（{fall}分）を除いた、実際に眠っている時間の目安です。
           </p>
         </div>
       ) : (
-        <p style={{ marginTop: 18, fontSize: '0.9rem', color: 'var(--muted)' }}>
+        <p style={{ marginTop: 18, fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
           時刻を入力してください。
         </p>
       )}

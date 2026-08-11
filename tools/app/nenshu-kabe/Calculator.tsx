@@ -51,7 +51,7 @@ export default function Calculator() {
           </select>
         </label>
         {showShahoInputs && (
-          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: '0.9rem' }}>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
             <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
                 type="checkbox"
@@ -76,19 +76,14 @@ export default function Calculator() {
 
       {next ? (
         <p
-          style={{
-            margin: '18px 0 4px',
-            padding: '10px 14px',
-            background: 'var(--accent-soft)',
-            borderRadius: 10,
-            fontSize: '0.95rem',
-          }}
+          className="panel" style={{margin: '18px 0 4px',
+            fontSize: 'var(--fs-md)'}}
         >
           次の壁は <strong style={{ color: 'var(--accent)' }}>{next.label}</strong>
           {next.diff === 0 ? '（ちょうど到達）' : <>（あと <strong>{fmtMan(next.diff)}</strong>）</>}
         </p>
       ) : (
-        <p style={{ margin: '18px 0 4px', fontSize: '0.95rem' }}>
+        <p style={{ margin: '18px 0 4px', fontSize: 'var(--fs-md)' }}>
           該当するすべての壁を超えています。
         </p>
       )}
@@ -103,7 +98,7 @@ export default function Calculator() {
               borderRadius: 10,
               padding: '10px 14px',
               background: 'var(--surface)',
-              fontSize: '0.9rem',
+              fontSize: 'var(--fs-sm)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4 }}>
@@ -112,7 +107,7 @@ export default function Calculator() {
                 <span
                   style={{
                     marginLeft: 8,
-                    fontSize: '0.72rem',
+                    fontSize: 'var(--fs-xs)',
                     color: 'var(--muted)',
                     fontWeight: 600,
                     border: '1px solid var(--border)',
@@ -136,7 +131,7 @@ export default function Calculator() {
             </div>
             <div style={{ color: 'var(--muted)', marginTop: 4, lineHeight: 1.6 }}>{r.effect}</div>
             {r.note && (
-              <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: '0.8rem' }}>※ {r.note}</div>
+              <div style={{ color: 'var(--muted)', marginTop: 4, fontSize: 'var(--fs-sm)' }}>※ {r.note}</div>
             )}
           </div>
         ))}
