@@ -125,29 +125,24 @@ function CornerIndex({ rank, suit }: { rank: Rank; suit: Suit }) {
   );
 }
 
-/** 絵札（J・Q・K）の中央デザイン。枠＋大きな文字＋スート */
+const COURT_NAME: Record<number, string> = { 11: 'jack', 12: 'queen', 13: 'king' };
+
+/**
+ * 絵札（J・Q・K）は古典的な英国式パターンの絵柄を使う。
+ * 出典: vector-playing-cards（Byron Knoll作・パブリックドメイン）の
+ * 枠内の人物画を切り出してwebp化したもの（public/cards/）。
+ * 権利表記は不要だが、由来をここに記録しておく
+ */
 function CourtFace({ rank, suit }: { rank: Rank; suit: Suit }) {
-  const color = isRed(suit) ? RED : BLACK;
   return (
-    <g>
-      <rect x="18" y="24" width="64" height="92" rx="4" fill={color} opacity="0.07" />
-      <rect x="18" y="24" width="64" height="92" rx="4" fill="none" stroke={color} strokeWidth="1.6" />
-      <rect x="21.5" y="27.5" width="57" height="85" rx="2.5" fill="none" stroke={color} strokeWidth="0.7" opacity="0.55" />
-      {/* 王冠（K）・ティアラ（Q）・羽根（J）の代わりに、スートと大文字で品よく */}
-      <Pip suit={suit} x={50} y={44} size={17} />
-      <text
-        x="50"
-        y="92"
-        fontSize="42"
-        fontWeight="700"
-        fill={color}
-        textAnchor="middle"
-        fontFamily="Georgia, 'Times New Roman', serif"
-      >
-        {RANK_LABEL[rank]}
-      </text>
-      <Pip suit={suit} x={50} y={104} size={11} flip />
-    </g>
+    <image
+      href={`/games/cards/${COURT_NAME[rank]}_${suit}.webp`}
+      x="17"
+      y="17"
+      width="66"
+      height="106"
+      preserveAspectRatio="xMidYMid meet"
+    />
   );
 }
 
