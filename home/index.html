@@ -228,219 +228,59 @@
         margin-bottom: 20px;
       }
 
-      /* ---- 2. アプリ（横長の単独カード） ---- */
+      /* ---- カード（全セクション共通） ----
+         ポータルは「並んでいるものから1つ選ぶ」ページなので、項目はすべて対等。
+         セクションごとに見た目を変えると、大きさの違いが重要度の違いに見えて
+         かえって読みにくい。カードは1種類だけにして、差は見出しでつける。 */
 
-      .app-card {
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+        gap: 12px;
+      }
+
+      .card {
         display: flex;
-        align-items: center;
-        gap: 18px;
-        max-width: 30rem;
+        flex-direction: column;
+        gap: 4px;
         padding: 18px 20px;
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: var(--radius);
         text-decoration: none;
-        box-shadow: var(--shadow-sm);
         transition:
           transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
           border-color 0.18s;
       }
 
-      .app-card:hover {
+      .card:hover {
         transform: translateY(-2px);
         border-color: var(--accent);
       }
 
-      .app-card img {
-        width: 68px;
-        height: 68px;
-        /* iOSのアイコンと同じ角丸率（約22%） */
-        border-radius: 15px;
-        flex-shrink: 0;
-      }
-
-      .app-card .title {
-        font-weight: 700;
-        display: block;
-      }
-
-      .app-card .sub {
-        color: var(--muted);
-        font-size: 0.86rem;
-        display: block;
-        margin-top: 2px;
-      }
-
-      .app-card .store {
-        color: var(--accent);
-        font-size: 0.82rem;
-        font-weight: 700;
-        display: block;
-        margin-top: 6px;
-      }
-
-      /* ---- 3. お金の計算機（1本を大きく + 残りは行リスト） ---- */
-
-      .featured {
-        display: block;
-        padding: 26px 28px;
-        background: var(--accent-soft);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition: border-color 0.18s;
-      }
-
-      .featured:hover {
-        border-color: var(--accent);
-      }
-
-      .featured .title {
-        display: block;
-        font-size: 1.3rem;
-        font-weight: 800;
-        letter-spacing: -0.01em;
-      }
-
-      .featured .desc {
-        display: block;
-        color: var(--muted);
-        font-size: 0.94rem;
-        margin-top: 6px;
-        max-width: 34rem;
-      }
-
-      .featured .go {
-        display: inline-block;
-        margin-top: 14px;
-        color: var(--accent);
-        font-weight: 700;
-        font-size: 0.9rem;
-      }
-
-      /* 行リスト。カードを増やさずに区切り線で並べる */
-      .rows {
-        margin-top: 8px;
-        border-top: 1px solid var(--border);
-      }
-
-      .row {
+      /* アイコンはPhosphorの線画。currentColorなのでここの色に追従する */
+      .card-icon {
         display: flex;
-        align-items: baseline;
-        gap: 14px;
-        padding: 15px 4px;
-        border-bottom: 1px solid var(--border);
-        text-decoration: none;
-        transition: padding-left 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-      }
-
-      .row:hover {
-        padding-left: 10px;
-      }
-
-      .row .title {
-        font-weight: 700;
-        flex-shrink: 0;
-      }
-
-      .row:hover .title {
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-sm);
+        background: var(--accent-soft);
         color: var(--accent);
+        margin-bottom: 8px;
       }
 
-      .row .desc {
-        color: var(--muted);
-        font-size: 0.86rem;
-        line-height: 1.6;
-      }
-
-      /* ---- 4. 生活のツール（2列の行リスト） ---- */
-
-      .rows-2col {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        column-gap: 32px;
-        border-top: 1px solid var(--border);
-        margin-top: 8px;
-      }
-
-      /* ---- 5. 決める・選ぶ（小さめの3タイル） ---- */
-
-      .tiles {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .tile {
-        padding: 16px 18px;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition:
-          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-          border-color 0.18s;
-      }
-
-      .tile:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-      }
-
-      .tile .title {
+      .card-name {
         font-weight: 700;
         font-size: 0.98rem;
+        line-height: 1.5;
       }
 
-      .tile .desc {
+      .card-desc {
         color: var(--muted);
-        font-size: 0.82rem;
-        margin-top: 3px;
-        line-height: 1.6;
-      }
-
-      /* ---- 6. ゲーム（塗りのグリッド。1本目を大きく） ---- */
-
-      .games {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 10px;
-      }
-
-      .game {
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        min-height: 116px;
-        padding: 16px 18px;
-        background: var(--surface-2);
-        border: 1px solid transparent;
-        border-radius: var(--radius);
-        text-decoration: none;
-        transition:
-          transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
-          border-color 0.18s;
-      }
-
-      .game:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-      }
-
-      .game.wide {
-        grid-column: span 2;
-        background: var(--accent-soft);
-      }
-
-      .game .title {
-        font-weight: 700;
-      }
-
-      .game .desc {
-        color: var(--muted);
-        font-size: 0.82rem;
-        margin-top: 3px;
-        line-height: 1.6;
+        font-size: 0.84rem;
+        line-height: 1.65;
       }
 
       /* ---- 7. このサイトについて（カードを使わない散文） ---- */
@@ -493,20 +333,8 @@
         section {
           margin-top: 48px;
         }
-        .rows-2col,
-        .tiles,
-        .games {
+        .grid {
           grid-template-columns: 1fr;
-        }
-        .game.wide {
-          grid-column: span 1;
-        }
-        .row {
-          flex-direction: column;
-          gap: 2px;
-        }
-        .app-card {
-          max-width: none;
         }
         footer {
           padding: 20px 18px 36px;
@@ -554,171 +382,161 @@
       </div>
 
       <!--
-        以下のカード一覧は tools/lib/registry.ts と games/lib/registry.ts の
-        内容と手動で同期している。ツールやゲームを追加・削除したらここも更新すること。
+        カード一覧は tools/lib/registry.ts と games/lib/registry.ts の内容と
+        手動で同期している。ツールやゲームを追加・削除したらここも更新すること。
+        アイコンのSVGは Phosphor Icons から生成したもの（tools/app/ToolIcon.tsx と同じ絵柄）。
       -->
-
-      <!-- 2. アプリ -->
       <section>
         <div class="section-head">
           <h2>スマホアプリ</h2>
           <p class="section-desc">App Store で公開しているアプリです。</p>
         </div>
-        <a
-          class="app-card"
-          href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <img
-            src="/app-icon-boardgames.jpg"
-            alt="4 classic board games in one のアプリアイコン"
-            width="68"
-            height="68"
-            loading="lazy"
-          />
-          <span>
-            <span class="title">4 classic board games in one</span>
-            <span class="sub">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
-            <span class="store">無料 ･ App Store で入手 →</span>
-          </span>
-        </a>
+        <div class="grid">
+          <a class="card" href="https://apps.apple.com/us/app/4-classic-board-games-in-one/id6794563871" rel="noopener noreferrer" target="_blank">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M176,16H80A24,24,0,0,0,56,40V216a24,24,0,0,0,24,24h96a24,24,0,0,0,24-24V40A24,24,0,0,0,176,16ZM72,64H184V192H72Zm8-32h96a8,8,0,0,1,8,8v8H72V40A8,8,0,0,1,80,32Zm96,192H80a8,8,0,0,1-8-8v-8H184v8A8,8,0,0,1,176,224Z"></path></svg></span>
+            <span class="card-name">4 classic board games in one</span>
+            <span class="card-desc">将棋・リバーシ・チェス・五目並べを1つのアプリで</span>
+          </a>
+        </div>
       </section>
 
-      <!-- 3. お金の計算機（1本を大きく + 行リスト） -->
       <section>
         <div class="section-head">
           <h2>お金・社会保険の計算機</h2>
-          <p class="section-desc">
-            制度改正に合わせて更新しています。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。
-          </p>
+          <p class="section-desc">制度改正に合わせて更新しています。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。</p>
         </div>
-
-        <a class="featured" href="/tools/nenshu-kabe/">
-          <span class="title">年収の壁 計算機</span>
-          <span class="desc"
-            >106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</span
-          >
-          <span class="go">計算してみる →</span>
-        </a>
-
-        <div class="rows">
-          <a class="row" href="/tools/furusato-nozei/">
-            <span class="title">ふるさと納税 控除額計算機</span>
-            <span class="desc"
-              >上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</span
-            >
+        <div class="grid">
+          <a class="card" href="/tools/nenshu-kabe/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M224,48H32a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H224a8,8,0,0,0,8-8V56A8,8,0,0,0,224,48ZM88,144V112h80v32Zm-48,0V112H72v32Zm144-32h32v32H184Zm32-16H136V64h80ZM120,64V96H40V64ZM40,160h80v32H40Zm96,32V160h80v32Z"></path></svg></span>
+            <span class="card-name">年収の壁 計算機</span>
+            <span class="card-desc">106万・130万・178万…あなたに関係する壁と影響を判定。2026年改正対応</span>
           </a>
-          <a class="row" href="/tools/kosodate-shienkin/">
-            <span class="title">子ども・子育て支援金 計算機</span>
-            <span class="desc"
-              >「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</span
-            >
+          <a class="card" href="/tools/furusato-nozei/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M216,72H180.92c.39-.33.79-.65,1.17-1A29.53,29.53,0,0,0,192,49.57,32.62,32.62,0,0,0,158.44,16,29.53,29.53,0,0,0,137,25.91a54.94,54.94,0,0,0-9,14.48,54.94,54.94,0,0,0-9-14.48A29.53,29.53,0,0,0,97.56,16,32.62,32.62,0,0,0,64,49.57,29.53,29.53,0,0,0,73.91,71c.38.33.78.65,1.17,1H40A16,16,0,0,0,24,88v32a16,16,0,0,0,16,16v64a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V136a16,16,0,0,0,16-16V88A16,16,0,0,0,216,72ZM149,36.51a13.69,13.69,0,0,1,10-4.5h.49A16.62,16.62,0,0,1,176,49.08a13.69,13.69,0,0,1-4.5,10c-9.49,8.4-25.24,11.36-35,12.4C137.7,60.89,141,45.5,149,36.51Zm-64.09.36A16.63,16.63,0,0,1,96.59,32h.49a13.69,13.69,0,0,1,10,4.5c8.39,9.48,11.35,25.2,12.39,34.92-9.72-1-25.44-4-34.92-12.39a13.69,13.69,0,0,1-4.5-10A16.6,16.6,0,0,1,84.87,36.87ZM40,88h80v32H40Zm16,48h64v64H56Zm144,64H136V136h64Zm16-80H136V88h80v32Z"></path></svg></span>
+            <span class="card-name">ふるさと納税 控除額計算機</span>
+            <span class="card-desc">上限額と所得税・住民税の内訳まで。住宅ローン控除との併用にも対応</span>
           </a>
-          <a class="row" href="/tools/shobyo-teate/">
-            <span class="title">傷病手当金 計算機</span>
-            <span class="desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</span>
+          <a class="card" href="/tools/kosodate-shienkin/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M92,140a12,12,0,1,1,12-12A12,12,0,0,1,92,140Zm72-24a12,12,0,1,0,12,12A12,12,0,0,0,164,116Zm-12.27,45.23a45,45,0,0,1-47.46,0,8,8,0,0,0-8.54,13.54,61,61,0,0,0,64.54,0,8,8,0,0,0-8.54-13.54ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88.11,88.11,0,0,0-84.09-87.91C120.32,56.38,120,71.88,120,72a8,8,0,0,0,16,0,8,8,0,0,1,16,0,24,24,0,0,1-48,0c0-.73.13-14.3,8.46-30.63A88,88,0,1,0,216,128Z"></path></svg></span>
+            <span class="card-name">子ども・子育て支援金 計算機</span>
+            <span class="card-desc">「独身税」とも呼ばれる支援金の給与天引き額。2026〜2028年度対応</span>
+          </a>
+          <a class="card" href="/tools/shobyo-teate/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M216,56H176V48a24,24,0,0,0-24-24H104A24,24,0,0,0,80,48v8H40A16,16,0,0,0,24,72V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V72A16,16,0,0,0,216,56ZM96,48a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96ZM216,200H40V72H216V200Zm-56-64a8,8,0,0,1-8,8H136v16a8,8,0,0,1-16,0V144H104a8,8,0,0,1,0-16h16V112a8,8,0,0,1,16,0v16h16A8,8,0,0,1,160,136Z"></path></svg></span>
+            <span class="card-name">傷病手当金 計算機</span>
+            <span class="card-desc">病気やケガで休職したときにもらえる手当の日額・総額を計算</span>
           </a>
         </div>
       </section>
 
-      <!-- 4. 生活のツール（2列の行リスト） -->
       <section>
         <div class="section-head">
           <h2>生活の計算機・変換ツール</h2>
           <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
         </div>
-        <div class="rows-2col">
-          <a class="row" href="/tools/interval-timer/">
-            <span class="title">インターバルタイマー</span>
-            <span class="desc">タバタ式・HIIT対応のトレーニングタイマー。ビープ音つき</span>
+        <div class="grid">
+          <a class="card" href="/tools/interval-timer/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M128,40a96,96,0,1,0,96,96A96.11,96.11,0,0,0,128,40Zm0,176a80,80,0,1,1,80-80A80.09,80.09,0,0,1,128,216ZM173.66,90.34a8,8,0,0,1,0,11.32l-40,40a8,8,0,0,1-11.32-11.32l40-40A8,8,0,0,1,173.66,90.34ZM96,16a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H104A8,8,0,0,1,96,16Z"></path></svg></span>
+            <span class="card-name">インターバルタイマー</span>
+            <span class="card-desc">タバタ式・HIIT対応のトレーニングタイマー。ビープ音つき</span>
           </a>
-          <a class="row" href="/tools/sleep-cycle/">
-            <span class="title">睡眠サイクル計算機</span>
-            <span class="desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</span>
+          <a class="card" href="/tools/sleep-cycle/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M240,96a8,8,0,0,1-8,8H216v16a8,8,0,0,1-16,0V104H184a8,8,0,0,1,0-16h16V72a8,8,0,0,1,16,0V88h16A8,8,0,0,1,240,96ZM144,56h8v8a8,8,0,0,0,16,0V56h8a8,8,0,0,0,0-16h-8V32a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16Zm72.77,97a8,8,0,0,1,1.43,8A96,96,0,1,1,95.07,37.8a8,8,0,0,1,10.6,9.06A88.07,88.07,0,0,0,209.14,150.33,8,8,0,0,1,216.77,153Zm-19.39,14.88c-1.79.09-3.59.14-5.38.14A104.11,104.11,0,0,1,88,64c0-1.79,0-3.59.14-5.38A80,80,0,1,0,197.38,167.86Z"></path></svg></span>
+            <span class="card-name">睡眠サイクル計算機</span>
+            <span class="card-desc">起床時刻から逆算して、スッキリ起きられる就寝時刻を提案</span>
           </a>
-          <a class="row" href="/tools/aircon-denkidai/">
-            <span class="title">エアコン電気代 計算機</span>
-            <span class="desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</span>
+          <a class="card" href="/tools/aircon-denkidai/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M223.77,150.09a8,8,0,0,1-5.86,9.68l-24.64,6,6.46,24.11a8,8,0,0,1-5.66,9.8A8.25,8.25,0,0,1,192,200a8,8,0,0,1-7.72-5.93l-7.72-28.8L136,141.86v46.83l21.66,21.65a8,8,0,0,1-11.32,11.32L128,203.31l-18.34,18.35a8,8,0,0,1-11.32-11.32L120,188.69V141.86L79.45,165.27l-7.72,28.8A8,8,0,0,1,64,200a8.25,8.25,0,0,1-2.08-.27,8,8,0,0,1-5.66-9.8l6.46-24.11-24.64-6a8,8,0,0,1,3.82-15.54l29.45,7.23L112,128,71.36,104.54l-29.45,7.23A7.85,7.85,0,0,1,40,112a8,8,0,0,1-1.91-15.77l24.64-6L56.27,66.07a8,8,0,0,1,15.46-4.14l7.72,28.8L120,114.14V67.31L98.34,45.66a8,8,0,0,1,11.32-11.32L128,52.69l18.34-18.35a8,8,0,0,1,11.32,11.32L136,67.31v46.83l40.55-23.41,7.72-28.8a8,8,0,0,1,15.46,4.14l-6.46,24.11,24.64,6A8,8,0,0,1,216,112a7.85,7.85,0,0,1-1.91-.23l-29.45-7.23L144,128l40.64,23.46,29.45-7.23A8,8,0,0,1,223.77,150.09Z"></path></svg></span>
+            <span class="card-name">エアコン電気代 計算機</span>
+            <span class="card-desc">消費電力と使用時間から1時間・1日・1ヶ月の電気代を計算</span>
           </a>
-          <a class="row" href="/tools/warikan/">
-            <span class="title">割り勘計算機</span>
-            <span class="desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</span>
+          <a class="card" href="/tools/warikan/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M72,104a8,8,0,0,1,8-8h96a8,8,0,0,1,0,16H80A8,8,0,0,1,72,104Zm8,40h96a8,8,0,0,0,0-16H80a8,8,0,0,0,0,16ZM232,56V208a8,8,0,0,1-11.58,7.15L192,200.94l-28.42,14.21a8,8,0,0,1-7.16,0L128,200.94,99.58,215.15a8,8,0,0,1-7.16,0L64,200.94,35.58,215.15A8,8,0,0,1,24,208V56A16,16,0,0,1,40,40H216A16,16,0,0,1,232,56Zm-16,0H40V195.06l20.42-10.22a8,8,0,0,1,7.16,0L96,199.06l28.42-14.22a8,8,0,0,1,7.16,0L160,199.06l28.42-14.22a8,8,0,0,1,7.16,0L216,195.06Z"></path></svg></span>
+            <span class="card-name">割り勘計算機</span>
+            <span class="card-desc">一人あたりの支払額を計算。端数の調整や傾斜配分にも対応</span>
           </a>
-          <a class="row" href="/tools/hebon-romaji/">
-            <span class="title">ヘボン式ローマ字変換</span>
-            <span class="desc">氏名のふりがなをパスポート表記のローマ字に変換</span>
+          <a class="card" href="/tools/hebon-romaji/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M247.15,212.42l-56-112a8,8,0,0,0-14.31,0l-21.71,43.43A88,88,0,0,1,108,126.93,103.65,103.65,0,0,0,135.69,64H160a8,8,0,0,0,0-16H104V32a8,8,0,0,0-16,0V48H32a8,8,0,0,0,0,16h87.63A87.76,87.76,0,0,1,96,116.35a87.74,87.74,0,0,1-19-31,8,8,0,1,0-15.08,5.34A103.63,103.63,0,0,0,84,127a87.55,87.55,0,0,1-52,17,8,8,0,0,0,0,16,103.46,103.46,0,0,0,64-22.08,104.18,104.18,0,0,0,51.44,21.31l-26.6,53.19a8,8,0,0,0,14.31,7.16L148.94,192h70.11l13.79,27.58A8,8,0,0,0,240,224a8,8,0,0,0,7.15-11.58ZM156.94,176,184,121.89,211.05,176Z"></path></svg></span>
+            <span class="card-name">ヘボン式ローマ字変換</span>
+            <span class="card-desc">氏名のふりがなをパスポート表記のローマ字に変換</span>
           </a>
-          <a class="row" href="/tools/hankaku-zenkaku/">
-            <span class="title">半角⇔全角 変換</span>
-            <span class="desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</span>
+          <a class="card" href="/tools/hankaku-zenkaku/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M87.24,52.59a8,8,0,0,0-14.48,0l-64,136a8,8,0,1,0,14.48,6.81L39.9,160h80.2l16.66,35.4a8,8,0,1,0,14.48-6.81ZM47.43,144,80,74.79,112.57,144ZM200,96c-12.76,0-22.73,3.47-29.63,10.32a8,8,0,0,0,11.26,11.36c3.8-3.77,10-5.68,18.37-5.68,13.23,0,24,9,24,20v3.22A42.76,42.76,0,0,0,200,128c-22.06,0-40,16.15-40,36s17.94,36,40,36a42.73,42.73,0,0,0,24-7.25,8,8,0,0,0,16-.75V132C240,112.15,222.06,96,200,96Zm0,88c-13.23,0-24-9-24-20s10.77-20,24-20,24,9,24,20S213.23,184,200,184Z"></path></svg></span>
+            <span class="card-name">半角⇔全角 変換</span>
+            <span class="card-desc">英数字・カタカナ・記号・スペースを種類ごとに選んで相互変換</span>
           </a>
-          <a class="row" href="/tools/aspect-ratio/">
-            <span class="title">アスペクト比計算機</span>
-            <span class="desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</span>
+          <a class="card" href="/tools/aspect-ratio/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M240,192a8,8,0,0,1-8,8H200v32a8,8,0,0,1-16,0V200H64a8,8,0,0,1-8-8V72H24a8,8,0,0,1,0-16H56V24a8,8,0,0,1,16,0V184H232A8,8,0,0,1,240,192ZM96,72h88v88a8,8,0,0,0,16,0V64a8,8,0,0,0-8-8H96a8,8,0,0,0,0,16Z"></path></svg></span>
+            <span class="card-name">アスペクト比計算機</span>
+            <span class="card-desc">幅と高さから縦横比を計算。リサイズ後のサイズ算出にも</span>
           </a>
         </div>
       </section>
 
-      <!-- 5. 決める・選ぶ（小さめの3タイル） -->
       <section>
         <div class="section-head">
           <h2>決める・選ぶツール</h2>
           <p class="section-desc">迷ったときに、その場で決めるための道具です。</p>
         </div>
-        <div class="tiles">
-          <a class="tile" href="/tools/roulette/">
-            <div class="title">ルーレット</div>
-            <div class="desc">項目を入れて回すだけ。ランチ・当番・順番決めに</div>
+        <div class="grid">
+          <a class="card" href="/tools/roulette/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"></path></svg></span>
+            <span class="card-name">ルーレット</span>
+            <span class="card-desc">項目を入れて回すだけ。ランチ・当番・順番決めに</span>
           </a>
-          <a class="tile" href="/tools/group/">
-            <div class="title">グループ分け</div>
-            <div class="desc">名前を入れるだけで班分け・チーム分けをランダムに作成</div>
+          <a class="card" href="/tools/group/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M244.8,150.4a8,8,0,0,1-11.2-1.6A51.6,51.6,0,0,0,192,128a8,8,0,0,1-7.37-4.89,8,8,0,0,1,0-6.22A8,8,0,0,1,192,112a24,24,0,1,0-23.24-30,8,8,0,1,1-15.5-4A40,40,0,1,1,219,117.51a67.94,67.94,0,0,1,27.43,21.68A8,8,0,0,1,244.8,150.4ZM190.92,212a8,8,0,1,1-13.84,8,57,57,0,0,0-98.16,0,8,8,0,1,1-13.84-8,72.06,72.06,0,0,1,33.74-29.92,48,48,0,1,1,58.36,0A72.06,72.06,0,0,1,190.92,212ZM128,176a32,32,0,1,0-32-32A32,32,0,0,0,128,176ZM72,120a8,8,0,0,0-8-8A24,24,0,1,1,87.24,82a8,8,0,1,0,15.5-4A40,40,0,1,0,37,117.51,67.94,67.94,0,0,0,9.6,139.19a8,8,0,1,0,12.8,9.61A51.6,51.6,0,0,1,64,128,8,8,0,0,0,72,120Z"></path></svg></span>
+            <span class="card-name">グループ分け</span>
+            <span class="card-desc">名前を入れるだけで班分け・チーム分けをランダムに作成</span>
           </a>
-          <a class="tile" href="/tools/dice/">
-            <div class="title">サイコロ</div>
-            <div class="desc">1〜10個まで同時に振れて、合計も出ます</div>
+          <a class="card" href="/tools/dice/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M192,32H64A32,32,0,0,0,32,64V192a32,32,0,0,0,32,32H192a32,32,0,0,0,32-32V64A32,32,0,0,0,192,32Zm16,160a16,16,0,0,1-16,16H64a16,16,0,0,1-16-16V64A16,16,0,0,1,64,48H192a16,16,0,0,1,16,16ZM104,92A12,12,0,1,1,92,80,12,12,0,0,1,104,92Zm72,0a12,12,0,1,1-12-12A12,12,0,0,1,176,92Zm-72,72a12,12,0,1,1-12-12A12,12,0,0,1,104,164Zm36-36a12,12,0,1,1-12-12A12,12,0,0,1,140,128Zm36,36a12,12,0,1,1-12-12A12,12,0,0,1,176,164Z"></path></svg></span>
+            <span class="card-name">サイコロ</span>
+            <span class="card-desc">1〜10個まで同時に振れて、合計も出ます</span>
           </a>
         </div>
       </section>
 
-      <!-- 6. ゲーム（塗りのグリッド） -->
       <section>
         <div class="section-head">
           <h2>ミニゲーム</h2>
-          <p class="section-desc">
-            ブラウザですぐ遊べる、定番のパズルとカードゲームです。
-          </p>
+          <p class="section-desc">ブラウザですぐ遊べる、定番のパズルとカードゲームです。</p>
         </div>
-        <div class="games">
-          <a class="game wide" href="/games/solitaire/">
-            <div class="title">ソリティア</div>
-            <div class="desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</div>
+        <div class="grid">
+          <a class="card" href="/games/solitaire/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M184,72H40A16,16,0,0,0,24,88V200a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V88A16,16,0,0,0,184,72Zm0,128H40V88H184V200ZM232,56V176a8,8,0,0,1-16,0V56H64a8,8,0,0,1,0-16H216A16,16,0,0,1,232,56Z"></path></svg></span>
+            <span class="card-name">ソリティア</span>
+            <span class="card-desc">定番のクロンダイク。タップで選んで置くだけの簡単操作</span>
           </a>
-          <a class="game" href="/games/spider/">
-            <div class="title">スパイダーソリティア</div>
-            <div class="desc">1スート〜4スートの3段階</div>
+          <a class="card" href="/games/spider/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M131.58,16.85a8,8,0,0,0-7.16,0C120.32,18.9,24,67.84,24,136a56,56,0,0,0,74.15,53L88.34,221.7A8,8,0,0,0,96,232h64a8,8,0,0,0,7.66-10.3L157.85,189A56,56,0,0,0,232,136C232,67.84,135.68,18.9,131.58,16.85ZM176,176a40,40,0,0,1-26.29-9.85,8,8,0,0,0-12.92,8.33L149.25,216h-42.5l12.46-41.52a8,8,0,0,0-12.92-8.33A40,40,0,0,1,40,136c0-29.88,24.41-56.55,44.89-73.66A279.13,279.13,0,0,1,128,33.06a279.13,279.13,0,0,1,43.11,29.28C208.21,93.34,216,119.51,216,136A40,40,0,0,1,176,176Z"></path></svg></span>
+            <span class="card-name">スパイダーソリティア</span>
+            <span class="card-desc">1スート〜4スートの3段階</span>
           </a>
-          <a class="game" href="/games/freecell/">
-            <div class="title">フリーセル</div>
-            <div class="desc">全部の札が最初から見えている実力型</div>
+          <a class="card" href="/games/freecell/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M184,88c-.78,0-1.56,0-2.33,0a56,56,0,1,0-107.34,0c-.78,0-1.55,0-2.33,0A56,56,0,1,0,96.54,194.35l-8.2,27.35A8,8,0,0,0,96,232h64a8,8,0,0,0,7.66-10.3l-8.2-27.35A56,56,0,1,0,184,88Zm0,96a40,40,0,0,1-33.4-18,8,8,0,0,0-14.33,6.71l13,43.26h-42.5l13-43.26A8,8,0,0,0,105.4,166a40,40,0,1,1-19.93-59.71,8,8,0,0,0,9.33-12,40,40,0,1,1,66.4,0,8,8,0,0,0,9.33,12A40,40,0,1,1,184,184Z"></path></svg></span>
+            <span class="card-name">フリーセル</span>
+            <span class="card-desc">全部の札が最初から見えている実力型</span>
           </a>
-          <a class="game" href="/games/minesweeper/">
-            <div class="title">マインスイーパー</div>
-            <div class="desc">数字をヒントに地雷を避ける。初手は必ず安全</div>
+          <a class="card" href="/games/minesweeper/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M248,32h0a8,8,0,0,0-8,8,52.66,52.66,0,0,1-3.57,17.39C232.38,67.22,225.7,72,216,72c-11.06,0-18.85-9.76-29.49-24.65C176,32.66,164.12,16,144,16c-16.39,0-29,8.89-35.43,25a66.07,66.07,0,0,0-3.9,15H88A16,16,0,0,0,72,72v9.59A88,88,0,0,0,112,248h1.59A88,88,0,0,0,152,81.59V72a16,16,0,0,0-16-16H120.88a46.76,46.76,0,0,1,2.69-9.37C127.62,36.78,134.3,32,144,32c11.06,0,18.85,9.76,29.49,24.65C184,71.34,195.88,88,216,88c16.39,0,29-8.89,35.43-25A68.69,68.69,0,0,0,256,40,8,8,0,0,0,248,32ZM140.8,94a72,72,0,1,1-57.6,0A8,8,0,0,0,88,86.66V72h48V86.66A8,8,0,0,0,140.8,94ZM111.89,209.32A8,8,0,0,1,104,216a8.52,8.52,0,0,1-1.33-.11,57.5,57.5,0,0,1-46.57-46.57,8,8,0,1,1,15.78-2.64,41.29,41.29,0,0,0,33.43,33.43A8,8,0,0,1,111.89,209.32Z"></path></svg></span>
+            <span class="card-name">マインスイーパー</span>
+            <span class="card-desc">数字をヒントに地雷を避ける。初手は必ず安全</span>
           </a>
-          <a class="game" href="/games/2048/">
-            <div class="title">2048</div>
-            <div class="desc">スワイプで同じ数字を合体</div>
+          <a class="card" href="/games/2048/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M104,40H56A16,16,0,0,0,40,56v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,104,40Zm0,64H56V56h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,64H152V56h48v48Zm-96,32H56a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,104,136Zm0,64H56V152h48v48Zm96-64H152a16,16,0,0,0-16,16v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V152A16,16,0,0,0,200,136Zm0,64H152V152h48v48Z"></path></svg></span>
+            <span class="card-name">2048</span>
+            <span class="card-desc">スワイプで同じ数字を合体</span>
           </a>
-          <a class="game" href="/games/nanpre/">
-            <div class="title">ナンプレ</div>
-            <div class="desc">3段階の難易度、答えは必ず1通り</div>
+          <a class="card" href="/games/nanpre/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M216,48H40A16,16,0,0,0,24,64V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM104,144V112h48v32Zm48,16v32H104V160ZM40,112H88v32H40Zm64-16V64h48V96Zm64,16h48v32H168Zm48-16H168V64h48ZM88,64V96H40V64ZM40,160H88v32H40Zm176,32H168V160h48v32Z"></path></svg></span>
+            <span class="card-name">ナンプレ</span>
+            <span class="card-desc">3段階の難易度、答えは必ず1通り</span>
           </a>
-          <!-- wide を2枚にして 3列 × 3行をぴったり埋める（空きセルを作らない） -->
-          <a class="game wide" href="/games/breakout/">
-            <div class="title">ブロック崩し</div>
-            <div class="desc">バーで跳ね返して全部消す。指で隠れないよう下に余裕をとってあります</div>
+          <a class="card" href="/games/breakout/">
+            <span class="card-icon"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true"><path d="M230,26.05C202-1.88,151.53,3.16,117.4,37.3c-31.79,31.79-38.33,77.77-16.51,106.49L71.33,173.35l-.68-.68a16,16,0,0,0-22.64,0L20.69,200a16,16,0,0,0,0,22.64l12.69,12.69a16,16,0,0,0,22.63,0h0L83.34,208a16,16,0,0,0,0-22.63l-.69-.69,29.56-29.56c11.29,8.58,25.24,12.79,40,12.79,22.72,0,47.25-10,66.54-29.3C252.83,104.47,257.88,54,230,26.05ZM44.7,224,32,211.31,59.33,184l6.33,6.34h0L72,196.67ZM224.23,104H200.06v-32h32A72.45,72.45,0,0,1,224.23,104ZM136,149.61A44.15,44.15,0,0,1,106.39,120H136ZM104,104a72.24,72.24,0,0,1,7.86-32H136v32Zm48-32h32v32h-32Zm77.67-16H200.06V26.28a44.23,44.23,0,0,1,29.66,29.66Zm-45.82-32h.16v32h-32V31.76A72.47,72.47,0,0,1,183.9,23.9ZM136,42.06V55.94H122.16a89.72,89.72,0,0,1,6.56-7.32A93.17,93.17,0,0,1,136,42.06Zm16,109.92V120h32v24.16A72.24,72.24,0,0,1,152.05,152Zm48-18.14V120H214a91.62,91.62,0,0,1-6.56,7.32A89.64,89.64,0,0,1,200.06,133.84Z"></path></svg></span>
+            <span class="card-name">ブロック崩し</span>
+            <span class="card-desc">バーで跳ね返して全部消す</span>
           </a>
         </div>
       </section>
