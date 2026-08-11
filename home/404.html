@@ -10,6 +10,14 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--
+      Google Analytics 4。index.html と同じ2行（実装は /analytics.js）。
+      404がどのURLで出ているかは、旧サブドメインからの移行が終わったかの判断材料になる。
+      404はどのURLでも表示されるので、パスは必ず絶対で書くこと。
+      仕様: docs/features/measurement-hygiene.md
+    -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-2Z0K6Y2FX0"></script>
+    <script defer src="/analytics.js"></script>
     <style>
       /* デザイントークン。原典は /design/tokens.css。index.html と同じ値にすること */
       :root {
