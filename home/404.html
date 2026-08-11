@@ -11,15 +11,25 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <style>
+      /* デザイントークン。原典は /design/tokens.css。index.html と同じ値にすること */
       :root {
-        --bg: #f7f8fb;
-        --surface: #fff;
-        --text: #0f172a;
-        --muted: #64748b;
-        --border: #e2e8f0;
-        --brand: #4f46e5;
-        --brand-from: #0ea5e9;
-        --brand-to: #6366f1;
+        color-scheme: light dark;
+        --bg: #faf9f7;
+        --surface: #ffffff;
+        --text: #1c1917;
+        --muted: #6f6a65;
+        --border: #e5e2dd;
+        --accent: #15803d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a1817;
+          --surface: #242120;
+          --text: #f2efec;
+          --muted: #a8a29c;
+          --border: #3d3835;
+          --accent: #4ade80;
+        }
       }
       * {
         box-sizing: border-box;
@@ -45,11 +55,9 @@
       h1 {
         font-size: 1.5rem;
       }
+      /* グラデーション文字は使わない（home/tools/games と揃える） */
       h1 span {
-        background: linear-gradient(90deg, var(--brand-from), var(--brand-to));
-        -webkit-background-clip: text;
-        background-clip: text;
-        color: transparent;
+        color: var(--accent);
       }
       .lead {
         color: var(--muted);
@@ -69,13 +77,13 @@
         transition: border-color 0.15s, transform 0.15s;
       }
       .card:hover {
-        border-color: var(--brand);
+        border-color: var(--accent);
         transform: translateY(-2px);
       }
       .card .name {
         font-weight: 700;
         font-size: 1.05rem;
-        color: var(--brand);
+        color: var(--accent);
       }
       .card .desc {
         color: var(--muted);

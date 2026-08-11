@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Carousel from './Carousel';
 import ItemEditor, { makeItem } from './ItemEditor';
 import ResultOverlay from './ResultOverlay';
@@ -35,12 +35,11 @@ function fromShared(): Item[] | null {
 /**
  * ルーレット本体。
  *
- * 移植元（spin-roulette）ではテーマの色を documentElement に適用していたが、
- * --bg / --text などの変数名が本サイトと重複しており、ヘッダー・フッターの色まで
- * 変わってしまう。ここではラッパー要素（.rl）にだけ適用する。
+ * テーマ（配色）はカルーセルの札と共有画像の色にだけ使う。移植元（spin-roulette）は
+ * ページ全体の色もテーマで塗り替えていたが、サイト共通トークンと変数名が重複して
+ * ライト/ダーク対応を壊すため、ページの配色はトークンに任せる。
  */
 export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const [stored, setStored] = useLocalStorage<Item[]>('roulette:items:v2', []);
   const [themeId, setThemeId] = useLocalStorage<string>('roulette:theme', 'pop');
   const [items, setItems] = useState<Item[]>([]);
@@ -70,14 +69,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
     if (!preset) setStored(next);
     if (location.hash) window.history.replaceState(null, '', location.pathname);
   };
-
-  // テーマの色はラッパー要素にだけ適用する
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    Object.entries(theme.vars).forEach(([k, v]) => el.style.setProperty(k, v));
-    el.dataset.theme = theme.id;
-  }, [theme]);
 
   useEffect(() => {
     const onHash = () => {
@@ -113,7 +104,7 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
   };
 
   return (
-    <div className="rl" ref={rootRef}>
+    <div className="rl">
       <div className="app">
         {screen === 'setup' ? (
           <>
@@ -203,7 +194,7 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
                 heading: preset ? preset.name : 'ルーレットの結果',
                 main: winner.text,
                 emoji: winner.emoji,
-                accent: theme.vars['--accent'],
+                accent: theme.accent,
               })
             }
             onAgain={() => {

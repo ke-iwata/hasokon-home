@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import ItemEditor, { makeItem } from './ItemEditor';
 import GroupTool from './GroupTool';
 import DiceTool from './DiceTool';
@@ -27,10 +27,10 @@ function fromShared(): Item[] | null {
  * グループ分け・あみだくじ・サイコロ・トーナメント表の操作部分。
  *
  * 解説やFAQは各ページのサーバーコンポーネント側にあるので、ここは操作だけを持つ。
- * テーマの色は本サイトと変数名が重複するため、ラッパー要素（.rl）にだけ適用する。
+ * テーマ（配色）はカルーセルの札と共有画像の色にだけ使い、ページの配色は
+ * サイト共通トークンに任せる（上書きするとライト/ダーク対応が壊れるため）。
  */
 export default function ToolClient({ tool }: { tool: RouletteToolId }) {
-  const rootRef = useRef<HTMLDivElement>(null);
   const [stored, setStored] = useLocalStorage<Item[]>('roulette:items:v2', []);
   const [themeId] = useLocalStorage<string>('roulette:theme', 'pop');
   const [lists, setLists] = useLocalStorage<SavedList[]>(LISTS_KEY, []);
@@ -46,20 +46,13 @@ export default function ToolClient({ tool }: { tool: RouletteToolId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    Object.entries(theme.vars).forEach(([k, v]) => el.style.setProperty(k, v));
-    el.dataset.theme = theme.id;
-  }, [theme]);
-
   const update = (next: Item[]) => {
     setItems(next);
     setStored(next);
   };
 
   return (
-    <div className="rl" ref={rootRef}>
+    <div className="rl">
       <div className="app">
         {needsItems && (
           <ItemEditor

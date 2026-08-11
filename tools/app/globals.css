@@ -111,7 +111,8 @@ a {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgb(255 255 255 / 0.85);
+  /* 白の直書きにするとダークで文字が沈むため、背景トークンから作る（games と同じ式） */
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
 }
@@ -141,7 +142,8 @@ a {
   width: 14px;
   height: 14px;
   border-radius: 5px;
-  background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+  /* 旧 --brand-from/--brand-to はトークン統一で廃止済み（未定義参照だと何も表示されない） */
+  background: var(--accent);
   display: inline-block;
 }
 

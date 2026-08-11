@@ -51,7 +51,7 @@ export default function DiceTool({ theme }: Props) {
         heading: 'サイコロ',
         main: values.length > 1 ? `合計 ${total}` : String(values[0] ?? ''),
         emoji: '🎲',
-        accent: theme.vars['--accent'],
+        accent: theme.accent,
       },
       'dice.png',
     )
