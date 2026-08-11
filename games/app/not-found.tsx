@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { games } from '@/lib/registry';
+import GameIcon from '@/app/GameIcon';
 
 export const metadata = {
   title: 'ページが見つかりません',
@@ -17,7 +18,7 @@ export default function NotFound() {
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">
-                {g.icon}
+                <GameIcon name={g.icon} />
               </div>
               <div className="name">{g.name}</div>
               <div className="desc">{g.description}</div>

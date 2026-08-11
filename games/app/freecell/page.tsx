@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
+import GameIcon from '@/app/GameIcon';
 
 const title = 'フリーセル 無料｜ブラウザですぐ遊べるトランプパズル';
 const description =
@@ -123,7 +124,7 @@ export default function Page() {
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">
-                {g.icon}
+                <GameIcon name={g.icon} />
               </div>
               <div className="name">{g.name}</div>
               <div className="desc">{g.description}</div>

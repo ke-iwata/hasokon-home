@@ -1,18 +1,91 @@
 /* hasokon-games 全スタイル。ここ以外にCSSを増やさない */
 
+/* デザイントークン。原典は /design/tokens.css。
+   値を変えるときは home/index.html と tools/app/globals.css も同じ値にすること。
+   以前はダーク固定・独自の青紫パレットだったが、home/tools と揃えた */
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-2: #283548;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --border: #334155;
-  --brand: #38bdf8;
-  --brand-2: #a78bfa;
-  --accent: #fbbf24;
-  --danger: #f87171;
-  --ok: #4ade80;
-  --radius: 14px;
+  color-scheme: light dark;
+
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --text: #1c1917;
+  --muted: #6f6a65;
+  --border: #e5e2dd;
+
+  --accent: #15803d;
+  --accent-strong: #14532d;
+  --accent-soft: #edf7f0;
+  --on-accent: #ffffff;
+
+  /* --brand は旧名。参照が残っているので --accent の別名として置く */
+  --brand: var(--accent);
+
+  --danger: #b91c1c;
+  --ok: #15803d;
+  --warn-bg: #fdf6e7;
+  --warn-border: #c98a13;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+  /* ---- ゲーム盤面の色 ----
+     盤面はサイトの装飾ではなく遊ぶ対象なので、chrome とは別に持つ。
+     マインスイーパーの立体的なセルは、明暗2色で凹凸を作る必要がある */
+  --cell-closed: #ded9d2;
+  --cell-closed-hi: #f2eee8;
+  --cell-closed-lo: #b9b2a8;
+  --cell-open: #f3f1ed;
+  --cell-open-border: #e5e2dd;
+
+  /* マインスイーパーの数字。1から順に色を変えるのは本家からの慣習で、
+     色数が必要なのでアクセント1色ルールの例外。地の色が明暗で反転するため
+     両モードぶん用意する（明るいセルに明るい文字だと読めない） */
+  --ms-1: #1d4ed8;
+  --ms-2: #166534;
+  --ms-3: #b91c1c;
+  --ms-4: #6d28d9;
+  --ms-5: #92400e;
+  --ms-6: #0f766e;
+  --ms-7: #be185d;
+  --ms-8: #57534e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1817;
+    --surface: #242120;
+    --surface-2: #2f2b29;
+    --text: #f2efec;
+    --muted: #a8a29c;
+    --border: #3d3835;
+
+    --accent: #4ade80;
+    --accent-strong: #86efac;
+    --accent-soft: #17251c;
+    --on-accent: #0c1a10;
+
+    --danger: #f87171;
+    --ok: #4ade80;
+    --warn-bg: #2a2213;
+    --warn-border: #b98a2a;
+
+    --cell-closed: #3f3a36;
+    --cell-closed-hi: #524b46;
+    --cell-closed-lo: #2a2624;
+    --cell-open: #211e1d;
+    --cell-open-border: #332f2c;
+
+    --ms-1: #60a5fa;
+    --ms-2: #4ade80;
+    --ms-3: #f87171;
+    --ms-4: #a78bfa;
+    --ms-5: #fbbf24;
+    --ms-6: #2dd4bf;
+    --ms-7: #f472b6;
+    --ms-8: #a8a29c;
+  }
 }
 
 * {
@@ -79,7 +152,7 @@ ol {
 
 .site-header {
   border-bottom: 1px solid var(--border);
-  background: rgba(15, 23, 42, 0.9);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
 }
 
 .site-header .inner,
@@ -96,11 +169,9 @@ ol {
   color: var(--text);
 }
 
+/* グラデーション文字は使わない（home/tools と揃える） */
 .brand span {
-  background: linear-gradient(90deg, var(--brand), var(--brand-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--accent);
 }
 
 .site-footer {
@@ -140,8 +211,17 @@ ol {
   transform: translateY(-2px);
 }
 
+/* アイコン枠。中身は Phosphor の線画SVG（app/GameIcon.tsx）。
+   currentColor なので枠の color を変えれば追従する */
 .game-card .icon {
-  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .game-card .name {
@@ -185,7 +265,7 @@ ol {
 .btn-primary {
   background: var(--brand);
   border-color: var(--brand);
-  color: #0f172a;
+  color: var(--on-accent);
 }
 
 .btn-row {
@@ -215,7 +295,7 @@ ol {
 
 .seg button.active {
   background: var(--brand);
-  color: #0f172a;
+  color: var(--on-accent);
 }
 
 .status-bar {
@@ -242,8 +322,8 @@ ol {
 }
 
 .note {
-  background: rgba(251, 191, 36, 0.08);
-  border-left: 4px solid var(--accent);
+  background: var(--warn-bg);
+  border-left: 4px solid var(--warn-border);
   padding: 10px 14px;
   font-size: 0.85rem;
   margin: 14px 0;
@@ -300,11 +380,11 @@ ol {
 }
 
 .np-cell.selected {
-  background: rgba(56, 189, 248, 0.25);
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
 }
 
 .np-cell.same-number {
-  background: rgba(56, 189, 248, 0.12);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
 .np-cell.conflict {
@@ -332,7 +412,7 @@ ol {
 
 .np-pad button:active {
   background: var(--brand);
-  color: #0f172a;
+  color: var(--on-accent);
 }
 
 /* ---- ブロック崩し ---- */
@@ -351,7 +431,7 @@ ol {
   height: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #0b1220;
+  background: #0b1220; /* ゲーム画面なので明暗どちらでも暗いまま */
   display: block;
 }
 
@@ -421,7 +501,9 @@ ol {
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #0f172a;
+  /* タイルの地色は TILE_COLORS の明るい固定色なので、文字は常に暗いまま。
+     テーマ連動のトークンにすると明モードで白文字になり読めなくなる */
+  color: #1c1917;
   /* 4桁でも収まる固定サイズ。値によって変えない（レイアウトが動くため） */
   font-size: clamp(0.95rem, 5.5vw, 1.4rem);
 }
@@ -465,9 +547,9 @@ ol {
   justify-content: center;
   border-radius: 4px;
   /* 閉じたマスは浮き上がったボタンに見せる（明るい面 + ベベル） */
-  background: #45587a;
+  background: var(--cell-closed);
   border: 1px solid;
-  border-color: #64799e #2a3a56 #2a3a56 #64799e;
+  border-color: var(--cell-closed-hi) var(--cell-closed-lo) var(--cell-closed-lo) var(--cell-closed-hi);
   color: var(--text);
   font-weight: 700;
   font-size: clamp(0.65rem, 2.6vw, 1rem);
@@ -477,8 +559,8 @@ ol {
 
 .ms-cell.revealed {
   /* 開いたマスは沈んだ平面。閉じたマスと明度差をはっきり付ける */
-  background: #101a2c;
-  border: 1px solid #1f2c44;
+  background: var(--cell-open);
+  border: 1px solid var(--cell-open-border);
   cursor: default;
 }
 
@@ -487,14 +569,14 @@ ol {
 }
 
 /* 数字の色（Windows版に倣った慣習的な配色） */
-.ms-n1 { color: #60a5fa; }
-.ms-n2 { color: #4ade80; }
-.ms-n3 { color: #f87171; }
-.ms-n4 { color: #a78bfa; }
-.ms-n5 { color: #fbbf24; }
-.ms-n6 { color: #2dd4bf; }
-.ms-n7 { color: #f472b6; }
-.ms-n8 { color: #94a3b8; }
+.ms-n1 { color: var(--ms-1); }
+.ms-n2 { color: var(--ms-2); }
+.ms-n3 { color: var(--ms-3); }
+.ms-n4 { color: var(--ms-4); }
+.ms-n5 { color: var(--ms-5); }
+.ms-n6 { color: var(--ms-6); }
+.ms-n7 { color: var(--ms-7); }
+.ms-n8 { color: var(--ms-8); }
 
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
 
@@ -557,8 +639,9 @@ ol {
   aspect-ratio: 5 / 7;
   border-radius: 6px;
   border: 1px solid #475569;
+  /* 札は現実のトランプと同じく明暗どちらでも白地。文字も常に暗いまま */
   background: #fdfdfd;
-  color: #0f172a;
+  color: #1c1917;
   display: flex;
   flex-direction: column;
   align-items: stretch;

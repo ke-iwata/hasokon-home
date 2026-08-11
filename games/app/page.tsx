@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { games, SITE_NAME, SITE_URL } from '@/lib/registry';
+import GameIcon from '@/app/GameIcon';
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -38,7 +39,7 @@ export default function Home() {
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">
-                {g.icon}
+                <GameIcon name={g.icon} />
               </div>
               <div className="name">{g.name}</div>
               <div className="desc">{g.description}</div>
