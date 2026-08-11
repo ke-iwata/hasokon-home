@@ -9,7 +9,7 @@ import { pickWinner } from '@/lib/roulette/draw';
 import { LISTS_KEY, type SavedList } from '@/lib/roulette/lists';
 import { useLocalStorage } from '@/lib/roulette/useLocalStorage';
 import { itemsFromHash, shareUrl } from '@/lib/roulette/share';
-import { THEMES, themeById } from '@/lib/roulette/themes';
+import { SHARE_ACCENT } from '@/lib/roulette/colors';
 import { guessEmoji } from '@/lib/roulette/emoji';
 import { trackToolUse } from '@/lib/analytics';
 import type { Item } from '@/lib/roulette/types';
@@ -35,13 +35,11 @@ function fromShared(): Item[] | null {
 /**
  * ルーレット本体。
  *
- * テーマ（配色）はカルーセルの札と共有画像の色にだけ使う。移植元（spin-roulette）は
- * ページ全体の色もテーマで塗り替えていたが、サイト共通トークンと変数名が重複して
- * ライト/ダーク対応を壊すため、ページの配色はトークンに任せる。
+ * ページの配色はサイト共通トークン、札の色は lib/roulette/colors.ts の固定セット。
+ * かつてあった「配色」テーマ選択は廃止した（経緯は colors.ts 参照）。
  */
 export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
   const [stored, setStored] = useLocalStorage<Item[]>('roulette:items:v2', []);
-  const [themeId, setThemeId] = useLocalStorage<string>('roulette:theme', 'pop');
   const [items, setItems] = useState<Item[]>([]);
   const [screen, setScreen] = useState<Screen>('setup');
   const [spinning, setSpinning] = useState(false);
@@ -50,7 +48,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
   const [spinKey, setSpinKey] = useState(0);
   const [lists, setLists] = useLocalStorage<SavedList[]>(LISTS_KEY, []);
 
-  const theme = themeById(themeId);
   const ready = items.length >= 2;
 
   // 静的書き出しのため、localStorage と URL ハッシュの読み出しはマウント後に行う
@@ -110,27 +107,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
           <>
             <ItemEditor items={items} onChange={update} lists={lists} onChangeLists={setLists} />
 
-
-            <div className="themes" role="group" aria-label="配色を選ぶ">
-              <span className="themes-label">配色</span>
-              {THEMES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`theme-swatch ${t.id === themeId ? 'active' : ''}`}
-                  onClick={() => setThemeId(t.id)}
-                  aria-pressed={t.id === themeId}
-                >
-                  <span className="swatch-dots" aria-hidden>
-                    {t.cards.slice(0, 4).map((c) => (
-                      <i key={c} style={{ background: c }} />
-                    ))}
-                  </span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
             <div className="go">
               <button
                 type="button"
@@ -165,7 +141,6 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
 
             <Carousel
               items={items}
-              theme={theme}
               spinning={spinning}
               spinSignal={spinKey}
               onSpinStart={() => {
@@ -194,7 +169,7 @@ export default function RouletteApp({ preset }: { preset?: RoulettePreset }) {
                 heading: preset ? preset.name : 'ルーレットの結果',
                 main: winner.text,
                 emoji: winner.emoji,
-                accent: theme.accent,
+                accent: SHARE_ACCENT,
               })
             }
             onAgain={() => {

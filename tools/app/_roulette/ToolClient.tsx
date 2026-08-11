@@ -7,7 +7,6 @@ import DiceTool from './DiceTool';
 import { LISTS_KEY, type SavedList } from '@/lib/roulette/lists';
 import { useLocalStorage } from '@/lib/roulette/useLocalStorage';
 import { itemsFromHash } from '@/lib/roulette/share';
-import { themeById } from '@/lib/roulette/themes';
 import { guessEmoji } from '@/lib/roulette/emoji';
 import type { Item } from '@/lib/roulette/types';
 
@@ -27,16 +26,12 @@ function fromShared(): Item[] | null {
  * グループ分け・あみだくじ・サイコロ・トーナメント表の操作部分。
  *
  * 解説やFAQは各ページのサーバーコンポーネント側にあるので、ここは操作だけを持つ。
- * テーマ（配色）はカルーセルの札と共有画像の色にだけ使い、ページの配色は
- * サイト共通トークンに任せる（上書きするとライト/ダーク対応が壊れるため）。
  */
 export default function ToolClient({ tool }: { tool: RouletteToolId }) {
   const [stored, setStored] = useLocalStorage<Item[]>('roulette:items:v2', []);
-  const [themeId] = useLocalStorage<string>('roulette:theme', 'pop');
   const [lists, setLists] = useLocalStorage<SavedList[]>(LISTS_KEY, []);
   const [items, setItems] = useState<Item[]>([]);
 
-  const theme = themeById(themeId);
   const needsItems = tool !== 'dice';
 
   // 静的書き出しのため、端末に保存された値の読み出しはマウント後に行う
@@ -63,8 +58,8 @@ export default function ToolClient({ tool }: { tool: RouletteToolId }) {
             samples={tool === 'group' ? 'people' : 'choices'}
           />
         )}
-        {tool === 'group' && <GroupTool items={items} theme={theme} />}
-        {tool === 'dice' && <DiceTool theme={theme} />}
+        {tool === 'group' && <GroupTool items={items} />}
+        {tool === 'dice' && <DiceTool />}
       </div>
     </div>
   );
