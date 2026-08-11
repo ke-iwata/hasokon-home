@@ -31,6 +31,12 @@ home/ → バケット直下、tools/out/ → tools/、games/out/ → games/。
 CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-iwata/hasokon-infra)
 （Terraform）で一元管理。コンソールで直接いじらず、hasokon-infra にPRを出す。
 
+## コミット・PRタイトルの約束
+
+- `docs:` プレフィックスは、**変更が docs/ 配下（機能提案・実装の記録など）だけに
+  収まる場合にのみ**使う。CLAUDE.md・コード内コメント・README の修正を含むときは
+  `docs:` にしない（整理・雑務なら `chore:`、機能追加なら `feat:`、修正なら `fix:`）
+
 ## リリースの約束
 
 **本番へのリリース（v* タグのpush）は運営者の承認が必要。AIエージェントは勝手にタグを打たないこと。**
