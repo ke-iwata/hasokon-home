@@ -54,6 +54,10 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 ## home/ の注意
 
 - ads.txt は AdSense 用。tools/games 側の `lib/adsense.ts` と内容を揃えること
+- GA4のタグは `index.html` / `404.html` の2枚に入っていて、中身は `analytics.js` に集約。
+  測定IDと送信先ホスト（`hasokon.com`）は tools/games の `lib/analytics.ts` と揃えること
+  （`scripts/test/home-analytics.test.mjs` がずれを検知する）。
+  仕様は [docs/features/measurement-hygiene.md](./docs/features/measurement-hygiene.md)
 - `index.html` / `404.html` のサイト一覧は、ツールやゲームを増やしたら両方更新する
 - `sitemap.xml` はインデックス形式で home / tools / games の3本を指す。
   home のページを増やしたら `sitemap-home.xml` を更新する
