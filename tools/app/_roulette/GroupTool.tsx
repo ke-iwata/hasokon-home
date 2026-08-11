@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import type { Item } from '@/lib/roulette/types'
-import type { Theme } from '@/lib/roulette/themes'
+import { CARD_COLORS, SHARE_ACCENT } from '@/lib/roulette/colors'
 import { shareCard } from '@/lib/roulette/resultImage'
 import { trackToolUse } from '@/lib/analytics'
 
 interface Props {
   items: Item[]
-  theme: Theme
 }
 
 type SplitBy = 'count' | 'size'
@@ -37,7 +36,7 @@ function split(items: Item[], groups: number): Item[][] {
   return out
 }
 
-export default function GroupTool({ items, theme }: Props) {
+export default function GroupTool({ items }: Props) {
   const [by, setBy] = useState<SplitBy>('count')
   const [groups, setGroups] = useState(2)
   const [perGroup, setPerGroup] = useState(4)
@@ -67,7 +66,7 @@ export default function GroupTool({ items, theme }: Props) {
       {
         heading: 'グループ分け',
         main: '',
-        accent: theme.accent,
+        accent: SHARE_ACCENT,
         lines: result.map(
           (g, i) => `${i + 1}班: ${g.map((x) => x.text).join('、')}`,
         ),
@@ -131,7 +130,7 @@ export default function GroupTool({ items, theme }: Props) {
               <div
                 key={i}
                 className="group-card"
-                style={{ borderTopColor: theme.cards[i % theme.cards.length] }}
+                style={{ borderTopColor: CARD_COLORS[i % CARD_COLORS.length] }}
               >
                 <h3>
                   {i + 1}班

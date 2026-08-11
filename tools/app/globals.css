@@ -1182,50 +1182,6 @@ label {
   background: var(--accent-soft);
 }
 
-.rl .themes  {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.rl .themes-label  {
-  font-size: 0.78rem;
-  color: var(--muted);
-}
-
-.rl .theme-swatch  {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--text);
-  border-radius: 999px;
-  padding: 6px 13px 6px 8px;
-  font-size: 0.82rem;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.rl .theme-swatch.active  {
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.rl .swatch-dots  {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.rl .swatch-dots i  {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
 .rl .result-emoji  {
   font-size: 3.4rem;
   line-height: 1;

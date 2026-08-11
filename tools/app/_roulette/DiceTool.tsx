@@ -1,14 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import type { Theme } from '@/lib/roulette/themes'
+import { SHARE_ACCENT } from '@/lib/roulette/colors'
 import { shareCard } from '@/lib/roulette/resultImage'
 import Dice3D from './Dice3D'
 import { trackToolUse } from '@/lib/analytics'
-
-interface Props {
-  theme: Theme
-}
 
 /** サイコロの面の数。立方体なので6で固定 */
 const FACES = 6
@@ -22,7 +18,7 @@ const COUNTS = Array.from({ length: 10 }, (_, i) => i + 1)
  */
 const ROLL_MS = 880
 
-export default function DiceTool({ theme }: Props) {
+export default function DiceTool() {
   const [count, setCount] = useState(2)
   const [values, setValues] = useState<number[]>([])
   const [rolling, setRolling] = useState(false)
@@ -51,7 +47,7 @@ export default function DiceTool({ theme }: Props) {
         heading: 'サイコロ',
         main: values.length > 1 ? `合計 ${total}` : String(values[0] ?? ''),
         emoji: '🎲',
-        accent: theme.accent,
+        accent: SHARE_ACCENT,
       },
       'dice.png',
     )

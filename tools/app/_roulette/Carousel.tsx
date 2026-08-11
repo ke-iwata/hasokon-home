@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 import type { Item } from '@/lib/roulette/types'
-import type { Theme } from '@/lib/roulette/themes'
+import { CARD_COLORS } from '@/lib/roulette/colors'
 
 interface Props {
   items: Item[]
-  theme: Theme
   spinning: boolean
   /** 外(結果画面・スペースキー)から回すための合図 */
   spinSignal?: number
@@ -36,7 +35,6 @@ function sampleRing(items: Item[], winner?: Item): Item[] {
 
 export default function Carousel({
   items,
-  theme,
   spinning,
   spinSignal = 0,
   onSpinStart,
@@ -120,7 +118,7 @@ export default function Carousel({
               className={`carousel-card ${winnerId === item.id ? 'winner' : ''}`}
               style={{
                 transform: `rotateY(${i * step}deg) translateZ(${radius}px)`,
-                background: theme.cards[i % theme.cards.length],
+                background: CARD_COLORS[i % CARD_COLORS.length],
               }}
             >
               <span className="card-emoji" aria-hidden>
