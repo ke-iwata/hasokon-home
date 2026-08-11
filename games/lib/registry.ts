@@ -68,6 +68,14 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-04',
   },
   {
+    slug: 'nonogram',
+    icon: 'GridFour',
+    name: 'ノノグラム',
+    description: '数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問。答えは必ず1通りです。',
+    ready: true,
+    updatedAt: '2026-08-11',
+  },
+  {
     slug: 'breakout',
     icon: 'Racquet',
     name: 'ブロック崩し',
