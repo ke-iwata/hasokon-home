@@ -35,12 +35,10 @@ app/
   page.tsx            トップ（ツール一覧。registryから生成）
   globals.css         全スタイル。ここ以外にCSSを増やさない
   sitemap.ts          registryから自動生成
-  robots.ts
   privacy/ contact/   AdSense審査に必要な固定ページ
   not-found.tsx       404ページ（out/404.html になる）
   AdUnit.tsx          広告枠。lib/adsense.ts が未設定なら何も出さない
   Analytics.tsx       ページビュー送信。lib/analytics.ts が未設定なら何もしない
-  ads.txt/route.ts    /ads.txt を lib/adsense.ts から生成
   {slug}/
     page.tsx          サーバーコンポーネント（metadata / JSON-LD / 解説 / FAQ）
     Calculator.tsx    'use client' のUI。ロジックは持たせない
@@ -57,6 +55,10 @@ tests/
   {slug}.test.ts      lib/{slug}.ts のテスト
 docs/CONCEPT.md       コンセプトと方針
 ```
+
+robots.txt と ads.txt はここにはない。ドメイン統合により、どちらも
+ドメイン直下の静的ファイル（リポジトリルートの `home/robots.txt`・`home/ads.txt`）で
+一元管理している（basePath 配下からは配信しない）。
 
 **AWSの構成は [hasokon-infra](https://github.com/ke-iwata/hasokon-infra)（Terraform）で一元管理。**
 コンソールで直接いじらず、hasokon-infra を変更して `terraform apply` する。
@@ -97,9 +99,9 @@ docs/CONCEPT.md       コンセプトと方針
   `AD_SLOTS` にスロットIDを入れる（`below-tool` = ツールの下、`below-faq` = 解説の下）
 - 広告枠は `app/AdUnit.tsx`（`'use client'`）。ページ側は `<AdUnit position="below-tool" />` と書く。
   スロット未設定のときは、開発中のみ破線のプレースホルダを出し、本番ビルドでは何も出力しない
-- `/ads.txt` も同じ定数から生成されるので、パブリッシャーIDを二重管理しなくてよい。
-  ルートドメイン側にも同じ内容が必要なので、変えるときは `home/ads.txt` も直すこと
-- `ADSENSE_CLIENT` を空にすると、スクリプトも広告枠も ads.txt も出力されなくなる
+- ads.txt はドメイン直下の `home/ads.txt`（静的ファイル）だけにある。
+  パブリッシャーIDを変えるときは `lib/adsense.ts` と `home/ads.txt` の両方を直すこと
+- `ADSENSE_CLIENT` を空にすると、スクリプトも広告枠も出力されなくなる
 - **AdSenseのscriptは `app/layout.tsx` の `<head>` に生タグで置く**。`next/script` の
   `afterInteractive` だと静的HTMLにpreloadしか出ず、審査でコードを検出されない可能性があるため
 - **計算機より上に広告を置かない**（UX悪化 → 直帰率上昇 → 順位下落を避ける。docs/CONCEPT.md 5参照）
@@ -127,8 +129,9 @@ docs/CONCEPT.md       コンセプトと方針
 
 ## よく踏む落とし穴
 
-- **`app/sitemap.ts` / `app/robots.ts` には `export const dynamic = 'force-static'` が必須**。
-  `output: 'export'` ではこれがないとビルドが落ちる
+- **`app/sitemap.ts` には `export const dynamic = 'force-static'` が必須**。
+  `output: 'export'` ではこれがないとビルドが落ちる（同種のメタデータルートを
+  足すときも同じ）。robots.txt はルート直下の `home/robots.txt` にあり、ここでは生成しない
 - **CloudFront に URL書き換え Function が必要**。`trailingSlash: true` のため全ページが
   `{slug}/index.html` というキーで出力される。S3にはディレクトリの概念がなく `/{slug}/` という
   キーは存在しないので、変換しないと全ページ403になる（hasokon-infra の
@@ -142,7 +145,7 @@ docs/CONCEPT.md       コンセプトと方針
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在246件）
+npm test         # 計算ロジックのテスト（現在260件）
 npm run build    # out/ に静的出力
 ```
 
@@ -160,10 +163,11 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール14本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト246件
+- ツール14本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト260件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
+- GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
-  `lib/analytics.ts` にGA4の測定IDを設定
+  ルートドメイン（home/）にGA4タグを入れるかの判断
 - 中長期: 制度改正が出るたびに計算機を追加する（このサイトの本命戦略）
 
 ### 制度データの根拠と注意点

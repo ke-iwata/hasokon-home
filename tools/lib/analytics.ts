@@ -4,14 +4,12 @@
  * 測定IDをここだけで管理する。ページのHTMLに出る公開情報なので、
  * 環境変数や Secrets にする必要はない（lib/adsense.ts と同じ考え方）。
  *
- * 【設定手順】
- * 1. Googleアナリティクスで「データストリーム」を作る（ウェブ／https://tool.hasokon.com）
- * 2. 発行された測定ID（G-から始まる）を下の GA_MEASUREMENT_ID に貼る
- * 3. hasokon.com（ルートドメイン）も同じIDで計測するなら、
- *    hasokon-home リポジトリの index.html / 404.html にも同じタグを入れる
+ * 測定IDは設定済み。games と同じIDで、ドメイン統合後は1プロパティで計測している。
+ * tools だけを見るときは、GA4のレポートでページパス（/tools/）で絞り込む。
+ * ルートドメイン側（home/index.html・404.html）にはまだタグを入れていない。
+ * 入れる場合は同じ測定IDのgtagスニペットを両ファイルに置く。
  *
- * GA_MEASUREMENT_ID が空の間は、スクリプトも計測処理も一切出力されない。
- * 未設定のままデプロイしても害はない。
+ * GA_MEASUREMENT_ID を空にすると、スクリプトも計測処理も一切出力されなくなる。
  */
 
 /** GA4の測定ID（例: 'G-XXXXXXXXXX'）。空なら計測しない */

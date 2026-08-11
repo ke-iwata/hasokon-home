@@ -127,13 +127,13 @@ AIでツールを量産できるようになったこの1〜2年で埋まった�
 ## 8. ロードマップ
 
 - [x] サイト基盤（Next.js静的エクスポート + ツールレジストリ）
-- [x] ツール13本の実装（テスト201件）
+- [x] ツール14本の実装（テスト260件）
 - [x] sitemap / robots / 構造化データ
 - [x] GitHub Actions によるデプロイ設定
 - [x] AWS リソース作成 + 初回デプロイ（現在は hasokon-infra の Terraform で管理）
 - [x] roulette.hasokon.com の統合と旧URLの301リダイレクト
 - [x] hasokon.com（ルートドメイン）に案内ページを設置（別リポジトリ + GitHub Pages）
 - [x] AdSense 配信開始（旧サイトのアカウントを引き継ぎ）
+- [x] Googleアナリティクスの測定IDを設定（`lib/analytics.ts`。games と同じプロパティ）
 - [ ] Search Console 登録・サイトマップ送信
-- [ ] Googleアナリティクスの測定IDを設定（`lib/analytics.ts`）
 - [ ] 次の制度改正を待って計算機を追加（このサイクルを繰り返す）

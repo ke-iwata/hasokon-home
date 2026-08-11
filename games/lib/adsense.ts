@@ -12,7 +12,9 @@
  * - 手動で広告枠を置きたくなったら、AdSense管理画面で広告ユニットを作って
  *   AD_SLOTS にスロットIDを入れる（入れるまで枠は出力されない）
  *
- * ADSENSE_CLIENT を空にすると、広告スクリプトも ads.txt も出力されなくなる。
+ * ADSENSE_CLIENT を空にすると、広告スクリプトも広告枠も出力されなくなる。
+ * ads.txt はドメイン直下の home/ads.txt（静的ファイル）で配信しているため、
+ * パブリッシャーIDを変えるときはそちらも揃えて直すこと。
  */
 
 /**
@@ -41,21 +43,4 @@ export function isAdsEnabled(): boolean {
 /** 指定位置の広告を表示できるか（パブリッシャーIDとスロットIDの両方が必要） */
 export function isSlotReady(position: AdPosition): boolean {
   return isAdsEnabled() && AD_SLOTS[position] !== '';
-}
-
-/**
- * ads.txt の内容を組み立てる。AdSenseが広告在庫の正当性を確認するのに使う。
- *
- * 形式: google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
- * （最後の値はGoogleの認証局IDで、全パブリッシャー共通の固定値）
- *
- * 未設定のときは説明コメントだけを返す。0バイトのads.txtは
- * 「販売を許可された事業者がいない」と解釈されうるため、空にはしない。
- */
-export function buildAdsTxt(): string {
-  if (!isAdsEnabled()) {
-    return '# AdSense未設定。lib/adsense.ts の ADSENSE_CLIENT を設定すると出力されます。\n';
-  }
-  const publisherId = ADSENSE_CLIENT.replace(/^ca-/, '');
-  return `google.com, ${publisherId}, DIRECT, f08c47fec0942fa0\n`;
 }

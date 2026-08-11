@@ -41,8 +41,9 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
 
 - `lib/adsense.ts`（tools と同じパブリッシャーID・配信中）。
   **AdSense管理画面に hasokon.com/games/ のサイト追加が必要**
-- `lib/analytics.ts` の `GA_MEASUREMENT_ID` は未設定。
-  tools とは**別のデータストリーム**を作って測定IDを入れる（サイト別に集計するため）
+- `lib/analytics.ts` の `GA_MEASUREMENT_ID` は設定済み（tools と同じID）。
+  ドメイン統合で1プロパティに集約したため、games だけを見るときは
+  GA4のレポートでページパス（`/games/`）で絞り込む
 - 主要な操作で `trackToolUse(slug, action)` を呼ぶ（開始・クリア・勝敗など実装済み）
 - **`page_path` を GA4 に送り返さないこと。** `usePathname()` は basePath（`/games`）を
   取り除いたパスを返すため、渡すとGA4上のURLが実際のURLと食い違う。`page_location`
