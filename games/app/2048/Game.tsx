@@ -208,12 +208,10 @@ export default function Game() {
         </button>
       </div>
 
-      {/* 高さを固定して、メッセージの出入りで盤面が動かないようにする */}
+      {/* 文言の出入りで盤面が動かないよう、常に2行分の高さ */}
       <p
-        className="status-bar"
+        className="hint-row"
         style={{
-          minHeight: '1.6em',
-          margin: '4px 0 10px',
           fontWeight: 700,
           color: over ? 'var(--danger)' : 'var(--ok)',
         }}

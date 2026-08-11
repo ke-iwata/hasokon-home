@@ -229,6 +229,18 @@ ol {
   margin: 10px 0;
 }
 
+/* 盤面の上に置く可変メッセージ行。文言の切り替わりで盤面が上下に
+   動かないよう、常に2行分の高さで固定する（1行のときは下が空くだけ）。
+   「同じ画面内に位置が変わる要素を混ぜない」ためのクラス */
+.hint-row {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 2px 0 6px;
+}
+
 .note {
   background: rgba(251, 191, 36, 0.08);
   border-left: 4px solid var(--accent);

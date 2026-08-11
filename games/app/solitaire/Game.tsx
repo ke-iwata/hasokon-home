@@ -135,8 +135,8 @@ export default function Game() {
         </span>
       </div>
 
-      {/* 高さ固定のヒント行。選択状態の案内を出す（レイアウトを動かさない） */}
-      <p className="status-bar" style={{ minHeight: '1.5em', margin: '2px 0 8px' }}>
+      {/* 文言が切り替わっても盤面が動かないよう、常に2行分の高さ */}
+      <p className="hint-row">
         {won ? (
           <span style={{ color: 'var(--ok)', fontWeight: 700 }}>
             🎉 クリア！おめでとうございます（{state.moves}手）
