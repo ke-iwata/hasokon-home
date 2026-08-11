@@ -111,6 +111,15 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 設定は `lib/analytics.ts` の1箇所。`GA_MEASUREMENT_ID` に測定ID（`G-` から始まる）を
 入れるだけで有効になり、空の間はスクリプトも計測処理も一切出力されない。
 
+- **判定が2つあるので取り違えないこと**（[docs/features/measurement-hygiene.md](../docs/features/measurement-hygiene.md)）。
+  `isAnalyticsEnabled()` は測定IDの有無だけを見る**ビルド時**の判定で、
+  gtag.js の `<script>` を出すかどうかを決める（`app/layout.tsx`）。
+  `shouldTrack()` は**ブラウザ**での判定で、`MEASURED_HOST`（`hasokon.com`）以外では false。
+  `isAnalyticsEnabled()` にホスト条件を足すと、ビルド時に `window` が無いため
+  本番のHTMLからも gtag.js のタグが消える
+- **test.hasokon.com と localhost では1件も送らない**。GA4の30日分の page_view の3割が
+  開発・テスト環境の分で、レポートが使えなくなっていたため。テスト環境で確かめるときは、
+  DevToolsで「送られていないこと」を見る
 - **`send_page_view: false` にしてある**。`next/link` の移動は通常のページ読み込みを
   伴わないため、gtagの自動送信では2ページ目以降が記録されない。ページビューは
   `app/Analytics.tsx` が `usePathname` の変化を見て送る（初回も含めてこちらに一本化）

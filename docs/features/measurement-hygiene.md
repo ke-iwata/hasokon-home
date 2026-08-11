@@ -1,8 +1,23 @@
 # ポータル（hasokon.com/）の計測欠落と、開発トラフィックの混入を直す
 
-**状態**：提案（未実装）
-**対象**：`home/index.html`・`home/404.html`・`tools/lib/analytics.ts`・`games/lib/analytics.ts`
+**状態**：実装済み（2026-08-11。本番反映はタグリリース待ち）
+**対象**：`home/index.html`・`home/404.html`・`home/analytics.js`・
+`tools/lib/analytics.ts`・`games/lib/analytics.ts`
 **起票**：2026-08-11
+
+> **実装時の変更点（2026-08-11）**
+>
+> 1. **ホスト条件は `isAnalyticsEnabled()` ではなく新しい `shouldTrack()` に入れた。**
+>    `isAnalyticsEnabled()` は `app/layout.tsx` が gtag.js の `<script>` を出すかどうかの
+>    判定に使っており、静的書き出しの**ビルド時**（`window` が無い）に評価される。
+>    下の「2. 送信先ホストを1か所で判定する」のとおりに書くとビルド時に false になり、
+>    本番のHTMLからも gtag.js のタグごと消えて計測できなくなる。
+>    判定は「タグを出すか（ビルド時）」と「送ってよいか（実行時）」に分けてある
+> 2. **ポータルの実装はインラインではなく `home/analytics.js` に置いた。**
+>    同じ処理が `index.html` と `404.html` の2枚に必要で、直接書くと片方だけずれるため。
+>    ビルド工程は要らないまま（素のJSを `<script defer src>` で読むだけ）
+> 3. `portal_click` はリンクごとの `onclick` ではなく document 側で1回受けている。
+>    カードを増やしたときに計測用の記述を足し忘れる壊れ方をしないため
 
 ---
 
