@@ -67,7 +67,7 @@ export default function GroupTool({ items, theme }: Props) {
       {
         heading: 'グループ分け',
         main: '',
-        accent: theme.vars['--accent'],
+        accent: theme.accent,
         lines: result.map(
           (g, i) => `${i + 1}班: ${g.map((x) => x.text).join('、')}`,
         ),

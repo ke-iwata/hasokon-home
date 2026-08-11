@@ -13,13 +13,25 @@
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <style>
+      /* デザイントークン。原典は /design/tokens.css。index.html と同じ値にすること */
       :root {
-        --bg: #f7f8fb;
-        --surface: #fff;
-        --text: #0f172a;
-        --muted: #64748b;
-        --border: #e2e8f0;
-        --brand: #4f46e5;
+        color-scheme: light dark;
+        --bg: #faf9f7;
+        --surface: #ffffff;
+        --text: #1c1917;
+        --muted: #6f6a65;
+        --border: #e5e2dd;
+        --brand: #15803d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a1817;
+          --surface: #242120;
+          --text: #f2efec;
+          --muted: #a8a29c;
+          --border: #3d3835;
+          --brand: #4ade80;
+        }
       }
       * {
         box-sizing: border-box;
