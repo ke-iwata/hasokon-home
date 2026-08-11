@@ -1,13 +1,27 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateKabe, nextWall, type KabeInput } from '@/lib/nenshu-kabe';
+import {
+  evaluateKabe,
+  evaluateShaho,
+  nextWall,
+  WAGE_REQUIREMENT_ABOLISHED_ON,
+  type KabeInput,
+} from '@/lib/nenshu-kabe';
 
 const M = 10_000;
+
+/**
+ * 施行日をまたぐ判定は現在時刻に依存させない。
+ * 賃金要件の撤廃は2026年10月1日なので、その前日と当日を固定して使う。
+ */
+const BEFORE = new Date(2026, 8, 30); // 2026-09-30（ローカル時刻）
+const ON = new Date(2026, 9, 1); // 2026-10-01（ローカル時刻）
 
 const base: KabeInput = {
   income: 100 * M,
   position: 'spouse',
   size51: false,
   hours20: false,
+  asOf: BEFORE,
 };
 
 describe('evaluateKabe（該当する壁の抽出）', () => {
@@ -112,5 +126,118 @@ describe('nextWall（次の壁）', () => {
   it('全部超えている場合は undefined', () => {
     const rs = evaluateKabe({ ...base, income: 300 * M });
     expect(nextWall(rs)).toBeUndefined();
+  });
+});
+
+// 2026年10月1日の賃金要件（月8.8万円＝年収106万円相当）撤廃。
+// 施行日をまたぐ境界が壊れていないことだけを見るので、現在時刻には依存させない。
+describe('賃金要件の撤廃（2026-10-01 施行）', () => {
+  const kanyu: KabeInput = { ...base, size51: true, hours20: true };
+
+  it('撤廃日の定数は 2026-10-01', () => {
+    expect(WAGE_REQUIREMENT_ABOLISHED_ON).toBe('2026-10-01');
+  });
+
+  it('2026-09-30 は106万円の壁が出る', () => {
+    const labels = evaluateKabe({ ...kanyu, asOf: BEFORE }).map((r) => r.label);
+    expect(labels).toContain('106万円の壁');
+  });
+
+  it('2026-10-01 は106万円の壁が消える', () => {
+    const labels = evaluateKabe({ ...kanyu, asOf: ON }).map((r) => r.label);
+    expect(labels).not.toContain('106万円の壁');
+  });
+
+  it('施行日の前日23:59と当日00:00で切り替わる（ローカル暦日で判定する）', () => {
+    const eve = new Date(2026, 8, 30, 23, 59, 59);
+    const midnight = new Date(2026, 9, 1, 0, 0, 0);
+    expect(evaluateShaho({ ...kanyu, asOf: eve }).kind).toBe('wage-gate');
+    expect(evaluateShaho({ ...kanyu, asOf: midnight }).kind).toBe('enrolled');
+  });
+
+  it('要件を満たさない人は施行後も106万円の壁が無いだけで、他の壁は変わらない', () => {
+    const before = evaluateKabe({ ...base, asOf: BEFORE }).map((r) => r.label);
+    const after = evaluateKabe({ ...base, asOf: ON }).map((r) => r.label);
+    expect(after).toEqual(before);
+  });
+
+  it('施行後の再現手順（年収100万・配偶者の扶養内・51人以上・週20時間以上）', () => {
+    // 仕様書の再現手順。「あと6万円まで大丈夫」と読ませてはいけない
+    const rs = evaluateKabe({ ...kanyu, income: 100 * M, asOf: ON });
+    expect(rs.map((r) => r.label)).not.toContain('106万円の壁');
+    expect(nextWall(rs)?.label).not.toBe('106万円の壁');
+    expect(evaluateShaho({ ...kanyu, income: 100 * M, asOf: ON }).kind).toBe('enrolled');
+  });
+
+  it('asOf 省略時は実行時の現在日で評価される（ビルド時刻で固定しない）', () => {
+    // 現在日そのものには依存させず、「省略＝現在日を渡したのと同じ」ことだけを見る
+    const omitted = evaluateKabe({ ...kanyu, asOf: undefined }).map((r) => r.label);
+    const explicit = evaluateKabe({ ...kanyu, asOf: new Date() }).map((r) => r.label);
+    expect(omitted).toEqual(explicit);
+  });
+});
+
+describe('evaluateShaho（勤務先の社会保険に加入するか）', () => {
+  const kanyu: KabeInput = { ...base, size51: true, hours20: true };
+
+  it('施行前は賃金要件つき（106万円）', () => {
+    const s = evaluateShaho({ ...kanyu, asOf: BEFORE });
+    expect(s.kind).toBe('wage-gate');
+    expect(s.kind === 'wage-gate' && s.threshold).toBe(106 * M);
+  });
+
+  it('施行後は年収に関係なく加入', () => {
+    const s = evaluateShaho({ ...kanyu, asOf: ON });
+    expect(s.kind).toBe('enrolled');
+    expect(s.kind === 'enrolled' && s.reason).toContain('年収に関係なく');
+  });
+
+  it('週20時間未満・51人未満は施行後も対象外', () => {
+    expect(evaluateShaho({ ...kanyu, hours20: false, asOf: ON }).kind).toBe('not-applicable');
+    expect(evaluateShaho({ ...kanyu, size51: false, asOf: ON }).kind).toBe('not-applicable');
+  });
+
+  it('扶養に入っていない人は対象外', () => {
+    expect(evaluateShaho({ ...kanyu, position: 'none', asOf: ON }).kind).toBe('not-applicable');
+  });
+});
+
+describe('扶養の壁との重複解消', () => {
+  it('施行後、勤務先の社保に加入する配偶者には130万円の壁が出ない', () => {
+    const labels = evaluateKabe({ ...base, size51: true, hours20: true, asOf: ON }).map(
+      (r) => r.label
+    );
+    expect(labels).not.toContain('130万円の壁');
+    expect(labels).not.toContain('106万円の壁');
+    // 税金の壁は残る
+    expect(labels).toContain('119万円の壁');
+    expect(labels).toContain('178万円の壁');
+  });
+
+  it('施行前は106万円の壁と130万円の壁が両方出る（従来どおり）', () => {
+    const labels = evaluateKabe({ ...base, size51: true, hours20: true, asOf: BEFORE }).map(
+      (r) => r.label
+    );
+    expect(labels).toContain('106万円の壁');
+    expect(labels).toContain('130万円の壁');
+  });
+
+  it('施行後でも要件を満たさなければ130万円の壁は残る', () => {
+    const labels = evaluateKabe({ ...base, size51: true, hours20: false, asOf: ON }).map(
+      (r) => r.label
+    );
+    expect(labels).toContain('130万円の壁');
+  });
+
+  it('施行後、社保に加入する学生には150万円の壁が出ない', () => {
+    const labels = evaluateKabe({
+      ...base,
+      position: 'student',
+      size51: true,
+      hours20: true,
+      asOf: ON,
+    }).map((r) => r.label);
+    expect(labels).not.toContain('150万円の壁（学生）');
+    expect(labels).toContain('159万円の壁（学生）');
   });
 });
