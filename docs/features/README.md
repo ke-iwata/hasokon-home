@@ -26,3 +26,6 @@
 | [search-index-consolidation.md](./search-index-consolidation.md) | 旧サブドメインからの検索インデックス統合を完了させる | 一部実装（計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) のみ。GSCでの運用作業は未実施） |
 | [ga4-page-path.md](./ga4-page-path.md) | GA4のページパスから basePath が欠けている問題を直す | 実装済み（2026-08-11。本番反映はタグリリース待ち） |
 | [game-freecell.md](./game-freecell.md) | 新ゲーム「フリーセル」を追加する | 実装済み（2026-08-11。本番反映はタグリリース待ち） |
+| [nenshu-kabe-2026-10-wall-removal.md](./nenshu-kabe-2026-10-wall-removal.md) | 「106万円の壁」撤廃（2026年10月1日施行）に年収の壁 計算機を追随させる | **未実装。施行日 2026-10-01 まで**（過ぎると計算結果が誤りになる） |
+| [measurement-hygiene.md](./measurement-hygiene.md) | ポータルの計測欠落と、開発トラフィックの混入を直す | 未実装 |
+| [game-nonogram.md](./game-nonogram.md) | 新ゲーム「ノノグラム」を追加する | 未実装 |
