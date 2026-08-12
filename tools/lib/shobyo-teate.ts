@@ -11,12 +11,12 @@
  * - 被保険者期間が12ヶ月未満の場合は、その期間の標準報酬月額の平均と
  *   「全被保険者の標準報酬月額の平均額」の低い方を使う（令和7年4月1日以降は32万円）
  *
- * 標準報酬月額の等級表は '@/lib/kosodate-shienkin' の standardMonthly を再利用。
- * 【データ更新箇所】等級表が改定されたら kosodate-shienkin.ts の GRADES を、
+ * 標準報酬月額の等級表は '@/lib/shaho-grades' の standardMonthly を再利用。
+ * 【データ更新箇所】等級表が改定されたら shaho-grades.ts の GRADES を、
  * 全被保険者の標準報酬月額の平均額が改定されたら SHORT_TENURE_CAP を更新する
  */
 
-import { standardMonthly } from '@/lib/kosodate-shienkin';
+import { standardMonthly } from '@/lib/shaho-grades';
 
 /** 待期期間（連続した暦日数） */
 export const TAIKI_DAYS = 3;
