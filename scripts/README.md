@@ -88,7 +88,11 @@ node --test "scripts/test/*.test.mjs"
 ネットワークもGoogleの認証情報も使いません（すべて差し替えて動かしています）。
 `.github/workflows/test.yml` で push 時にも走ります。
 
-`test/home-analytics.test.mjs` だけは scripts/ ではなく **`home/analytics.js`
-（ポータルのアクセス解析）** のテストです。home/ はビルド工程を持たず
+次の2つだけは scripts/ 自身のテストではありません。home/ はビルド工程を持たず
 npm も vitest も無いので、リポジトリ唯一の `node --test` にここで相乗りしています。
-仕様は [docs/features/measurement-hygiene.md](../docs/features/measurement-hygiene.md)。
+
+- `test/home-analytics.test.mjs` … **`home/analytics.js`（ポータルのアクセス解析）**。
+  仕様は [docs/features/measurement-hygiene.md](../docs/features/measurement-hygiene.md)
+- `test/ogp.test.mjs` … **OGP画像の実ファイルと home のOGPタグ**。
+  仕様は [docs/features/ogp-image.md](../docs/features/ogp-image.md)、
+  生成スクリプトは [design/ogp/](../design/ogp/)

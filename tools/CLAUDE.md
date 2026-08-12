@@ -136,6 +136,22 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 - **Cookieを使うのでプライバシーポリシーへの記載が必要**。`app/privacy/page.tsx` の
   「アクセス解析について」に記載済み。オプトアウトの案内も置いている
 
+## SNS共有時のサムネイル（OGP画像）
+
+`lib/registry.ts` の `OGP_IMAGE` を `app/layout.tsx` が `openGraph.images` と
+`twitter` に渡していて、**全ページが同じ1枚を使う**（`public/ogp.png`）。
+仕様は [docs/features/ogp-image.md](../docs/features/ogp-image.md)、
+画像の作り方は [design/ogp/](../design/ogp/)。
+
+- **ページ側で `openGraph` を書くと layout の `images` ごと差し替わる**。
+  Next.js のメタデータは入れ子のオブジェクトを浅く上書きするため、
+  `openGraph: { url: ... }` とだけ書いたページは og:image を落とす。
+  ページ固有の画像を持たせるときは `images` も一緒に書くこと
+  （`tests/ogp.test.ts` が app/ 配下を走査して見張っている）
+- **URLは絶対URL**。`metadataBase` があるので相対でも動くが、
+  出力HTMLを目で確かめにくいので値そのものを絶対URLで持つ
+- `twitter` は `openGraph` から画像を引き継がない。`card` と `images` を明示する
+
 ## よく踏む落とし穴
 
 - **`app/sitemap.ts` には `export const dynamic = 'force-static'` が必須**。
