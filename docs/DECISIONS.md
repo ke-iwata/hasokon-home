@@ -8,6 +8,38 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-12：SNS共有時のサムネイル（OGP画像）を入れた
+
+`design/ogp/gen-ogp.mjs`（生成スクリプト）と、そこから書き出した1200×630のPNGを3枚
+（`home/ogp.png` / `tools/public/ogp.png` / `games/public/ogp.png`）。
+参照は `{tools,games}/lib/registry.ts` の `OGP_IMAGE` → `app/layout.tsx` の
+`openGraph.images` と `twitter`、home は `index.html` / `404.html` に直接 `<meta>`。
+仕様は [features/ogp-image.md](./features/ogp-image.md)。
+
+**理由**：`og:image` も `twitter:card` も全ページに無く、X・LINE・Slack に貼ると
+サムネイルの無いテキストリンクになっていた。GA4 直近28日の Organic Social が
+2セッションで、ゲーム・ツールという本来もっとも共有されやすい題材に対して
+伸びしろがそのまま残っていた。
+
+**仕様書の案B（サイトごとに共通の1枚）から入れた。** 案A（registry からページごとに
+生成）が本来の姿だが、`og:image` が1枚でもあるかどうかの差が最も大きいので、
+まず差を埋めて案Aは別PRに分ける。
+
+**生成物はコミットする。** 仕様書は `.gitignore` を求めていたが、それは registry から
+ページごとに作る案Aの話。案Bの3枚は registry を触っても増えないので、
+`prebuild` にも入れず、スクリプトを手で回してPNGを一緒にコミットする形にした
+（結果としてビルド時間の増加はゼロ）。
+
+日本語のWebフォントは埋め込まず、生成時の端末フォント（Hiragino / Noto Sans JP /
+IPAGothic）で描いている。PNGをコミットするので、実行環境ごとの字面の差は本番に出ない。
+tools と games は地の色を反転させて（明／暗）見分けられるようにした。
+アクセントは forest green 1色のままなので配色からは外れない。
+
+**踏んだ落とし穴**：Next.js のメタデータは入れ子のオブジェクトを浅く上書きするため、
+ページ側が `openGraph: { url: ... }` と書いた瞬間に layout の `images` ごと消える。
+`{tools,games}/tests/ogp.test.ts` が app/ 配下を走査して見張っている。
+`twitter` も `openGraph` から画像を引き継がないので `card` と `images` を明示した。
+
 ## 2026-08-12：全ページにパンくず（BreadcrumbList + 視覚ナビ）を入れた
 
 `tools/lib/jsonld.ts`・`games/lib/jsonld.ts`（`breadcrumbTrail` / `breadcrumbFor` /

@@ -7,6 +7,20 @@
     <meta name="google-site-verification" content="Q3DpEEDOkoxOZDuQwfCl_kDDbsdaqLxHDJrCcJOZvnU" />
     <title>ページが見つかりません｜hasokon</title>
     <meta name="robots" content="noindex, follow" />
+    <!--
+      SNS共有時のサムネイル。仕様: docs/features/ogp-image.md
+      404はどのURLでも表示されるので og:url は置かない（貼られたURLと食い違うため）。
+      画像は index.html と同じ /ogp.png。URLは必ず絶対で書くこと。
+    -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ページが見つかりません｜hasokon" />
+    <meta property="og:description" content="お探しのページは見つかりませんでした。" />
+    <meta property="og:locale" content="ja_JP" />
+    <meta property="og:image" content="https://hasokon.com/ogp.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="hasokon｜個人開発の無料ツール・ゲーム・アプリ" />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -4,7 +4,7 @@ import './globals.css';
 import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
 import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
 import Analytics from './Analytics';
-import { COPYRIGHT_HOLDER, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { COPYRIGHT_HOLDER, OGP_IMAGE, SITE_NAME, SITE_URL } from '@/lib/registry';
 
 /**
  * Google Search Console の所有権確認用トークン。
@@ -29,6 +29,17 @@ export const metadata: Metadata = {
     type: 'website',
     siteName: SITE_NAME,
     locale: 'ja_JP',
+    // SNSに貼られたときのサムネイル（docs/features/ogp-image.md）。
+    // 【注意】ページ側で openGraph を書くと、この images ごと差し替わる
+    // （Next.js のメタデータは入れ子のオブジェクトを浅く上書きするため）。
+    // ページ固有の画像を持たせるときは images も一緒に書くこと
+    images: [OGP_IMAGE],
+  },
+  // og:image があっても twitter:card が無いと X ではカードが生成されない。
+  // twitter は openGraph から画像を引き継がないので明示する
+  twitter: {
+    card: 'summary_large_image',
+    images: [OGP_IMAGE.url],
   },
   // title / description は各ページのものが openGraph に自動で引き継がれる。
   // url はここで指定すると全ページがトップのURLになってしまうため置かない
