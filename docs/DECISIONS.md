@@ -35,6 +35,7 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 「今年はなぜ還付が多いのか」を金額で見せられるのは、時限措置の初年度である
 令和8・9年分の2年だけ使える切り口。比較用に令和7年分の給与所得控除（最低保障65万円）と
 基礎控除を新たに定数として置いた。
+
 ## 2026-08-12：全ページにパンくず（BreadcrumbList + 視覚ナビ）を入れた
 
 `tools/lib/jsonld.ts`・`games/lib/jsonld.ts`（`breadcrumbTrail` / `breadcrumbFor` /
