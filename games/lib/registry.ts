@@ -76,6 +76,14 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-11',
   },
   {
+    slug: 'reversi',
+    icon: 'Stones',
+    name: 'リバーシ',
+    description: '挟んで裏返す定番の対戦ゲーム。CPUは かんたん・ふつう・つよい の3段階。先手・後手も選べます。',
+    ready: true,
+    updatedAt: '2026-08-12',
+  },
+  {
     slug: 'breakout',
     icon: 'Racquet',
     name: 'ブロック崩し',
