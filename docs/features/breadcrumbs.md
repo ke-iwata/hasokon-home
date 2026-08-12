@@ -1,6 +1,6 @@
 # パンくずリストを入れる（BreadcrumbList 構造化データ + 視覚的ナビ）
 
-**状態**：提案（未実装）
+**状態**：実装済み（2026-08-12。本番反映はタグリリース待ち）
 **対象**：`tools/`・`games/`（共通コンポーネント + 各ページの JSON-LD）・`home/`
 **起票**：2026-08-12
 
@@ -99,15 +99,16 @@ GA4（直近28日）でも `/tools/` のページビューは24、`/games/` は4
 
 ## 受け入れ条件
 
-- [ ] 全ツール・全ゲームの個別ページに視覚的パンくずが出る
-- [ ] `registry.ts` にツールを1本足すと、パンくずにも自動で反映される（手書き不要）
-- [ ] JSON-LD の `@graph` に `BreadcrumbList` が入り、`<script>` の数は増えていない
-- [ ] 末尾要素に `item` が無い
+- [x] 全ツール・全ゲームの個別ページに視覚的パンくずが出る
+      （404以外の全ページ。ビルド後の `out/**/index.html` で確認）
+- [x] `registry.ts` にツールを1本足すと、パンくずにも自動で反映される（手書き不要）
+- [x] JSON-LD の `@graph` に `BreadcrumbList` が入り、`<script>` の数は増えていない
+- [x] 末尾要素に `item` が無い
 - [ ] [リッチリザルトテスト](https://search.google.com/test/rich-results)で
-      `BreadcrumbList` が警告なしで認識される
-- [ ] `nav` に `aria-label` があり、区切り記号が読み上げられない
-- [ ] キーボードでパンくずをたどれる（フォーカスリングが見える）
-- [ ] 既存の `WebApplication` / `FAQPage` の認識が壊れていない
+      `BreadcrumbList` が警告なしで認識される（**公開URLが要るのでリリース後に確認**）
+- [x] `nav` に `aria-label` があり、区切り記号が読み上げられない
+- [x] キーボードでパンくずをたどれる（フォーカスリングが見える）
+- [x] 既存の `WebApplication` / `FAQPage` の認識が壊れていない
 
 ---
 
@@ -130,3 +131,44 @@ GA4（直近28日）でも `/tools/` のページビューは24、`/games/` は4
 **依存**：無し。他の提案とファイルが重ならない。
 `search-index-consolidation.md` の運用作業とは独立に進められる
 （そちらは Search Console 上の操作、こちらはコード変更）。
+
+---
+
+## 実装時に仕様から変えたところ（2026-08-12）
+
+**1. 表示と構造化データを1つの値から作るようにした。**
+`breadcrumbFor(slug)` が返すのは `BreadcrumbList` そのものではなく、
+段の配列（`Crumb[]`）である。ページはそれを
+`<Breadcrumb trail={trail} />` と `breadcrumbList(trail)` の両方に渡す。
+`BreadcrumbList` を直接返す形だと、表示側がもう一度同じ名前を組み立てることになり、
+**片方だけ直して食い違う**余地が残るため。
+
+**2. `Crumb` に `path` を持たせた。**
+JSON-LD には絶対URL（`https://hasokon.com/tools/`）が要るが、
+`<Link>` には basePath を含まないパス（`/`）を渡す必要がある。
+1つのフィールドで兼ねられないので分けた。`path` を持たない段（ホーム）が
+basePath の外＝`<a>` で飛ばす段、という判別も兼ねている。
+
+**3. registry に無い slug は投げるようにした。**
+`breadcrumbFor('sleep-cycl')` のような打ち間違いが、パンくずだけ黙って2段になる形で
+本番に出るのを防ぐため。静的書き出しなので `npm run build` で必ず落ちる。
+
+**4. 固定ページと動的ルートにも入れた。**
+仕様書は「個別ページ + 一覧」だけを挙げていたが、`about/` `privacy/` `contact/`・
+用途別ルーレット（`r/[slug]/`）・使い方の記事（`guide/[slug]/`）にも同じ形で入れた。
+これらは registry に無いので、現在地の名前だけページ側で渡す
+（`breadcrumbTrail('お問い合わせ')`）。
+`privacy` `contact` と動的ルートの2本は JSON-LD が単体オブジェクトだったので、
+`<script>` を増やさずに済むよう `@graph` 形式に変えた。
+**404だけは入れていない**（階層上の居場所が無いため）。
+
+**5. CSSクラスを1つ増やした。**
+`.breadcrumb`（tools・games の `globals.css` に同じ内容）。
+「新しいCSSクラスを増やさない」（tools/CLAUDE.md）に対する例外で、
+`.site-header` / `.site-footer` と同じ全ページ共通のナビ部品なのでインライン化しなかった。
+
+**テスト**：`tools/tests/jsonld.test.ts` / `games/tests/jsonld.test.ts`。
+段の組み立てと `BreadcrumbList` の形（末尾に `item` が無い・position が連番）に加えて、
+**registry の全 slug についてページが `breadcrumbFor` と `<Breadcrumb>` を出していること**、
+**`<script type="application/ld+json">` が1ページ1枚のままであること**を見張っている
+（ツールを足したときの入れ忘れを検知する）。

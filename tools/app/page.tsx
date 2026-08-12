@@ -1,7 +1,11 @@
 import Link from 'next/link';
 import { categories, tools, SITE_NAME, SITE_URL } from '@/lib/registry';
-import { PUBLISHER } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import ToolIcon from '@/app/ToolIcon';
+
+// 一覧ページ自身は2段（ホーム ＞ 無料計算ツール集）。ここが階層の中間になる
+const trail = breadcrumbTrail();
 
 /**
  * サイト全体の発行者と、サイトそのものを表す構造化データ。
@@ -20,6 +24,7 @@ const jsonLd = {
       inLanguage: 'ja',
       publisher: { '@id': `${SITE_URL}/#publisher` },
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -30,6 +35,8 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <section className="hero">
         <h1>

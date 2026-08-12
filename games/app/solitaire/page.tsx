@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
+import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
@@ -21,6 +23,8 @@ const faq = [
   { q: '失敗したら戻せますか？', a: '「もどす」ボタンで直近30手まで戻せます。' },
   { q: '必ずクリアできますか？', a: '配り方によってはクリア不可能な局面もあります。詰んだら「新しいゲーム」で配り直してください。' },
 ];
+
+const trail = breadcrumbFor('solitaire');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -46,6 +50,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -56,6 +61,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>ソリティア</h1>
       <p className="lead">

@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
-import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
@@ -60,6 +61,8 @@ const faq = [
   },
 ];
 
+const trail = breadcrumbFor('furusato-nozei');
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -84,6 +87,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -102,6 +106,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>ふるさと納税 控除額計算機</h1>
       <p className="lead">

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/registry';
+import { breadcrumbTrail } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 
 export const metadata: Metadata = {
   title: 'お問い合わせ',
@@ -14,6 +16,8 @@ const CONTACT_FORM_URL =
 export default function ContactPage() {
   return (
     <>
+      <Breadcrumb trail={breadcrumbTrail('お問い合わせ')} />
+
       <h1>お問い合わせ</h1>
       <p className="lead">
         本サイトに関するお問い合わせ（内容の誤りのご指摘・ご意見・ご要望など）は、以下のフォームよりお願いいたします。
