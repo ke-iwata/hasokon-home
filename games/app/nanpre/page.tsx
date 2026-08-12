@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
+import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
@@ -20,6 +22,8 @@ const faq = [
   { q: '問題は何問ありますか？', a: '「新しい問題」を押すたびにその場で生成するので、実質無制限です。生成した問題はコンピュータが検証しており、答えが必ず1通りになっています。' },
   { q: '途中で保存できますか？', a: '現在は保存機能はありません。ページを閉じると盤面はリセットされます。' },
 ];
+
+const trail = breadcrumbFor('nanpre');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -45,6 +49,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -55,6 +60,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>ナンプレ</h1>
       <p className="lead">

@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import AdUnit from '@/app/AdUnit';
 import RouletteApp from '@/app/_roulette/RouletteApp';
 import { SITE_URL } from '@/lib/registry';
-import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import ToolMeta from '@/app/ToolMeta';
 import PRESETS from '@/lib/roulette/presets.json';
 
@@ -47,19 +48,28 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const preset = bySlug(slug);
   if (!preset) notFound();
 
+  // 用途別ルーレットは registry に無いので、名前はプリセットから取る
+  const trail = breadcrumbTrail(preset.name);
+
+  // パンくずを足すために @graph にしてある（<script> は1枚のまま）
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: preset.name,
-    url: `${SITE_URL}/r/${preset.slug}/`,
-    applicationCategory: 'UtilitiesApplication',
-    operatingSystem: 'Web',
-    inLanguage: 'ja',
-    isAccessibleForFree: true,
-    dateModified: toolUpdatedAt('roulette'),
-    publisher: PUBLISHER_REF,
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
-    description: preset.description,
+    '@graph': [
+      {
+        '@type': 'WebApplication',
+        name: preset.name,
+        url: `${SITE_URL}/r/${preset.slug}/`,
+        applicationCategory: 'UtilitiesApplication',
+        operatingSystem: 'Web',
+        inLanguage: 'ja',
+        isAccessibleForFree: true,
+        dateModified: toolUpdatedAt('roulette'),
+        publisher: PUBLISHER_REF,
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'JPY' },
+        description: preset.description,
+      },
+      breadcrumbList(trail),
+    ],
   };
 
   return (
@@ -68,6 +78,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>{preset.name}</h1>
       <p className="lead">{preset.lead}</p>

@@ -39,6 +39,30 @@ tools と games は地の色を反転させて（明／暗）見分けられる�
 ページ側が `openGraph: { url: ... }` と書いた瞬間に layout の `images` ごと消える。
 `{tools,games}/tests/ogp.test.ts` が app/ 配下を走査して見張っている。
 `twitter` も `openGraph` から画像を引き継がないので `card` と `images` を明示した。
+## 2026-08-12：全ページにパンくず（BreadcrumbList + 視覚ナビ）を入れた
+
+`tools/lib/jsonld.ts`・`games/lib/jsonld.ts`（`breadcrumbTrail` / `breadcrumbFor` /
+`breadcrumbList`）と `tools/app/Breadcrumb.tsx`・`games/app/Breadcrumb.tsx`。
+tools・games の全ページ（404を除く）の `h1` の直前に「ホーム ＞ サイト名 ＞ 現在地」を出し、
+既存の `@graph` に `BreadcrumbList` を1要素足した。`home/` は最上位なので入れていない。
+仕様は [features/breadcrumbs.md](./features/breadcrumbs.md)。
+
+**理由**：ドメイン統合でURLの階層が1段深くなり（`tool.hasokon.com/sleep-cycle/` →
+`hasokon.com/tools/sleep-cycle/`）、検索結果の表示が「hasokon.com › tools › sleep-cycle」に
+なっていた。`BreadcrumbList` があれば日本語のパンくずで出せる。
+個別ページから一覧に戻る導線がヘッダーのサイト名しか無かったことへの対策でもある。
+
+表示と構造化データは**同じ `Crumb[]` から作る**。`breadcrumbFor(slug)` が返すのは
+`BreadcrumbList` ではなく段の配列で、ページはそれを `<Breadcrumb>` と `breadcrumbList()` の
+両方に渡す。片方だけ直して食い違うのを構造で防ぐため。名前は registry から引くので、
+ツールを1本足せばパンくずにも自動で載る（未登録の slug は投げてビルドが落ちる）。
+
+`<script>` は増やしていない。`privacy` / `contact` と動的ルート（`r/[slug]` / `guide/[slug]`）は
+JSON-LD が単体オブジェクトだったので `@graph` 形式に変えて中に足した。
+
+`tools/tests/jsonld.test.ts` / `games/tests/jsonld.test.ts` が、
+末尾の段に `item` を付けないことに加えて、**registry の全 slug のページが
+パンくずを出していること**と **ld+json が1ページ1枚のまま**であることを見張っている。
 
 ## 2026-08-12：ゲームに「リバーシ」を追加した（対戦相手のいる最初の1本）
 

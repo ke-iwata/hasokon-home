@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
-import { PUBLISHER_REF } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 
 export const metadata: Metadata = {
   title: 'お問い合わせ',
@@ -12,15 +13,26 @@ export const metadata: Metadata = {
 const CONTACT_FORM_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLScNoh6HZoekO-nlb_BHSvk755ZAVXWEtsmF3ttZP-hRDTCOhw/viewform';
 
-/** 運営主体を機械可読にも示す。発行者の実体はトップページ側にある */
+// registry に無い固定ページなので、現在地の名前だけここで持つ
+const trail = breadcrumbTrail('お問い合わせ');
+
+/**
+ * 運営主体を機械可読にも示す。発行者の実体はトップページ側にある。
+ * パンくずを足すために @graph にしてある（<script> は1枚のまま）
+ */
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'ContactPage',
-  name: 'お問い合わせ',
-  url: `${SITE_URL}/contact/`,
-  inLanguage: 'ja',
-  dateModified: SITE_UPDATED_AT,
-  publisher: PUBLISHER_REF,
+  '@graph': [
+    {
+      '@type': 'ContactPage',
+      name: 'お問い合わせ',
+      url: `${SITE_URL}/contact/`,
+      inLanguage: 'ja',
+      dateModified: SITE_UPDATED_AT,
+      publisher: PUBLISHER_REF,
+    },
+    breadcrumbList(trail),
+  ],
 };
 
 export default function ContactPage() {
@@ -30,6 +42,8 @@ export default function ContactPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>お問い合わせ</h1>
       <p className="lead">

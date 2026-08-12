@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
+import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
@@ -20,6 +22,8 @@ const faq = [
   { q: 'スコアは保存されますか？', a: '現在は保存機能はありません。ページを閉じるとリセットされます。' },
   { q: '難易度は変わりますか？', a: '面が進むごとに球のスピードが上がり、2面目からは2回当てないと消えないブロックが登場します。' },
 ];
+
+const trail = breadcrumbFor('breakout');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -45,6 +49,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -55,6 +60,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>ブロック崩し</h1>
       <p className="lead">

@@ -80,9 +80,14 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 1. `lib/{slug}.ts` — 計算ロジックを純関数で実装。JSDocで出典と更新箇所を明記
 2. `tests/{slug}.test.ts` — import は `@/lib/{slug}`。一次資料の計算例・境界値・異常値を必ず入れる
 3. `app/{slug}/page.tsx` — 構成は
-   `h1 → p.lead → <Calculator /> → <AdUnit position="below-tool" /> → 解説 → FAQ → <AdUnit position="below-faq" /> → 出典`
+   `<Breadcrumb /> → h1 → p.lead → <Calculator /> → <AdUnit position="below-tool" /> → 解説 → FAQ → <AdUnit position="below-faq" /> → 出典`
    - `metadata` に `title` / `description` / `alternates.canonical`（`${SITE_URL}/{slug}/`）
-   - JSON-LD で `WebApplication` + `FAQPage`
+   - JSON-LD で `WebApplication` + `FAQPage` + `BreadcrumbList`。
+     パンくずは `const trail = breadcrumbFor('{slug}')` を作り、
+     `@graph` に `breadcrumbList(trail)`、見出しの直前に `<Breadcrumb trail={trail} />`。
+     名前は registry から引かれるので手書きしない
+     （[docs/features/breadcrumbs.md](../docs/features/breadcrumbs.md)。
+     入れ忘れは `tests/jsonld.test.ts` が落とす）
 4. `app/{slug}/Calculator.tsx` — `'use client'`。`useState` で入力を持ち、lib の関数を呼ぶだけ
 5. `lib/registry.ts` にエントリを追加し `ready: true` に。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
