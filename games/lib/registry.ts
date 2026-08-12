@@ -77,7 +77,7 @@ export const games: GameDef[] = [
   },
   {
     slug: 'reversi',
-    icon: 'CircleHalf',
+    icon: 'Stones',
     name: 'リバーシ',
     description: '挟んで裏返す定番の対戦ゲーム。CPUは かんたん・ふつう・つよい の3段階。先手・後手も選べます。',
     ready: true,
