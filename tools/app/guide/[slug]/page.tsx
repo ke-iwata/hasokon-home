@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AdUnit from '@/app/AdUnit';
 import { SITE_URL } from '@/lib/registry';
-import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import ToolMeta from '@/app/ToolMeta';
 import GUIDES from '@/lib/roulette/guides.json';
 import PRESETS from '@/lib/roulette/presets.json';
@@ -54,16 +55,25 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   // この解説に対応するプリセット（あれば直接開けるようにする）
   const preset = presets.find((p) => p.guide === guide.slug);
 
+  // 解説記事は registry に無いので、名前は記事の見出しから取る
+  const trail = breadcrumbTrail(guide.heading);
+
+  // パンくずを足すために @graph にしてある（<script> は1枚のまま）
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: guide.heading,
-    description: guide.description,
-    url: `${SITE_URL}/guide/${guide.slug}/`,
-    inLanguage: 'ja',
-    dateModified: toolUpdatedAt('roulette'),
-    author: PUBLISHER_REF,
-    publisher: PUBLISHER_REF,
+    '@graph': [
+      {
+        '@type': 'Article',
+        headline: guide.heading,
+        description: guide.description,
+        url: `${SITE_URL}/guide/${guide.slug}/`,
+        inLanguage: 'ja',
+        dateModified: toolUpdatedAt('roulette'),
+        author: PUBLISHER_REF,
+        publisher: PUBLISHER_REF,
+      },
+      breadcrumbList(trail),
+    ],
   };
 
   return (
@@ -72,6 +82,8 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>{guide.heading}</h1>
       <p className="lead">{guide.lead}</p>

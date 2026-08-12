@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
+import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
@@ -20,6 +22,8 @@ const faq = [
   { q: 'スマホで旗はどう立てますか？', a: '「旗モード」ボタンをONにすると、タップで旗の上げ下げになります。開けたいときはOFFに戻してください。' },
   { q: '数字をタップすると周りが開くのはなぜ？', a: '旗の数がその数字と一致しているとき、残りの閉じたマスを一括で開ける機能です（本家のコード操作と同じ）。旗の位置が間違っていると地雷を踏むので注意してください。' },
 ];
+
+const trail = breadcrumbFor('minesweeper');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -45,6 +49,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -55,6 +60,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>マインスイーパー</h1>
       <p className="lead">

@@ -112,6 +112,50 @@ main {
   padding: 20px 16px 48px;
 }
 
+/* ---- パンくず ---- */
+/* h1 の直前に置く1行のナビ（app/Breadcrumb.tsx）。tools と同じ見た目にする */
+.breadcrumb {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.breadcrumb ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* キーボードで辿れるように、リングは明示的に出す */
+.breadcrumb a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--text);
+}
+
 a {
   color: var(--brand);
 }

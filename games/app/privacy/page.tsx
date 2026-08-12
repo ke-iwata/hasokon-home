@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { SITE_NAME } from '@/lib/registry';
+import { breadcrumbTrail } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
@@ -9,6 +11,8 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <>
+      <Breadcrumb trail={breadcrumbTrail('プライバシーポリシー')} />
+
       <h1>プライバシーポリシー</h1>
       <p className="lead">本サイト（{SITE_NAME}）における情報の取り扱いについて定めます。</p>
 

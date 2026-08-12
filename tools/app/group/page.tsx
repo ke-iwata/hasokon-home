@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
-import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import ToolClient from '@/app/_roulette/ToolClient';
@@ -28,6 +29,8 @@ const faq = [
     }
   ];
 
+const trail = breadcrumbFor('group');
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -52,6 +55,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -62,6 +66,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>グループ分け</h1>
       <p className="lead">名前を入れて、いくつのグループに分けるかを決めるだけ。人数は自動で均等に振り分けます。</p>

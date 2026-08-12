@@ -33,7 +33,13 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
 1. `lib/{slug}.ts` — ロジックを純関数で実装（乱数は注入できる形にしてテスト可能に）
 2. `tests/{slug}.test.ts` — 境界値・進行・終了条件を必ず入れる
 3. `app/{slug}/Game.tsx`（'use client'）と `app/{slug}/page.tsx`
-   （metadata / JSON-LD(VideoGame + FAQPage) / 遊び方 / FAQ / AdUnit×2 / 他のゲーム一覧）
+   （metadata / JSON-LD(VideoGame + FAQPage + BreadcrumbList) / パンくず /
+   遊び方 / FAQ / AdUnit×2 / 他のゲーム一覧）
+   - パンくずは `const trail = breadcrumbFor('{slug}')` を作り、`@graph` に
+     `breadcrumbList(trail)`、見出しの直前に `<Breadcrumb trail={trail} />`。
+     名前は registry から引かれるので手書きしない
+     （[docs/features/breadcrumbs.md](../docs/features/breadcrumbs.md)。
+     入れ忘れは `tests/jsonld.test.ts` が落とす）
 4. `lib/registry.ts` にエントリを追加
 5. `npm test && npm run build` が通ることを確認
 
