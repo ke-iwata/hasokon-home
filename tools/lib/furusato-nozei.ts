@@ -186,7 +186,7 @@ const DEPENDENT_DEDUCTION: Record<'general' | 'specific' | 'elderly', PersonalDe
 };
 
 /** 基礎控除の人的控除の差。地方税法上は5万円で固定（実際の差額とは一致しない） */
-const BASIC_DEDUCTION_DIFF = 50_000;
+export const BASIC_DEDUCTION_DIFF = 50_000;
 
 /**
  * 住民税の調整控除。

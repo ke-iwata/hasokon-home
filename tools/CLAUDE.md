@@ -154,7 +154,7 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在292件）
+npm test         # 計算ロジックのテスト（現在330件）
 npm run build    # out/ に静的出力
 ```
 
@@ -163,6 +163,8 @@ npm run build    # out/ に静的出力
 | 頻度 | 作業 |
 |---|---|
 | 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新 |
+| 毎年3月 | 協会けんぽの料率改定を `lib/hatarakizon.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映 |
+| 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・働き損の3ツールが参照） |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
@@ -172,7 +174,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール14本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト292件
+- ツール15本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト330件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
