@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { games, SITE_URL } from '@/lib/registry';
+import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
@@ -21,6 +23,8 @@ const faq = [
   { q: '「配る」が押せないのはなぜ？', a: '空の列があるときは配れないルールです。どこかの札を空列に移動して、全列を埋めてから配ってください。' },
   { q: '失敗したら戻せますか？', a: '「もどす」ボタンで直近30手まで戻せます。' },
 ];
+
+const trail = breadcrumbFor('spider');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -46,6 +50,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -56,6 +61,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>スパイダーソリティア</h1>
       <p className="lead">

@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { COPYRIGHT_HOLDER, SITE_NAME, SITE_UPDATED_AT, SITE_URL, tools } from '@/lib/registry';
-import { PUBLISHER } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 
 const title = '運営者情報と計算の根拠について';
 const description = `${SITE_NAME}の運営者情報と、各計算ツールがどの資料にもとづき、どう検証されているかの説明です。対応していない制度や、このサイトでできないことも明記しています。`;
@@ -11,6 +12,9 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: `${SITE_URL}/about/` },
 };
+
+// registry に無い固定ページなので、現在地の名前だけここで持つ
+const trail = breadcrumbTrail('運営者情報');
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -25,6 +29,7 @@ const jsonLd = {
       dateModified: SITE_UPDATED_AT,
       publisher: { '@id': `${SITE_URL}/#publisher` },
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -37,6 +42,8 @@ export default function AboutPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>運営者情報と計算の根拠について</h1>
       <p className="lead">

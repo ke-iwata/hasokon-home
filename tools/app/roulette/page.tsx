@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import AdUnit from '@/app/AdUnit';
-import { PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import RouletteApp from '@/app/_roulette/RouletteApp';
@@ -45,6 +46,8 @@ const faq = [
   },
 ];
 
+const trail = breadcrumbFor('roulette');
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -69,6 +72,7 @@ const jsonLd = {
         acceptedAnswer: { '@type': 'Answer', text: f.a },
       })),
     },
+    breadcrumbList(trail),
   ],
 };
 
@@ -79,6 +83,8 @@ export default function Page() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>ルーレット</h1>
       <p className="lead">

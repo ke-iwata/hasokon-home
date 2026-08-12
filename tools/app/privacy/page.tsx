@@ -1,21 +1,33 @@
 import type { Metadata } from 'next';
 import { SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
-import { PUBLISHER_REF } from '@/lib/jsonld';
+import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF } from '@/lib/jsonld';
+import Breadcrumb from '@/app/Breadcrumb';
 
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
   description: `${SITE_NAME}のプライバシーポリシー。入力データの取り扱い、広告配信、アクセス解析、著作権についてのご案内です。`,
 };
 
-/** 運営主体を機械可読にも示す。発行者の実体はトップページ側にある */
+// registry に無い固定ページなので、現在地の名前だけここで持つ
+const trail = breadcrumbTrail('プライバシーポリシー');
+
+/**
+ * 運営主体を機械可読にも示す。発行者の実体はトップページ側にある。
+ * パンくずを足すために @graph にしてある（<script> は1枚のまま）
+ */
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebPage',
-  name: 'プライバシーポリシー',
-  url: `${SITE_URL}/privacy/`,
-  inLanguage: 'ja',
-  dateModified: SITE_UPDATED_AT,
-  publisher: PUBLISHER_REF,
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      name: 'プライバシーポリシー',
+      url: `${SITE_URL}/privacy/`,
+      inLanguage: 'ja',
+      dateModified: SITE_UPDATED_AT,
+      publisher: PUBLISHER_REF,
+    },
+    breadcrumbList(trail),
+  ],
 };
 
 export default function PrivacyPage() {
@@ -25,6 +37,8 @@ export default function PrivacyPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      <Breadcrumb trail={trail} />
 
       <h1>プライバシーポリシー</h1>
       <p className="lead">本サイト（{SITE_NAME}）における情報の取り扱いについて定めます。</p>
