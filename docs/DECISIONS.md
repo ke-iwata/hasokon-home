@@ -39,6 +39,7 @@ tools と games は地の色を反転させて（明／暗）見分けられる�
 ページ側が `openGraph: { url: ... }` と書いた瞬間に layout の `images` ごと消える。
 `{tools,games}/tests/ogp.test.ts` が app/ 配下を走査して見張っている。
 `twitter` も `openGraph` から画像を引き継がないので `card` と `images` を明示した。
+
 ## 2026-08-12：全ページにパンくず（BreadcrumbList + 視覚ナビ）を入れた
 
 `tools/lib/jsonld.ts`・`games/lib/jsonld.ts`（`breadcrumbTrail` / `breadcrumbFor` /
