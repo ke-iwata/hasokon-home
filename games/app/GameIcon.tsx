@@ -1,6 +1,7 @@
 import {
   BombIcon,
   CardsIcon,
+  CircleHalfIcon,
   ClubIcon,
   GridFourIcon,
   GridNineIcon,
@@ -33,6 +34,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   GridNine: GridNineIcon,
   GridFour: GridFourIcon,
   Racquet: RacquetIcon,
+  CircleHalf: CircleHalfIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

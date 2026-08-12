@@ -775,3 +775,118 @@ ol {
   left: 0;
   right: 0;
 }
+
+/* ---- リバーシ ---- */
+
+.rv-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: 4px;
+  border-radius: 6px;
+  /* 盤は現実のリバーシ盤と同じ緑地。明暗どちらでも同じ色にする
+     （石の白黒が地の色に負けないため） */
+  background: #2f6b46;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.rv-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: #3d8659;
+  cursor: default;
+}
+
+.rv-cell:disabled {
+  cursor: default;
+}
+
+/* 打てる場所。初心者が最初に詰まるのはここなので、薄い丸で必ず見せる */
+.rv-cell.playable {
+  cursor: pointer;
+}
+
+.rv-cell.playable::after {
+  content: '';
+  position: absolute;
+  width: 34%;
+  height: 34%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.rv-cell.playable:hover::after {
+  background: rgba(255, 255, 255, 0.75);
+}
+
+/* 直前に打たれたマス。CPUがどこに打ったかを追えるようにする */
+.rv-cell.last {
+  box-shadow: inset 0 0 0 2px #f5d76e;
+}
+
+/* 石。裏返りは3D回転で見せる。150msは「速すぎて何が起きたか分からない」の下限 */
+.rv-disc {
+  position: relative;
+  width: 82%;
+  height: 82%;
+  transform-style: preserve-3d;
+  transition: transform 150ms ease;
+}
+
+.rv-disc.white {
+  transform: rotateY(180deg);
+}
+
+.rv-disc .face {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.rv-disc .face.b {
+  background: #1c1917;
+}
+
+.rv-disc .face.w {
+  background: #fafaf9;
+  transform: rotateY(180deg);
+}
+
+/* 石数の表示。盤の外なので回転は不要だが、石と同じ見た目にそろえる */
+.rv-score {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.rv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rv-chip .rv-disc {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-disc {
+    transition: none;
+  }
+}
