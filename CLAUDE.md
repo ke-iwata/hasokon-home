@@ -75,3 +75,7 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   home のページを増やしたら `sitemap-home.xml` を更新する
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
+- SNS共有時のサムネイル（`ogp.png`）は home / tools / games に1枚ずつあり、
+  原典は `design/ogp/gen-ogp.mjs`。**PNGを直接編集せず、スクリプトを回して差し替える**。
+  `og:image` は必ず絶対URLで書くこと（相対パスを解決できないクローラーが多い）。
+  仕様は [docs/features/ogp-image.md](./docs/features/ogp-image.md)

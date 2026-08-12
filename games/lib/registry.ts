@@ -18,6 +18,26 @@ export const SITE_NAME = '無料ミニゲーム集';
 export const COPYRIGHT_HOLDER = 'hasokon tools';
 export const SITE_UPDATED_AT = '2026-08-04';
 
+/**
+ * SNS共有時のサムネイル（OGP画像）。
+ *
+ * 仕様: docs/features/ogp-image.md（案B・全ページ共通の1枚）
+ *
+ * 実体は `public/ogp.png`。basePath（/games）が付いて
+ * https://hasokon.com/games/ogp.png で配信される。
+ * 画像は design/ogp/gen-ogp.mjs で生成しており、直接編集しない
+ * （tools と地の色を反転させて、ツールとゲームを見分けられるようにしている）。
+ *
+ * - **URLは絶対URLにすること。** 相対パスを解決できないクローラーが多い
+ * - サイズは 1200×630 固定（X の summary_large_image の前提）
+ */
+export const OGP_IMAGE = {
+  url: `${SITE_URL}/ogp.png`,
+  width: 1200,
+  height: 630,
+  alt: SITE_NAME,
+} as const;
+
 export const games: GameDef[] = [
   {
     slug: 'solitaire',

@@ -1,6 +1,6 @@
 # OGP画像とTwitterカードを入れる（SNS共有時のサムネイル）
 
-**状態**：提案（未実装）
+**状態**：**案B（サイトごとに共通の1枚）を実装済み**（2026-08-12）。案Aは未着手
 **対象**：`tools/`・`games/`・`home/`（`layout.tsx` のメタデータ + 画像生成）
 **起票**：2026-08-12
 
@@ -169,3 +169,55 @@ export const metadata: Metadata = {
 
 **依存**：無し。他の提案とファイルが重ならない
 （[breadcrumbs.md](./breadcrumbs.md) は JSON-LD、こちらは `<meta>` と画像）。
+
+---
+
+## 実装（案B）と、仕様から変えたところ
+
+この節は 2026-08-12 の実装（案B）の記録。**案Aはまだ入れていない。**
+
+### 入れたもの
+
+| ファイル | 役割 |
+|---|---|
+| `design/ogp/gen-ogp.mjs` | 3枚のPNGを書き出す生成スクリプト（headless Chromium） |
+| `design/ogp/README.md` | 作り直しかたと、生成物をコミットする理由 |
+| `home/ogp.png` / `tools/public/ogp.png` / `games/public/ogp.png` | 1200×630 の生成物 |
+| `tools/lib/registry.ts` / `games/lib/registry.ts` | `OGP_IMAGE`（絶対URL・寸法・alt） |
+| `tools/app/layout.tsx` / `games/app/layout.tsx` | `openGraph.images` と `twitter` |
+| `home/index.html` / `home/404.html` | `og:image` 一式と `twitter:card` |
+| `scripts/test/ogp.test.mjs` / `{tools,games}/tests/ogp.test.ts` | テスト |
+
+### 変えたところ
+
+1. **生成物をコミットする。** 仕様書が `.gitignore` を求めていたのは
+   「registry を直したのに画像が古いままになる事故」を防ぐためだが、
+   それは registry からページごとに作る案Aの話。案Bの3枚は registry を触っても
+   増えないので、ビルド工程（`prebuild`）にも入れていない。
+   スクリプトを手で回してPNGを一緒にコミットする形にした
+2. **アイコンは Phosphor のツールアイコンではなく「h」のマーク1種にした。**
+   共通の1枚に個別ツールのアイコンを載せると、どのページを貼っても
+   関係のないアイコンが出る。ページごとの絵になる案Aで
+   `ToolIcon.tsx` と絵柄を揃えるのが本来の姿
+3. **日本語フォントのサブセット化はしていない。** 生成時に実行環境の端末フォント
+   （Hiragino / Noto Sans JP / IPAGothic）で描き、PNGをコミットしている。
+   案Aではビルド時に描くのでフォントの同梱が必要になる
+4. **`home/privacy.html` は対象外。** 受け入れ条件が挙げているのは
+   `index.html` と `404.html` の2枚で、プライバシーポリシーはSNSに貼られない
+
+### 受け入れ条件の達成状況
+
+- [x] 全ツール・全ゲームの個別ページに `og:image`（絶対URL）と `twitter:card`
+      （`out/**/index.html` の全37枚 / 14枚で確認）
+- [x] `home/index.html` と `home/404.html` にも入る
+- [x] 画像が 1200×630（`scripts/test/ogp.test.mjs` がPNGのIHDRを読んで確認）
+- [ ] **案Aの条件**（registry に1本足すと画像も増える）— 案Aは未着手
+- [x] 生成物が git に入っていない → **案Bでは意図的にコミットしている**（上記1）
+- [x] 日本語が豆腐（□）にならない（生成したPNGを目視で確認）
+- [x] ビルド時間の増加が許容範囲 — 生成をビルドから外したので**増加ゼロ**
+
+### 次にやること（案A）
+
+`og:image` の有無の差はこれで埋まった。案Aに進むときは、
+上の「変えたところ」1〜3がそのまま宿題になる
+（`prebuild` への組み込み・`.gitignore`・`ToolIcon` との絵柄合わせ・フォントの同梱）。
