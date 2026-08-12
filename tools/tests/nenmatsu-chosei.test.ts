@@ -116,22 +116,42 @@ describe('年税額（年調年税額）', () => {
 });
 
 describe('還付額', () => {
-  it('生命保険料控除4万円で2,100円戻る（源泉徴収は推計）', () => {
-    // 源泉徴収の推計 91,100 − 年税額 89,000 = 2,100
-    const r = calcNenmatsuChosei(base({ lifeInsurance: 40_000 }));
-    expect(r.withheld).toBe(91_100);
-    expect(r.current.taxableIncome).toBe(1_745_000);
-    expect(r.current.yearTax).toBe(89_000);
-    expect(r.refund).toBe(2_100);
+  /**
+   * 令和8年度改正は令和8年12月1日施行で、11月までの源泉徴収事務には反映されていない
+   * （国税庁「令和8年4月 源泉所得税の改正のあらまし」2ページ）。
+   * このため推計の源泉徴収累計は**改正前の控除額**で計算される。
+   */
+  it('源泉徴収の推計は改正前（令和7年分）の控除額で行う', () => {
+    // 3,560,000 −（734,500 + 680,000）= 2,145,500 → 2,145,000
+    // 2,145,000 × 10% − 97,500 = 117,000 → × 102.1% = 119,400
+    expect(estimateWithheld(base(), 734_500)).toBe(119_400);
+    expect(calcNenmatsuChosei(base()).withheld).toBe(119_400);
+  });
+
+  it('年末調整でしか効かない控除が無くても、改正の分だけ還付が出る', () => {
+    // これが令和8年分の年末調整で還付が大きくなる主因。
+    // 源泉徴収の推計 119,400 − 年税額 91,100 = 28,300
+    const r = calcNenmatsuChosei(base());
+    expect(r.current.yearTax).toBe(91_100);
+    expect(r.refund).toBe(28_300);
+    expect(r.refund).toBe(r.reformSaving);
     expect(r.shortfall).toBe(0);
   });
 
-  it('年末調整でしか効かない控除が無ければ、推計では還付は出ない', () => {
-    // 推計モードは「申告書に書いた控除は毎月反映済み」という前提なので、
-    // 生命保険料控除などが無ければ差は生じない
-    const r = calcNenmatsuChosei(base());
-    expect(r.withheld).toBe(r.current.yearTax);
-    expect(r.refund).toBe(0);
+  it('生命保険料控除4万円なら、改正の分に上乗せして30,400円戻る', () => {
+    // 源泉徴収の推計 119,400 − 年税額 89,000 = 30,400
+    //   内訳: 改正の効果 28,300 + 生命保険料控除の効果 2,100
+    const r = calcNenmatsuChosei(base({ lifeInsurance: 40_000 }));
+    expect(r.withheld).toBe(119_400);
+    expect(r.current.taxableIncome).toBe(1_745_000);
+    expect(r.current.yearTax).toBe(89_000);
+    expect(r.refund).toBe(30_400);
+    expect(r.shortfall).toBe(0);
+  });
+
+  it('生命保険料控除などは推計の源泉徴収累計に含めない（年末調整で初めて効くため）', () => {
+    const withInsurance = estimateWithheld(base({ lifeInsurance: 40_000 }), 734_500);
+    expect(withInsurance).toBe(estimateWithheld(base(), 734_500));
   });
 
   it('源泉徴収累計の実額を入れたらそれをそのまま使う', () => {
@@ -203,7 +223,8 @@ describe('住宅ローン控除（税額控除）', () => {
 
   it('住宅ローン控除は源泉徴収の推計には含めない（年末調整で初めて効くため）', () => {
     const input = base({ housingLoanCredit: 200_000 });
-    expect(estimateWithheld(input, 734_500)).toBe(91_100);
+    expect(estimateWithheld(input, 734_500)).toBe(119_400);
+    expect(estimateWithheld(input, 734_500)).toBe(estimateWithheld(base(), 734_500));
   });
 });
 

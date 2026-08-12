@@ -443,7 +443,9 @@ export default function Calculator() {
           <strong>この結果は概算です。</strong>
           {r.withheldEstimated && (
             <>
-              源泉徴収税額の累計を推計しています。毎月の源泉徴収は月額表で計算されるため、賞与の配分や月ごとの給与の変動で実際の累計とはずれます。
+              源泉徴収税額の累計を推計しています。令和8年11月までの源泉徴収には今回の改正が反映されていないため、
+              <strong>改正前（令和7年分）の控除額</strong>
+              で毎月引かれていたものとして計算しました。実際の源泉徴収は月額表で月ごとに計算されるため、賞与の配分や給与の変動で累計はずれます。
               <strong>給与明細の「所得税」を合計して入力すると、実額どおりの還付額が出ます。</strong>
             </>
           )}
@@ -468,7 +470,13 @@ export default function Calculator() {
           令和7年分の控除額（給与所得控除の最低保障65万円・基礎控除
           {yen(r.previous.basicDeduction)}）で計算すると年税額は {yen(r.previous.yearTax)}
           でした。令和8年分は給与所得控除の最低保障が74万円、基礎控除が{' '}
-          {yen(c.basicDeduction)} なので {yen(c.yearTax)} になります。基礎控除の特例加算42万円は
+          {yen(c.basicDeduction)} なので {yen(c.yearTax)} になります。
+          <br />
+          この改正は<strong>令和8年12月1日施行</strong>で、
+          <strong>11月までの毎月の源泉徴収には反映されていません</strong>
+          。つまりこの差額は毎月の給与ではなく、
+          <strong>12月の年末調整でまとめて精算されます</strong>
+          。これが今年の還付が例年より大きくなる主な理由です。なお基礎控除の特例加算42万円は
           <strong>令和8年・9年分だけの時限措置</strong>です。
         </div>
       )}
