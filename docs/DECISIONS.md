@@ -8,6 +8,43 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-13：取りこぼしていた4ページに自己参照canonicalを足し、テストで見張るようにした
+
+`tools/app/page.tsx`・`games/app/page.tsx`・`tools/app/privacy/page.tsx`・
+`games/app/privacy/page.tsx` に `alternates.canonical` を足した。
+回帰テストとして `tools/tests/canonical.test.ts` と `games/tests/canonical.test.ts` を新設。
+仕様は [features/self-canonical-coverage.md](./features/self-canonical-coverage.md)。
+
+**理由**：`app/` 配下の `page.tsx` 34件のうち、この4件だけが canonical を持っていなかった。
+`layout.tsx` は `metadataBase` を持つが `alternates` を持たないため、ページ側が書かないと
+`<link rel="canonical">` は1つも出力されない。本番HTMLと Search Console の URL検査API でも
+`userCanonical` が null であることを確認した（2026-08-13）。
+とくに `/games/` はゲーム9本を束ねるハブで、かつ「検出 - インデックス未登録」のままだった。
+
+**インデックス未登録31件の主因はこれではない。** 新URL構成への切り替えが2026-08-08で
+まだ5日しか経っておらず、新規ドメインで31件が未登録なのは普通の状態である。
+それでも直したのは、canonical が無いページは重複判定で**こちら側の主張ができない**ため。
+旧サブドメインが正規URLとして選ばれている6件はいずれもページ側が新URLを主張しており、
+canonical は必ず従わせるものではないが、主張が無いと勝ち負けにすら参加できない。
+工数がほぼゼロなので、効果の大小を議論するより先に埋めるのが安い。
+
+**テストのほうが本体より重い。** この取りこぼしは「モノレポ統合で申し送りが落ちた」
+という経路で起きたので、人間の注意力ではなくテストで止める。
+`search-index-consolidation.md` に残っていた移送先（アーカイブ済みリポジトリの
+`section-index-canonical.md`）は、どちらにも存在しないままだった。
+
+**`layout.tsx` に既定の canonical を置く案は採らなかった。** 一見4ページとも解決するが、
+ページ側が `alternates` を書き忘れたとき全ページがセクショントップを正規URLとして
+主張してしまう。取りこぼしが「canonicalが無い」から「canonicalが間違っている」に変わり、
+後者のほうがはるかに危険（OGPで踏んだ浅い上書きの落とし穴と同じ構造）。
+
+**セクショントップに title / description は書いていない。** `layout.tsx` の
+`title.template` が `'%s'` なので、ページ側に `title` を書くと `title.default` が消える。
+文言を変える意図は無いので `alternates` だけを持つ `metadata` にした
+（ビルド後の `<title>` が変わっていないことを確認済み）。
+
+---
+
 ## 2026-08-12：ツールに「年末調整 還付金 計算機」を追加した
 
 `tools/lib/nenmatsu-chosei.ts`（年調年税額・還付額・令和7年分との比較）・
