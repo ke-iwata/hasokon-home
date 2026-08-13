@@ -119,6 +119,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-12',
   },
   {
+    slug: 'zaishoku-rorei-nenkin',
+    icon: 'PiggyBank',
+    name: '在職老齢年金 計算機',
+    description:
+      '働きながら年金をもらうと、いくら止まるかを計算。令和8年4月から基準額が月51万円→65万円に引き上げられました（「62万円」ではありません）。改正前との差額と、あといくら稼げるかも出ます。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',
