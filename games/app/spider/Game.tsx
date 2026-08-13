@@ -14,6 +14,8 @@ import {
 } from '@/lib/spider';
 import { trackToolUse } from '@/lib/analytics';
 import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { formatTime, type Improved } from '@/lib/records';
 
 /** 選択中の並び（col の idx 以降）。2タップ目で行き先を指定する */
 type Selection = { col: number; idx: number } | null;
@@ -25,23 +27,46 @@ export default function Game() {
   const [message, setMessage] = useState('');
   const history = useRef<SpiderState[]>([]);
   const notified = useRef(false);
+  // 記録は難易度（1〜4スート）ごとに分けて持つ（docs/features/game-records.md）
+  const records = useRecords('spider');
+  const entry = records.entry(level);
+  const timer = useStopwatch();
+  // この配りをプレイ数に数えたか（1手目で数える）
+  const counted = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(dealSpider('one'));
   }, []);
 
-  if (!state) return <div className="card">配っています…</div>;
+  const won = state ? isSpiderWon(state) : false;
+  const playedLevel = state?.level ?? 'one';
+  const moveCount = state?.moves ?? 0;
 
-  const won = isSpiderWon(state);
-  if (won && !notified.current) {
+  // クリアの記録（タイム・手数の保存とGA4への送信）
+  useEffect(() => {
+    if (!won || notified.current) return;
     notified.current = true;
-    trackToolUse('spider', `win-${state.level}`);
-  }
+    trackToolUse('spider', `win-${playedLevel}`);
+    const timeMs = timer.stop();
+    const { improved } = records.finish(
+      { outcome: 'win', timeMs, moves: moveCount },
+      playedLevel,
+    );
+    setResult({ timeMs, improved });
+  }, [won, playedLevel, moveCount, records, timer]);
+
+  if (!state) return <div className="card">配っています…</div>;
 
   const apply = (next: SpiderState | null): boolean => {
     if (!next) return false;
     setMessage('');
     history.current = [...history.current.slice(-29), state];
+    if (!counted.current) {
+      counted.current = true;
+      records.start(state.level);
+    }
+    timer.begin();
     setState(next);
     setSel(null);
     return true;
@@ -59,9 +84,12 @@ export default function Game() {
   const newGame = (l: SpiderLevel) => {
     history.current = [];
     notified.current = false;
+    counted.current = false;
     setMessage('');
     setState(dealSpider(l));
     setSel(null);
+    setResult(null);
+    timer.reset();
     trackToolUse('spider', `new-${l}`);
   };
 
@@ -132,6 +160,7 @@ export default function Game() {
         <span>
           完成: <strong style={{ color: 'var(--text)' }}>{state.completed} / 8</strong>
           {'　'}手数: {state.moves}
+          {'　'}⏱ {formatTime(timer.ms)}
         </span>
         <button
           type="button"
@@ -147,11 +176,28 @@ export default function Game() {
         </button>
       </div>
 
+      {/* 記録は「いま選んでいる難易度」のもの。1スートと4スートは別物なので分ける */}
+      <RecordStrip
+        items={[
+          ...(entry.bestTimeMs
+            ? [{ label: `${SPIDER_LEVELS[level].label}のベスト`, value: formatTime(entry.bestTimeMs) }]
+            : []),
+          ...(entry.bestMoves ? [{ label: '最少手数', value: `${entry.bestMoves}手` }] : []),
+          ...(entry.plays
+            ? [{ label: 'クリア', value: `${entry.wins ?? 0} / ${entry.plays}回` }]
+            : []),
+        ]}
+      />
+
       {/* 文言が切り替わっても盤面が動かないよう、常に2行分の高さ */}
       <p className="hint-row">
         {won ? (
           <span style={{ color: 'var(--ok)', fontWeight: 700 }}>
-            🎉 クリア！おめでとうございます（{state.moves}手）
+            🎉 クリア！{state.moves}手・{formatTime(result?.timeMs ?? timer.ms)}
+            {result && !result.improved.time && entry.bestTimeMs
+              ? `（ベスト ${formatTime(entry.bestTimeMs)}）`
+              : ''}
+            <BestBadge improved={result?.improved ?? null} />
           </span>
         ) : message ? (
           <span style={{ color: 'var(--accent)' }}>{message}</span>

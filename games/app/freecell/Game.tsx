@@ -14,9 +14,8 @@ import {
 } from '@/lib/freecell';
 import { trackToolUse } from '@/lib/analytics';
 import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
-
-/** クリアタイムのベスト（秒）。2048 と同じく localStorage に持つ */
-const BEST_KEY = 'freecell:best';
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { formatTime, type Improved } from '@/lib/records';
 
 /**
  * 選択中の札。
@@ -38,39 +37,33 @@ function toSource(sel: NonNullable<Selection>): Source {
 export default function Game() {
   const [state, setState] = useState<FreecellState | null>(null);
   const [sel, setSel] = useState<Selection>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [best, setBest] = useState(0);
   // もどす用の履歴。フリーセルは1手の重みが大きいので最初まで遡れるようにする
   const history = useRef<FreecellState[]>([]);
   const notified = useRef(false);
+  // 記録（docs/features/game-records.md）。旧 `freecell:best`（秒）は自動で移行される
+  const records = useRecords('freecell');
+  const entry = records.entry();
+  const timer = useStopwatch();
+  // この配りをプレイ数に数えたか（1手目で数える）
+  const counted = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(deal());
-    const saved = Number(localStorage.getItem(BEST_KEY) || 0);
-    if (saved > 0) setBest(saved);
   }, []);
 
   const won = state ? isWon(state) : false;
+  const moves = state?.moves ?? 0;
 
-  // タイマー。1手目からクリアまで進める
-  useEffect(() => {
-    if (startedAt === null || won) return;
-    const t = window.setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 500);
-    return () => clearInterval(t);
-  }, [startedAt, won]);
-
-  // クリアの記録（ベストタイムの保存とGA4への送信）
+  // クリアの記録（タイム・手数の保存とGA4への送信）
   useEffect(() => {
     if (!won || notified.current) return;
     notified.current = true;
     trackToolUse('freecell', 'win');
-    const saved = Number(localStorage.getItem(BEST_KEY) || 0);
-    if (saved === 0 || elapsed < saved) {
-      localStorage.setItem(BEST_KEY, String(elapsed));
-      setBest(elapsed);
-    }
-  }, [won, elapsed]);
+    const timeMs = timer.stop();
+    const { improved } = records.finish({ outcome: 'win', timeMs, moves });
+    setResult({ timeMs, improved });
+  }, [won, moves, records, timer]);
 
   if (!state) return <div className="card">配っています…</div>;
 
@@ -80,7 +73,11 @@ export default function Game() {
   const apply = (next: FreecellState | null): boolean => {
     if (!next) return false;
     history.current = [...history.current, state];
-    if (startedAt === null) setStartedAt(Date.now());
+    if (!counted.current) {
+      counted.current = true;
+      records.start();
+    }
+    timer.begin();
     setState(next);
     setSel(null);
     return true;
@@ -97,10 +94,11 @@ export default function Game() {
   const start = (seed: number, action: string) => {
     history.current = [];
     notified.current = false;
+    counted.current = false;
     setState(deal(seed));
     setSel(null);
-    setStartedAt(null);
-    setElapsed(0);
+    setResult(null);
+    timer.reset();
     trackToolUse('freecell', action);
   };
 
@@ -161,8 +159,7 @@ export default function Game() {
       <div className="status-bar">
         <span>
           手数: {state.moves}
-          {'　'}⏱ {elapsed}秒
-          {best > 0 && `　ベスト: ${best}秒`}
+          {'　'}⏱ {formatTime(timer.ms)}
         </span>
         <span style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="btn" onClick={undo} disabled={history.current.length === 0}>
@@ -174,11 +171,25 @@ export default function Game() {
         </span>
       </div>
 
+      <RecordStrip
+        items={[
+          ...(entry.bestTimeMs ? [{ label: 'ベスト', value: formatTime(entry.bestTimeMs) }] : []),
+          ...(entry.bestMoves ? [{ label: '最少手数', value: `${entry.bestMoves}手` }] : []),
+          ...(entry.plays
+            ? [{ label: 'クリア', value: `${entry.wins ?? 0} / ${entry.plays}回` }]
+            : []),
+        ]}
+      />
+
       {/* 文言が切り替わっても盤面が動かないよう、常に2行分の高さ */}
       <p className="hint-row">
         {won ? (
           <span style={{ color: 'var(--ok)', fontWeight: 700 }}>
-            🎉 クリア！{state.moves}手・{elapsed}秒
+            🎉 クリア！{state.moves}手・{formatTime(result?.timeMs ?? timer.ms)}
+            {result && !result.improved.time && entry.bestTimeMs
+              ? `（ベスト ${formatTime(entry.bestTimeMs)}）`
+              : ''}
+            <BestBadge improved={result?.improved ?? null} />
           </span>
         ) : stuck ? (
           <span style={{ color: 'var(--danger)', fontWeight: 700 }}>
