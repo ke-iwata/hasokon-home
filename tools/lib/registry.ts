@@ -156,7 +156,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃に対応。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-13',
   },
   {
     slug: 'shobyo-teate',

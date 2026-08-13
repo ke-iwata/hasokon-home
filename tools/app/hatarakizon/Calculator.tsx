@@ -28,7 +28,7 @@ const POSITIONS: { value: Position; label: string }[] = [
 function Breakdown({ title, take, accent }: { title: string; take: TakeHome; accent: boolean }) {
   const rows: [string, number][] = [
     ['年収（額面）', take.gross],
-    ['− 健康保険料', take.premiums.health],
+    ['− 健康保険料（子ども・子育て支援金を含む）', take.premiums.health],
     ['− 厚生年金保険料', take.premiums.pension],
     ['− 雇用保険料', take.premiums.employment],
     ['− 所得税', take.incomeTax],
@@ -381,9 +381,10 @@ function Results({
             （{yen(r.target.premiums.standardMonthly)}・{r.target.premiums.grade}等級）
           </>
         )}
-        にもとづく本人負担分です。健康保険料率は協会けんぽの全国平均で、お住まいの都道府県により数%変わります。
-        子ども・子育て支援金（2026年度は本人負担0.115%）は含めていません
-        （<Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link> で確認できます）。
+        にもとづく本人負担分です。健康保険料率は協会けんぽの全国平均（令和8年度・9.9%）で、
+        お住まいの都道府県により数%変わります。 健康保険料には子ども・子育て支援金（令和8年度は本人負担0.115%）を
+        含めています。給与明細でも健康保険料と一体で天引きされるため、内訳を分けていません
+        （支援金だけの金額は <Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link> で確認できます）。
       </p>
 
       <h3 style={{ marginTop: 22 }}>手取り以外に増えるもの</h3>
