@@ -13,6 +13,11 @@
  *
  * 【データ更新箇所】料率が確定・変更されたら FISCAL_YEARS を更新する。
  * 等級表は lib/shaho-grades.ts の GRADES
+ *
+ * **FISCAL_YEARS は lib/hatarakizon.ts（社会保険 損得計算機）も参照している。**
+ * あちらは手取りを出すので `status: '確定'` の最新年度だけを拾って健康保険料に足す。
+ * ここを更新すれば向こうも追随する（同じ数字を2か所に置かないための取り決め。
+ * 一致は tests/hatarakizon.test.ts が見張っている）。
  */
 
 import { GRADES, roundPremium, standardMonthly } from '@/lib/shaho-grades';
