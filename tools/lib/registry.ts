@@ -109,6 +109,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-03',
   },
   {
+    slug: 'nenmatsu-chosei',
+    icon: 'HandCoins',
+    name: '年末調整 還付金 計算機',
+    description:
+      '年末調整でいくら戻るかを計算。給与明細の源泉徴収税額を入れるだけで差額が出ます。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなったかも表示します。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-12',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',
