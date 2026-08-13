@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   DEPENDENT_LIMIT,
   DEPENDENT_LIMIT_STUDENT,
+  HEALTH_RATE,
+  KAIGO_RATE,
   PENSION_ACCRUAL_RATE,
+  SHIENKIN_RATE,
   STEP,
   WAGE_GATE_INCOME,
   calcBenefits,
@@ -18,6 +21,7 @@ import {
   PENSION_STANDARD_MAX,
   PENSION_STANDARD_MIN,
   gradeOf,
+  roundPremium,
   standardMonthly,
 } from '@/lib/shaho-grades';
 import * as kosodate from '@/lib/kosodate-shienkin';
@@ -76,22 +80,82 @@ describe('標準報酬月額の等級表（lib/shaho-grades）', () => {
 describe('calcPremiums（社会保険料・本人負担）', () => {
   it('協会けんぽの保険料額表と一致する: 標準報酬月額20万円', () => {
     // 月収20万円 → 17等級（標準報酬月額20万円）
-    // 健康保険（全国平均・折半後 4.99%）= 9,980円/月
+    // 健康保険（令和8年度の全国平均9.9%・折半後 4.95%）+ 支援金（0.23%・折半後 0.115%）
+    //   = 200,000 × 5.065% = 10,130円/月
     // 厚生年金（18.3%の折半 = 9.15%）= 18,300円/月
     const p = calcPremiums(200_000 * 12);
     expect(p.grade).toBe(17);
     expect(p.standardMonthly).toBe(200_000);
-    expect(p.health).toBe(9_980 * 12);
+    expect(p.health).toBe(10_130 * 12);
     expect(p.pension).toBe(18_300 * 12);
     expect(p.employment).toBe(Math.round(2_400_000 * 0.0055));
     expect(p.total).toBe(p.health + p.pension + p.employment);
   });
 
-  it('40〜64歳は介護保険料（折半後0.8%）が健康保険料に上乗せされる', () => {
+  it('40〜64歳は介護保険料（令和8年度1.62%・折半後0.81%）が健康保険料に上乗せされる', () => {
     const without = calcPremiums(200_000 * 12, false);
     const withKaigo = calcPremiums(200_000 * 12, true);
-    expect(withKaigo.health - without.health).toBe(1_600 * 12);
+    expect(withKaigo.health - without.health).toBe(1_620 * 12);
     expect(withKaigo.pension).toBe(without.pension); // 厚生年金は変わらない
+  });
+
+  // 仕様書 docs/features/hatarakizon-r8-hokenryoritsu.md の想定表そのもの。
+  // 令和8年度の料率と子ども・子育て支援金を、金額として固定しておく
+  it('標準報酬月額30万円の健康保険料（年額）が令和8年度の額になる', () => {
+    // 40歳未満: 300,000 × (4.95% + 0.115%) = 15,195円/月 → 年 182,340円
+    expect(calcPremiums(300_000 * 12, false).health).toBe(182_340);
+    // 40〜64歳: 300,000 × (4.95% + 0.115% + 0.81%) = 17,625円/月 → 年 211,500円
+    expect(calcPremiums(300_000 * 12, true).health).toBe(211_500);
+  });
+
+  // このテストが今回の不整合そのものを再発させないための一本。
+  // kosodate-shienkin.ts の料率を更新したときに hatarakizon が置き去りにされたら落ちる
+  it('支援金率が kosodate-shienkin の確定値と一致している（2ツールが同じ数字を使う）', () => {
+    const confirmed = kosodate.FISCAL_YEARS.filter((y) => y.status === '確定');
+    expect(confirmed.length).toBeGreaterThan(0);
+    const latest = confirmed.reduce((a, b) => (b.fiscalYear > a.fiscalYear ? b : a));
+    expect(SHIENKIN_RATE).toBe(latest.rate / 2);
+
+    // 健康保険料の月額 = 標準報酬月額 ×（健康保険料率 + 支援金率）で組み立てられている
+    const std = 300_000;
+    expect(calcPremiums(std * 12).health).toBe(
+      roundPremium(std * (HEALTH_RATE + latest.rate / 2)) * 12,
+    );
+  });
+
+  it('確定していない年度の料率（見込み・政府試算）は使わない', () => {
+    // 手取りは「いまいくら引かれるか」なので、令和9年度以降の見込み値は入れない
+    const unconfirmed = kosodate.FISCAL_YEARS.filter((y) => y.status !== '確定');
+    for (const y of unconfirmed) {
+      expect(SHIENKIN_RATE).not.toBe(y.rate / 2);
+    }
+  });
+
+  it('支援金を含めた保険料は、含めない場合より必ず大きい', () => {
+    for (const gross of [600_000, 1_060_000, 1_300_000, 2_000_000, 3_000_000, 10_000_000]) {
+      for (const kaigo of [false, true]) {
+        const p = calcPremiums(gross, kaigo);
+        const withoutShienkin =
+          roundPremium(p.standardMonthly * (HEALTH_RATE + (kaigo ? KAIGO_RATE : 0))) * 12;
+        expect(p.health).toBeGreaterThan(withoutShienkin);
+      }
+    }
+  });
+
+  it('支援金の分だけ手取りが減るが、社会保険料控除に入るので減り幅は保険料の増分より小さい', () => {
+    const gross = 2_000_000;
+    const take = calcTakeHome(gross, true);
+
+    // 支援金を含めなかった場合の保険料・税・手取りを組み直して比べる
+    const healthWithout = roundPremium(take.premiums.standardMonthly * HEALTH_RATE) * 12;
+    const totalWithout = take.premiums.total - take.premiums.health + healthWithout;
+    const netWithout =
+      gross - totalWithout - calcIncomeTax(gross, totalWithout) - calcResidentTax(gross, totalWithout);
+
+    const premiumDiff = take.premiums.total - totalWithout;
+    expect(premiumDiff).toBeGreaterThan(0);
+    expect(take.net).toBeLessThan(netWithout); // 手取りは減る
+    expect(netWithout - take.net).toBeLessThan(premiumDiff); // ただし税が追随する分だけ小さい
   });
 
   it('厚生年金の標準報酬月額は88,000〜650,000円で頭打ちになる', () => {
