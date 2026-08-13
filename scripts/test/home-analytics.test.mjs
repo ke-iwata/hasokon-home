@@ -274,12 +274,15 @@ describe('home/ のHTML', () => {
     }
   });
 
-  it('index.html の App Store のリンクが appstore になる', () => {
+  it('index.html の App Store のリンクがすべて appstore になる', () => {
     const { portalDestination } = loadAnalytics();
     const appstore = hrefsOf(INDEX_HTML).filter((href) => href.includes('apps.apple.com'));
 
-    assert.equal(appstore.length, 1);
-    assert.equal(portalDestination(appstore[0]), 'appstore');
+    // アプリを増やしたらここも増える（ボードゲーム + Sift）
+    assert.equal(appstore.length, 2);
+    for (const href of appstore) {
+      assert.equal(portalDestination(href), 'appstore', `${href} が appstore にならない`);
+    }
   });
 });
 

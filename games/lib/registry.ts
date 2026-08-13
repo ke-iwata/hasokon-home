@@ -104,6 +104,18 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-12',
   },
   {
+    // 「上海」はサン電子（サンソフト）が国内で商標を保有しているため名前に使わない。
+    // 一般名称の「麻雀ソリティア」で統一する
+    // （docs/features/game-mahjong-solitaire.md の「権利関係の確認」）
+    slug: 'mahjong-solitaire',
+    icon: 'Tiles',
+    name: '麻雀ソリティア',
+    description:
+      '亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配ります。',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
     slug: 'breakout',
     icon: 'Racquet',
     name: 'ブロック崩し',
