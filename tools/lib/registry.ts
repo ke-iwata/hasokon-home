@@ -168,6 +168,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'kogaku-ryoyohi',
+    icon: 'Hospital',
+    name: '高額療養費 自己負担限度額 計算機',
+    description:
+      '医療費が高額になったとき、1か月の自己負担がいくらまでで済むかを計算。2026年8月の改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応。改正前の額と並べて表示します。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
     slug: 'interval-timer',
     icon: 'Timer',
     name: 'インターバルタイマー',
