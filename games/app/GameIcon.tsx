@@ -56,6 +56,35 @@ function StonesIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 麻雀ソリティアの牌（同じ印の2枚）。**リバーシの石と同じく自前で描いている。**
+ *
+ * Phosphor に麻雀牌に当たるアイコンが無く、近いのは Dominoes（点の数が違う別の遊び）
+ * だけで、絵合わせであることが伝わらない。**同じ印の牌が2枚**という形にして、
+ * 一覧の中で「絵合わせのゲーム」だと分かるようにした。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function TilesIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      aria-hidden="true"
+    >
+      <rect x="28" y="44" width="84" height="120" rx="14" />
+      <circle cx="70" cy="104" r="16" fill="currentColor" stroke="none" />
+      <rect x="144" y="92" width="84" height="120" rx="14" />
+      <circle cx="186" cy="152" r="16" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Spade: SpadeIcon,
@@ -66,6 +95,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   GridFour: GridFourIcon,
   Racquet: RacquetIcon,
   Stones: StonesIcon,
+  Tiles: TilesIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
