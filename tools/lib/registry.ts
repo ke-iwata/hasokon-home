@@ -129,6 +129,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'ideco',
+    icon: 'Coins',
+    name: 'iDeCo 拠出限度額・節税額 計算機',
+    description:
+      '2026年12月の改正でiDeCoの上限は会社員なら月6.2万円へ。ただし「6.2万円 − 事業主掛金」があなたの上限です。勤め先の事業主掛金を入れて、上限と年間の節税額、70歳までの累計を計算します。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',
@@ -146,7 +156,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃に対応。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-08-13',
   },
   {
     slug: 'shobyo-teate',

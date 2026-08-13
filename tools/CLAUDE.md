@@ -175,7 +175,7 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在485件）
+npm test         # 計算ロジックのテスト（現在543件）
 npm run build    # out/ に静的出力
 ```
 
@@ -183,10 +183,11 @@ npm run build    # out/ に静的出力
 
 | 頻度 | 作業 |
 |---|---|
-| 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新 |
-| 毎年3月 | 協会けんぽの料率改定を `lib/hatarakizon.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映 |
+| 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新（**支援金・働き損の2ツールに効く**。`hatarakizon.ts` は `status: '確定'` の最新年度を自動で拾うので、あちらは触らない） |
+| 毎年3月 | 協会けんぽの料率改定を `lib/hatarakizon.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照） |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・働き損・在職老齢年金の4ツールが参照） |
 | 毎年度（在職老齢年金） | 支給停止調整額を `lib/zaishoku-rorei-nenkin.ts` の `FISCAL_YEARS` に1行追加（賃金の変動に応じて毎年度改定される） |
+| 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
@@ -197,7 +198,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール18本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト485件
+- ツール19本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト543件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -222,6 +223,14 @@ npm run build    # out/ に静的出力
 - 加入するかどうかの判定は `evaluateShaho()` が返す。企業規模要件の段階的縮小
   （2027年10月〜2035年10月）は**まだ入れていない**。`effectiveFrom` の仕組みは
   用意してあるので、必要になったら定義を足すだけで済む
+- **iDeCoの改正（2026年12月1日施行）は「引き上げ」ではなく「合算ルールへの切り替え」**。
+  第2号の上限は `62,000円 −（企業型DCの事業主掛金 ＋ DB等の他制度掛金相当額）`で、
+  6.2万円を固定の上限として扱うと企業年金がある人に過大な額が出る。
+  施行日の判定は `lib/nenshu-kabe.ts` と同じく暦日の文字列で行い、画面はビルド時刻で
+  描画してからマウント後に「開いた日」で評価し直す（`lib/ideco.ts`）。
+  新しい額が実際に効くのは2026年12月拠出分（2027年1月引落分）からなので、
+  **「いま出せる額」と必ず並べて出すこと**
+  （[docs/features/ideco-kyoshutsu-gendogaku.md](../docs/features/ideco-kyoshutsu-gendogaku.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当

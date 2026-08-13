@@ -38,7 +38,7 @@ const faq = [
   },
   {
     q: '計算結果はどのくらい正確ですか？',
-    a: '概算です。健康保険料率は協会けんぽの全国平均を使っているため、お住まいの都道府県で数%変わります。標準報酬月額は本来4〜6月の報酬から決まりますが、ここでは年収の12分の1で判定しています。また子ども・子育て支援金は含めていません。正確な保険料は勤務先または加入する健康保険の保険者にご確認ください。',
+    a: '概算です。健康保険料率は協会けんぽの全国平均（令和8年度・9.9%）を使っているため、お住まいの都道府県で数%変わります。標準報酬月額は本来4〜6月の報酬から決まりますが、ここでは年収の12分の1で判定しています。2026年4月に始まった子ども・子育て支援金（本人負担0.115%）は、給与明細と同じく健康保険料に含めて計算しています。正確な保険料は勤務先または加入する健康保険の保険者にご確認ください。',
   },
 ];
 
@@ -203,13 +203,22 @@ export default function Page() {
         </a>
         ／
         <a
-          href="https://www.kyoukaikenpo.or.jp/g7/cat330/sb3150/"
+          href="https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/r08/index.html"
           target="_blank"
           rel="nofollow noopener noreferrer"
         >
-          全国健康保険協会「保険料額表」
+          全国健康保険協会「令和8年度の都道府県毎の保険料率」
         </a>
-        （健康保険料率は都道府県ごとに異なります。本ツールは全国平均で概算しています）
+        （健康保険料率は都道府県ごとに異なります。本ツールは全国平均9.9%で概算しています。介護保険料率は全国一律1.62%）
+        ／
+        <a
+          href="https://www.cfa.go.jp/policies/kodomokosodateshienkinseido"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          こども家庭庁「子ども・子育て支援金制度について」
+        </a>
+        （令和8年4月分から全国一律0.23%。労使折半のため本人負担は0.115%）
         ／
         <a
           href="https://www.nenkin.go.jp/service/jukyu/roureinenkin/jukyu-yoken/20140421-02.html"
