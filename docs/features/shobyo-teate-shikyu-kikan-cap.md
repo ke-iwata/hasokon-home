@@ -1,6 +1,6 @@
 # 傷病手当金 計算機に「通算1年6ヶ月」の支給期間上限を入れる
 
-**状態**：提案（未実装）
+**状態**：実装済み（2026-08-13。本番反映はタグリリース待ち）
 **対象**：`tools/lib/shobyo-teate.ts`・`tools/app/shobyo-teate/Calculator.tsx`・`tools/tests/shobyo-teate.test.ts`
 **起票**：2026-08-13
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { SHORT_TENURE_CAP, TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
+import { MAX_PAYABLE_DAYS, SHORT_TENURE_CAP, TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
 
 const fmtYen = (yen: number) => `${yen.toLocaleString('ja-JP')}円`;
 
@@ -70,6 +70,12 @@ export default function Calculator() {
         {r.payableDays === 0 && (
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
             休業が連続{TAIKI_DAYS}日以内は待期期間のため支給されません（4日目から支給）
+          </div>
+        )}
+        {r.cappedByLimit && (
+          <div style={{ fontSize: 'var(--fs-sm)', color: '#b45309' }}>
+            支給期間の上限（通算1年6ヶ月＝{MAX_PAYABLE_DAYS}日）に達しています。入力の
+            {r.requestedDays}日分ではなく、<strong>{MAX_PAYABLE_DAYS}日分</strong>で計算しました。
           </div>
         )}
       </div>

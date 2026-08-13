@@ -155,7 +155,7 @@ export const tools: ToolDef[] = [
     description: '病気やケガで休職したときにもらえる傷病手当金の日額・総額を計算。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-01',
+    updatedAt: '2026-08-13',
   },
   {
     slug: 'interval-timer',
