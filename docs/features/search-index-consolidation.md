@@ -135,10 +135,12 @@ POST https://searchconsole.googleapis.com/v1/urlInspection/index:inspect
 ### 併せて直すもの（別リポジトリ）
 
 `/games/` が「検出 - インデックス未登録」のままである件は、セクショントップに
-自己参照 canonical が無いことも一因と見ている。こちらは各リポジトリで対応する。
+自己参照 canonical が無いことも一因と見ている。
 
-- hasokon-tools: `docs/features/section-index-canonical.md`
-- hasokon-games: `docs/features/section-index-canonical.md`
+移送先として書いていた各リポジトリ（hasokon-tools / hasokon-games）は
+モノレポ統合でアーカイブされ、`section-index-canonical.md` はどちらにも存在しないまま
+申し送りだけが落ちていた。**[self-canonical-coverage.md](./self-canonical-coverage.md) で
+引き取って実装済み**（2026-08-13）。
 
 ---
 

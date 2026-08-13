@@ -6,6 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
   description: `${SITE_NAME}のプライバシーポリシー。入力データの取り扱い、広告配信、アクセス解析、著作権についてのご案内です。`,
+  alternates: { canonical: `${SITE_URL}/privacy/` },
 };
 
 // registry に無い固定ページなので、現在地の名前だけここで持つ

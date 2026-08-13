@@ -1,6 +1,6 @@
 # 自己参照canonicalの網羅（セクショントップとプライバシーの4ページ）
 
-**状態**：提案（未実装）
+**状態**：実装済み（2026-08-13。本番反映はタグリリース待ち）
 **対象**：`tools/app/page.tsx` / `games/app/page.tsx` / `tools/app/privacy/page.tsx` / `games/app/privacy/page.tsx`
 **起票**：2026-08-13
 
