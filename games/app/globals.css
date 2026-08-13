@@ -50,6 +50,10 @@
   --ms-6: #0f766e;
   --ms-7: #be185d;
   --ms-8: #57534e;
+
+  /* 麻雀ソリティアの卓。牌は明暗どちらでも象牙色のままなので、
+     地は暗い緑に固定して牌を浮かせる（明るい地だと牌の輪郭が沈む） */
+  --mj-felt: #2f6b4c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,6 +89,8 @@
     --ms-6: #2dd4bf;
     --ms-7: #f472b6;
     --ms-8: #a8a29c;
+
+    --mj-felt: #1d4633;
   }
 }
 
@@ -932,5 +938,93 @@ ol {
 @media (prefers-reduced-motion: reduce) {
   .rv-disc {
     transition: none;
+  }
+}
+
+/* ---- 麻雀ソリティア ---- */
+/* 盤面は「牌の半分」を1とする 30×16 の座標系（lib/mahjong-solitaire.ts）を
+   そのまま％に直して置いている。牌の縦横比が 40:54 なので、
+   盤面の縦横比は 30*20 : 16*27 = 600:432 になる。
+   横スクロールは作らない。スマホでも1画面に収まることがこのゲームの前提 */
+.mj-board {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 600 / 432;
+  margin: 6px auto 0;
+  background: var(--mj-felt);
+  border-radius: var(--radius-sm);
+}
+
+.mj-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #e8e4dc;
+  font-size: 0.9rem;
+}
+
+/* 牌。地は象牙色で固定する（本物の牌の色。ダークモードで黒くすると牌に見えない）。
+   厚みは右下に落とす影で出す。描く順（app/mahjong-solitaire/Game.tsx の DRAW_ORDER）が
+   左上→右下なので、右どなり・下どなりの牌が影を隠して板が繋がって見える */
+.mj-tile {
+  position: absolute;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #b7ab93;
+  border-radius: 14%;
+  background: linear-gradient(155deg, #fffdf6 0%, #f7f1e3 55%, #e9e0ca 100%);
+  box-shadow: 2px 3px 0 rgba(52, 40, 22, 0.3);
+  cursor: default;
+}
+
+.mj-tile.free {
+  cursor: pointer;
+}
+
+/* 取れない牌は少しだけ沈める。初心者が最初に迷うのは
+   「なぜこの牌は反応しないのか」なので、見た目で区別できるようにしておく */
+.mj-tile.blocked {
+  filter: brightness(0.88) saturate(0.9);
+}
+
+.mj-tile.selected {
+  border-color: var(--accent);
+  background: linear-gradient(155deg, #fffdf6 0%, #eaf7ef 55%, #cfe9da 100%);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    2px 3px 0 rgba(52, 40, 22, 0.3);
+}
+
+.mj-tile.free:hover {
+  background: linear-gradient(155deg, #ffffff 0%, #fbf7ec 55%, #f0e8d4 100%);
+}
+
+/* ヒント。3回点滅して自然に消える（Game.tsx が HINT_MS で外す） */
+.mj-tile.hinted {
+  animation: mj-hint 0.66s ease-in-out 3;
+}
+
+@keyframes mj-hint {
+  50% {
+    box-shadow:
+      0 0 0 3px #f0b429,
+      2px 3px 0 rgba(52, 40, 22, 0.3);
+  }
+}
+
+.mj-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mj-tile.hinted {
+    animation: none;
+    box-shadow:
+      0 0 0 3px #f0b429,
+      2px 3px 0 rgba(52, 40, 22, 0.3);
   }
 }
