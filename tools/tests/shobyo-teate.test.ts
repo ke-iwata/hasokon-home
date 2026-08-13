@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { TAIKI_DAYS, calcShobyoTeate, SHORT_TENURE_CAP } from '@/lib/shobyo-teate';
+import { MAX_PAYABLE_DAYS, TAIKI_DAYS, calcShobyoTeate, SHORT_TENURE_CAP } from '@/lib/shobyo-teate';
 
 describe('calcShobyoTeate（日額の計算）', () => {
   it('標準報酬月額30万円 → 標準報酬日額10,000円 → 日額6,667円', () => {
@@ -58,6 +58,55 @@ describe('calcShobyoTeate（待期3日間と支給対象日数）', () => {
   it('休業日数の小数は切り捨てて扱う', () => {
     const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: 4.9 });
     expect(r.payableDays).toBe(1);
+  });
+});
+
+describe('calcShobyoTeate（支給期間の上限＝通算1年6ヶ月）', () => {
+  it('上限日数は546日（通算1年6ヶ月の短いほう）', () => {
+    expect(MAX_PAYABLE_DAYS).toBe(546);
+  });
+
+  it('上限に届かない休業日数は今までどおり（休業30日 → 27日分）', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: 30 });
+    expect(r.payableDays).toBe(27);
+    expect(r.requestedDays).toBe(27);
+    expect(r.cappedByLimit).toBe(false);
+  });
+
+  it('上限ちょうど（休業549日 = 546 + 待期3日）では上限フラグは立たない', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: MAX_PAYABLE_DAYS + TAIKI_DAYS });
+    expect(r.payableDays).toBe(MAX_PAYABLE_DAYS);
+    expect(r.requestedDays).toBe(MAX_PAYABLE_DAYS);
+    expect(r.cappedByLimit).toBe(false);
+  });
+
+  it('上限を1日超える（休業550日）と頭打ちになり上限フラグが立つ', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: MAX_PAYABLE_DAYS + TAIKI_DAYS + 1 });
+    expect(r.payableDays).toBe(MAX_PAYABLE_DAYS);
+    expect(r.requestedDays).toBe(MAX_PAYABLE_DAYS + 1);
+    expect(r.cappedByLimit).toBe(true);
+  });
+
+  it('月収30万円で2年（730日）休んでも支給総額は3,640,182円で頭打ち', () => {
+    // 日額6,667円 × 上限546日 = 3,640,182円。
+    // 上限が無かった頃は727日分の4,846,909円を出していた（約120万円の過大）
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: 730 });
+    expect(r.dailyAmount).toBe(6_667);
+    expect(r.payableDays).toBe(MAX_PAYABLE_DAYS);
+    expect(r.requestedDays).toBe(727);
+    expect(r.cappedByLimit).toBe(true);
+    expect(r.total).toBe(3_640_182);
+  });
+
+  it('極端に大きい休業日数を入れても青天井にならない', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: 100_000 });
+    expect(r.payableDays).toBe(MAX_PAYABLE_DAYS);
+    expect(r.total).toBe(calcShobyoTeate({ monthlyIncome: 300_000, restDays: 730 }).total);
+  });
+
+  it('月額目安は上限の影響を受けない（日額×30のまま）', () => {
+    const r = calcShobyoTeate({ monthlyIncome: 300_000, restDays: 100_000 });
+    expect(r.monthlyEstimate).toBe(6_667 * 30);
   });
 });
 

@@ -28,6 +28,20 @@ export const TAIKI_DAYS = 3;
  */
 export const SHORT_TENURE_CAP = 320_000;
 
+/**
+ * 支給期間の上限日数（通算1年6ヶ月）。
+ *
+ * 令和4年（2022年）1月1日から「支給開始日から通算して1年6ヶ月」になった。
+ * それ以前は「支給開始日から暦の上で1年6ヶ月」で、途中で復職しても
+ * その期間が上限を食っていた。改正後は、支給されなかった期間は数えない。
+ *
+ * 「1年6ヶ月」は暦で数えるため、支給開始日によって実日数は 546〜548日で揺れる
+ * （うるう年・月の大小）。ここでは短いほうの 546日 を採る。
+ * 上限を過小に見積もる側に倒すのは、このツールが「いくらもらえるか」を
+ * 調べる道具であり、多く出しすぎるほうが害が大きいため。
+ */
+export const MAX_PAYABLE_DAYS = 546;
+
 export interface ShobyoTeateInput {
   /** 直近12ヶ月の平均月収（額面・円） */
   monthlyIncome: number;
@@ -49,8 +63,12 @@ export interface ShobyoTeateResult {
   standardDaily: number;
   /** 傷病手当金の日額（標準報酬日額×2/3、1円未満四捨五入・円） */
   dailyAmount: number;
-  /** 支給対象日数（休業日数から待期3日を除いた日数） */
+  /** 支給対象日数（休業日数から待期3日を除き、通算1年6ヶ月の上限で頭打ちにした日数） */
   payableDays: number;
+  /** 上限を当てる前の支給対象日数（入力どおりの日数 − 待期3日） */
+  requestedDays: number;
+  /** 通算1年6ヶ月（MAX_PAYABLE_DAYS）の上限に達したか */
+  cappedByLimit: boolean;
   /** 支給総額（日額×支給対象日数・円） */
   total: number;
   /** 1ヶ月休んだ場合の月額目安（日額×30・円） */
@@ -75,7 +93,10 @@ export function calcShobyoTeate(input: ShobyoTeateInput): ShobyoTeateResult {
   // 日額: ×2/3 の1円未満四捨五入
   const dailyAmount = Math.round((standardDaily * 2) / 3);
   // 待期3日間（最初の連続3日）は支給されない
-  const payableDays = Math.max(0, restDays - TAIKI_DAYS);
+  const requestedDays = Math.max(0, restDays - TAIKI_DAYS);
+  // 支給期間は通算1年6ヶ月が上限。これを超える日数を入れられても頭打ちにする
+  const payableDays = Math.min(requestedDays, MAX_PAYABLE_DAYS);
+  const cappedByLimit = requestedDays > MAX_PAYABLE_DAYS;
 
   return {
     standardMonthly: std,
@@ -83,6 +104,8 @@ export function calcShobyoTeate(input: ShobyoTeateInput): ShobyoTeateResult {
     standardDaily,
     dailyAmount,
     payableDays,
+    requestedDays,
+    cappedByLimit,
     total: dailyAmount * payableDays,
     monthlyEstimate: dailyAmount * 30,
   };
