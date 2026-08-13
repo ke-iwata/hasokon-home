@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { SITE_NAME } from '@/lib/registry';
+import { SITE_NAME, SITE_URL } from '@/lib/registry';
 import { breadcrumbTrail } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 
 export const metadata: Metadata = {
   title: 'プライバシーポリシー',
   description: `${SITE_NAME}のプライバシーポリシー。広告配信、アクセス解析、データの取り扱いについてのご案内です。`,
+  alternates: { canonical: `${SITE_URL}/privacy/` },
 };
 
 export default function PrivacyPage() {
