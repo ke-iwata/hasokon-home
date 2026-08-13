@@ -41,6 +41,8 @@
     -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-2Z0K6Y2FX0"></script>
     <script defer src="/analytics.js"></script>
+    <!-- 一覧の絞り込み。index.html だけで使う（404.html には一覧が無い） -->
+    <script defer src="/find.js"></script>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -211,6 +213,80 @@
 
       .btn:active {
         transform: translateY(1px);
+      }
+
+      /* ---- クイックナビ（分類への近道）と絞り込み ---- */
+
+      .quicknav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 28px;
+      }
+
+      .quicknav a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 15px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        background: var(--surface);
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: border-color 0.18s, color 0.18s;
+      }
+
+      .quicknav a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .quicknav b {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--muted);
+      }
+
+      /* 絞り込みの入力欄は find.js が差し込む。
+         JSが動かない環境では存在せず、一覧はそのまま全件見える */
+      .finder {
+        margin-top: 20px;
+        max-width: 26rem;
+      }
+
+      .finder input {
+        width: 100%;
+        padding: 11px 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        background: var(--surface);
+        color: var(--text);
+        font-size: 0.95rem;
+        font-family: inherit;
+      }
+
+      .finder input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+      }
+
+      /* 絞り込みで消えたカード・見出し。display:none だと
+         grid の隙間が残るので要素ごと畳む */
+      [hidden] {
+        display: none !important;
+      }
+
+      .finder-empty {
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+
+      /* アンカーで飛んだとき、見出しが画面の最上端に貼りつかないようにする */
+      section {
+        scroll-margin-top: 24px;
       }
 
       /* ---- セクション共通 ---- */
@@ -450,11 +526,25 @@
       </div>
 
       <!--
+        目的の分類へ1タップで飛ぶための導線。スマホでは全体が8画面ぶんあり、
+        ゲームは5画面目に来るので、これが無いと下まで辿り着けない。
+        JSに依存しない素のアンカーにしてあるので、絞り込み（/find.js）が
+        読めない環境でも機能する。件数はカードを増やしたら手で直すこと。
+      -->
+      <nav class="quicknav" aria-label="分類">
+        <a href="#money">お金・社会保険 <b>9</b></a>
+        <a href="#life">生活・変換 <b>7</b></a>
+        <a href="#decide">決める・選ぶ <b>3</b></a>
+        <a href="#games">ゲーム <b>10</b></a>
+        <a href="#apps">アプリ <b>2</b></a>
+      </nav>
+
+      <!--
         カード一覧は tools/lib/registry.ts と games/lib/registry.ts の内容と
         手動で同期している。ツールやゲームを追加・削除したらここも更新すること。
         アイコンのSVGは Phosphor Icons から生成したもの（tools/app/ToolIcon.tsx と同じ絵柄）。
       -->
-      <section>
+      <section id="apps">
         <div class="section-head">
           <h2>スマホアプリ</h2>
           <p class="section-desc">App Store で公開しているアプリです。</p>
@@ -499,7 +589,7 @@
         </a>
       </section>
 
-      <section>
+      <section id="money">
         <div class="section-head">
           <h2>お金・社会保険の計算機</h2>
           <p class="section-desc">制度改正に合わせて更新しています。一次情報（法令・官公庁の資料）にもとづいて作り、根拠へのリンクを各ページに載せています。</p>
@@ -553,7 +643,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="life">
         <div class="section-head">
           <h2>生活の計算機・変換ツール</h2>
           <p class="section-desc">日常のちょっとした計算をすぐ済ませるためのツールです。</p>
@@ -597,7 +687,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="decide">
         <div class="section-head">
           <h2>決める・選ぶツール</h2>
           <p class="section-desc">迷ったときに、その場で決めるための道具です。</p>
@@ -621,7 +711,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="games">
         <div class="section-head">
           <h2>ミニゲーム</h2>
           <p class="section-desc">ブラウザですぐ遊べる、定番のパズルとカードゲームです。</p>
@@ -683,7 +773,7 @@
       </section>
 
       <!-- 7. このサイトについて（カードを使わない散文） -->
-      <section>
+      <section id="about">
         <div class="section-head">
           <h2>このサイトについて</h2>
         </div>
