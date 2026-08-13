@@ -797,21 +797,20 @@ ol {
   margin: 12px auto 0;
 }
 
-/* 枠は中身が空でも同じ大きさで残す（置くたびに配り札が動くと押し間違える） */
+/* 枠は中身が空でも同じ大きさで残す（置くたびに配り札が動くと押し間違える）。
+   枠線と地色は敷かない。3つ並べると箱のほうが目立ってしまい、
+   主役であるピースが小さく見えるため。選んだときだけ地色を出す */
 .bp-slot {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 84px;
-  padding: 6px;
-  border: 1px solid var(--border);
+  min-height: 78px;
   border-radius: 10px;
-  background: var(--surface-2);
 }
 
 .bp-slot.selected {
-  border-color: var(--accent);
   background: var(--accent-soft);
+  outline: 2px solid var(--accent);
 }
 
 /* 掴んでいる間は、元の枠のピースを薄くして「持ち上がっている」ことを示す */
@@ -846,7 +845,7 @@ ol {
 .bp-shape {
   display: grid;
   gap: 2px;
-  --unit: min(100% / var(--w), 64px / var(--h), 22px);
+  --unit: min(100% / var(--w), 72px / var(--h), 27px);
   width: calc(var(--unit) * var(--w));
   height: calc(var(--unit) * var(--h));
 }
