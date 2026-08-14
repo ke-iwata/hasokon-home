@@ -1,6 +1,6 @@
 # ゲームの「ホーム画面に追加」対応（Webアプリマニフェスト）
 
-**状態**：提案（未実装）
+**状態**：実装済み（2026-08-14）
 **対象**：`games/`（`hasokon.com/games/` 配下全ページ）
 **起票**：2026-08-14
 
@@ -74,8 +74,19 @@ Direct が一貫して最大チャネルで、内訳はゲーム
 
 - `games/app/manifest.ts`（新規）
 - `games/app/layout.tsx`（metadata に manifest 参照を追加）
-- `design/`（アイコン生成スクリプト新規）＋生成した PNG 2枚（`games/app/` 配下）
+- `design/`（アイコン生成スクリプト新規）＋生成した PNG（`games/public/icons/` 配下）
 - `scripts/test/` に「manifest が書き出され、icons のファイルが実在する」テスト
+
+> **実装時に変えた点（2026-08-14）**
+> - PNGの置き場を `games/app/` ではなく **`games/public/icons/`** にした。
+>   `app/` 配下で静的ファイルとして書き出されるのは `icon.png` などNext.jsの
+>   予約名だけで、`icon-192.png` は出力されず404になるため
+> - PNGは2枚ではなく **4枚**（192 / 512 × `any` / `maskable`）。`maskable` は
+>   Android の切り抜きに耐える余白が要り、その絵を `any` にも使うと
+>   切り抜かない環境（iOS・デスクトップ）でアイコンが小さく見えるため
+>
+> 詳しくは [games/docs/DECISIONS.md](../../games/docs/DECISIONS.md) の
+> 2026-08-14 のエントリ。
 
 ## 期待される効果
 
