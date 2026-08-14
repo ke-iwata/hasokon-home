@@ -1469,6 +1469,9 @@ ol {
 }
 
 .df-seat {
+  /* これが無いと grid の 1fr が中身（裏向きの札14枚）の幅まで広がり、
+     3列が画面からはみ出して横スクロールが出る */
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -1538,6 +1541,19 @@ ol {
 /* 2枚目以降を少しだけ重ねる。深く重ねると1枚の帯に見えて札だと分からなくなる */
 .df-back + .df-back {
   margin-left: -5px;
+}
+
+/* 狭い画面では席の幅が3分の1しかないので、札を細く・深く重ねて
+   配りたての14枚でも切らずに収める（切ると枚数が読めなくなる） */
+@media (max-width: 600px) {
+  .df-back {
+    width: 12px;
+    height: 20px;
+  }
+
+  .df-back + .df-back {
+    margin-left: -8px;
+  }
 }
 
 /* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く */
