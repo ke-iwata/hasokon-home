@@ -1,5 +1,6 @@
 import {
   BabyIcon,
+  BicycleIcon,
   CoinsIcon,
   CropIcon,
   DiceFiveIcon,
@@ -41,6 +42,7 @@ type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
   Baby: BabyIcon,
+  Bicycle: BicycleIcon,
   Coins: CoinsIcon,
   Crop: CropIcon,
   DiceFive: DiceFiveIcon,
