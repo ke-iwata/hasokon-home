@@ -246,6 +246,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-07-01',
   },
   {
+    slug: 'nenrei-keisan',
+    icon: 'CalendarDots',
+    name: '年齢計算・西暦和暦変換',
+    description:
+      '生年月日から満年齢を計算。西暦⇔和暦（明治〜令和）の変換と早見表、誕生日までの日数・干支・学年の目安つき。',
+    category: '計算・変換',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',
