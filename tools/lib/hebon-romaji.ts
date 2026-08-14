@@ -60,6 +60,87 @@ const BASE_MAP: Record<string, string> = {
   ぁ: 'a', ぃ: 'i', ぅ: 'u', ぇ: 'e', ぉ: 'o',
 };
 
+/** 一覧表の1マス（かなと、そのヘボン式表記） */
+export interface KanaCell {
+  /** かな（ひらがな） */
+  kana: string;
+  /** ヘボン式ローマ字（パスポート表記に合わせて大文字） */
+  romaji: string;
+}
+
+/** 一覧表の1行（行見出しと、5マスまたは3マス。空きマスは null） */
+export interface KanaTableRow {
+  /** 行見出し（「あ行」「きゃ」など） */
+  label: string;
+  /** マス。存在しない音（や行の「い」「え」など）は null */
+  cells: (KanaCell | null)[];
+}
+
+/**
+ * かな1文字（または拗音2文字）のヘボン式表記を引く。
+ * 変換表に無い文字は null を返す。
+ */
+export function hebonOf(kana: string): string | null {
+  const romaji = DIGRAPH_MAP[kana] ?? BASE_MAP[kana];
+  return romaji ? romaji.toUpperCase() : null;
+}
+
+/** 表の並び（かなだけ）からマスを作る。ローマ字は変換表から引くので二重管理にならない */
+function toRows(rows: { label: string; kana: (string | null)[] }[]): KanaTableRow[] {
+  return rows.map(({ label, kana }) => ({
+    label,
+    cells: kana.map((k) => {
+      if (k === null) return null;
+      const romaji = hebonOf(k);
+      if (!romaji) throw new Error(`変換表に無いかなです: ${k}`);
+      return { kana: k, romaji };
+    }),
+  }));
+}
+
+/**
+ * 五十音（清音）の一覧表。
+ * ページの「ヘボン式ローマ字 一覧表（五十音）」で使う表示用データで、
+ * 綴りは BASE_MAP / DIGRAPH_MAP から引いている（変換結果と必ず一致する）。
+ */
+export const SEION_TABLE: KanaTableRow[] = toRows([
+  { label: 'あ行', kana: ['あ', 'い', 'う', 'え', 'お'] },
+  { label: 'か行', kana: ['か', 'き', 'く', 'け', 'こ'] },
+  { label: 'さ行', kana: ['さ', 'し', 'す', 'せ', 'そ'] },
+  { label: 'た行', kana: ['た', 'ち', 'つ', 'て', 'と'] },
+  { label: 'な行', kana: ['な', 'に', 'ぬ', 'ね', 'の'] },
+  { label: 'は行', kana: ['は', 'ひ', 'ふ', 'へ', 'ほ'] },
+  { label: 'ま行', kana: ['ま', 'み', 'む', 'め', 'も'] },
+  { label: 'や行', kana: ['や', null, 'ゆ', null, 'よ'] },
+  { label: 'ら行', kana: ['ら', 'り', 'る', 'れ', 'ろ'] },
+  { label: 'わ行', kana: ['わ', null, null, null, 'を'] },
+]);
+
+/** 濁音・半濁音の一覧表 */
+export const DAKUON_TABLE: KanaTableRow[] = toRows([
+  { label: 'が行', kana: ['が', 'ぎ', 'ぐ', 'げ', 'ご'] },
+  { label: 'ざ行', kana: ['ざ', 'じ', 'ず', 'ぜ', 'ぞ'] },
+  { label: 'だ行', kana: ['だ', 'ぢ', 'づ', 'で', 'ど'] },
+  { label: 'ば行', kana: ['ば', 'び', 'ぶ', 'べ', 'ぼ'] },
+  { label: 'ぱ行', kana: ['ぱ', 'ぴ', 'ぷ', 'ぺ', 'ぽ'] },
+]);
+
+/** 拗音（ゃ・ゅ・ょ）の一覧表 */
+export const YOON_TABLE: KanaTableRow[] = toRows([
+  { label: 'き', kana: ['きゃ', 'きゅ', 'きょ'] },
+  { label: 'し', kana: ['しゃ', 'しゅ', 'しょ'] },
+  { label: 'ち', kana: ['ちゃ', 'ちゅ', 'ちょ'] },
+  { label: 'に', kana: ['にゃ', 'にゅ', 'にょ'] },
+  { label: 'ひ', kana: ['ひゃ', 'ひゅ', 'ひょ'] },
+  { label: 'み', kana: ['みゃ', 'みゅ', 'みょ'] },
+  { label: 'り', kana: ['りゃ', 'りゅ', 'りょ'] },
+  { label: 'ぎ', kana: ['ぎゃ', 'ぎゅ', 'ぎょ'] },
+  { label: 'じ', kana: ['じゃ', 'じゅ', 'じょ'] },
+  { label: 'ぢ', kana: ['ぢゃ', 'ぢゅ', 'ぢょ'] },
+  { label: 'び', kana: ['びゃ', 'びゅ', 'びょ'] },
+  { label: 'ぴ', kana: ['ぴゃ', 'ぴゅ', 'ぴょ'] },
+]);
+
 /**
  * カタカナをひらがなに正規化する（長音符「ー」はそのまま残す）
  */
