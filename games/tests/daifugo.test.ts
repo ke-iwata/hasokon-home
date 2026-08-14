@@ -658,9 +658,12 @@ describe('CPU', () => {
       eightCut: true,
       revolution: true,
       suitLock: true,
+      sequence: true,
       cityFall: true,
       jackBack: true,
       spadeThree: true,
+      fiveSkip: true,
+      nineReverse: true,
     };
     let state = startRound(dealCards(shuffleCards(makeDaifugoDeck(), r)), 0, rules, 1);
     for (let i = 0; i < 500 && !state.finished; i += 1) {
@@ -786,5 +789,167 @@ describe('試合（5回戦）', () => {
     const total = (values: readonly number[]) => values.reduce((a, b) => a + b, 0);
     expect(total(match.scores)).toBe(total(RANK_POINTS) * ROUNDS);
     expect(new Set(matchStandings(match)).size).toBe(PLAYER_COUNT);
+  });
+});
+
+describe('5飛ばし', () => {
+  it('OFFなら次の人の番になる', () => {
+    const state = round(hands({ 0: [N('spade', 5)], 1: [N('club', 6)], 2: [N('heart', 7)], 3: [N('club', 9)] }), {
+      rules: { ...DEFAULT_RULES, fiveSkip: false },
+    });
+    expect(applyPlay(state, [state.hands[0][0]]).turn).toBe(1);
+  });
+
+  it('1枚出すと次の1人を飛ばす', () => {
+    const state = round(hands({ 0: [N('spade', 5)], 1: [N('club', 6)], 2: [N('heart', 7)], 3: [N('club', 9)] }), {
+      rules: { ...DEFAULT_RULES, fiveSkip: true },
+    });
+    const next = applyPlay(state, [state.hands[0][0]]);
+    expect(next.turn).toBe(2);
+    expect(next.events.some((e) => e.kind === 'five-skip')).toBe(true);
+  });
+
+  it('2枚出すと2人ぶん飛ばす', () => {
+    const state = round(
+      hands({
+        0: [N('spade', 5), N('heart', 5)],
+        1: [N('club', 6), N('diamond', 6)],
+        2: [N('heart', 7), N('spade', 7)],
+        3: [N('club', 9), N('spade', 9)],
+      }),
+      { rules: { ...DEFAULT_RULES, fiveSkip: true } },
+    );
+    expect(applyPlay(state, state.hands[0]).turn).toBe(3);
+  });
+
+  it('飛ばしても自分の番には戻らない（4人戦で3人ぶん飛ばしたとき）', () => {
+    const state = round(
+      hands({
+        0: [N('spade', 5), N('heart', 5), N('club', 5)],
+        1: [N('club', 6), N('diamond', 6), N('spade', 6)],
+        2: [N('heart', 7), N('spade', 7), N('club', 7)],
+        3: [N('club', 9), N('spade', 9), N('heart', 9)],
+      }),
+      { rules: { ...DEFAULT_RULES, fiveSkip: true } },
+    );
+    const next = applyPlay(state, state.hands[0]);
+    expect(next.turn).not.toBe(0);
+  });
+
+  it('ジョーカーだけの役は5飛ばしにならない', () => {
+    const state = round(hands({ 0: [J()], 1: [N('club', 6)], 2: [N('heart', 7)], 3: [N('club', 9)] }), {
+      rules: { ...DEFAULT_RULES, fiveSkip: true },
+    });
+    expect(applyPlay(state, state.hands[0]).turn).toBe(1);
+  });
+});
+
+describe('9リバース', () => {
+  it('OFFなら向きは変わらない', () => {
+    const state = round(hands({ 0: [N('spade', 9)], 1: [N('club', 10)], 2: [N('heart', 11)], 3: [N('club', 12)] }), {
+      rules: { ...DEFAULT_RULES, nineReverse: false },
+    });
+    const next = applyPlay(state, state.hands[0]);
+    expect(next.direction).toBe(1);
+    expect(next.turn).toBe(1);
+  });
+
+  it('9を出すと逆回りになり、手番が前の席へ回る', () => {
+    const state = round(hands({ 0: [N('spade', 9)], 1: [N('club', 10)], 2: [N('heart', 11)], 3: [N('club', 12)] }), {
+      rules: { ...DEFAULT_RULES, nineReverse: true },
+    });
+    const next = applyPlay(state, state.hands[0]);
+    expect(next.direction).toBe(-1);
+    expect(next.turn).toBe(3);
+    expect(next.events.some((e) => e.kind === 'nine-reverse')).toBe(true);
+  });
+
+  it('もう一度9が出ると元の向きに戻る', () => {
+    const first = round(
+      hands({ 0: [N('spade', 9)], 1: [N('club', 10)], 2: [N('heart', 11)], 3: [N('club', 9), N('spade', 3)] }),
+      { rules: { ...DEFAULT_RULES, nineReverse: true } },
+    );
+    const afterFirst = applyPlay(first, first.hands[0]);
+    expect(afterFirst.direction).toBe(-1);
+
+    // 同じ数字は場に勝てないので、場が流れて3の番になった状態から出す
+    const cleared: RoundState = {
+      ...afterFirst,
+      field: null,
+      passed: afterFirst.passed.map(() => false),
+      turn: 3,
+      leader: 3,
+    };
+    // 手札は強さ順に並べ替えられるので、添字ではなく数字で9を探す
+    const nine = cleared.hands[3].find((c) => !c.joker && c.rank === 9)!;
+    const afterSecond = applyPlay(cleared, [nine]);
+    expect(afterSecond.direction).toBe(1);
+  });
+
+  it('場が流れても向きは戻らない（その回戦のあいだ続く）', () => {
+    const state = round(hands({ 0: [N('spade', 9)], 1: [N('club', 10)], 2: [N('heart', 11)], 3: [N('club', 12)] }), {
+      rules: { ...DEFAULT_RULES, nineReverse: true, eightCut: true },
+    });
+    let next = applyPlay(state, state.hands[0]);
+    // 全員パスさせて場を流す
+    for (let i = 0; i < PLAYER_COUNT && next.field; i += 1) next = applyPass(next);
+    expect(next.direction).toBe(-1);
+  });
+});
+
+describe('階段のON/OFF', () => {
+  const seqHand = [N('spade', 4), N('spade', 5), N('spade', 6)];
+
+  it('ONなら階段を出せる', () => {
+    const state = round(hands({ 0: seqHand }), { rules: { ...DEFAULT_RULES, sequence: true } });
+    expect(isLegalPlay(state, state.hands[0])).toBe(true);
+  });
+
+  it('OFFなら階段は出せない', () => {
+    const state = round(hands({ 0: seqHand }), { rules: { ...DEFAULT_RULES, sequence: false } });
+    expect(isLegalPlay(state, state.hands[0])).toBe(false);
+  });
+
+  it('OFFでも同じ数字の組は出せる', () => {
+    const state = round(hands({ 0: [N('spade', 4), N('heart', 4)] }), {
+      rules: { ...DEFAULT_RULES, sequence: false },
+    });
+    expect(isLegalPlay(state, state.hands[0])).toBe(true);
+  });
+
+  it('OFFのときCPUの候補にも階段が出てこない', () => {
+    const state = round(hands({ 0: seqHand }), { rules: { ...DEFAULT_RULES, sequence: false } });
+    expect(legalPlays(state).every((p) => p.kind !== 'sequence')).toBe(true);
+  });
+});
+
+describe('ローカルルールを全部ONにしても破綻しない', () => {
+  it('CPU4人で5回戦を通せる', () => {
+    const all: Rules = {
+      eightCut: true,
+      revolution: true,
+      suitLock: true,
+      sequence: true,
+      cityFall: true,
+      jackBack: true,
+      spadeThree: true,
+      fiveSkip: true,
+      nineReverse: true,
+    };
+    const r = seededRng(777);
+    let match = newMatch('hard', all, r);
+    for (let roundNo = 0; roundNo < 5; roundNo += 1) {
+      for (let i = 0; i < 800 && !match.state.finished; i += 1) {
+        const cards = chooseCpuPlay(match.state, 'normal', { rng: r });
+        match = {
+          ...match,
+          state: cards === null ? applyPass(match.state) : applyPlay(match.state, cards),
+        };
+      }
+      expect(match.state.finished).toBe(true);
+      match = finishRound(match);
+      if (!match.finished) match = startNextRound(match, r);
+    }
+    expect(match.finished).toBe(true);
   });
 });
