@@ -8,6 +8,42 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-14：games に Webアプリマニフェストを置いた（「ホーム画面に追加」対応）
+
+`games/app/manifest.ts` を追加し、`/games/manifest.webmanifest` を書き出すようにした。
+`display: standalone`・`scope: /games/`・`start_url: /games/?utm_source=homescreen` と、
+192/512 の `any` / `maskable` アイコン4枚。Next.js が全ページの `<head>` に
+`<link rel="manifest">` を自動で入れる。
+仕様は [features/games-pwa-manifest.md](./features/games-pwa-manifest.md)。
+
+**理由**：GA4（直近14日・2026-08-14 取得）でチャネル別セッションは Direct 76 が最大で、
+内訳はゲーム（マインスイーパ・スパイダー・2048・ソリティア・大富豪）が上位を占める。
+**このサイトのゲームは「また遊びに来る」使われ方をしている**のに、再訪の導線が
+ブックマークしかなかった。manifest が無いと「ホーム画面に追加」してもただの
+ブラウザタブとして開き、名前もアイコンも制御が効かない。
+
+**アイコンの原典は `games/app/icon.svg`（既存のファビコン）にした。** 手描きせず
+`design/icons/gen-app-icons.mjs` がSVGから配色・角丸・字を読み取って描き直す
+（`design/ogp/gen-ogp.mjs` と同じ「原典はスクリプト」の流儀）。絵が1か所にしかないので、
+ファビコンを変えたときにホーム画面のアイコンだけ古いまま残る事故が起きない。
+
+**`any` と `maskable` を分けた。** Android のランチャーは端末ごとに違う形
+（円・角丸四角・しずく）で切り抜くため、角丸のアイコンをそのまま渡すと角が二重に落ちる。
+マスカブル側は角丸を外して地を全面に敷き、字を安全領域（中央80%）まで縮めてある。
+
+**PNGは `games/app/` ではなく `games/public/` に置いた**（仕様書の記述からずらした点）。
+Next.js が `app/` 配下で扱うのは `icon.svg` などメタデータ規約のファイル名だけで、
+それ以外のPNGは配信されない。`ogp.png` と同じ置き場所に揃えた。
+
+**`layout.tsx` は触らなかった**（同じくずらした点）。`app/manifest.ts` を置けば
+リンクタグは自動で出る。むしろ `metadataBase` が `https://hasokon.com/games` なので、
+metadata に `/manifest.webmanifest` と書くと basePath の外を指してしまう。
+
+**Service Worker は入れなかった。** 静的サイトで古いHTMLがキャッシュに残り続ける
+事故のリスクが利益を上回る。manifest だけでもスタンドアロン起動は成立する。
+tools 側への同時導入も見送り、まず games で `utm_source=homescreen` の
+セッション数を4週間見てから判断する。
+
 ## 2026-08-14：llms.txt を置いた（AIアシスタント経由の流入への備え）
 
 `home/llms.txt` を [llmstxt.org](https://llmstxt.org/) 形式で追加し、公開中のツール19本・

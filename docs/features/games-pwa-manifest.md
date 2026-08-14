@@ -1,6 +1,6 @@
 # ゲームの「ホーム画面に追加」対応（Webアプリマニフェスト）
 
-**状態**：提案（未実装）
+**状態**：実装済み（2026-08-14）
 **対象**：`games/`（`hasokon.com/games/` 配下全ページ）
 **起票**：2026-08-14
 
@@ -105,3 +105,26 @@ Direct チャネルの再訪ユーザー数の推移を確認。
 - **tools 側への同時導入**。ゲームほど再訪型ではないツールが多く、
   まず games で効果を計測してから判断する（タイマー・ルーレットは候補）
 - **プッシュ通知**。ゲームサイトからの通知は体験を損なう。検討しない
+
+---
+
+## 実装メモ（2026-08-14）
+
+提案からずらした点が2つある。理由は [docs/DECISIONS.md](../DECISIONS.md) の
+同日エントリに書いた。
+
+1. **アイコンPNGの置き場所は `games/app/` ではなく `games/public/`**。
+   Next.js が `app/` 配下で扱うのは `icon.svg` のようなメタデータ規約の
+   ファイル名だけで、それ以外のPNGは配信されない（`ogp.png` と同じ置き場所にした）
+2. **`layout.tsx` は触っていない**。`app/manifest.ts` を置くと Next.js が
+   全ページの `<head>` に `<link rel="manifest" href="/games/manifest.webmanifest">`
+   を自動で入れるため、metadata 側に `manifest` を書く必要がなかった
+   （むしろ `metadataBase` が `https://hasokon.com/games` なので、
+   `/manifest.webmanifest` と書くと basePath の外を指してしまう）
+
+実装したファイル:
+
+- `games/app/manifest.ts`（`dynamic = 'force-static'` が要る。無いと `next build` が落ちる）
+- `design/icons/gen-app-icons.mjs` ＋ [README](../../design/icons/README.md)
+- `games/public/icon-{192,512}.png` / `games/public/icon-maskable-{192,512}.png`
+- テスト: `games/tests/manifest.test.ts`（中身）/ `scripts/test/pwa-manifest.test.mjs`（実ファイル）
