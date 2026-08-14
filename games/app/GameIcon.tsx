@@ -85,6 +85,34 @@ function TilesIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * ブロックパズルのピース（L字に並んだ3つのブロック）。**これも自前で描いている。**
+ *
+ * Phosphor の PuzzlePiece はジグソーパズルの1ピースの形で、このゲームの
+ * 「四角いブロックを置く」遊びを指さない。グリッド系（GridFour・GridNine・
+ * SquaresFour）は既にノノグラム・ナンプレ・2048で使っていて紛れる。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function BlocksIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      aria-hidden="true"
+    >
+      <rect x="40" y="40" width="72" height="72" rx="12" />
+      <rect x="40" y="144" width="72" height="72" rx="12" />
+      <rect x="144" y="144" width="72" height="72" rx="12" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Spade: SpadeIcon,
@@ -96,6 +124,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Racquet: RacquetIcon,
   Stones: StonesIcon,
   Tiles: TilesIcon,
+  Blocks: BlocksIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
