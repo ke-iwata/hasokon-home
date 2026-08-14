@@ -188,6 +188,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'jitensha-hansokukin',
+    icon: 'Bicycle',
+    name: '自転車の反則金（青切符）早見表・チェッカー',
+    description:
+      '2026年4月から自転車も青切符の対象に。イヤホン・傘さし・歩道通行など日常の行為を選ぶと、該当する違反名・反則金・青切符か赤切符かが分かります。警察庁の公式一覧にもとづく全65項目の早見表つき。',
+    category: '生活・健康',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     slug: 'interval-timer',
     icon: 'Timer',
     name: 'インターバルタイマー',
