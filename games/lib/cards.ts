@@ -58,8 +58,13 @@ export function makeDeck(deckCount = 1, suits: readonly Suit[] = SUITS): Card[] 
   return cards;
 }
 
-/** Fisher–Yates。rng を注入できるのでテストで再現できる */
-export function shuffle(cards: Card[], rng: () => number = Math.random): Card[] {
+/**
+ * Fisher–Yates。rng を注入できるのでテストで再現できる。
+ *
+ * 札以外（神経衰弱がランク・スートの並びを散らすのに使う）も通せるよう
+ * 型引数にしてある。中身を見ないので、どの配列でも同じ手順で混ぜられる。
+ */
+export function shuffle<T>(cards: readonly T[], rng: () => number = Math.random): T[] {
   const a = [...cards];
   for (let i = a.length - 1; i > 0; i -= 1) {
     const j = Math.floor(rng() * (i + 1));
