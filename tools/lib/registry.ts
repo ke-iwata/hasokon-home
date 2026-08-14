@@ -191,10 +191,11 @@ export const tools: ToolDef[] = [
     slug: 'sleep-cycle',
     icon: 'MoonStars',
     name: '睡眠サイクル計算機',
-    description: '起床時刻から逆算して、スッキリ起きられる就寝時刻を90分サイクルで提案。',
+    description:
+      '起床時刻から逆算して、スッキリ起きられる就寝時刻を90分サイクルで提案。仮眠・昼寝の時間も計算。',
     category: '生活・健康',
     ready: true,
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-08-13',
   },
   {
     slug: 'aircon-denkidai',

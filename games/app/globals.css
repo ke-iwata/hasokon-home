@@ -371,6 +371,59 @@ ol {
   margin: 2px 0 6px;
 }
 
+/* ---- 記録の帯（docs/features/game-records.md） ---- */
+
+/* 盤面の上に出す小さな帯。ベスト・勝率などを並べ、右端に保存先の注記を置く */
+.rec-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 8px 0;
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rec-items {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.rec-item strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-note summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.rec-note p {
+  max-width: 46em;
+  margin: 6px 0 2px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+/* クリア画面でベストを更新したときだけ出す */
+.rec-best {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--ok);
+  color: var(--on-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .note {
   background: var(--warn-bg);
   border-left: 4px solid var(--warn-border);

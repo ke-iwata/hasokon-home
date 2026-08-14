@@ -21,23 +21,8 @@ import {
   type Puzzle,
 } from '@/lib/nonogram';
 import { trackToolUse } from '@/lib/analytics';
-
-/**
- * 解いた問題のID。
- * ノノグラムは一度解いた問題を解き直す意味がない（絵を覚えてしまう）ので、
- * 解き切るまでは同じ問題に当たらないようにする。
- */
-const SOLVED_KEY = 'nonogram:solved';
-
-function readSolved(): string[] {
-  try {
-    const raw: unknown = JSON.parse(localStorage.getItem(SOLVED_KEY) ?? '[]');
-    return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : [];
-  } catch {
-    // 壊れた値が入っていても遊べなくならないように、黙って空扱いにする
-    return [];
-  }
-}
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { DEFAULT_VARIANT, formatTime, type Improved } from '@/lib/records';
 
 /** 盤面の広さ。1マスが小さくなりすぎないよう、サイズごとに上限を変える */
 const MAX_WIDTH: Record<number, number> = { 5: 300, 10: 460, 15: 580 };
@@ -55,40 +40,68 @@ export default function Game() {
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
   const [board, setBoard] = useState<Board>([]);
   const [mode, setMode] = useState<'fill' | 'mark'>('fill');
-  const [solvedIds, setSolvedIds] = useState<string[]>([]);
   const history = useRef<Board[]>([]);
   const drag = useRef<Drag | null>(null);
+  /**
+   * 記録（docs/features/game-records.md）。
+   * 解いた問題のID（一度解いた絵を出し直さないために使う）は区分なしの記録に、
+   * ベストタイムとクリア数は難易度ごとの記録に入れる。
+   * 旧 `nonogram:solved` は初回読み込み時に自動で移行される。
+   */
+  const records = useRecords('nonogram');
+  const solvedIds = records.entry().clearedIds ?? [];
+  const timer = useStopwatch();
+  const counted = useRef(false);
+  const notified = useRef(false);
+  const dealt = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   const data = useMemo(() => (puzzle ? loadPuzzle(puzzle) : null), [puzzle]);
   const size = puzzle?.size ?? 0;
 
-  const start = useCallback((next: Level, solved: string[], exclude?: string) => {
-    const picked = pickPuzzle(PUZZLES, next, solved, Math.random, exclude);
-    if (!picked) return;
-    setPuzzle(picked);
-    setBoard(emptyBoard(picked.size));
-    history.current = [];
-    drag.current = null;
-    trackToolUse('nonogram', `new-${next}`);
-  }, []);
+  const start = useCallback(
+    (next: Level, solved: string[], exclude?: string) => {
+      const picked = pickPuzzle(PUZZLES, next, solved, Math.random, exclude);
+      if (!picked) return;
+      setPuzzle(picked);
+      setBoard(emptyBoard(picked.size));
+      history.current = [];
+      drag.current = null;
+      counted.current = false;
+      notified.current = false;
+      setResult(null);
+      timer.reset();
+      trackToolUse('nonogram', `new-${next}`);
+    },
+    [timer],
+  );
 
-  // 出題はマウント後に選ぶ（静的書き出し時にサーバーとクライアントで食い違わないように）
+  // 出題はマウント後、記録を読み終えてから選ぶ
+  // （静的書き出し時にサーバーとクライアントで食い違わないように。
+  //   解いた問題を知らないまま選ぶと、解き済みの絵をもう一度出してしまう）
   useEffect(() => {
-    const saved = readSolved();
-    setSolvedIds(saved);
-    start('easy', saved);
-  }, [start]);
+    if (!records.ready || dealt.current) return;
+    dealt.current = true;
+    start('easy', solvedIds);
+  }, [records.ready, solvedIds, start]);
 
   const solved = data !== null && board.length > 0 && isSolved(board, data.solution);
 
   // クリアの記録。ここで記録した問題は次から出題されない
   useEffect(() => {
-    if (!solved || !puzzle || solvedIds.includes(puzzle.id)) return;
-    const next = [...solvedIds, puzzle.id];
-    setSolvedIds(next);
-    localStorage.setItem(SOLVED_KEY, JSON.stringify(next));
+    if (!solved || !puzzle || notified.current) return;
+    notified.current = true;
     trackToolUse('nonogram', `clear-${puzzle.level}`);
-  }, [solved, puzzle, solvedIds]);
+    const timeMs = timer.stop();
+    // 難易度ごとのベストタイム・クリア数
+    const { improved } = records.finish({ outcome: 'win', timeMs }, puzzle.level);
+    // 解いた問題のID（出題の重複を避けるために使う）
+    records.update(DEFAULT_VARIANT, (entry) => ({
+      ...entry,
+      clearedIds: [...new Set([...(entry.clearedIds ?? []), puzzle.id])],
+    }));
+    setResult({ timeMs, improved });
+  }, [solved, puzzle, records, timer]);
 
   // ドラッグ中に盤面の外で指を離しても、塗りっぱなしにならないようにする
   useEffect(() => {
@@ -109,10 +122,16 @@ export default function Game() {
   const done = satisfiedLines(board, hints, size);
   const levelPuzzles = PUZZLES.filter((p) => p.level === level);
   const clearedCount = levelPuzzles.filter((p) => solvedIds.includes(p.id)).length;
+  const levelEntry = records.entry(level);
 
   /** 1手ぶん盤面を進める。もどすで戻れるよう、直前の盤面を積んでおく */
   const push = (next: Board) => {
     history.current = [...history.current, board];
+    if (!counted.current) {
+      counted.current = true;
+      records.start(puzzle.level);
+    }
+    timer.begin();
     setBoard(next);
   };
 
@@ -184,6 +203,7 @@ export default function Game() {
           <strong style={{ color: 'var(--text)' }}>
             {clearedCount}/{levelPuzzles.length}
           </strong>
+          {'　'}⏱ {formatTime(timer.ms)}
         </span>
         {/* スマホには右クリックがないので、×印はボタンで切り替える */}
         <button
@@ -196,9 +216,29 @@ export default function Game() {
         </button>
       </div>
 
+      {/* 記録は「いま選んでいる難易度」のもの */}
+      <RecordStrip
+        items={[
+          ...(levelEntry.bestTimeMs
+            ? [
+                {
+                  label: `${LEVELS[level].label}のベスト`,
+                  value: formatTime(levelEntry.bestTimeMs),
+                },
+              ]
+            : []),
+          ...(levelEntry.wins ? [{ label: 'クリア', value: `${levelEntry.wins}回` }] : []),
+        ]}
+      />
+
       {solved && (
         <p className="status-bar" style={{ color: 'var(--ok)', fontWeight: 700 }}>
-          🎉 クリア！この絵は「{puzzle.title}」でした。
+          🎉 クリア！この絵は「{puzzle.title}」でした。タイム:{' '}
+          {formatTime(result?.timeMs ?? timer.ms)}
+          {result && !result.improved.time && levelEntry.bestTimeMs
+            ? `（ベスト ${formatTime(levelEntry.bestTimeMs)}）`
+            : ''}
+          <BestBadge improved={result?.improved ?? null} />
         </p>
       )}
 

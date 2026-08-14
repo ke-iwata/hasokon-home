@@ -20,6 +20,7 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
    これによりロジックがテストできる（現在291件）
 2. **`lib/registry.ts` が単一の情報源** — トップ一覧・sitemapはここから生成
 3. **CSSは `app/globals.css` だけ** — 新しいファイルを増やさない
+   （記録の帯は `.rec-strip` / `.rec-note` / `.rec-best`）
 4. **名称の商標に注意する**（このリポジトリ固有の約束）
    - 「数独」はニコリの登録商標 → **ナンプレ**と呼ぶ
    - 「オセロ」は登録商標（リバーシと呼ぶ）。「ソリティア」「スパイダーソリティア」
@@ -41,7 +42,11 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
      （[docs/features/breadcrumbs.md](../docs/features/breadcrumbs.md)。
      入れ忘れは `tests/jsonld.test.ts` が落とす）
 4. `lib/registry.ts` にエントリを追加
-5. `npm test && npm run build` が通ることを確認
+5. 記録（ベスト・勝敗・クリアタイム）を付ける。`lib/records.ts` と
+   `app/_records/Records.tsx`（`useRecords` / `useStopwatch` / `RecordStrip`）を使い、
+   **ゲームごとに個別の localStorage キーを作らない**
+   （[docs/features/game-records.md](../docs/features/game-records.md)）
+6. `npm test && npm run build` が通ることを確認
 
 ## AdSense / アクセス解析
 
