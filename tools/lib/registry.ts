@@ -229,10 +229,10 @@ export const tools: ToolDef[] = [
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',
-    description: '氏名のふりがなをパスポート表記のヘボン式ローマ字に変換。',
+    description: '氏名のふりがなをパスポート表記のヘボン式ローマ字に変換。五十音の一覧表つき。',
     category: '計算・変換',
     ready: true,
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-08-14',
   },
   {
     slug: 'hankaku-zenkaku',
