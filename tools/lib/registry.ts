@@ -188,6 +188,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'saitei-chingin',
+    icon: 'CurrencyJpy',
+    name: '最低賃金 早見表・チェッカー',
+    description:
+      '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     slug: 'jitensha-hansokukin',
     icon: 'Bicycle',
     name: '自転車の反則金（青切符）早見表・チェッカー',
