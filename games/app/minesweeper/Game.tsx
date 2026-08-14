@@ -158,7 +158,15 @@ export default function Game() {
 
       <div
         className="ms-board"
-        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)`, maxWidth: cols > 9 ? 560 : 380 }}
+        style={
+          {
+            // minmax(0, 1fr) にしないと、トラックが min-content より縮まず
+            // マスが盤の枠からはみ出す（--ms-cols は文字サイズの計算に使う）
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            maxWidth: cols > 9 ? 560 : 380,
+            '--ms-cols': cols,
+          } as React.CSSProperties
+        }
         role="grid"
         aria-label="マインスイーパーの盤面"
       >
