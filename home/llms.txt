@@ -1,0 +1,47 @@
+# hasokon.com
+
+> 登録不要・無料で使える計算ツールとブラウザゲームのサイト。税金・社会保険など法改正に追随した計算機と、定番ミニゲームを提供する。計算はすべてブラウザ内で完結し、入力した内容をサーバーに送信しない。制度に関わる計算機は法令・官公庁の一次資料にもとづき、各ページに出典と最終更新日を載せている。
+
+## ツール（hasokon.com/tools/）
+
+- [高額療養費 自己負担限度額 計算機](https://hasokon.com/tools/kogaku-ryoyohi/): 医療費が高額になったときの1か月の自己負担上限を計算。2026年8月改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応し、改正前の額と並べて表示する
+- [在職老齢年金 計算機](https://hasokon.com/tools/zaishoku-rorei-nenkin/): 働きながら厚生年金を受け取ると、いくら支給停止になるかを計算。令和8年4月からの基準額 月51万円→65万円の引き上げに対応（「62万円」ではない）
+- [iDeCo 拠出限度額・節税額 計算機](https://hasokon.com/tools/ideco/): 2026年12月施行の改正後のiDeCo拠出限度額と年間の節税額を計算。会社員は「月6.2万円 − 事業主掛金 − 他制度掛金相当額」が上限になる合算ルールに対応
+- [年末調整 還付金 計算機](https://hasokon.com/tools/nenmatsu-chosei/): 年末調整でいくら戻るかを源泉徴収税額から計算。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなるかも出る
+- [年収の壁 計算機](https://hasokon.com/tools/nenshu-kabe/): 119万・130万・178万など、自分に関係する「年収の壁」と手取りへの影響を判定。2026年10月の106万円の壁（賃金要件）撤廃に対応
+- [社会保険 損得計算機](https://hasokon.com/tools/hatarakizon/): 社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーン・損益分岐点・増える厚生年金を金額で表示。2026年10月の賃金要件撤廃に対応
+- [ふるさと納税 控除額計算機](https://hasokon.com/tools/furusato-nozei/): 自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれの控除額を内訳まで計算。住宅ローン控除との併用にも対応
+- [子ども・子育て支援金 計算機](https://hasokon.com/tools/kosodate-shienkin/): 「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度の段階的な料率引き上げに対応
+- [傷病手当金 計算機](https://hasokon.com/tools/shobyo-teate/): 病気やケガで休職したときにもらえる傷病手当金の日額・総額を計算。支給期間が通算1年6か月になった改正に対応
+- [インターバルタイマー](https://hasokon.com/tools/interval-timer/): トレーニング用のインターバルタイマー。タバタ式・HIITのプリセット付きで、運動・休憩・セット数を自由に設定でき、ビープ音で切り替えを知らせる
+- [睡眠サイクル計算機](https://hasokon.com/tools/sleep-cycle/): 起床時刻から逆算して、スッキリ起きられる就寝時刻を90分サイクルで提案。仮眠・昼寝に適した長さも計算できる
+- [エアコン電気代 計算機](https://hasokon.com/tools/aircon-denkidai/): エアコンの消費電力と使用時間から1日・1か月の電気代を計算。畳数からの目安入力にも対応
+- [割り勘計算機](https://hasokon.com/tools/warikan/): 飲み会の合計金額と人数から一人あたりの支払額を計算。多め・少なめの傾斜配分と端数の丸めにも対応
+- [ヘボン式ローマ字変換](https://hasokon.com/tools/hebon-romaji/): 氏名のふりがなをパスポート申請で使うヘボン式ローマ字に変換。長音・撥音など申請時に迷う表記の扱いも示す
+- [半角⇔全角 変換](https://hasokon.com/tools/hankaku-zenkaku/): 半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選んで変換できる
+- [アスペクト比計算機](https://hasokon.com/tools/aspect-ratio/): 幅と高さから縦横比を計算。比率を保ったリサイズ後のサイズ算出と、CSSのコピーにも対応
+- [ルーレット](https://hasokon.com/tools/roulette/): 項目を入れて回すだけのルーレット。ランチ・当番決めに使え、当たった項目を除いて回せば順番決めにもなる
+- [グループ分け](https://hasokon.com/tools/group/): 名前を入れるだけで班分け・チーム分けをランダムに作成。人数は自動で均等に振り分ける
+- [サイコロ](https://hasokon.com/tools/dice/): ブラウザで振れるサイコロ。1〜10個まで同時に振れて合計も出る
+
+## ゲーム（hasokon.com/games/）
+
+- [ソリティア](https://hasokon.com/games/solitaire/): 定番のクロンダイク。タップで自動移動の簡単操作で、もどす機能つき
+- [スパイダーソリティア](https://hasokon.com/games/spider/): 1スート〜4スートの3段階。KからAまで揃えて8組の完成を目指す
+- [フリーセル](https://hasokon.com/games/freecell/): 全部の札が最初から見えている実力型のトランプパズル。まとめて移動に対応
+- [マインスイーパー](https://hasokon.com/games/minesweeper/): 数字をヒントに地雷を避ける定番パズル。初手は必ず安全で、初級〜上級の3段階
+- [2048](https://hasokon.com/games/2048/): スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコアを保存する
+- [ナンプレ](https://hasokon.com/games/nanpre/): 定番の数字パズル（数独）。かんたん・ふつう・むずかしいの3段階で、答えは必ず1通り
+- [ノノグラム](https://hasokon.com/games/nonogram/): 数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問で、答えは必ず1通り
+- [リバーシ](https://hasokon.com/games/reversi/): 挟んで裏返す定番の対戦ゲーム（オセロ型）。CPUは3段階で、先手・後手も選べる
+- [麻雀ソリティア](https://hasokon.com/games/mahjong-solitaire/): 亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配る
+- [ブロック崩し](https://hasokon.com/games/breakout/): マウスやタッチで操作する定番アクション。面が進むごとに速くなる
+
+## サイト情報
+
+- [hasokon.com トップ](https://hasokon.com/): ツール・ゲームの一覧
+- [無料計算ツール集 トップ](https://hasokon.com/tools/): ツールの一覧（分類別）
+- [無料ミニゲーム集 トップ](https://hasokon.com/games/): ゲームの一覧
+- [運営者情報](https://hasokon.com/tools/about/): 運営者と、制度に関わる計算機の作り方・情報源について
+- [プライバシーポリシー](https://hasokon.com/privacy.html): 広告・アクセス解析とCookieの扱い
+- [お問い合わせ](https://hasokon.com/tools/contact/): 誤りの指摘・要望の連絡先

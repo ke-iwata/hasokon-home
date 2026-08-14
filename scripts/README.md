@@ -88,7 +88,7 @@ node --test "scripts/test/*.test.mjs"
 ネットワークもGoogleの認証情報も使いません（すべて差し替えて動かしています）。
 `.github/workflows/test.yml` で push 時にも走ります。
 
-次の2つだけは scripts/ 自身のテストではありません。home/ はビルド工程を持たず
+次の3つだけは scripts/ 自身のテストではありません。home/ はビルド工程を持たず
 npm も vitest も無いので、リポジトリ唯一の `node --test` にここで相乗りしています。
 
 - `test/home-analytics.test.mjs` … **`home/analytics.js`（ポータルのアクセス解析）**。
@@ -96,3 +96,6 @@ npm も vitest も無いので、リポジトリ唯一の `node --test` にこ�
 - `test/ogp.test.mjs` … **OGP画像の実ファイルと home のOGPタグ**。
   仕様は [docs/features/ogp-image.md](../docs/features/ogp-image.md)、
   生成スクリプトは [design/ogp/](../design/ogp/)
+- `test/llms-txt.test.mjs` … **`home/llms.txt`（AIアシスタント向けのサイト案内）**。
+  tools / games の registry と突き合わせて、載せ忘れとリンク切れを見張ります。
+  仕様は [docs/features/llms-txt.md](../docs/features/llms-txt.md)
