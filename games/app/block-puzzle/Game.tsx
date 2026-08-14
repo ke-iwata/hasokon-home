@@ -16,8 +16,7 @@ import {
   type Piece,
 } from '@/lib/block-puzzle';
 import { trackToolUse } from '@/lib/analytics';
-
-const BEST_KEY = 'block-puzzle:best';
+import { RecordStrip, useRecords } from '@/app/_records/Records';
 
 /**
  * ピースの色。盤面に置いたあとも同じ色で残る。
@@ -72,7 +71,6 @@ export default function Game() {
   // 使い切った枠は null にして残す（3つ置き切ったら次の3つを配る）
   const [hand, setHand] = useState<(Piece | null)[]>([]);
   const [score, setScore] = useState(0);
-  const [best, setBest] = useState(0);
   const [combo, setCombo] = useState(0);
   const [lastCleared, setLastCleared] = useState(0);
   const [flash, setFlash] = useState<number[]>([]);
@@ -84,11 +82,16 @@ export default function Game() {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const flashTimer = useRef<number | null>(null);
 
+  // 記録（ベストスコア・プレイ数）。docs/features/game-records.md
+  const records = useRecords('block-puzzle');
+  const entry = records.entry();
+  const best = entry.bestScore ?? 0;
+  // この盤面をプレイ数に数えたか（1つ目を置いた時点で数える）
+  const counted = useRef(false);
+
   // 配り札はマウント後に決める（静的書き出し時にサーバーとクライアントで食い違わないように）
   useEffect(() => {
     setHand(deal(Math.random));
-    const saved = Number(localStorage.getItem(BEST_KEY) || 0);
-    if (saved > 0) setBest(saved);
   }, []);
 
   useEffect(() => {
@@ -107,6 +110,7 @@ export default function Game() {
     setSelected(null);
     setDrag(null);
     setPreview(null);
+    counted.current = false;
     trackToolUse('block-puzzle', 'new');
   };
 
@@ -146,6 +150,12 @@ export default function Game() {
       const piece = hand[slot];
       if (!piece || over || !canPlace(board, piece, row, col)) return false;
 
+      // 1つ目を置いた時点で1プレイと数える
+      if (!counted.current) {
+        counted.current = true;
+        records.start();
+      }
+
       const r = applyPlacement(board, piece, row, col, combo);
       setBoard(r.board);
       setCombo(r.combo);
@@ -161,15 +171,10 @@ export default function Game() {
         flashTimer.current = window.setTimeout(() => setFlash([]), FLASH_MS);
       }
 
-      setScore((s) => {
-        const next = s + r.gained;
-        setBest((b) => {
-          if (next <= b) return b;
-          localStorage.setItem(BEST_KEY, String(next));
-          return next;
-        });
-        return next;
-      });
+      const next = score + r.gained;
+      setScore(next);
+      // ベストは更新されたときだけ書く（毎手ストレージに書きに行かない）
+      if (next > best) records.finish({ score: next });
 
       // 3つ置き切ったら次の3つを配る
       const nextHand = hand.map((p, i) => (i === slot ? null : p));
@@ -177,7 +182,7 @@ export default function Game() {
       setSelected(null);
       return true;
     },
-    [board, combo, hand, over],
+    [board, combo, hand, over, score, best, records],
   );
 
   // 終了したときだけ1回送る
@@ -259,12 +264,18 @@ export default function Game() {
       <div className="status-bar">
         <span>
           スコア: <strong style={{ color: 'var(--text)' }}>{score}</strong>
-          {'　'}ベスト: {best}
         </span>
         <button type="button" className="btn" onClick={reset}>
           最初から
         </button>
       </div>
+
+      <RecordStrip
+        items={[
+          ...(best > 0 ? [{ label: 'ベストスコア', value: String(best) }] : []),
+          ...(entry.plays ? [{ label: 'プレイ', value: `${entry.plays}回` }] : []),
+        ]}
+      />
 
       {/* 文言の出入りで盤面が動かないよう、常に1行ぶんの高さを取る */}
       <p
@@ -272,7 +283,9 @@ export default function Game() {
         style={{ fontWeight: 700, color: over ? 'var(--danger)' : 'var(--ok)' }}
       >
         {over
-          ? `置ける場所がなくなりました。スコア: ${score}`
+          ? `置ける場所がなくなりました。スコア: ${score}${
+              score > 0 && score >= best ? '（ベスト更新！）' : `（ベスト ${best}）`
+            }`
           : combo >= 2
             ? `🔥 ${combo}連続消し！`
             : lastCleared >= 2
@@ -321,7 +334,10 @@ export default function Game() {
         {over && (
           <div className="bp-overlay">
             <strong style={{ fontSize: '1.1rem' }}>ゲームオーバー</strong>
-            <span>スコア {score}（ベスト {best}）</span>
+            <span>
+              スコア {score}
+              {score > 0 && score >= best ? '（ベスト更新！）' : `（ベスト ${best}）`}
+            </span>
             <button type="button" className="btn btn-primary" onClick={reset}>
               もう一度
             </button>
