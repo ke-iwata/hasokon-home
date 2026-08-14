@@ -36,6 +36,7 @@
 - [ノノグラム](https://hasokon.com/games/nonogram/): 数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問で、答えは必ず1通り
 - [リバーシ](https://hasokon.com/games/reversi/): 挟んで裏返す定番の対戦ゲーム（オセロ型）。CPUは3段階で、先手・後手も選べる
 - [五目並べ](https://hasokon.com/games/gomoku/): 13×13の盤に先に5つ並べたほうが勝ちの定番ボードゲーム。CPUは かんたん・ふつう・つよい の3段階で、禁じ手なし
+- [大富豪](https://hasokon.com/games/daifugo/): CPU3人と5回戦を戦うトランプの定番（大貧民）。8切り・革命・縛りに対応し、都落ち・11バック・スペ3返しも切り替えられる
 - [麻雀ソリティア](https://hasokon.com/games/mahjong-solitaire/): 亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配る
 - [ブロックパズル](https://hasokon.com/games/block-puzzle/): 8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べる
 - [ブロック崩し](https://hasokon.com/games/breakout/): マウスやタッチで操作する定番アクション。面が進むごとに速くなる
