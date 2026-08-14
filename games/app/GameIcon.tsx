@@ -86,6 +86,34 @@ function TilesIcon({ size = 26 }: IconProps) {
 }
 
 /**
+ * 五目並べ（斜めに並んだ石）。**リバーシ・麻雀ソリティアと同じく自前で描いている。**
+ *
+ * リバーシの StonesIcon（白石と黒石が横に2つ）と紛れないよう、
+ * **斜めに3つ並べた**形にした。並べるゲームであることが小さいサイズでも伝わる。
+ * 最後の1つだけ白抜きにしてあるのは「あと1つで揃う」を表すため。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function FiveInARowIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      aria-hidden="true"
+    >
+      <circle cx="60" cy="196" r="32" fill="currentColor" />
+      <circle cx="128" cy="128" r="32" fill="currentColor" />
+      <circle cx="196" cy="60" r="32" />
+    </svg>
+  );
+}
+
+/**
  * ブロックパズルのピース（L字に並んだ3つのブロック）。**これも自前で描いている。**
  *
  * Phosphor の PuzzlePiece はジグソーパズルの1ピースの形で、このゲームの
@@ -124,6 +152,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Racquet: RacquetIcon,
   Stones: StonesIcon,
   Tiles: TilesIcon,
+  FiveInARow: FiveInARowIcon,
   Blocks: BlocksIcon,
 };
 
