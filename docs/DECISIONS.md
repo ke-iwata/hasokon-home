@@ -8,6 +8,16 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-14：トップとllms.txtに最低賃金 早見表・チェッカーを足した（ツール22本目）
+
+`home/index.html` の「お金・社会保険の計算機」にカードを1枚足し、`.quicknav` の件数を
+10 → 11 にした。`home/llms.txt` のツール一覧にも1行足している。
+ツール本体は tools 側（[features/saitei-chingin-checker.md](./features/saitei-chingin-checker.md)）。
+
+**説明文に「答申済みか見込みかを区別して表示」を入れた。** 最低賃金は8〜9月の
+答申が出そろうまで確定しない。一覧の説明で確定額のように見せると、
+ページを開く前に誤解が生まれるため、状態を区別している点を入口の時点で示している。
+
 ## 2026-08-14：llms.txt を置いた（AIアシスタント経由の流入への備え）
 
 `home/llms.txt` を [llmstxt.org](https://llmstxt.org/) 形式で追加し、公開中のツール19本・
