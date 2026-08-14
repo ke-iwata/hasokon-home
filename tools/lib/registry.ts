@@ -139,6 +139,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'koko-jugyoryo',
+    icon: 'GraduationCap',
+    name: '高校授業料 実質負担 計算機',
+    description:
+      '「高校無償化」でも結局いくら払うのかを計算。2026年4月に所得制限が撤廃され私立は年45万7,200円まで支援されますが、超過分と対象外の入学金・制服・教材は残ります。公立と比べた3年間の総額が出ます。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',
