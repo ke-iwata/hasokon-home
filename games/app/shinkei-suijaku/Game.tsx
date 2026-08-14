@@ -153,13 +153,16 @@ export default function Game() {
     setResult({ timeMs, improved });
   }, [state, records, timer]);
 
-  /** 判定待ちなら待ち時間を飛ばす。そうでなければ札をめくる */
+  /**
+   * 札をめくる。
+   *
+   * 判定待ちのあいだは**ここでは何もしない**。待ち時間の短縮は盤（`.ss-board`）側の
+   * onClick が一手に引き受ける（札のクリックもそこへバブリングする）。
+   * 両方で `resolve` を呼ぶと、同じ局面に対して2回走ることになる
+   * （結果は同じだが意図しない二重呼び出し。#86 のレビュー指摘）
+   */
   const flip = (pos: number) => {
-    if (!state) return;
-    if (state.judge !== null) {
-      setState(resolve(state));
-      return;
-    }
+    if (!state || state.judge !== null) return;
     if (state.mode === 'cpu' && state.turn !== HUMAN) return;
     if (!canFlip(state, pos)) return;
     if (!counted.current) {
@@ -295,8 +298,9 @@ export default function Game() {
       )}
 
       {/* 判定待ちのあいだは、盤のどこを触っても待ち時間を飛ばせる
-          （仕様の「待ち時間は画面タップで短縮可」）。札そのものを触っても
-          canFlip が false なので、めくり直しにはならない */}
+          （仕様の「待ち時間は画面タップで短縮可」）。**短縮はここだけの仕事**で、
+          札のクリックもここへバブリングしてくる（flip 側は判定待ちなら何もしない）。
+          両方で resolve を呼ぶと同じ局面に2回走るため、片方に寄せてある */}
       <div
         className="ss-board"
         aria-label="場"
