@@ -103,6 +103,12 @@
 html {
   /* ゲーム中のダブルタップ拡大を防ぐ */
   touch-action: manipulation;
+  /* iOS（Safari / iPhone版Chromeはどちらも WebKit）と Android Chrome は、
+     指定が無いと本文の文字を勝手に拡大することがある（既定値は auto）。
+     盤面はマスの実寸に対して文字がぴったりなので、勝手に拡大されると
+     マスから絵柄がはみ出す。ユーザー自身のズームは従来どおり効く */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -636,7 +642,12 @@ ol {
 
 .ms-board {
   display: grid;
-  gap: 2px;
+  /* マスの文字サイズを盤の実寸から決めるためのコンテナ。
+     --ms-cols は Game.tsx が列数を入れる（既定値は初級の9列） */
+  container-type: inline-size;
+  --ms-cols: 9;
+  --ms-gap: 2px;
+  gap: var(--ms-gap);
   width: 100%;
   margin: 0 auto;
   user-select: none;
@@ -655,9 +666,24 @@ ol {
   border-color: var(--cell-closed-hi) var(--cell-closed-lo) var(--cell-closed-lo) var(--cell-closed-hi);
   color: var(--text);
   font-weight: 700;
-  font-size: clamp(0.65rem, 2.6vw, 1rem);
   cursor: pointer;
   padding: 0;
+  /* grid の 1fr は min-content より縮まないので、マス自身にも下限を外させる */
+  min-width: 0;
+  /* 最後の砦。何らかの理由で文字だけが大きくなっても、絵柄がマスの外
+     （＝盤の枠の外）に描かれないように切る。盤の幅そのものは
+     minmax(0, 1fr) と min-width: 0 で既に固定されている */
+  overflow: hidden;
+  /* 文字サイズの下限に rem を使わないこと。端末やブラウザの文字サイズ設定を
+     上げると 1マスの min-content が列幅を超え、上級（16列）で盤が枠から
+     はみ出す。下の行が本命で、盤の実寸（cqw）から1マス分を割り出して決める。
+     コンテナクエリ非対応ブラウザは1行目の vw 版にフォールバックする */
+  font-size: clamp(9px, 2.6vw, 1rem);
+  font-size: clamp(
+    9px,
+    calc((100cqw - (var(--ms-cols) - 1) * var(--ms-gap)) / var(--ms-cols) * 0.55),
+    1rem
+  );
 }
 
 .ms-cell.revealed {
