@@ -353,8 +353,9 @@ describe('各ゲームの組み込み', () => {
   });
 
   it('記録のために localStorage を直接さわらない（キーはモジュールが一元管理する）', () => {
-    // リバーシの強さ・手番だけは「設定」なので例外
-    const allowed = new Set(['reversi']);
+    // リバーシと五目並べの「強さ・手番」は遊んだ記録ではなく設定なので例外
+    // （lib/records.ts の LEGACY_KEYS のコメントも参照）
+    const allowed = new Set(['reversi', 'gomoku']);
     for (const g of gameFiles) {
       if (allowed.has(g.slug)) continue;
       expect(g.source, `${g.slug} が localStorage を直接使っている`).not.toMatch(

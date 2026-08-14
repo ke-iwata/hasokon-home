@@ -994,6 +994,122 @@ ol {
   }
 }
 
+/* ---- 五目並べ ---- */
+
+/* 列数は lib/gomoku.ts の SIZE（13）と揃える。
+   13×13＝169マスを 480px に収めると1マス約35px。スマホ（360px幅）でも
+   1マス約26pxになり、指で押せる下限を保てる（仕様書で15×15を採らなかった理由） */
+.gm-board {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  /* 碁盤と同じ木地。明暗どちらのテーマでも同じ色にする（石の白黒が地に負けないため） */
+  background: #d8b177;
+  border: 2px solid #8a6134;
+  border-radius: 4px;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* 罫線は各マスの上辺・左辺で描く。盤の外周は .gm-board の border が受け持つ */
+.gm-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-top: 1px solid rgba(90, 62, 30, 0.55);
+  border-left: 1px solid rgba(90, 62, 30, 0.55);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 1行目の上辺と1列目の左辺は盤の外周なので、.gm-board の border に任せる */
+.gm-cell:nth-child(-n + 13) {
+  border-top: none;
+}
+
+.gm-cell:nth-child(13n + 1) {
+  border-left: none;
+}
+
+.gm-cell:disabled {
+  cursor: default;
+}
+
+/* 星（天元と4つの星）。盤のどのあたりを打っているか見当をつけるための目印 */
+.gm-cell.star::before {
+  content: '';
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: rgba(90, 62, 30, 0.7);
+}
+
+/* 直前に打たれたマス。CPUがどこに打ったかを追えるようにする */
+.gm-cell.last::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border: 2px solid #d94f3d;
+  border-radius: 2px;
+}
+
+/* 勝ちが決まった5連。どこで負けた（勝った）のかが分かるようにする */
+.gm-cell.win {
+  background: rgba(245, 215, 110, 0.55);
+}
+
+/* 打てるマスであることを示す。石は置かれていないので、地の色を明るくするだけ */
+.gm-cell:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* position を持たせるのは星（.star::before）より前面に出すため。
+   絶対配置の疑似要素は、位置指定の無い要素より必ず上に描かれる */
+.gm-stone {
+  position: relative;
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.gm-stone.black {
+  background: radial-gradient(circle at 34% 30%, #55504c, #1c1917 62%);
+}
+
+.gm-stone.white {
+  background: radial-gradient(circle at 34% 30%, #ffffff, #dcd8d2 66%);
+}
+
+/* 手番の表示。石と同じ見た目にそろえる */
+.gm-score {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.gm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.gm-chip .gm-stone {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
 /* ---- 麻雀ソリティア ---- */
 /* 盤面は「牌の半分」を1とする 30×16 の座標系（lib/mahjong-solitaire.ts）を
    そのまま％に直して置いている。牌の縦横比が 40:54 なので、
