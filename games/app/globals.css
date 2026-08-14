@@ -1714,6 +1714,10 @@ ol {
   flex-direction: column;
   gap: 3px;
   margin: 10px 0;
+  /* 親（.card）の幅からはみ出さない。グリッドの子は既定で min-width: auto
+     （＝中身の最小幅）なので、これと .sn-cell の min-width: 0 が両方要る
+     （docs/features/game-shichinarabe.md の「#70の教訓」） */
+  min-width: 0;
 }
 
 .sn-row {
@@ -1721,6 +1725,7 @@ ol {
   grid-template-columns: 1.3em repeat(13, 1fr);
   gap: 2px;
   align-items: center;
+  min-width: 0;
 }
 
 .sn-suit {
@@ -1734,6 +1739,10 @@ ol {
 }
 
 .sn-cell {
+  /* 1fr は minmax(auto, 1fr) なので、これが無いと「10」の文字幅より狭くならず
+     13列ぶんが親をはみ出す（狭い画面では文字のほうを縮めて収める） */
+  min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1780,6 +1789,9 @@ ol {
 }
 
 .sn-seat {
+  /* 3列のグリッドの子。裏向きの札を並べる .sn-seat-cards が中身の最小幅を
+     押し上げるので、ここでも min-width: 0 が要る（#70 と同じ罠） */
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
