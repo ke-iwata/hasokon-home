@@ -14,36 +14,44 @@ import {
   type MsState,
 } from '@/lib/minesweeper';
 import { trackToolUse } from '@/lib/analytics';
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { formatTime, winRate, type Improved } from '@/lib/records';
 
 export default function Game() {
   const [level, setLevel] = useState<MsLevel>('easy');
   const [state, setState] = useState<MsState>(() => emptyState('easy'));
   const [flagMode, setFlagMode] = useState(false);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
   const notified = useRef(false);
+  // 記録は難易度ごとに分けて持つ（docs/features/game-records.md）
+  const records = useRecords('minesweeper');
+  const entry = records.entry(level);
+  const timer = useStopwatch();
+  // この盤面をプレイ数に数えたか（最初にマスを開いたときに数える）
+  const counted = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   const newGame = (l: MsLevel) => {
     setState(emptyState(l));
-    setStartedAt(null);
-    setElapsed(0);
     notified.current = false;
+    counted.current = false;
+    setResult(null);
+    timer.reset();
     trackToolUse('minesweeper', `new-${l}`);
   };
 
-  // タイマー。ゲーム中だけ進める
+  // 決着したら記録する。勝ったときだけタイムを残す
   useEffect(() => {
-    if (startedAt === null || state.status !== 'playing') return;
-    const t = window.setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 500);
-    return () => clearInterval(t);
-  }, [startedAt, state.status]);
-
-  useEffect(() => {
-    if (state.status !== 'playing' && !notified.current) {
-      notified.current = true;
-      trackToolUse('minesweeper', state.status);
+    if (state.status === 'playing' || notified.current) return;
+    notified.current = true;
+    trackToolUse('minesweeper', state.status);
+    const timeMs = timer.stop();
+    if (state.status === 'won') {
+      const { improved } = records.finish({ outcome: 'win', timeMs }, level);
+      setResult({ timeMs, improved });
+    } else {
+      records.finish({ outcome: 'loss' }, level);
     }
-  }, [state.status]);
+  }, [state.status, level, records, timer]);
 
   const open = (index: number) => {
     if (state.status !== 'playing') return;
@@ -62,7 +70,11 @@ export default function Game() {
       const placed = isFresh(s) ? placeMines(s, index) : s;
       return reveal(placed, index);
     });
-    if (startedAt === null) setStartedAt(Date.now());
+    if (!counted.current) {
+      counted.current = true;
+      records.start(level);
+    }
+    timer.begin();
   };
 
   const flag = (index: number) => {
@@ -99,7 +111,7 @@ export default function Game() {
       <div className="status-bar">
         <span>
           💣 残り: <strong style={{ color: 'var(--text)' }}>{minesLeft(state)}</strong>
-          {'　'}⏱ {elapsed}秒
+          {'　'}⏱ {formatTime(timer.ms)}
         </span>
         {/* スマホには右クリックがないので、旗モードをボタンで切り替える */}
         <button
@@ -112,9 +124,30 @@ export default function Game() {
         </button>
       </div>
 
+      {/* 記録は「いま選んでいる難易度」のもの。初級と上級は別物なので分ける */}
+      <RecordStrip
+        items={[
+          ...(entry.bestTimeMs
+            ? [{ label: `${MS_LEVELS[level].label}のベスト`, value: formatTime(entry.bestTimeMs) }]
+            : []),
+          ...(winRate(entry) !== null
+            ? [
+                {
+                  label: '勝率',
+                  value: `${winRate(entry)}%（${entry.wins ?? 0}勝${entry.losses ?? 0}敗）`,
+                },
+              ]
+            : []),
+        ]}
+      />
+
       {state.status === 'won' && (
         <p className="status-bar" style={{ color: 'var(--ok)', fontWeight: 700 }}>
-          🎉 クリア！タイム: {elapsed}秒
+          🎉 クリア！タイム: {formatTime(result?.timeMs ?? timer.ms)}
+          {result && !result.improved.time && entry.bestTimeMs
+            ? `（ベスト ${formatTime(entry.bestTimeMs)}）`
+            : ''}
+          <BestBadge improved={result?.improved ?? null} />
         </p>
       )}
       {state.status === 'lost' && (

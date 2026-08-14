@@ -17,18 +17,45 @@ import {
   type ReversiState,
 } from '@/lib/reversi';
 import { trackToolUse } from '@/lib/analytics';
+import { RecordStrip, useRecords } from '@/app/_records/Records';
+import { winRate } from '@/lib/records';
 
-/** 強さと先手・後手の選択は覚えておく（毎回選び直させない） */
+/**
+ * 強さと先手・後手の選択は覚えておく（毎回選び直させない）。
+ *
+ * これは「設定」であって遊んだ記録ではないので、記録
+ * （docs/features/game-records.md、`lib/records.ts`）には移さずここで持つ。
+ */
 const LEVEL_KEY = 'reversi:level';
 const COLOR_KEY = 'reversi:color';
 
+/**
+ * 設定の読み書き。記録と同じく、ストレージが使えなくても落ちないようにする
+ * （Safari のプライベートブラウズなどでは参照だけで例外が飛ぶ）。
+ */
+function readSetting(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeSetting(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // 覚えられなくても、その対局は普通に遊べる
+  }
+}
+
 function readLevel(): Level {
-  const saved = localStorage.getItem(LEVEL_KEY);
+  const saved = readSetting(LEVEL_KEY);
   return saved === 'easy' || saved === 'normal' || saved === 'hard' ? saved : 'normal';
 }
 
 function readColor(): Player {
-  return localStorage.getItem(COLOR_KEY) === 'white' ? WHITE : BLACK;
+  return readSetting(COLOR_KEY) === 'white' ? WHITE : BLACK;
 }
 
 /** CPUが考えているように見せる最短の間（ms）。速すぎると盤面の変化を追えない */
@@ -44,6 +71,11 @@ export default function Game() {
   // 設定を読むまでは対局を始めない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
   const finished = useRef(false);
+  // 対CPUの戦績。強さごとに分けて持つ（docs/features/game-records.md）
+  const records = useRecords('reversi');
+  const entry = records.entry(level);
+  // 1局につき1回だけ数える。「もどす」で終局をやり直しても二重に数えない
+  const recorded = useRef(false);
 
   const current = history[history.length - 1];
   const moves = legalMoves(current.board, current.turn);
@@ -52,6 +84,7 @@ export default function Game() {
 
   const start = useCallback((nextLevel: Level, nextHuman: Player) => {
     finished.current = false;
+    recorded.current = false;
     setHistory([initialState()]);
     setThinking(false);
     trackToolUse('reversi', `new-${nextLevel}-${nextHuman === BLACK ? 'black' : 'white'}`);
@@ -85,7 +118,10 @@ export default function Game() {
     finished.current = true;
     const won = leader(current.board);
     trackToolUse('reversi', won === 0 ? `draw-${level}` : won === human ? `win-${level}` : `lose-${level}`);
-  }, [current, human, level]);
+    if (recorded.current) return;
+    recorded.current = true;
+    records.finish({ outcome: won === 0 ? 'draw' : won === human ? 'win' : 'loss' }, level);
+  }, [current, human, level, records]);
 
   const place = (sq: number) => {
     if (!humanTurn || !moves.includes(sq)) return;
@@ -101,13 +137,13 @@ export default function Game() {
 
   const changeLevel = (next: Level) => {
     setLevel(next);
-    localStorage.setItem(LEVEL_KEY, next);
+    writeSetting(LEVEL_KEY, next);
     start(next, human);
   };
 
   const changeColor = (next: Player) => {
     setHuman(next);
-    localStorage.setItem(COLOR_KEY, next === BLACK ? 'black' : 'white');
+    writeSetting(COLOR_KEY, next === BLACK ? 'black' : 'white');
     start(level, next);
   };
 
@@ -173,6 +209,21 @@ export default function Game() {
                 : 'CPUの番です'}
         </span>
       </div>
+
+      {/* 戦績は「いま選んでいる強さ」のもの。かんたんとつよいは別物なので分ける */}
+      <RecordStrip
+        items={
+          winRate(entry) === null
+            ? []
+            : [
+                {
+                  label: `${LEVELS[level].label}との戦績`,
+                  value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
+                },
+                { label: '勝率', value: `${winRate(entry)}%` },
+              ]
+        }
+      />
 
       {current.passed && !current.finished && (
         <p className="status-bar" style={{ color: 'var(--muted)' }}>
