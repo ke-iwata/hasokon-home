@@ -43,12 +43,30 @@ import { trackToolUse } from '@/lib/analytics';
 const HUMAN = 0;
 const SEAT_NAMES = ['あなた', 'CPU 左', 'CPU 正面', 'CPU 右'];
 
-/** 強さとローカルルールは覚えておく（毎回選び直させない）。遊んだ記録ではないので lib/records.ts には入れない */
+/** 強さ・ローカルルール・CPUの速さは覚えておく（毎回選び直させない）。
+    遊んだ記録ではないので lib/records.ts には入れない */
 const LEVEL_KEY = 'daifugo:level';
 const RULES_KEY = 'daifugo:rules';
+const SPEED_KEY = 'daifugo:speed';
 
-/** CPUが考えているように見せる間（ms）。速すぎると場の変化を追えない */
-const THINK_DELAY = 750;
+/**
+ * CPUが1手打つまでの間（ms）。
+ *
+ * 速いと「何が起きたか分からないうちに自分の番が来る」ので、既定はゆっくりめにした。
+ * 場の実況（革命・8切りなど）を読む時間が要るため、待ちを消す選択肢は用意していない。
+ */
+const SPEEDS = {
+  slow: { label: 'ゆっくり', delay: 2000 },
+  normal: { label: 'ふつう', delay: 1300 },
+  fast: { label: 'はやい', delay: 700 },
+} as const;
+
+type Speed = keyof typeof SPEEDS;
+
+function readSpeed(): Speed {
+  const saved = readSetting(SPEED_KEY);
+  return saved === 'slow' || saved === 'normal' || saved === 'fast' ? saved : 'normal';
+}
 
 function readSetting(key: string): string | null {
   try {
@@ -96,6 +114,8 @@ const EVENT_TEXT: Record<GameEvent['kind'], (who: string) => string> = {
   'spade-three': (who) => `スペ3返し！ ${who}がジョーカーを流しました`,
   clear: (who) => `場が流れました。${who}から出します`,
   out: (who) => `${who}が上がりました`,
+  'five-skip': (who) => `5飛ばし！ ${who}の一手で次の人が飛ばされました`,
+  'nine-reverse': (who) => `9リバース！ ${who}の一手で順番が逆回りになりました`,
   'city-fall': (who) => `都落ち！ ${who}が大貧民になりました`,
 };
 
@@ -125,6 +145,7 @@ function Card({
 export default function Game() {
   const [level, setLevel] = useState<Level>('normal');
   const [rules, setRules] = useState<Rules>(DEFAULT_RULES);
+  const [speed, setSpeed] = useState<Speed>('normal');
   const [match, setMatch] = useState<MatchState | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   // 設定を読むまでは配らない（静的書き出し時のサーバー側と食い違わないように）
@@ -148,6 +169,7 @@ export default function Game() {
     const savedRules = readRules();
     setLevel(savedLevel);
     setRules(savedRules);
+    setSpeed(readSpeed());
     setMatch(newMatch(savedLevel, savedRules));
     setReady(true);
   }, []);
@@ -170,9 +192,9 @@ export default function Game() {
     const timer = window.setTimeout(() => {
       const cards = chooseCpuPlay(state, match.level);
       commit(cards === null ? applyPass(state) : applyPlay(state, cards));
-    }, THINK_DELAY);
+    }, SPEEDS[speed].delay);
     return () => window.clearTimeout(timer);
-  }, [ready, match, state, commit]);
+  }, [ready, match, state, commit, speed]);
 
   // 5回戦ぶんが終わったら記録する
   useEffect(() => {
@@ -264,6 +286,23 @@ export default function Game() {
             </button>
           ))}
         </div>
+
+        <div className="seg" role="group" aria-label="CPUの速さ">
+          {(Object.keys(SPEEDS) as Speed[]).map((sp) => (
+            <button
+              key={sp}
+              type="button"
+              className={sp === speed ? 'active' : ''}
+              aria-pressed={sp === speed}
+              onClick={() => {
+                setSpeed(sp);
+                writeSetting(SPEED_KEY, sp);
+              }}
+            >
+              {SPEEDS[sp].label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <details className="df-rules">
@@ -320,6 +359,13 @@ export default function Game() {
                 <span className="df-seat-name">{SEAT_NAMES[i]}</span>
                 <span className="df-seat-count">
                   {place >= 0 ? RANK_LABELS[place] : `${state.hands[i].length}枚`}
+                </span>
+                {/* 残り枚数を裏向きの札で見せる。数字だけだと「あと何枚か」が
+                    ひと目で入ってこないため。中身は伏せたままなので情報は増えない */}
+                <span className="df-seat-cards" aria-hidden>
+                  {state.hands[i].map((c) => (
+                    <span key={c.id} className="df-back" />
+                  ))}
                 </span>
                 <span className="df-seat-state">
                   {state.dropped === i

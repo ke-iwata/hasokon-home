@@ -79,7 +79,9 @@ export function strengthOf(card: DCard): number {
 }
 
 /** 8切りの8、11バックのJ。強さに直した値を1か所で持つ */
+export const FIVE_STRENGTH = rankStrength(5);
 export const EIGHT_STRENGTH = rankStrength(8);
+export const NINE_STRENGTH = rankStrength(9);
 export const JACK_STRENGTH = rankStrength(11);
 
 /** 読み上げ・aria-label 用の表示名 */
@@ -142,8 +144,12 @@ export interface Play {
   suits: Suit[];
   /** ジョーカーだけの役。革命中でも最強として扱う */
   allJokers: boolean;
+  /** 5を含む（5飛ばし） */
+  hasFive: boolean;
   /** 8を含む（8切り） */
   hasEight: boolean;
+  /** 9を含む（9リバース） */
+  hasNine: boolean;
   /** Jを含む（11バック） */
   hasJack: boolean;
   /** ジョーカー1枚だけの単騎（スペ3返しの対象） */
@@ -176,8 +182,10 @@ function makePlay(
     strength,
     suits,
     allJokers: naturals.length === 0,
-    // ジョーカーだけの役は数字を持たないので、8切りにも11バックにもならない
+    // ジョーカーだけの役は数字を持たないので、どの数字のルールにも当たらない
+    hasFive: naturals.length > 0 && covered.includes(FIVE_STRENGTH),
     hasEight: naturals.length > 0 && covered.includes(EIGHT_STRENGTH),
+    hasNine: naturals.length > 0 && covered.includes(NINE_STRENGTH),
     hasJack: naturals.length > 0 && covered.includes(JACK_STRENGTH),
     jokerSingle: single && only!.joker,
     spadeThreeSingle: single && !only!.joker && only!.suit === 'spade' && only!.rank === 3,
@@ -256,25 +264,73 @@ export interface Rules {
   jackBack: boolean;
   /** ジョーカー単騎に ♠3 単騎で返せる */
   spadeThree: boolean;
+  /** 5を含む役を出すと、出した枚数だけ次の人を飛ばす */
+  fiveSkip: boolean;
+  /** 9を含む役を出すと、手番の回る向きが逆になる */
+  nineReverse: boolean;
+  /** 階段（同じスートの3枚以上の連番）を出せる */
+  sequence: boolean;
 }
 
 export const DEFAULT_RULES: Rules = {
   eightCut: true,
   revolution: true,
   suitLock: true,
+  sequence: true,
   cityFall: false,
   jackBack: false,
   spadeThree: false,
+  fiveSkip: false,
+  nineReverse: false,
 };
 
 /** 設定パネルに出す並びと表示名。ここが画面の単一の情報源 */
 export const RULE_LABELS: { key: keyof Rules; label: string; note: string }[] = [
-  { key: 'eightCut', label: '8切り', note: '8を含む役を出すと場が流れ、続けて出せます' },
-  { key: 'revolution', label: '革命', note: '同じ数字4枚以上で強さが逆転します' },
-  { key: 'suitLock', label: '縛り', note: '同じスートが続くと、その場はそのスートだけになります' },
-  { key: 'cityFall', label: '都落ち', note: '前回の大富豪が1位で上がれないと大貧民に落ちます' },
-  { key: 'jackBack', label: '11バック', note: 'Jを含む役を出すと、その場だけ強さが逆転します' },
-  { key: 'spadeThree', label: 'スペ3返し', note: 'ジョーカー単騎に ♠3 で返せます' },
+  {
+    key: 'eightCut',
+    label: '8切り',
+    note: '8を含む役を出すと、その場は流れて自分がもう一度出せます（例: ♠8 を1枚出す → 場が空になり、続けて好きな役を出す）',
+  },
+  {
+    key: 'revolution',
+    label: '革命',
+    note: '同じ数字を4枚まとめて出すと、以後カードの強弱が入れ替わります（3が最強・2が最弱に）。もう一度4枚出すと元に戻ります',
+  },
+  {
+    key: 'suitLock',
+    label: '縛り',
+    note: '前の人と同じスート（マーク）を重ねて出すと、その場はそのスートしか出せなくなります（例: ♥5 の次に ♥8 を出す → 以降その場は ♥ だけ。場が流れると解けます）',
+  },
+  {
+    key: 'sequence',
+    label: '階段',
+    note: '同じスートで数字が3つ以上つながった札をまとめて出せます（例: ♠4-♠5-♠6）。OFFにすると同じ数字の組だけになります',
+  },
+  {
+    key: 'jackBack',
+    label: '11バック',
+    note: 'Jを含む役を出すと、その場のあいだだけ強弱が入れ替わります（例: ♦J を出す → 次は J より弱い札でないと出せない。場が流れると元に戻ります）',
+  },
+  {
+    key: 'fiveSkip',
+    label: '5飛ばし',
+    note: '5を含む役を出すと、出した枚数だけ次の人の番を飛ばします（例: 5を2枚出す → 次の2人が飛ばされる）',
+  },
+  {
+    key: 'nineReverse',
+    label: '9リバース',
+    note: '9を含む役を出すと、手番の回る向きが逆になります（時計回り ⇄ 反時計回り）。その回戦のあいだ続きます',
+  },
+  {
+    key: 'spadeThree',
+    label: 'スペ3返し',
+    note: 'ジョーカー1枚だけの場に ♠3 を1枚で返せます（最強の札に最弱の札で勝てる例外。返すと場が流れます）',
+  },
+  {
+    key: 'cityFall',
+    label: '都落ち',
+    note: '前の回戦で大富豪だった人が1位で上がれないと、その時点で最下位（大貧民）に確定します',
+  },
 ];
 
 /** 4人戦の階級。平民は出てこない */
@@ -294,6 +350,8 @@ export type EventKind =
   | 'spade-three'
   | 'clear'
   | 'out'
+  | 'five-skip'
+  | 'nine-reverse'
   | 'city-fall';
 
 export interface GameEvent {
@@ -318,6 +376,8 @@ export interface RoundState {
   jackBack: boolean;
   /** 縛り中のスート。null なら縛りなし（場が流れたら解ける） */
   lock: Suit[] | null;
+  /** 手番の回る向き。1=席順、-1=逆回り（9リバース。その回戦のあいだ続く） */
+  direction: 1 | -1;
   /** 上がった順のプレイヤー番号 */
   out: number[];
   /** 都落ちで最下位が確定した人 */
@@ -357,6 +417,7 @@ export function startRound(
     rules,
     hands: hands.map(sortHand),
     turn: first,
+    direction: 1,
     field: null,
     leader: first,
     passed: hands.map(() => false),
@@ -423,7 +484,10 @@ export function isLegalPlay(state: RoundState, cards: readonly DCard[]): boolean
   if (state.finished) return false;
   if (!ownsAll(state.hands[state.turn], cards)) return false;
   const play = classify(cards);
-  return play !== null && canBeat(state, play);
+  if (play === null) return false;
+  // 階段をOFFにしているときは、同じ数字の組だけを認める
+  if (!state.rules.sequence && play.kind === 'sequence') return false;
+  return canBeat(state, play);
 }
 
 /** 場が流れた状態にする。次に出す人は `next` */
@@ -444,10 +508,20 @@ function clearField(state: RoundState, next: number, events: GameEvent[]): Round
 function nextActive(state: RoundState, from: number): number {
   const count = state.hands.length;
   for (let step = 1; step <= count; step += 1) {
-    const i = (from + step) % count;
+    const i = seatAt(state, from, step);
     if (i !== state.dropped && state.hands[i].length > 0) return i;
   }
   return from;
+}
+
+/**
+ * `from` から手番の向きに `step` 人ぶん進んだ席。
+ * 9リバース中は逆回りになるので、席の計算はすべてここを通す
+ * （負の剰余を避けるため count を足してから割る）。
+ */
+function seatAt(state: RoundState, from: number, step: number): number {
+  const count = state.hands.length;
+  return (((from + step * state.direction) % count) + count) % count;
 }
 
 /**
@@ -457,7 +531,7 @@ function nextActive(state: RoundState, from: number): number {
 function nextInTrick(state: RoundState, from: number): number | null {
   const count = state.hands.length;
   for (let step = 1; step < count; step += 1) {
-    const i = (from + step) % count;
+    const i = seatAt(state, from, step);
     if (i === state.dropped || state.hands[i].length === 0) continue;
     if (!state.passed[i]) return i;
   }
@@ -508,6 +582,13 @@ export function applyPlay(state: RoundState, cards: readonly DCard[]): RoundStat
     events.push({ kind: revolution ? 'revolution' : 'counter-revolution', player: me });
   }
 
+  // 9リバース。手番の向きが変わり、その回戦のあいだ続く
+  let direction = state.direction;
+  if (state.rules.nineReverse && play.hasNine) {
+    direction = direction === 1 ? -1 : 1;
+    events.push({ kind: 'nine-reverse', player: me });
+  }
+
   // 11バック。その場のあいだだけ逆転する
   let jackBack = state.jackBack;
   if (state.rules.jackBack && play.hasJack) {
@@ -523,6 +604,7 @@ export function applyPlay(state: RoundState, cards: readonly DCard[]): RoundStat
     lock,
     revolution,
     jackBack,
+    direction,
     events,
   };
 
@@ -548,13 +630,27 @@ export function applyPlay(state: RoundState, cards: readonly DCard[]): RoundStat
   const settled = settle(next);
   if (settled.finished) return { ...settled, events };
 
-  const following = nextInTrick(settled, me);
+  let following = nextInTrick(settled, me);
   if (following === null) {
     // 自分以外が全員パス済み（＝上がって抜けた場合も含む）。場が流れる
     const lead = wentOut ? nextActive(settled, me) : me;
     events.push({ kind: 'clear', player: lead });
     return clearField(settled, lead, events);
   }
+
+  // 5飛ばし。出した枚数だけ次の人を飛ばす。
+  // 一周して自分に戻る手前で止める（4人戦で4枚出しても「自分の番」にはしない）
+  if (state.rules.fiveSkip && play.hasFive) {
+    let skipped = 0;
+    for (let i = 0; i < play.count; i += 1) {
+      const after = nextInTrick(settled, following);
+      if (after === null || after === me || after === following) break;
+      following = after;
+      skipped += 1;
+    }
+    if (skipped > 0) events.push({ kind: 'five-skip', player: me });
+  }
+
   return { ...settled, turn: following, events };
 }
 
@@ -677,7 +773,10 @@ export function enumeratePlays(hand: readonly DCard[]): Play[] {
 /** いまの手番で出せる役 */
 export function legalPlays(state: RoundState): Play[] {
   if (state.finished) return [];
-  return enumeratePlays(state.hands[state.turn]).filter((play) => canBeat(state, play));
+  return enumeratePlays(state.hands[state.turn]).filter(
+    // 人が出せない役はCPUも出せない（isLegalPlay と同じ条件にそろえる）
+    (play) => (state.rules.sequence || play.kind !== 'sequence') && canBeat(state, play),
+  );
 }
 
 // ---------------------------------------------------------------- CPU

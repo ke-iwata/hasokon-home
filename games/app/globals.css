@@ -1170,6 +1170,7 @@ ol {
    13×13＝169マスを 480px に収めると1マス約35px。スマホ（360px幅）でも
    1マス約26pxになり、指で押せる下限を保てる（仕様書で15×15を採らなかった理由） */
 .gm-board {
+  --gm-line: rgba(90, 62, 30, 0.6);
   display: grid;
   grid-template-columns: repeat(13, 1fr);
   width: 100%;
@@ -1177,13 +1178,25 @@ ol {
   margin: 0 auto;
   /* 碁盤と同じ木地。明暗どちらのテーマでも同じ色にする（石の白黒が地に負けないため） */
   background: #d8b177;
+  /* 罫線は最外の交点で終わる。実物の碁盤と同じく、その外側に縁を残す。
+     端のマスは外側半分が空くので、この padding と合わせて縁になる */
+  padding: 1.4%;
   border: 2px solid #8a6134;
   border-radius: 4px;
   user-select: none;
   touch-action: manipulation;
 }
 
-/* 罫線は各マスの上辺・左辺で描く。盤の外周は .gm-board の border が受け持つ */
+/* 罫線はマスの境界ではなく**マスの中心**を通す。
+   五目並べ（囲碁）の石は線の交点に置くものなので、境界に線を引くと
+   石がマスの中に浮いて盤に見えなくなる。中心を通せば石が交点に乗る。
+
+   背景のグラデーション2本で十字を描く。**1本目（to right）が縦線、
+   2本目（to bottom）が横線**（向きの名前と見た目が入れ替わるので注意）。
+   盤の端では、外へはみ出す側の半分を落とす:
+   - 上端の行は縦線を下半分だけ / 下端の行は上半分だけ
+   - 左端の列は横線を右半分だけ / 右端の列は左半分だけ
+   四隅は両方あたるので、辺のあとに隅を書いて上書きしている */
 .gm-cell {
   position: relative;
   aspect-ratio: 1;
@@ -1192,20 +1205,72 @@ ol {
   justify-content: center;
   padding: 0;
   border: none;
-  border-top: 1px solid rgba(90, 62, 30, 0.55);
-  border-left: 1px solid rgba(90, 62, 30, 0.55);
   border-radius: 0;
-  background: transparent;
   cursor: pointer;
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent calc(50% - 0.5px),
+      var(--gm-line) calc(50% - 0.5px),
+      var(--gm-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(50% - 0.5px),
+      var(--gm-line) calc(50% - 0.5px),
+      var(--gm-line) calc(50% + 0.5px),
+      transparent calc(50% + 0.5px)
+    );
+  background-size: 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0;
 }
 
-/* 1行目の上辺と1列目の左辺は盤の外周なので、.gm-board の border に任せる */
+/* 上端の行：縦線は中心から下だけ */
 .gm-cell:nth-child(-n + 13) {
-  border-top: none;
+  background-size: 100% 50%, 100% 100%;
+  background-position: 0 100%, 0 0;
 }
 
+/* 下端の行：縦線は中心から上だけ */
+.gm-cell:nth-last-child(-n + 13) {
+  background-size: 100% 50%, 100% 100%;
+  background-position: 0 0, 0 0;
+}
+
+/* 左端の列：横線は中心から右だけ */
 .gm-cell:nth-child(13n + 1) {
-  border-left: none;
+  background-size: 100% 100%, 50% 100%;
+  background-position: 0 0, 100% 0;
+}
+
+/* 右端の列：横線は中心から左だけ */
+.gm-cell:nth-child(13n) {
+  background-size: 100% 100%, 50% 100%;
+  background-position: 0 0, 0 0;
+}
+
+/* 四隅は縦横どちらも半分。辺の指定より後に置いて上書きする */
+.gm-cell:nth-child(1) {
+  background-size: 100% 50%, 50% 100%;
+  background-position: 0 100%, 100% 0;
+}
+
+.gm-cell:nth-child(13) {
+  background-size: 100% 50%, 50% 100%;
+  background-position: 0 100%, 0 0;
+}
+
+.gm-cell:nth-last-child(13) {
+  background-size: 100% 50%, 50% 100%;
+  background-position: 0 0, 100% 0;
+}
+
+.gm-cell:nth-last-child(1) {
+  background-size: 100% 50%, 50% 100%;
+  background-position: 0 0, 0 0;
 }
 
 .gm-cell:disabled {
@@ -1226,19 +1291,26 @@ ol {
 .gm-cell.last::after {
   content: '';
   position: absolute;
-  inset: 1px;
+  /* 石と同じ丸で囲む。四角い枠だとマス目に見えてしまい、
+     交点に石を置く盤という見え方が崩れる */
+  width: 96%;
+  height: 96%;
   border: 2px solid #d94f3d;
-  border-radius: 2px;
+  border-radius: 50%;
 }
 
-/* 勝ちが決まった5連。どこで負けた（勝った）のかが分かるようにする */
-.gm-cell.win {
-  background: rgba(245, 215, 110, 0.55);
+/* 勝ちが決まった5連。マスを四角く塗ると交点に石を置く盤の見え方が崩れるので、
+   石そのものにリングを付ける（石が置かれている場所にしか .win は付かない） */
+.gm-cell.win .gm-stone {
+  box-shadow:
+    0 0 0 4px rgba(245, 200, 60, 0.9),
+    0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-/* 打てるマスであることを示す。石は置かれていないので、地の色を明るくするだけ */
+/* 打てる場所であることを示す。石は置かれていないので、地の色を明るくするだけ
+   （.win と同じ理由で background-color を使う） */
 .gm-cell:not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.3);
+  background-color: rgba(255, 255, 255, 0.3);
 }
 
 /* position を持たせるのは星（.star::before）より前面に出すため。
@@ -1427,6 +1499,45 @@ ol {
   display: block;
   min-height: 1.35em;
   color: var(--muted);
+}
+
+/* 相手の残り札。裏向きの札を枚数ぶん重ねて並べる。
+   数字（「7枚」）だけだと減り具合が頭に入らないので、量として見えるようにする。
+   重ねているのは、手札が多いときでも席の幅に収めるため */
+.df-seat-cards {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 26px;
+  margin: 4px 0 2px;
+  /* 配りたての14枚は狭い画面だと並びきらない。枚数は上の数字が示しているので、
+     はみ出す分は切る（重ねを深くして1枚の帯に見せるより、札に見えるほうを取る） */
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.df-back {
+  width: 15px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  /* 白いフチ。重ねたときに1枚ずつの切れ目が見えるようにする
+     （フチが無いと模様が続いて1枚の帯に見え、何枚あるか読めない） */
+  border: 1px solid #f5f5f4;
+  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.25);
+  /* トランプの裏面。明暗どちらのテーマでも同じ紺にする（席の地色に沈ませない） */
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.25) 0 2px,
+      transparent 2px 4px
+    ),
+    #1d4ed8;
+}
+
+/* 2枚目以降を少しだけ重ねる。深く重ねると1枚の帯に見えて札だと分からなくなる */
+.df-back + .df-back {
+  margin-left: -5px;
 }
 
 /* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く */
