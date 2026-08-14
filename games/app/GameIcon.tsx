@@ -172,6 +172,37 @@ function SevensIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 神経衰弱（裏向きの札と表向きの札）。**これも自前で描いている。**
+ *
+ * 麻雀ソリティアの TilesIcon（同じ印の牌が2枚）と紛れないよう、
+ * **裏向きの札と表向きの札を1枚ずつ**並べた。「めくって合わせる」ことが
+ * 小さいサイズでも伝わり、絵合わせ（麻雀ソリティア）とも区別できる。
+ * 裏の二重枠は app/_cards/CardView.tsx の裏面（BackSvg）と同じ意匠。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function MemoryPairIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="24" y="52" width="92" height="152" rx="16" />
+      <rect x="48" y="80" width="44" height="96" rx="8" />
+      <rect x="140" y="52" width="92" height="152" rx="16" />
+      <circle cx="186" cy="128" r="20" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -187,6 +218,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   FiveInARow: FiveInARowIcon,
   Blocks: BlocksIcon,
   Sevens: SevensIcon,
+  MemoryPair: MemoryPairIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

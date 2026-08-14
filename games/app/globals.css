@@ -2029,3 +2029,107 @@ ol {
     transition: none;
   }
 }
+
+/* ---- 神経衰弱 ---- */
+
+/* 場は枚数ごとに列数が変わる（列数の実体は lib/shinkei-suijaku.ts の COLUMNS）。
+   グリッドの子は既定で min-width: auto（＝中身の最小幅）なので、`1fr` のままだと
+   中身が縮まずに親をはみ出す。minmax(0, 1fr) と子の min-width: 0 の両方が要る
+   （七並べ・マインスイーパーで踏んだのと同じ #70 の教訓） */
+.ss-board {
+  display: grid;
+  grid-template-columns: repeat(var(--ss-cols, 5), minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  margin: 10px 0;
+}
+
+.ss-slot,
+.ss-taken {
+  display: block;
+  min-width: 0;
+}
+
+/* 列が多いぶん1枚が細いので、角丸だけ小さくする（スパイダーの .cols10 と同じ考え方） */
+.ss-board .playing-card {
+  border-radius: 5px;
+}
+
+/* CPUの番のあいだは押しても何も起きない。指が乗る前に分かるようにする */
+.ss-slot.wait .playing-card {
+  cursor: default;
+}
+
+/* 取ったあとの跡。詰めて並べ直すと位置の記憶が壊れてゲームが成立しないので、
+   同じ大きさの枠をそのまま残す */
+.ss-taken {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 5px;
+  border: 1px dashed var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+/* CPU対戦では誰が取ったかを跡の色で残す。終わったあとに取り合いの経過が見える */
+.ss-taken.p0 {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-soft);
+}
+
+.ss-taken.p1 {
+  border-color: var(--danger);
+  border-style: solid;
+  background: rgba(185, 28, 28, 0.1);
+}
+
+.ss-seats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.ss-seat {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 7px 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* いま考えている席だけ枠を強調する（七並べと同じ約束） */
+.ss-seat.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.ss-seat-name {
+  display: block;
+  color: var(--muted);
+}
+
+.ss-seat-pairs {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+.ss-msg {
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.ss-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}

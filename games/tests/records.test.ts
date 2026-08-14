@@ -354,9 +354,10 @@ describe('各ゲームの組み込み', () => {
 
   it('記録のために localStorage を直接さわらない（キーはモジュールが一元管理する）', () => {
     // リバーシ・五目並べの「強さ・手番」、大富豪の「強さ・ローカルルール」、
-    // 七並べの「ローカルルール・CPUの速さ」は、遊んだ記録ではなく設定なので例外
+    // 七並べの「ローカルルール・CPUの速さ」、神経衰弱の「遊び方・枚数・強さ」は、
+    // 遊んだ記録ではなく設定なので例外
     // （lib/records.ts の LEGACY_KEYS のコメントも参照）
-    const allowed = new Set(['reversi', 'gomoku', 'daifugo', 'shichinarabe']);
+    const allowed = new Set(['reversi', 'gomoku', 'daifugo', 'shichinarabe', 'shinkei-suijaku']);
     for (const g of gameFiles) {
       if (allowed.has(g.slug)) continue;
       expect(g.source, `${g.slug} が localStorage を直接使っている`).not.toMatch(
