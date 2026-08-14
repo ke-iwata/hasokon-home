@@ -240,8 +240,9 @@ export function applyResult(
  * 読めたら新形式へ移し、旧キーは消す。保存に失敗したときは消さない
  * （読み取り専用のストレージで記録を失わないため）。
  *
- * リバーシの `reversi:level` / `reversi:color` はここに入れない。
- * あれは「強さ・手番の設定」で、遊んだ記録ではないため各ゲーム側に残す。
+ * リバーシの `reversi:level` / `reversi:color`、五目並べの `gomoku:level` /
+ * `gomoku:first` はここに入れない。あれは「強さ・手番の設定」で、
+ * 遊んだ記録ではないため各ゲーム側に残す。
  */
 const LEGACY_KEYS: Record<string, { key: string; read: (raw: string) => RecordEntry }[]> = {
   '2048': [{ key: 'g2048:best', read: (raw) => compact({ bestScore: positive(Number(raw)) }) }],

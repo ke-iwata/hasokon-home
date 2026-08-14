@@ -104,6 +104,18 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-12',
   },
   {
+    // 「五目並べ」は伝統ゲームの一般名称で商標の問題は無い。競技ルールの
+    // 「連珠」は禁じ手を実装していないので名乗らない
+    // （docs/features/game-gomoku.md の「権利関係」）
+    slug: 'gomoku',
+    icon: 'FiveInARow',
+    name: '五目並べ',
+    description:
+      '13×13の盤に先に5つ並べたほうが勝ちの定番ボードゲーム。CPUは かんたん・ふつう・つよい の3段階。禁じ手なし。',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     // 「上海」はサン電子（サンソフト）が国内で商標を保有しているため名前に使わない。
     // 一般名称の「麻雀ソリティア」で統一する
     // （docs/features/game-mahjong-solitaire.md の「権利関係の確認」）
@@ -112,6 +124,17 @@ export const games: GameDef[] = [
     name: '麻雀ソリティア',
     description:
       '亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配ります。',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
+    // 「Block Blast」「Woodoku」等は他社の固有名なので使わず、一般名詞の
+    // 「ブロックパズル」で立てる（docs/features/game-block-puzzle.md の「権利関係」）
+    slug: 'block-puzzle',
+    icon: 'Blocks',
+    name: 'ブロックパズル',
+    description:
+      '8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べます。',
     ready: true,
     updatedAt: '2026-08-13',
   },

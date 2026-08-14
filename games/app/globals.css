@@ -762,6 +762,176 @@ ol {
   border-top-color: var(--muted);
 }
 
+/* ---- ブロックパズル ----
+   盤面（8×8）と配り札（3枠）の2段構え。ブロックの色は JS 側の COLORS が
+   インラインで入るので、ここでは形と地の色だけを決める */
+
+.bp-stage {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.bp-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  width: 100%;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  user-select: none;
+  /* ドラッグをページのスクロールに取られないようにする */
+  touch-action: none;
+}
+
+.bp-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  background: rgba(148, 163, 184, 0.16);
+  cursor: pointer;
+}
+
+.bp-cell.filled {
+  /* 地の色は JS の COLORS（明暗どちらでも変わらない固定色）が入る。
+     中に薄い陰を落として、ブロックが板に載って見えるようにする */
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* 置ける場所のプレビュー。置ける／置けないを色で分ける
+   （docs/features/game-block-puzzle.md の「配置プレビュー」） */
+.bp-cell.preview {
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.bp-cell.preview-bad {
+  background: var(--danger);
+  opacity: 0.4;
+}
+
+/* 消えた瞬間だけ光らせる。盤面はもう空なので、位置に色を重ねるだけ */
+.bp-cell.cleared {
+  animation: bp-clear 260ms ease-out; /* FLASH_MS と揃える */
+}
+
+@keyframes bp-clear {
+  from {
+    background: var(--accent);
+    transform: scale(1);
+  }
+  to {
+    background: rgba(148, 163, 184, 0.16);
+    transform: scale(0.86);
+  }
+}
+
+.bp-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #f8fafc; /* 地を暗く敷くので、明暗どちらでも白のまま */
+  text-align: center;
+}
+
+.bp-tray {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin: 12px auto 0;
+}
+
+/* 枠は中身が空でも同じ大きさで残す（置くたびに配り札が動くと押し間違える）。
+   枠線と地色は敷かない。3つ並べると箱のほうが目立ってしまい、
+   主役であるピースが小さく見えるため。選んだときだけ地色を出す */
+.bp-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 78px;
+  border-radius: 10px;
+}
+
+.bp-slot.selected {
+  background: var(--accent-soft);
+  outline: 2px solid var(--accent);
+}
+
+/* 掴んでいる間は、元の枠のピースを薄くして「持ち上がっている」ことを示す */
+.bp-slot.dragging .bp-piece {
+  opacity: 0.3;
+}
+
+/* 当たり判定を指より大きく取る。見た目のピースは中で小さく描く
+   （docs/features/game-block-puzzle.md の「ピースの掴みやすさ」） */
+.bp-piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bp-piece:disabled {
+  cursor: default;
+}
+
+/* ピースの見た目。
+   1マスの大きさ（--unit）を「枠の幅に収まる大きさ」「64pxの高さに収まる大きさ」
+   「22px」の一番小さいものにする。こうしないと、横長のピース（5×1）が枠から
+   はみ出したり、縦長のピース（1×4）だけ極端に小さく見えたりする */
+.bp-shape {
+  display: grid;
+  gap: 2px;
+  --unit: min(100% / var(--w), 72px / var(--h), 27px);
+  width: calc(var(--unit) * var(--w));
+  height: calc(var(--unit) * var(--h));
+}
+
+/* どこにも置けなくなったピースは薄くする（あと何手あるかが読める） */
+.bp-shape.dim {
+  opacity: 0.35;
+}
+
+.bp-shape span {
+  border-radius: 3px;
+}
+
+.bp-shape span.on {
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* ドラッグ中に指について回るピース。盤面のマスと同じ大きさで描く */
+.bp-ghost {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.bp-ghost .bp-shape {
+  width: 100%;
+  height: 100%;
+  gap: 3px;
+}
+
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
 
 .cardgame {
@@ -992,6 +1162,122 @@ ol {
   .rv-disc {
     transition: none;
   }
+}
+
+/* ---- 五目並べ ---- */
+
+/* 列数は lib/gomoku.ts の SIZE（13）と揃える。
+   13×13＝169マスを 480px に収めると1マス約35px。スマホ（360px幅）でも
+   1マス約26pxになり、指で押せる下限を保てる（仕様書で15×15を採らなかった理由） */
+.gm-board {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  /* 碁盤と同じ木地。明暗どちらのテーマでも同じ色にする（石の白黒が地に負けないため） */
+  background: #d8b177;
+  border: 2px solid #8a6134;
+  border-radius: 4px;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+/* 罫線は各マスの上辺・左辺で描く。盤の外周は .gm-board の border が受け持つ */
+.gm-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-top: 1px solid rgba(90, 62, 30, 0.55);
+  border-left: 1px solid rgba(90, 62, 30, 0.55);
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* 1行目の上辺と1列目の左辺は盤の外周なので、.gm-board の border に任せる */
+.gm-cell:nth-child(-n + 13) {
+  border-top: none;
+}
+
+.gm-cell:nth-child(13n + 1) {
+  border-left: none;
+}
+
+.gm-cell:disabled {
+  cursor: default;
+}
+
+/* 星（天元と4つの星）。盤のどのあたりを打っているか見当をつけるための目印 */
+.gm-cell.star::before {
+  content: '';
+  position: absolute;
+  width: 18%;
+  height: 18%;
+  border-radius: 50%;
+  background: rgba(90, 62, 30, 0.7);
+}
+
+/* 直前に打たれたマス。CPUがどこに打ったかを追えるようにする */
+.gm-cell.last::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border: 2px solid #d94f3d;
+  border-radius: 2px;
+}
+
+/* 勝ちが決まった5連。どこで負けた（勝った）のかが分かるようにする */
+.gm-cell.win {
+  background: rgba(245, 215, 110, 0.55);
+}
+
+/* 打てるマスであることを示す。石は置かれていないので、地の色を明るくするだけ */
+.gm-cell:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* position を持たせるのは星（.star::before）より前面に出すため。
+   絶対配置の疑似要素は、位置指定の無い要素より必ず上に描かれる */
+.gm-stone {
+  position: relative;
+  width: 84%;
+  height: 84%;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.gm-stone.black {
+  background: radial-gradient(circle at 34% 30%, #55504c, #1c1917 62%);
+}
+
+.gm-stone.white {
+  background: radial-gradient(circle at 34% 30%, #ffffff, #dcd8d2 66%);
+}
+
+/* 手番の表示。石と同じ見た目にそろえる */
+.gm-score {
+  display: inline-flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.gm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.gm-chip .gm-stone {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 /* ---- 麻雀ソリティア ---- */
