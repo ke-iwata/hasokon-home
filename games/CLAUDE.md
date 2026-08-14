@@ -70,6 +70,26 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
   （経緯は [docs/features/ga4-page-path.md](../docs/features/ga4-page-path.md)。
   `tests/analytics.test.ts` が回帰を見張っている）
 
+## 「ホーム画面に追加」（Webアプリマニフェスト）
+
+`app/manifest.ts` が `/games/manifest.webmanifest` を書き出し、`app/layout.tsx` の
+`metadata.manifest` が全ページの `<head>` にリンクを出す。
+仕様は [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)。
+
+- **マニフェストの中身に basePath は付かない。** `start_url` / `scope` / `icons[].src` は
+  自分で `/games/` から書く（Next.js が補正するのは `<link rel="manifest">` の
+  href だけ）。付け忘れるとアイコンが404になり、インストール導線ごと出なくなる
+- **`metadata.manifest` はルート相対のまま書く**（絶対URLにすると
+  test.hasokon.com から本番のマニフェストを読みに行き、scope 外で弾かれる）
+- アイコンPNGは `public/icons/` にあり、原典は
+  [design/manifest-icons/](../design/manifest-icons/)。**直接編集せず、スクリプトを回す**
+- **Service Worker は入れない**（仕様書の「やらないこと」）。静的サイトで
+  古いHTMLがキャッシュに残り続ける事故のリスクが利益を上回る
+- ホーム画面からの起動は `start_url` の `utm_source=homescreen` で数える。
+  効果を見るときはGA4でこの参照元を絞り込む
+- テストは `tests/manifest.test.ts`（中身）と
+  `scripts/test/manifest-icons.test.mjs`（アイコンの実ファイル）の2本
+
 ## SNS共有時のサムネイル（OGP画像）
 
 `lib/registry.ts` の `OGP_IMAGE` を `app/layout.tsx` が `openGraph.images` と

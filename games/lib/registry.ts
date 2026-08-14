@@ -128,6 +128,18 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    // 「七並べ」（Sevens / Fan Tan）は伝統的トランプゲームの一般名称で、ルールも名称も
+    // パブリックドメイン。商標の問題は無い
+    // （docs/features/game-shichinarabe.md の「権利関係が無害」）
+    slug: 'shichinarabe',
+    icon: 'Sevens',
+    name: '七並べ',
+    description:
+      'CPU3人と5回戦を戦うトランプの定番。パスは3回まで、4回目で失格して手札が場に開きます。トンネルも切り替え可能。',
+    ready: true,
+    updatedAt: '2026-08-14',
+  },
+  {
     // 「上海」はサン電子（サンソフト）が国内で商標を保有しているため名前に使わない。
     // 一般名称の「麻雀ソリティア」で統一する
     // （docs/features/game-mahjong-solitaire.md の「権利関係の確認」）
