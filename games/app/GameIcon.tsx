@@ -142,6 +142,36 @@ function BlocksIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 七並べ（カードに「7」）。**これも自前で描いている。**
+ *
+ * Phosphor のトランプ系は Cards / Spade / Club / Diamond / Heart で、
+ * どれも既にソリティア・スパイダー・フリーセルで使っているか、
+ * 「7を並べる」という遊びの中身を指さない。数字の7そのものを描くのが
+ * いちばん短く伝わるので、カードの枠と「7」の2本線で作る。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function SevensIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="52" y="32" width="152" height="192" rx="20" />
+      <path d="M96 80h64l-40 96" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -156,6 +186,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Tiles: TilesIcon,
   FiveInARow: FiveInARowIcon,
   Blocks: BlocksIcon,
+  Sevens: SevensIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

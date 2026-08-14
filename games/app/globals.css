@@ -1703,3 +1703,287 @@ ol {
     transition: none;
   }
 }
+
+/* ---- 七並べ（docs/features/game-shichinarabe.md） ---- */
+
+/* 場は「4スート × 13マス」の表。13列を本物のカードの絵（.playing-card）で
+   並べるとスマホで1枚が20px程度になり数字が読めないので、場は数字のマスにして、
+   `_cards` の絵柄は手札のほうで使っている */
+.sn-board {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 10px 0;
+  /* 親（.card）の幅からはみ出さない。グリッドの子は既定で min-width: auto
+     （＝中身の最小幅）なので、これと .sn-cell の min-width: 0 が両方要る
+     （docs/features/game-shichinarabe.md の「#70の教訓」） */
+  min-width: 0;
+}
+
+.sn-row {
+  display: grid;
+  grid-template-columns: 1.3em repeat(13, 1fr);
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+}
+
+.sn-suit {
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--text);
+}
+
+.sn-suit.red {
+  color: #dc2626;
+}
+
+.sn-cell {
+  /* 1fr は minmax(auto, 1fr) なので、これが無いと「10」の文字幅より狭くならず
+     13列ぶんが親をはみ出す（狭い画面では文字のほうを縮めて収める） */
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 5 / 7;
+  border: 1px dashed var(--border);
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: clamp(0.5rem, 2.2vw, 0.75rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* 場に出ている札。実線の枠と白地で「置かれている」ことを見せる */
+.sn-cell.on {
+  border-style: solid;
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.sn-cell.on.red {
+  color: #dc2626;
+}
+
+/* いま自分が出せる場所。ここを光らせないと、13×4のどこに出せるのか探すことになる */
+.sn-cell.hit {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+/* 直前に置かれた札。CPUが何を出したのかを見失わないための目印 */
+.sn-cell.last {
+  box-shadow: 0 0 0 2px var(--accent-strong);
+}
+
+/* CPU3人の席。名前・性格・残り枚数・パスの残りを並べる */
+.sn-seats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.sn-seat {
+  /* 3列のグリッドの子。裏向きの札を並べる .sn-seat-cards が中身の最小幅を
+     押し上げるので、ここでも min-width: 0 が要る（#70 と同じ罠） */
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 7px 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* 考えている席だけ枠を強調する。誰の番か分からないと待たされている理由が伝わらない */
+.sn-seat.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.sn-seat-name {
+  display: block;
+  color: var(--muted);
+}
+
+/* 性格（せっかち・しんちょう・いじわる）。席の性格が分かると打ち回しが読める */
+.sn-seat-style {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.sn-seat-count {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sn-seat-state {
+  display: block;
+  min-height: 1.35em;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+/* 相手の残り札。大富豪と同じ見せ方（枚数を量としても見せる） */
+.sn-seat-cards {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  height: 22px;
+  margin: 4px 0 2px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.sn-back {
+  width: 13px;
+  height: 19px;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  border: 1px solid #f5f5f4;
+  box-shadow: -1px 0 1px rgba(0, 0, 0, 0.25);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.25) 0 2px,
+      transparent 2px 4px
+    ),
+    #1d4ed8;
+}
+
+.sn-back + .sn-back {
+  margin-left: -5px;
+}
+
+.sn-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+/* 手札1枚ぶんの幅。トランプの絵柄は親の幅いっぱいに描かれるので、幅はこちらが持つ */
+.sn-slot {
+  display: block;
+  width: clamp(38px, 9.5vw, 54px);
+  flex: 0 0 auto;
+  transition: transform 0.12s ease;
+}
+
+/* いま場につながらない札。押せはするが出せないことを先に見せる */
+.sn-slot.dim {
+  opacity: 0.42;
+}
+
+.sn-msg {
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.sn-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sn-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* 次のパスで失格になるときのボタン。押す前に色で気づけるようにする */
+.btn.sn-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.sn-rules summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.sn-rules ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.sn-rules li {
+  margin-bottom: 6px;
+}
+
+.sn-rules label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+  cursor: pointer;
+}
+
+.sn-rule-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sn-rule-note {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.sn-result {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+
+.sn-result h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.sn-result ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sn-result li {
+  display: grid;
+  grid-template-columns: 3.5em 1fr auto;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 2px 0;
+}
+
+.sn-result li.me {
+  font-weight: 700;
+}
+
+.sn-result-rank {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sn-slot {
+    transition: none;
+  }
+}
