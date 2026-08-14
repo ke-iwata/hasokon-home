@@ -33,6 +33,49 @@ CPUは相手の手札を見ない。**場にも自分の手札にも無い札＝
 **場の見た目はカードの絵柄ではなく数字のマスにした。** 13列を `.playing-card` で
 並べるとスマホで1枚が20px程度になり数字が読めない。`_cards` の再利用は手札のほうで、
 場は4スート×13マスの表にして、出せる場所を色で示している。
+## 2026-08-14：「ホーム画面に追加」でアプリのように起動できるようにした
+
+`app/manifest.ts` を足して `/games/manifest.webmanifest` を書き出し、
+`app/layout.tsx` の `metadata.manifest` から全ページにリンクした。
+アイコンPNGは `design/manifest-icons/gen-manifest-icons.mjs` で
+`public/icons/` に4枚書き出している。仕様は
+[../../docs/features/games-pwa-manifest.md](../../docs/features/games-pwa-manifest.md)。
+
+**理由**：GA4（Data API・直近14日・2026-08-14 取得）でチャネル別セッションは
+Direct 76 / Organic Search 61 / Unassigned 18 で、Direct が一貫して最大。
+その内訳はマインスイーパ・スパイダー・2048・ソリティア・大富豪と
+ゲームが上位を占めていて、**このサイトのゲームは「また遊びに来る」使われ方**をしている。
+それなのに manifest が無く、ホーム画面に追加してもただのブックマークで
+通常のブラウザタブとして開いていた。
+
+**PNGは `app/` ではなく `public/icons/` に置いた。** 仕様書は `app/` 配下と
+書いていたが、`app/` で静的ファイルとして書き出されるのは `icon.png` などの
+Next.js の予約名だけで、`icon-192.png` は出力されず404になる。
+静的エクスポートで確実に配信されるのは `public/`。
+
+**`any` と `maskable` を1枚で兼ねなかった**（仕様書は2枚の見積りだったが4枚にした）。
+Android は端末ごとに違う形で切り抜くため maskable には中心80%のセーフゾーンが要るが、
+その余白を持った絵を切り抜かない環境（iOS・デスクトップ）にも使うと
+アイコンが目に見えて小さくなる。角丸を落として縁まで塗った maskable 版を別に描いている。
+
+**`id` を明示した。** 省略すると `start_url` がそのままIDになり、
+計測用の `utm_source=homescreen` を足し引きしただけで別アプリ扱いになって
+ホーム画面にアイコンが2つ増える。`id` は `/games/` に固定した。
+
+**`metadata.manifest` はルート相対にした。** 絶対URLにすると
+test.hasokon.com から本番（hasokon.com）のマニフェストを読みに行き、
+scope 外として弾かれる。Next.js は manifest の href を metadataBase で
+絶対化しないので、書いたままが出る。
+
+**配色はライトの `--bg`（#faf9f7）に揃えた。** マニフェストはダークの出し分けが
+できず、`.site-header` の地が `--bg` なので、スタンドアロン起動時のタイトルバーが
+ページのヘッダーと地続きに見える。
+
+**Service Worker は入れていない**（仕様書の「やらないこと」のまま）。
+静的サイトで古いHTMLがキャッシュに残り続ける事故のリスクが利益を上回る。
+manifest だけでも「ホーム画面に追加 → スタンドアロン起動」は成立する。
+tools 側への同時導入とプッシュ通知も見送り、まず games の
+`utm_source=homescreen` のセッション数で効果を測る。
 
 ## 2026-08-14：五目並べの盤を「交点に石を置く」正しい碁盤にした
 

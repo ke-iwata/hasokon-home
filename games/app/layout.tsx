@@ -5,6 +5,7 @@ import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
 import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
 import Analytics from './Analytics';
 import { COPYRIGHT_HOLDER, OGP_IMAGE, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { MANIFEST_SCOPE } from './manifest';
 
 /**
  * Google Search Console の所有権確認用トークン。
@@ -24,6 +25,12 @@ export const metadata: Metadata = {
   },
   description:
     'インストール不要・登録不要でそのまま遊べる無料ミニゲーム集。ナンプレ・ブロック崩しなどをブラウザだけで。',
+  // 「ホーム画面に追加」でスタンドアロン起動させるためのマニフェスト
+  // （docs/features/games-pwa-manifest.md。実体は app/manifest.ts）。
+  // 【注意】ルート相対のまま書くこと（Next.js は manifest を metadataBase で
+  // 絶対URLに直さず、そのまま出す）。絶対URLにすると test.hasokon.com から
+  // 本番のマニフェストを読みに行くことになる
+  manifest: `${MANIFEST_SCOPE}manifest.webmanifest`,
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,

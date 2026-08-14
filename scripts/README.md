@@ -88,8 +88,9 @@ node --test "scripts/test/*.test.mjs"
 ネットワークもGoogleの認証情報も使いません（すべて差し替えて動かしています）。
 `.github/workflows/test.yml` で push 時にも走ります。
 
-次の3つだけは scripts/ 自身のテストではありません。home/ はビルド工程を持たず
-npm も vitest も無いので、リポジトリ唯一の `node --test` にここで相乗りしています。
+次の4つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
+生成物はビルド工程を持たず npm も vitest も無いので、
+リポジトリ唯一の `node --test` にここで相乗りしています。
 
 - `test/home-analytics.test.mjs` … **`home/analytics.js`（ポータルのアクセス解析）**。
   仕様は [docs/features/measurement-hygiene.md](../docs/features/measurement-hygiene.md)
@@ -99,3 +100,7 @@ npm も vitest も無いので、リポジトリ唯一の `node --test` にこ�
 - `test/llms-txt.test.mjs` … **`home/llms.txt`（AIアシスタント向けのサイト案内）**。
   tools / games の registry と突き合わせて、載せ忘れとリンク切れを見張ります。
   仕様は [docs/features/llms-txt.md](../docs/features/llms-txt.md)
+- `test/manifest-icons.test.mjs` … **「ホーム画面に追加」用アイコンの実ファイル**と
+  生成スクリプト。仕様は
+  [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)、
+  生成スクリプトは [design/manifest-icons/](../design/manifest-icons/)
