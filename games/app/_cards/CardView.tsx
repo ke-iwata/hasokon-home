@@ -165,6 +165,67 @@ function FaceSvg({ card }: { card: Card }) {
   );
 }
 
+/**
+ * ジョーカーの表面。**大富豪だけが使う**（ソリティア系のデックには入っていない）。
+ *
+ * 絵札のような人物画は持たない（`public/cards/` にジョーカーの画は無い）ので、
+ * 星と "JOKER" の文字だけで描く。赤系にしてあるのは、手札に混ざったときに
+ * 数札とひと目で見分けられるようにするため。
+ */
+const JOKER_STAR =
+  'M50 40 L57.1 60.3 L78.5 60.7 L61.4 73.7 L67.6 94.3 L50 82 L32.4 94.3 L38.6 73.7 L21.5 60.7 L43 60.3 Z';
+
+function JokerLabel() {
+  return (
+    <text
+      x="6"
+      y="17"
+      fontSize="13"
+      fontWeight="800"
+      fill={RED}
+      fontFamily="ui-sans-serif, system-ui, sans-serif"
+      letterSpacing="-0.5"
+    >
+      JOKER
+    </text>
+  );
+}
+
+function JokerSvg() {
+  return (
+    <svg viewBox="0 0 100 140" aria-hidden="true">
+      <JokerLabel />
+      <g transform="rotate(180 50 70)">
+        <JokerLabel />
+      </g>
+      <path d={JOKER_STAR} fill={RED} />
+    </svg>
+  );
+}
+
+/** ジョーカー1枚。`CardView` と同じ見た目・同じ操作で使える */
+export function JokerView({
+  selected = false,
+  onClick,
+  style,
+}: {
+  selected?: boolean;
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <button
+      type="button"
+      className={`playing-card${selected ? ' selected' : ''}`}
+      onClick={onClick}
+      style={style}
+      aria-label="ジョーカー"
+    >
+      <JokerSvg />
+    </button>
+  );
+}
+
 /** 裏面のSVG。紺地に斜め格子と二重枠 */
 function BackSvg() {
   const pid = useId();

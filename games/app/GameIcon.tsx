@@ -3,6 +3,7 @@ import {
   BombIcon,
   CardsIcon,
   ClubIcon,
+  CrownIcon,
   GridFourIcon,
   GridNineIcon,
   RacquetIcon,
@@ -143,6 +144,7 @@ function BlocksIcon({ size = 26 }: IconProps) {
 
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
+  Crown: CrownIcon,
   Spade: SpadeIcon,
   Club: ClubIcon,
   Bomb: BombIcon,

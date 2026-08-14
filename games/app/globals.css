@@ -1367,3 +1367,228 @@ ol {
       2px 3px 0 rgba(52, 40, 22, 0.3);
   }
 }
+
+/* ---- 大富豪（docs/features/game-daifugo.md） ---- */
+
+/* 場・手札とも1枚の幅を clamp で決める。トランプの絵柄（.playing-card）は
+   親の幅いっぱいに描かれるので、幅を持つのはこのスロットのほう */
+.df-slot {
+  display: block;
+  width: clamp(38px, 9.5vw, 54px);
+  flex: 0 0 auto;
+  transition: transform 0.12s ease;
+}
+
+/* いまの場に出せない札。押せはするが、選んでも役にならないことを先に見せる */
+.df-slot.dim {
+  opacity: 0.42;
+}
+
+.df-slot:has(.playing-card.selected) {
+  transform: translateY(-10px);
+}
+
+/* CPU3人の席。名前・残り枚数・状態（パス／上がり）を1枚ずつの札に見立てて並べる */
+.df-seats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.df-seat {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: 7px 6px;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+/* 考えている席だけ枠を強調する。誰の番か分からないと待たされている理由が伝わらない */
+.df-seat.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.df-seat-name {
+  display: block;
+  color: var(--muted);
+}
+
+.df-seat-count {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.df-seat-state {
+  display: block;
+  min-height: 1.35em;
+  color: var(--muted);
+}
+
+/* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く */
+.df-flags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 1.9em;
+}
+
+.df-flag {
+  border-radius: var(--radius-pill);
+  padding: 2px 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.df-flag.rev {
+  background: var(--danger);
+  color: #fff;
+}
+
+.df-flag.lock {
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--text);
+}
+
+/* 場。札が無いときも高さが変わらないようにして、盤面が上下に跳ねないようにする */
+.df-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 108px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.df-field-who {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.df-field-cards {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.df-field-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 実況。文言が1行と2行で切り替わっても盤面が動かないよう高さを固定する
+   （.hint-row と同じ考え方） */
+.df-msg {
+  height: 3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+  margin: 6px 0;
+}
+
+.df-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 10px;
+  min-height: 76px;
+}
+
+.df-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ローカルルールの設定。既定では畳んでおく（初心者に6項目を突きつけない） */
+.df-rules summary {
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.df-rules ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.df-rules li {
+  margin: 0 0 6px;
+}
+
+.df-rules label {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.df-rule-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.df-rule-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 回戦・試合の結果 */
+.df-result {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 10px 0;
+  background: var(--accent-soft);
+}
+
+.df-result h3 {
+  margin: 0 0 6px;
+  font-size: 0.95rem;
+}
+
+.df-result ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.df-result li {
+  display: grid;
+  grid-template-columns: 4.5em 1fr auto;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding: 2px 0;
+}
+
+.df-result li.me {
+  font-weight: 700;
+}
+
+.df-result-rank {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .df-slot {
+    transition: none;
+  }
+}
