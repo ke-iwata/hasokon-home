@@ -128,6 +128,17 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    // 「Block Blast」「Woodoku」等は他社の固有名なので使わず、一般名詞の
+    // 「ブロックパズル」で立てる（docs/features/game-block-puzzle.md の「権利関係」）
+    slug: 'block-puzzle',
+    icon: 'Blocks',
+    name: 'ブロックパズル',
+    description:
+      '8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べます。',
+    ready: true,
+    updatedAt: '2026-08-13',
+  },
+  {
     slug: 'breakout',
     icon: 'Racquet',
     name: 'ブロック崩し',

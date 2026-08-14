@@ -762,6 +762,176 @@ ol {
   border-top-color: var(--muted);
 }
 
+/* ---- ブロックパズル ----
+   盤面（8×8）と配り札（3枠）の2段構え。ブロックの色は JS 側の COLORS が
+   インラインで入るので、ここでは形と地の色だけを決める */
+
+.bp-stage {
+  position: relative;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.bp-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 3px;
+  width: 100%;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  user-select: none;
+  /* ドラッグをページのスクロールに取られないようにする */
+  touch-action: none;
+}
+
+.bp-cell {
+  aspect-ratio: 1;
+  border: none;
+  border-radius: 4px;
+  padding: 0;
+  background: rgba(148, 163, 184, 0.16);
+  cursor: pointer;
+}
+
+.bp-cell.filled {
+  /* 地の色は JS の COLORS（明暗どちらでも変わらない固定色）が入る。
+     中に薄い陰を落として、ブロックが板に載って見えるようにする */
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* 置ける場所のプレビュー。置ける／置けないを色で分ける
+   （docs/features/game-block-puzzle.md の「配置プレビュー」） */
+.bp-cell.preview {
+  background: var(--accent);
+  opacity: 0.55;
+}
+
+.bp-cell.preview-bad {
+  background: var(--danger);
+  opacity: 0.4;
+}
+
+/* 消えた瞬間だけ光らせる。盤面はもう空なので、位置に色を重ねるだけ */
+.bp-cell.cleared {
+  animation: bp-clear 260ms ease-out; /* FLASH_MS と揃える */
+}
+
+@keyframes bp-clear {
+  from {
+    background: var(--accent);
+    transform: scale(1);
+  }
+  to {
+    background: rgba(148, 163, 184, 0.16);
+    transform: scale(0.86);
+  }
+}
+
+.bp-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.72);
+  color: #f8fafc; /* 地を暗く敷くので、明暗どちらでも白のまま */
+  text-align: center;
+}
+
+.bp-tray {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 420px;
+  margin: 12px auto 0;
+}
+
+/* 枠は中身が空でも同じ大きさで残す（置くたびに配り札が動くと押し間違える）。
+   枠線と地色は敷かない。3つ並べると箱のほうが目立ってしまい、
+   主役であるピースが小さく見えるため。選んだときだけ地色を出す */
+.bp-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 78px;
+  border-radius: 10px;
+}
+
+.bp-slot.selected {
+  background: var(--accent-soft);
+  outline: 2px solid var(--accent);
+}
+
+/* 掴んでいる間は、元の枠のピースを薄くして「持ち上がっている」ことを示す */
+.bp-slot.dragging .bp-piece {
+  opacity: 0.3;
+}
+
+/* 当たり判定を指より大きく取る。見た目のピースは中で小さく描く
+   （docs/features/game-block-puzzle.md の「ピースの掴みやすさ」） */
+.bp-piece {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 72px;
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+}
+
+.bp-piece:disabled {
+  cursor: default;
+}
+
+/* ピースの見た目。
+   1マスの大きさ（--unit）を「枠の幅に収まる大きさ」「64pxの高さに収まる大きさ」
+   「22px」の一番小さいものにする。こうしないと、横長のピース（5×1）が枠から
+   はみ出したり、縦長のピース（1×4）だけ極端に小さく見えたりする */
+.bp-shape {
+  display: grid;
+  gap: 2px;
+  --unit: min(100% / var(--w), 72px / var(--h), 27px);
+  width: calc(var(--unit) * var(--w));
+  height: calc(var(--unit) * var(--h));
+}
+
+/* どこにも置けなくなったピースは薄くする（あと何手あるかが読める） */
+.bp-shape.dim {
+  opacity: 0.35;
+}
+
+.bp-shape span {
+  border-radius: 3px;
+}
+
+.bp-shape span.on {
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+/* ドラッグ中に指について回るピース。盤面のマスと同じ大きさで描く */
+.bp-ghost {
+  position: fixed;
+  z-index: 20;
+  display: grid;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+.bp-ghost .bp-shape {
+  width: 100%;
+  height: 100%;
+  gap: 3px;
+}
+
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
 
 .cardgame {

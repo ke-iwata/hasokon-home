@@ -8,6 +8,15 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-08-13：トップのゲーム一覧にブロックパズルを足した（11本目）
+
+`home/index.html` のミニゲームの節にカードを1枚足し、`.quicknav` の件数を 10 → 11 にした。
+ゲーム本体は games 側（[features/game-block-puzzle.md](./features/game-block-puzzle.md)）。
+
+**404.html と sitemap-home.xml は触っていない。** 404はゲーム一覧（`/games/`）への
+カード1枚だけで個別ゲームを並べておらず、`sitemap-home.xml` はドメイン直下のページだけを
+載せる作りのため。個別ゲームのURLは games 側の `app/sitemap.ts` が registry から自動で出す。
+
 ## 2026-08-13：トップに分類への近道と絞り込みを入れた
 
 `home/index.html` にヒーロー直下の `.quicknav`（分類へのアンカー＋件数）を置き、
