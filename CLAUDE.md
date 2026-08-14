@@ -71,6 +71,10 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   （`scripts/test/home-analytics.test.mjs` がずれを検知する）。
   仕様は [docs/features/measurement-hygiene.md](./docs/features/measurement-hygiene.md)
 - `index.html` / `404.html` のサイト一覧は、ツールやゲームを増やしたら両方更新する
+- `llms.txt` は AIアシスタント向けのサイト案内（[llmstxt.org](https://llmstxt.org/) 形式）。
+  ツールやゲームを増やしたら、`index.html` / sitemap と同じように1行足す
+  （`scripts/test/llms-txt.test.mjs` が registry との食い違いを検知する）。
+  仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
 - `sitemap.xml` はインデックス形式で home / tools / games の3本を指す。
   home のページを増やしたら `sitemap-home.xml` を更新する
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
