@@ -11,6 +11,8 @@ import {
   type BreakoutState,
 } from '@/lib/breakout';
 import { trackToolUse } from '@/lib/analytics';
+import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
+import { type Improved } from '@/lib/records';
 
 /** ブロックの行ごとの色（上の行ほど高得点で暖色） */
 const ROW_COLORS = ['#f87171', '#fb923c', '#fbbf24', '#4ade80', '#38bdf8'];
@@ -23,6 +25,22 @@ export default function Game() {
   // （毎フレーム setState すると再描画で処理落ちするため、ゲーム本体は ref で回す）
   const [status, setStatus] = useState<BreakoutState['status']>('ready');
   const [hud, setHud] = useState({ score: 0, lives: 3, stage: 1 });
+  // 記録（ベストスコア。docs/features/game-records.md）。
+  // スコア型のゲームなのでタイムは残さない（仕様の「やらないこと」）
+  const records = useRecords('breakout');
+  const entry = records.entry();
+  const best = entry.bestScore ?? 0;
+  const recorded = useRef(false);
+  const [result, setResult] = useState<{ score: number; improved: Improved } | null>(null);
+
+  // ゲームオーバーになった時点のスコアを記録する（面をまたいで積み上げた合計）
+  useEffect(() => {
+    if (status !== 'gameover' || recorded.current) return;
+    recorded.current = true;
+    const score = stateRef.current.score;
+    const { improved } = records.finish({ score });
+    setResult({ score, improved });
+  }, [status, records]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -87,9 +105,12 @@ export default function Game() {
   const start = () => {
     const s = stateRef.current;
     if (s.status === 'ready') {
+      const fresh = s.score === 0 && s.stage === 1;
       stateRef.current = launch(s);
       setStatus('playing');
-      trackToolUse('breakout', s.score === 0 && s.stage === 1 ? 'start' : 'continue');
+      trackToolUse('breakout', fresh ? 'start' : 'continue');
+      // 1ゲーム＝球を打ち出してから力尽きるまで。面を進めても数え直さない
+      if (fresh) records.start();
     } else if (s.status === 'cleared') {
       stateRef.current = nextStage(s);
       setStatus('ready');
@@ -98,6 +119,8 @@ export default function Game() {
       stateRef.current = initialState();
       setStatus('ready');
       setHud({ score: 0, lives: 3, stage: 1 });
+      setResult(null);
+      recorded.current = false;
       trackToolUse('breakout', 'retry');
     }
   };
@@ -111,6 +134,14 @@ export default function Game() {
           {'　'}面: {hud.stage}
         </span>
       </div>
+
+      <RecordStrip
+        items={[
+          ...(best > 0 ? [{ label: 'ベストスコア', value: String(best) }] : []),
+          ...(entry.plays ? [{ label: 'プレイ', value: `${entry.plays}回` }] : []),
+        ]}
+      />
+
       <div className="bk-stage" onClick={start}>
         <canvas ref={canvasRef} aria-label="ブロック崩しのゲーム画面" />
         {status !== 'playing' && (
@@ -140,6 +171,8 @@ export default function Game() {
                 <p style={{ fontSize: '1.2rem', fontWeight: 700 }}>ゲームオーバー</p>
                 <p>
                   スコア: {hud.score}（{hud.stage}面）
+                  {result && !result.improved.score && best > 0 ? `　ベスト: ${best}` : ''}
+                  <BestBadge improved={result?.improved ?? null} />
                 </p>
                 <button type="button" className="btn btn-primary" onClick={start}>
                   もう一度

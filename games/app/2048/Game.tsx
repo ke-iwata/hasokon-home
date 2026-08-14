@@ -11,6 +11,7 @@ import {
   type Direction,
 } from '@/lib/game2048';
 import { trackToolUse } from '@/lib/analytics';
+import { RecordStrip, useRecords } from '@/app/_records/Records';
 
 /** タイルの背景色。大きくなるほど濃い暖色に */
 const TILE_COLORS: Record<number, string> = {
@@ -27,7 +28,6 @@ const TILE_COLORS: Record<number, string> = {
   2048: '#22d3ee',
 };
 
-const BEST_KEY = 'g2048:best';
 /** スライドアニメーションの長さ（CSSの transition と揃える） */
 const SLIDE_MS = 130;
 
@@ -56,7 +56,6 @@ export default function Game() {
   const [board, setBoard] = useState<Board2048 | null>(null);
   const [tiles, setTiles] = useState<Tile[]>([]);
   const [score, setScore] = useState(0);
-  const [best, setBest] = useState(0);
   const [won, setWon] = useState(false);
   const [wonNotified, setWonNotified] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -65,15 +64,26 @@ export default function Game() {
   // 盤面の正本。stateのクロージャ経由だと、連打時に古い盤面で
   // move が走ってタイルが二重に残る競合が起きるため、refを正とする
   const boardRef = useRef<Board2048 | null>(null);
+  // 記録（ベストスコア・プレイ数）。docs/features/game-records.md
+  const records = useRecords('2048');
+  const entry = records.entry();
+  const best = entry.bestScore ?? 0;
+  // setTimeout の中から見るので、スコアとベストは ref でも持つ
+  const scoreRef = useRef(0);
+  const bestRef = useRef(0);
+  // この盤面をプレイ数に数えたか（1手目で数える）
+  const counted = useRef(false);
 
   useEffect(() => {
     const b = newBoard();
     boardRef.current = b;
     setBoard(b);
     setTiles(tilesFrom(b));
-    const saved = Number(localStorage.getItem(BEST_KEY) || 0);
-    if (saved > 0) setBest(saved);
   }, []);
+
+  useEffect(() => {
+    bestRef.current = best;
+  }, [best]);
 
   const reset = () => {
     const b = newBoard();
@@ -81,8 +91,10 @@ export default function Game() {
     setBoard(b);
     setTiles(tilesFrom(b));
     setScore(0);
+    scoreRef.current = 0;
     setWon(false);
     setWonNotified(false);
+    counted.current = false;
     animating.current = false;
     trackToolUse('2048', 'new');
   };
@@ -94,6 +106,10 @@ export default function Game() {
       const r = slide(current, dir);
       if (!r.moved) return;
       animating.current = true;
+      if (!counted.current) {
+        counted.current = true;
+        records.start();
+      }
 
       // 1. スライド: 各タイルを移動先へ動かす（CSS transition が効く）。
       //    合体で消える側は dying を付けて、移動後に取り除く
@@ -136,15 +152,14 @@ export default function Game() {
           return out;
         });
         setBoard(spawned);
-        setScore((s) => {
-          const ns = s + r.gained;
-          setBest((b) => {
-            const nb = Math.max(b, ns);
-            localStorage.setItem(BEST_KEY, String(nb));
-            return nb;
-          });
-          return ns;
-        });
+        const ns = scoreRef.current + r.gained;
+        scoreRef.current = ns;
+        setScore(ns);
+        // ベストは更新されたときだけ書く（毎手 localStorage に書きに行かない）
+        if (ns > bestRef.current) {
+          bestRef.current = ns;
+          records.finish({ score: ns });
+        }
         if (!wonNotified && hasWon(spawned)) {
           setWon(true);
           setWonNotified(true);
@@ -153,7 +168,7 @@ export default function Game() {
         animating.current = false;
       }, SLIDE_MS);
     },
-    [wonNotified],
+    [wonNotified, records],
   );
 
   // キーボード
@@ -201,12 +216,18 @@ export default function Game() {
       <div className="status-bar">
         <span>
           スコア: <strong style={{ color: 'var(--text)' }}>{score}</strong>
-          {'　'}ベスト: {best}
         </span>
         <button type="button" className="btn" onClick={reset}>
           最初から
         </button>
       </div>
+
+      <RecordStrip
+        items={[
+          ...(best > 0 ? [{ label: 'ベストスコア', value: String(best) }] : []),
+          ...(entry.plays ? [{ label: 'プレイ', value: `${entry.plays}回` }] : []),
+        ]}
+      />
 
       {/* 文言の出入りで盤面が動かないよう、常に2行分の高さ */}
       <p
@@ -217,7 +238,9 @@ export default function Game() {
         }}
       >
         {over
-          ? `動かせるマスがなくなりました。スコア: ${score}`
+          ? `動かせるマスがなくなりました。スコア: ${score}${
+              score >= best ? '（ベスト更新！）' : `（ベスト ${best}）`
+            }`
           : won
             ? '🎉 2048達成！そのまま続けられます。'
             : ' '}

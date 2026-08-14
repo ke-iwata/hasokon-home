@@ -16,6 +16,8 @@ import {
 } from '@/lib/klondike';
 import { trackToolUse } from '@/lib/analytics';
 import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { formatTime, type Improved } from '@/lib/records';
 
 /**
  * 選択中の札。
@@ -33,23 +35,42 @@ export default function Game() {
   // もどす用の履歴（直近30手）
   const history = useRef<KlondikeState[]>([]);
   const notified = useRef(false);
+  // 記録（docs/features/game-records.md）
+  const records = useRecords('solitaire');
+  const entry = records.entry();
+  const timer = useStopwatch();
+  // この配りをプレイ数に数えたか（1手目で数える）
+  const counted = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(deal());
   }, []);
 
-  if (!state) return <div className="card">配っています…</div>;
+  const won = state ? isWon(state) : false;
+  const moveCount = state?.moves ?? 0;
 
-  const won = isWon(state);
-  if (won && !notified.current) {
+  // クリアの記録（タイム・手数の保存とGA4への送信）
+  useEffect(() => {
+    if (!won || notified.current) return;
     notified.current = true;
     trackToolUse('solitaire', 'win');
-  }
+    const timeMs = timer.stop();
+    const { improved } = records.finish({ outcome: 'win', timeMs, moves: moveCount });
+    setResult({ timeMs, improved });
+  }, [won, moveCount, records, timer]);
+
+  if (!state) return <div className="card">配っています…</div>;
 
   /** 状態を更新しつつ履歴を残す。null（無効な操作）なら false */
   const apply = (next: KlondikeState | null): boolean => {
     if (!next) return false;
     history.current = [...history.current.slice(-29), state];
+    if (!counted.current) {
+      counted.current = true;
+      records.start();
+    }
+    timer.begin();
     setState(next);
     setSel(null);
     return true;
@@ -66,8 +87,11 @@ export default function Game() {
   const newGame = () => {
     history.current = [];
     notified.current = false;
+    counted.current = false;
     setState(deal());
     setSel(null);
+    setResult(null);
+    timer.reset();
     trackToolUse('solitaire', 'new');
   };
 
@@ -124,7 +148,10 @@ export default function Game() {
   return (
     <div className="card cardgame">
       <div className="status-bar">
-        <span>手数: {state.moves}</span>
+        <span>
+          手数: {state.moves}
+          {'　'}⏱ {formatTime(timer.ms)}
+        </span>
         <span style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="btn" onClick={undo} disabled={history.current.length === 0}>
             もどす
@@ -135,11 +162,25 @@ export default function Game() {
         </span>
       </div>
 
+      <RecordStrip
+        items={[
+          ...(entry.bestTimeMs ? [{ label: 'ベスト', value: formatTime(entry.bestTimeMs) }] : []),
+          ...(entry.bestMoves ? [{ label: '最少手数', value: `${entry.bestMoves}手` }] : []),
+          ...(entry.plays
+            ? [{ label: 'クリア', value: `${entry.wins ?? 0} / ${entry.plays}回` }]
+            : []),
+        ]}
+      />
+
       {/* 文言が切り替わっても盤面が動かないよう、常に2行分の高さ */}
       <p className="hint-row">
         {won ? (
           <span style={{ color: 'var(--ok)', fontWeight: 700 }}>
-            🎉 クリア！おめでとうございます（{state.moves}手）
+            🎉 クリア！{state.moves}手・{formatTime(result?.timeMs ?? timer.ms)}
+            {result && !result.improved.time && entry.bestTimeMs
+              ? `（ベスト ${formatTime(entry.bestTimeMs)}）`
+              : ''}
+            <BestBadge improved={result?.improved ?? null} />
           </span>
         ) : sel ? (
           '置きたい場所（列・組札）をタップ。同じ札をもう一度タップで自動移動。'

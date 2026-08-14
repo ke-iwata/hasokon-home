@@ -20,6 +20,8 @@ import {
 } from '@/lib/mahjong-solitaire';
 import { faceById } from '@/lib/mahjong-tiles';
 import { trackToolUse } from '@/lib/analytics';
+import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
+import { formatTime, type Improved } from '@/lib/records';
 import TileFace from './TileFace';
 
 /**
@@ -61,16 +63,31 @@ export default function Game() {
   const [hinted, setHinted] = useState<[number, number] | null>(null);
   const finished = useRef(false);
   const notified = useRef(false);
+  // 記録（docs/features/game-records.md）
+  const records = useRecords('mahjong-solitaire');
+  const entry = records.entry();
+  const timer = useStopwatch();
+  // この盤面をプレイ数に数えたか（最初に牌をタップしたときに数える）
+  const counted = useRef(false);
+  const dealt = useRef(false);
+  const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   const start = useCallback(() => {
     finished.current = false;
     notified.current = false;
+    counted.current = false;
     setHinted(null);
+    setResult(null);
+    timer.reset();
     setState(newGame());
     trackToolUse('mahjong-solitaire', 'new');
-  }, []);
+  }, [timer]);
 
+  // 最初の1回だけ配る（`start` は計測のリセットを含むので、
+  // タイマーが進むたびに作り直される。ここで配り直さないよう ref で止める）
   useEffect(() => {
+    if (dealt.current) return;
+    dealt.current = true;
     start();
   }, [start]);
 
@@ -90,7 +107,10 @@ export default function Game() {
     if (!done || finished.current) return;
     finished.current = true;
     trackToolUse('mahjong-solitaire', 'clear');
-  }, [done]);
+    const timeMs = timer.stop();
+    const { improved } = records.finish({ outcome: 'win', timeMs });
+    setResult({ timeMs, improved });
+  }, [done, records, timer]);
 
   useEffect(() => {
     if (!stuck || notified.current) return;
@@ -101,6 +121,11 @@ export default function Game() {
   const onTap = (slot: number) => {
     if (!state) return;
     setHinted(null);
+    if (!counted.current) {
+      counted.current = true;
+      records.start();
+    }
+    timer.begin();
     setState(tap(state, slot).state);
   };
 
@@ -130,7 +155,7 @@ export default function Game() {
     <div className="card">
       <div className="status-bar">
         <span>
-          残り <strong>{left}</strong> 枚
+          残り <strong>{left}</strong> 枚{'　'}⏱ {formatTime(timer.ms)}
         </span>
         <span>
           {done
@@ -141,9 +166,22 @@ export default function Game() {
         </span>
       </div>
 
+      <RecordStrip
+        items={[
+          ...(entry.bestTimeMs ? [{ label: 'ベスト', value: formatTime(entry.bestTimeMs) }] : []),
+          ...(entry.plays
+            ? [{ label: 'クリア', value: `${entry.wins ?? 0} / ${entry.plays}回` }]
+            : []),
+        ]}
+      />
+
       {done && (
         <p className="status-bar" style={{ color: 'var(--ok)', fontWeight: 700 }}>
-          🎉 全部消せました！
+          🎉 全部消せました！タイム: {formatTime(result?.timeMs ?? timer.ms)}
+          {result && !result.improved.time && entry.bestTimeMs
+            ? `（ベスト ${formatTime(entry.bestTimeMs)}）`
+            : ''}
+          <BestBadge improved={result?.improved ?? null} />
         </p>
       )}
 
