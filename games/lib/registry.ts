@@ -164,6 +164,19 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-15',
   },
   {
+    // 花札のルールも伝統的な絵柄（松に鶴・芒に月など）もパブリックドメインで、
+    // 権利者はいない。特定メーカーの製品の絵柄は模写せず、48枚とも自前のSVGで
+    // 描き起こしている。ゲーム名も一般名称の「花札 こいこい」だけを使う
+    // （docs/features/game-hanafuda-koikoi.md の「権利リスクがない」）
+    slug: 'hanafuda-koikoi',
+    icon: 'Hanafuda',
+    name: '花札 こいこい',
+    description:
+      '日本の伝統札で遊ぶ2人用の定番。CPU対戦は強さ3段階で、6ヶ月戦と12ヶ月戦を選べます。役の一覧と、あと何枚で役になるかの案内つき。',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     // 「上海」はサン電子（サンソフト）が国内で商標を保有しているため名前に使わない。
     // 一般名称の「麻雀ソリティア」で統一する
     // （docs/features/game-mahjong-solitaire.md の「権利関係の確認」）
