@@ -159,6 +159,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-15',
   },
   {
+    slug: 'tabako-zei-neage',
+    icon: 'Cigarette',
+    name: 'たばこ値上げ早見表・負担額計算',
+    description:
+      'たばこ税は2027年4月から毎年4月に1本0.5円ずつ、3回に分けて上がります（1箱20本で1回あたり税込11円）。銘柄の価格を入れると2029年4月までの想定価格が分かり、1日の本数から月間・年間の負担額と増える分、買わなくなった場合に浮く額まで計算できます。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',
