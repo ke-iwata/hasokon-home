@@ -256,6 +256,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    slug: 'nissu-keisan',
+    icon: 'CalendarCheck',
+    name: '日数計算・期日計算',
+    description:
+      '2つの日付のあいだの日数を計算。初日を含む・含まないの両方を表示し、「◯日後」「◯営業日後」の期日計算にも対応。土日と祝日を除いて数えます。',
+    category: '計算・変換',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',
