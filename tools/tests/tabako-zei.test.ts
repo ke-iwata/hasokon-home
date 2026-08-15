@@ -18,12 +18,14 @@ import {
   heatedAlignment,
   increases,
   nextPhase,
+  packTaxAtPhase,
   packTaxFor,
   phaseAt,
   phaseById,
   phaseIndexAt,
   priceTimeline,
   quitSavings,
+  ratesFor,
   taxPerPack,
   taxPerStick,
   taxPerThousand,
@@ -46,6 +48,9 @@ import {
  */
 
 const ymd = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 現行の税率。estimateSpending は rates を省略できないので明示して渡す */
+const CURRENT_RATES = PHASES[0].rates;
 
 describe('PHASES（税率表）', () => {
   it('現行と3回の引き上げの計4件ある', () => {
@@ -281,9 +286,77 @@ describe('加熱式たばこの課税方式見直し', () => {
   });
 });
 
+/**
+ * 「税額を出してよいか」の判断を集約した関数。
+ *
+ * ここが漏れると画面に紙巻の税額が加熱式の税額として出てしまう
+ * （実際に Calculator が packTaxFor を使わず紙巻の税率表を直接渡していて、
+ * 加熱式の移行期間中でも紙巻と同じ内訳を断定表示する不具合を出した）。
+ */
+describe('ratesFor（税額を出してよいかの判断）', () => {
+  it('紙巻はいつでもその時点の税率を返す', () => {
+    expect(ratesFor('paper', '2026-08-15')).toEqual(CURRENT_RATES);
+    expect(ratesFor('paper', '2027-04-01')).toEqual(PHASES[1].rates);
+  });
+
+  it('揃う前の加熱式は税率を返さない（紙巻の税率で代用しない）', () => {
+    expect(ratesFor('heated', '2026-03-31')).toBeUndefined();
+    expect(ratesFor('heated', '2026-08-15')).toBeUndefined();
+    expect(ratesFor('heated', '2026-09-30')).toBeUndefined();
+  });
+
+  it('揃ったあとの加熱式は紙巻と同じ税率を返す', () => {
+    expect(ratesFor('heated', '2026-10-01')).toEqual(CURRENT_RATES);
+    expect(ratesFor('heated', '2027-04-01')).toEqual(ratesFor('paper', '2027-04-01'));
+  });
+
+  it('packTaxFor は ratesFor と同じ判断になる', () => {
+    for (const asOf of ['2026-08-15', '2026-09-30', '2026-10-01', '2029-04-01']) {
+      for (const kind of ['paper', 'heated'] as const) {
+        expect(
+          packTaxFor(kind, asOf) === undefined,
+          `${kind} / ${asOf}: 判断が食い違っている`,
+        ).toBe(ratesFor(kind, asOf) === undefined);
+      }
+    }
+  });
+});
+
+describe('packTaxAtPhase（早見表の行ごとの税額）', () => {
+  it('紙巻はどの行も税額を出せる', () => {
+    expect(PHASES.map((p) => packTaxAtPhase('paper', p, '2026-08-15'))).toEqual([
+      304.88, 314.88, 324.88, 334.88,
+    ]);
+  });
+
+  /**
+   * 移行期間中に開いても、行ごとに判断が変わる。
+   * 現行の行（2021年10月〜）は課税方式が揃う前を含むので伏せるが、
+   * 2027年4月以降の行はすでに揃ったあとなので紙巻と同額で出してよい。
+   */
+  it('移行期間中の加熱式は、現行の行だけ伏せて先の行は出す', () => {
+    expect(PHASES.map((p) => packTaxAtPhase('heated', p, '2026-08-15'))).toEqual([
+      undefined,
+      314.88,
+      324.88,
+      334.88,
+    ]);
+  });
+
+  it('揃ったあとに開けば、加熱式でもすべての行が紙巻と同額になる', () => {
+    expect(PHASES.map((p) => packTaxAtPhase('heated', p, '2026-10-01'))).toEqual(
+      PHASES.map((p) => packTaxAtPhase('paper', p, '2026-10-01')),
+    );
+  });
+
+  it('1箱の本数を反映する', () => {
+    expect(packTaxAtPhase('paper', PHASES[0], '2026-08-15', 10)).toBe(152.44);
+  });
+});
+
 describe('estimateSpending（負担額計算）', () => {
   it('1日20本・1箱580円なら年間211,700円（1日580円 × 365日）', () => {
-    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580 });
+    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: CURRENT_RATES });
     expect(s.daily).toBe(580);
     expect(s.annual).toBe(580 * DAYS_PER_YEAR);
     expect(s.monthly).toBe(Math.round((580 * DAYS_PER_YEAR) / 12));
@@ -292,13 +365,13 @@ describe('estimateSpending（負担額計算）', () => {
   });
 
   it('本数で按分する（1日10本なら半箱ぶん）', () => {
-    const s = estimateSpending({ sticksPerDay: 10, pricePerPack: 580 });
+    const s = estimateSpending({ sticksPerDay: 10, pricePerPack: 580, rates: CURRENT_RATES });
     expect(s.daily).toBe(290);
     expect(s.packsPerYear).toBe(182.5);
   });
 
   it('年間の税額の内訳が出る（1日20本なら たばこ税111,281円）', () => {
-    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580 });
+    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: CURRENT_RATES });
     // 15.244円/本 × 7,300本
     expect(s.annualTobaccoTax).toBe(Math.round(15.244 * 20 * DAYS_PER_YEAR));
     // 税込価格の 10/110
@@ -306,20 +379,20 @@ describe('estimateSpending（負担額計算）', () => {
   });
 
   it('税負担の割合は6割前後（580円の銘柄で）', () => {
-    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580 });
+    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: CURRENT_RATES });
     expect(s.taxRatioPercent).toBeGreaterThan(55);
     expect(s.taxRatioPercent).toBeLessThan(70);
   });
 
   it('高い銘柄ほど税負担の割合が下がる（従量税なので税額は変わらない）', () => {
-    const cheap = estimateSpending({ sticksPerDay: 20, pricePerPack: 500 });
-    const rich = estimateSpending({ sticksPerDay: 20, pricePerPack: 650 });
+    const cheap = estimateSpending({ sticksPerDay: 20, pricePerPack: 500, rates: CURRENT_RATES });
+    const rich = estimateSpending({ sticksPerDay: 20, pricePerPack: 650, rates: CURRENT_RATES });
     expect(cheap.annualTobaccoTax).toBe(rich.annualTobaccoTax);
     expect(cheap.taxRatioPercent).toBeGreaterThan(rich.taxRatioPercent);
   });
 
   it('増税後の税率を渡すと、たばこ税だけが増える', () => {
-    const now = estimateSpending({ sticksPerDay: 20, pricePerPack: 580 });
+    const now = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: CURRENT_RATES });
     const later = estimateSpending({
       sticksPerDay: 20,
       pricePerPack: 580,
@@ -330,20 +403,54 @@ describe('estimateSpending（負担額計算）', () => {
   });
 
   it('1箱の本数を指定できる（10本入りでも1本あたりの価格で按分する）', () => {
-    const s = estimateSpending({ sticksPerDay: 10, pricePerPack: 300, sticksPerPack: 10 });
+    const s = estimateSpending({ sticksPerDay: 10, pricePerPack: 300, sticksPerPack: 10, rates: CURRENT_RATES });
     expect(s.daily).toBe(300);
   });
 
   it('0本・0円でも壊れない', () => {
-    const zero = estimateSpending({ sticksPerDay: 0, pricePerPack: 580 });
+    const zero = estimateSpending({ sticksPerDay: 0, pricePerPack: 580, rates: CURRENT_RATES });
     expect(zero.annual).toBe(0);
     expect(zero.taxRatioPercent).toBe(0);
   });
 
   it('負の入力は0として扱う', () => {
-    const s = estimateSpending({ sticksPerDay: -5, pricePerPack: -100 });
+    const s = estimateSpending({ sticksPerDay: -5, pricePerPack: -100, rates: CURRENT_RATES });
     expect(s.annual).toBe(0);
     expect(s.sticksPerYear).toBe(0);
+  });
+
+  /**
+   * 税率が分からない（加熱式の移行期間）ときの振る舞い。
+   * 支出そのものは価格から出せるので計算し、たばこ税に依存する項目だけを伏せる。
+   */
+  it('税率が無いとき、たばこ税と税の割合を出さない', () => {
+    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: undefined });
+    expect(s.annualTobaccoTax).toBeUndefined();
+    expect(s.taxRatioPercent).toBeUndefined();
+  });
+
+  it('税率が無くても、支出と消費税は計算できる', () => {
+    const s = estimateSpending({ sticksPerDay: 20, pricePerPack: 580, rates: undefined });
+    expect(s.annual).toBe(580 * DAYS_PER_YEAR);
+    expect(s.monthly).toBe(Math.round((580 * DAYS_PER_YEAR) / 12));
+    // 消費税は税込価格の10/110なので、たばこ税が分からなくても出せる
+    expect(s.annualConsumptionTax).toBe(Math.round((580 * DAYS_PER_YEAR) / 11));
+  });
+
+  it('加熱式の移行期間中は ratesFor 経由で自動的に伏せられる', () => {
+    const heated = estimateSpending({
+      sticksPerDay: 20,
+      pricePerPack: 580,
+      rates: ratesFor('heated', '2026-08-15'),
+    });
+    expect(heated.annualTobaccoTax).toBeUndefined();
+
+    const paper = estimateSpending({
+      sticksPerDay: 20,
+      pricePerPack: 580,
+      rates: ratesFor('paper', '2026-08-15'),
+    });
+    expect(paper.annualTobaccoTax).toBe(Math.round(15.244 * 20 * DAYS_PER_YEAR));
   });
 });
 

@@ -379,18 +379,55 @@ export function heatedAlignment(asOf: Date | string = new Date()): HeatedAlignme
 }
 
 /**
- * 種類と基準日から1箱あたりのたばこ税を返す。
+ * 種類と基準日から、税額の計算に使える税率を返す。
  *
- * 加熱式たばこは2026年10月1日より前は製品ごとに税額が違うので undefined を返す。
- * 「分からない」を 0 や紙巻と同額で埋めると、増税額を過大・過小に見せてしまう。
+ * **「税額を出してよいか」の判断はここ1箇所に集約する。** 加熱式たばこは
+ * 2026年10月1日より前は製品ごとの重量・定価で税額が決まるため、税率表を当てはめられない。
+ * その場合は undefined を返し、呼び出し側に「分からない」を持ち回らせる
+ * （0 や紙巻と同額で埋めると、負担を過小・過大に見せてしまう）。
+ */
+export function ratesFor(
+  kind: ProductKind,
+  asOf: Date | string = new Date(),
+): TaxRates | undefined {
+  if (kind === 'heated' && !heatedAlignment(asOf).aligned) return undefined;
+  return phaseAt(asOf).rates;
+}
+
+/**
+ * 種類と基準日から1箱あたりのたばこ税を返す。出せないときは undefined。
  */
 export function packTaxFor(
   kind: ProductKind,
   asOf: Date | string = new Date(),
   sticksPerPack: number = DEFAULT_STICKS_PER_PACK,
 ): number | undefined {
-  if (kind === 'heated' && !heatedAlignment(asOf).aligned) return undefined;
-  return taxPerPack(phaseAt(asOf).rates, sticksPerPack);
+  const rates = ratesFor(kind, asOf);
+  return rates && taxPerPack(rates, sticksPerPack);
+}
+
+/**
+ * 早見表の1行ぶんの「1箱あたりのたばこ税」。出せないときは undefined。
+ *
+ * 加熱式は基準日で一律に伏せるのではなく、**その区切りが効いている時点で
+ * 課税方式が揃っているか**で判断する。たとえば2026年8月に開いた場合、
+ * 現行の行は伏せる必要があるが、2027年4月以降の行は（すでに紙巻と揃ったあとなので）
+ * 紙巻と同額として出してよい。
+ */
+export function packTaxAtPhase(
+  kind: ProductKind,
+  phase: Phase,
+  asOf: Date | string = new Date(),
+  sticksPerPack: number = DEFAULT_STICKS_PER_PACK,
+): number | undefined {
+  if (
+    kind === 'heated' &&
+    !heatedAlignment(asOf).aligned &&
+    phase.effectiveFrom < HEATED_ALIGNED_FROM
+  ) {
+    return undefined;
+  }
+  return taxPerPack(phase.rates, sticksPerPack);
 }
 
 // ---------------------------------------------------------------- 負担額
@@ -403,8 +440,14 @@ export interface SpendingInput {
   pricePerPack: number;
   /** 1箱の本数 */
   sticksPerPack?: number;
-  /** 税の内訳を出すときの税率。省略時は現行 */
-  rates?: TaxRates;
+  /**
+   * 税の内訳に使う税率。`ratesFor(kind, asOf)` の戻り値をそのまま渡す。
+   *
+   * **省略できないようにしてある。** 既定値を持たせると、加熱式のように税率表を
+   * 当てはめられない場合でも呼び出し側が何も書かずに紙巻の税額を得てしまう。
+   * `undefined` を渡したときは、たばこ税に依存する項目を計算せず undefined で返す
+   */
+  rates: TaxRates | undefined;
 }
 
 /** 支出の見積もり。金額はすべて円 */
@@ -419,12 +462,15 @@ export interface Spending {
   sticksPerYear: number;
   /** 1年に買う箱数（端数を含む） */
   packsPerYear: number;
-  /** 年間の支出に含まれるたばこ税 */
-  annualTobaccoTax: number;
-  /** 年間の支出に含まれる消費税 */
+  /** 年間の支出に含まれるたばこ税。税率を出せないとき（加熱式の移行期間）は undefined */
+  annualTobaccoTax: number | undefined;
+  /** 年間の支出に含まれる消費税。税込価格から出せるので常に分かる */
   annualConsumptionTax: number;
-  /** 年間の支出に占める税（たばこ税＋消費税）の割合（％・小数第1位まで） */
-  taxRatioPercent: number;
+  /**
+   * 年間の支出に占める税（たばこ税＋消費税）の割合（％・小数第1位まで）。
+   * たばこ税が分からないときは undefined（消費税だけの割合を出すと過小に見える）
+   */
+  taxRatioPercent: number | undefined;
 }
 
 /**
@@ -432,18 +478,21 @@ export interface Spending {
  *
  * 箱単位ではなく本数で按分している（1日10本なら半箱ぶんの支出として数える）。
  * 実際には箱でしか買えないが、月・年で均せば本数按分のほうが実感に近いため。
+ *
+ * 支出そのもの（1日・月・年）は入力した価格から出るので、税率が分からなくても計算できる。
+ * 分からなくなるのは**たばこ税に依存する項目だけ**なので、そこだけ undefined で返す。
  */
 export function estimateSpending(input: SpendingInput): Spending {
   const sticksPerPack = Math.max(1, input.sticksPerPack ?? DEFAULT_STICKS_PER_PACK);
   const sticksPerDay = Math.max(0, input.sticksPerDay);
   const pricePerPack = Math.max(0, input.pricePerPack);
-  const rates = input.rates ?? PHASES[0].rates;
+  const { rates } = input;
 
   const pricePerStick = pricePerPack / sticksPerPack;
   const sticksPerYear = sticksPerDay * DAYS_PER_YEAR;
   const annualRaw = pricePerStick * sticksPerYear;
 
-  const annualTobaccoTax = taxPerStick(rates) * sticksPerYear;
+  const annualTobaccoTax = rates ? taxPerStick(rates) * sticksPerYear : undefined;
   // 税込価格の内訳なので、消費税は「税込 × 10/110」で取り出す
   const annualConsumptionTax = (annualRaw * CONSUMPTION_TAX_RATE) / (1 + CONSUMPTION_TAX_RATE);
 
@@ -453,12 +502,14 @@ export function estimateSpending(input: SpendingInput): Spending {
     annual: Math.round(annualRaw),
     sticksPerYear,
     packsPerYear: roundTo(sticksPerYear / sticksPerPack, 1),
-    annualTobaccoTax: Math.round(annualTobaccoTax),
+    annualTobaccoTax: annualTobaccoTax === undefined ? undefined : Math.round(annualTobaccoTax),
     annualConsumptionTax: Math.round(annualConsumptionTax),
     taxRatioPercent:
-      annualRaw > 0
-        ? roundTo(((annualTobaccoTax + annualConsumptionTax) / annualRaw) * 100, 1)
-        : 0,
+      annualTobaccoTax === undefined
+        ? undefined
+        : annualRaw > 0
+          ? roundTo(((annualTobaccoTax + annualConsumptionTax) / annualRaw) * 100, 1)
+          : 0,
   };
 }
 

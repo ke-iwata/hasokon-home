@@ -12,10 +12,12 @@ import {
   formatYenDecimal,
   heatedAlignment,
   increases,
+  packTaxAtPhase,
   phaseAt,
   phaseIndexAt,
   priceTimeline,
   quitSavings,
+  ratesFor,
   taxPerStick,
   type ProductKind,
 } from '@/lib/tabako-zei';
@@ -52,10 +54,23 @@ export default function Calculator() {
   const sticksPerPack = perPackInput !== undefined && perPackInput > 0 ? perPackInput : 20;
 
   const baseIndex = phaseIndexAt(asOf);
-  const currentPhase = phaseAt(asOf);
   const alignment = heatedAlignment(asOf);
   /** 加熱式で、まだ紙巻と同じ課税に揃っていない状態。金額を断定できない */
   const heatedPending = kind === 'heated' && !alignment.aligned;
+
+  /**
+   * 税額の計算に使える税率。加熱式が紙巻と揃う前は undefined になり、
+   * たばこ税に依存する表示がすべて「不明」に切り替わる。
+   * 紙巻の税率表（PHASES の rates）を estimateSpending に直接渡してはいけない
+   */
+  const rates = ratesFor(kind, asOf);
+
+  /**
+   * 課税方式が揃ったあとの税率（＝紙巻の税率表）。
+   * 加熱式で税額を伏せているときに「揃ったらこの額になる」と示すためだけに使う。
+   * いま現在の加熱式の税額としては絶対に使わないこと（それが rates の役目）
+   */
+  const alignedRates = phaseAt(asOf).rates;
 
   const rows = useMemo(
     () => priceTimeline({ basePrice: priceYen, sticksPerPack, baseIndex }),
@@ -64,12 +79,7 @@ export default function Calculator() {
 
   const spending =
     priceYen !== undefined && sticksPerDay !== undefined
-      ? estimateSpending({
-          sticksPerDay,
-          pricePerPack: priceYen,
-          sticksPerPack,
-          rates: currentPhase.rates,
-        })
+      ? estimateSpending({ sticksPerDay, pricePerPack: priceYen, sticksPerPack, rates })
       : null;
 
   const rises =
@@ -174,10 +184,14 @@ export default function Calculator() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row) => {
+              // 加熱式は、その時期に紙巻と課税が揃っているかで出し分ける。
+              // 2026年8月に開いた場合、現行の行は伏せるが2027年4月以降の行は出せる
+              const packTax = packTaxAtPhase(kind, row.phase, asOf, sticksPerPack);
+              return (
               <tr key={row.phase.id}>
                 <th scope="row">{row.phase.label}</th>
-                <td>{formatYenDecimal(row.perPack)}</td>
+                <td>{packTax !== undefined ? formatYenDecimal(packTax) : '製品による'}</td>
                 <td>{row.priceYen !== undefined ? formatYen(row.priceYen) : '—'}</td>
                 <td>
                   {row.risePerPackWithTax > 0
@@ -185,7 +199,8 @@ export default function Calculator() {
                     : '—'}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -214,7 +229,11 @@ export default function Calculator() {
             <dl className="kv">
               <div>
                 <dt>うち たばこ税（国・地方・特別税の合計）</dt>
-                <dd>{formatYen(spending.annualTobaccoTax)}</dd>
+                <dd>
+                  {spending.annualTobaccoTax !== undefined
+                    ? formatYen(spending.annualTobaccoTax)
+                    : '不明（製品により異なる）'}
+                </dd>
               </div>
               <div>
                 <dt>うち 消費税</dt>
@@ -222,12 +241,27 @@ export default function Calculator() {
               </div>
               <div>
                 <dt>支出に占める税の割合</dt>
-                <dd>{spending.taxRatioPercent}%</dd>
+                <dd>
+                  {spending.taxRatioPercent !== undefined
+                    ? `${spending.taxRatioPercent}%`
+                    : '不明（製品により異なる）'}
+                </dd>
               </div>
             </dl>
             <p className="hint" style={{ marginTop: 8 }}>
-              たばこ税は本数にかかる従量税（1本{formatYenDecimal(taxPerStick(currentPhase.rates), 3)}
-              ）なので、銘柄が高くても安くても税額は同じです。高い銘柄ほど税の割合は下がります。
+              {rates ? (
+                <>
+                  たばこ税は本数にかかる従量税（1本{formatYenDecimal(taxPerStick(rates), 3)}
+                  ）なので、銘柄が高くても安くても税額は同じです。高い銘柄ほど税の割合は下がります。
+                </>
+              ) : (
+                <>
+                  加熱式たばこは{formatDate(alignment.alignedFrom)}
+                  に紙巻たばこと同じ課税へ揃うまで、税額が製品ごとの重量と定価で決まります。銘柄を特定しないと出せないため、たばこ税の額とその割合は伏せています（
+                  {formatDate(alignment.alignedFrom)}以降は紙巻たばこと同じ従量税になり、1本
+                  {formatYenDecimal(taxPerStick(alignedRates), 3)}です）。
+                </>
+              )}
             </p>
           </div>
         </>
