@@ -2133,3 +2133,135 @@ ol {
   font-size: 0.8rem;
   text-align: center;
 }
+
+/* ---- スピード ---- */
+
+/* 山札1枚＋場札4枚で1人ぶんの列。グリッドの子は既定で min-width: auto なので、
+   minmax(0, 1fr) と子の min-width: 0 の両方が要る（#70 の教訓） */
+.sp-row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+}
+
+.sp-slot {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.sp-seat {
+  margin: 8px 0;
+}
+
+.sp-seat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sp-seat-name.me {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.sp-seat-left strong {
+  color: var(--text);
+}
+
+/* 山札の残り枚数。裏面の上に小さく重ねる（列を1つ増やすと1枚が細くなるため） */
+.sp-count {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+/* 出した跡・尽きた山札。詰めずに枠だけ残して、場札の位置を動かさない
+   （リアルタイムなので、指を置いた先の札が入れ替わると誤タップになる） */
+.sp-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+/* 出せない札をタップしたときの合図。色だけで、位置は動かさない */
+.sp-slot.warn .playing-card {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 2px var(--danger);
+}
+
+/* 中央の台札2枚。ここだけ大きく見せる（見るのはほぼここだけなので） */
+.sp-piles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  max-width: 240px;
+  margin: 12px auto;
+}
+
+.sp-pile {
+  display: block;
+  min-width: 0;
+}
+
+/* 場札を選んでいるあいだ、出せる台札を光らせる（タップ先を迷わせない） */
+.sp-pile.target .playing-card {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+/* 手詰まりの合図。「せーの」で台札をめくり直すあいだ、中央を点滅させる */
+.sp-piles.signal {
+  animation: sp-signal 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes sp-signal {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* 目が回らないよう、動きを減らす設定では点滅させない */
+@media (prefers-reduced-motion: reduce) {
+  .sp-piles.signal {
+    animation: none;
+    outline: 2px dashed var(--accent);
+    outline-offset: 6px;
+  }
+}
+
+/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+.sp-msg {
+  min-height: 2.6em;
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.sp-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
