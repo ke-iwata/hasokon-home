@@ -2265,3 +2265,266 @@ ol {
   font-size: 0.8rem;
   text-align: center;
 }
+
+/* ---- 花札 こいこい ---- */
+
+/* 札は縦長（本物の花札の 3:5 に近い比）。トランプ（.playing-card の 5:7）とは
+   別クラスにしてある。並べる枚数も1枚の大きさも違うため */
+.hf-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 5;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: none;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* 押せる札だけ指のカーソルにする（場札の多くは見せるだけ） */
+button.hf-card {
+  cursor: pointer;
+}
+
+.hf-card svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hf-card.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* 取れる札・出せる札の合図。位置は動かさず、枠だけで示す */
+.hf-card.target {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.hf-card.dim {
+  opacity: 0.42;
+}
+
+.hf-slot {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+/* 手札。8枚が1行に入らない幅では2行に折り返す（1枚を小さくしない） */
+.hf-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  margin: 8px 0;
+}
+
+.hf-hand .hf-slot {
+  width: clamp(44px, 13vw, 66px);
+}
+
+/* CPUの手札は裏向きなので、少し小さく置いて自分の手札と見分ける */
+.hf-hand.cpu .hf-slot {
+  width: clamp(30px, 8.5vw, 44px);
+}
+
+/* 場。緑の地で「場」であることを示す */
+.hf-table {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.22);
+}
+
+.hf-field {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.hf-field .hf-slot {
+  width: clamp(40px, 11.5vw, 58px);
+}
+
+.hf-deck,
+.hf-played {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hf-deck .hf-slot,
+.hf-played .hf-card {
+  width: clamp(40px, 11.5vw, 58px);
+}
+
+.hf-deck-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* 山札の残り枚数。裏面の上に小さく重ねる（枠を増やさない） */
+.hf-count {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.75);
+  color: #f8fafc;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+/* めくる前の空き。枠だけ残して、めくった瞬間に場所が動かないようにする */
+.hf-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 5;
+  border-radius: 5px;
+  border: 1px dashed var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+/* 取り札。種類別に整列した並びをそのまま横に流す */
+.hf-taken {
+  margin: 8px 0;
+}
+
+.hf-taken-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.hf-seat.me {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hf-yaku-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hf-yaku {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(234, 179, 8, 0.18);
+  color: var(--text);
+}
+
+.hf-yaku.total {
+  background: rgba(34, 197, 94, 0.2);
+  font-weight: 700;
+}
+
+.hf-yaku.none {
+  background: none;
+  color: var(--muted);
+}
+
+.hf-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 34px;
+}
+
+.hf-strip .hf-card {
+  width: clamp(24px, 7vw, 38px);
+}
+
+.hf-empty-note {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* 設定のチェック。段（.btn-row）の中に自然に並ぶ大きさにする */
+.hf-toggles {
+  gap: 12px;
+}
+
+.hf-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+.hf-msg {
+  min-height: 3.2em;
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+/* 「あと何枚で役になるか」。初めての人が何を狙えばいいか分かるようにする */
+.hf-goal {
+  margin: 10px 0 0;
+  font-size: 0.8rem;
+}
+
+.hf-goal summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.hf-goal-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.hf-goal-list li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 4px 0;
+  border-top: 1px solid var(--border);
+}
+
+.hf-goal-list li .name {
+  min-width: 5em;
+  font-weight: 700;
+}
+
+.hf-goal-list li .note {
+  flex: 1 1 auto;
+  color: var(--muted);
+}
+
+.hf-goal-list li.done .state {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.hf-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+}

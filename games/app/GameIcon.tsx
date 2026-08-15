@@ -232,6 +232,45 @@ function SpeedBoltIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 花札 こいこい（縦長の札に5弁の花）。**これも自前で描いている。**
+ *
+ * Phosphor に花札を指すアイコンは無い。Flower は園芸・自然の意味に寄っていて
+ * カードゲームに見えず、トランプ系のアイコン（Cards・Spade）と並べると
+ * 別ジャンルに見えてしまう。**縦長で細い札**の形そのものが花札の特徴なので、
+ * トランプより細い枠に花を1つ入れて描いた。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function HanafudaIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="72" y="24" width="112" height="208" rx="18" />
+      {/* 中心(128,128)から半径34で5等分した位置。home/index.html にも同じ形を
+          置いているので、座標は計算式ではなく数値で持つ（両方を見比べられるように） */}
+      {[
+        [128, 94],
+        [160.3, 117.5],
+        [148, 155.5],
+        [108, 155.5],
+        [95.7, 117.5],
+      ].map(([cx, cy]) => (
+        <circle key={cx} cx={cx} cy={cy} r={20} strokeWidth={14} />
+      ))}
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -249,6 +288,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Sevens: SevensIcon,
   MemoryPair: MemoryPairIcon,
   SpeedBolt: SpeedBoltIcon,
+  Hanafuda: HanafudaIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
