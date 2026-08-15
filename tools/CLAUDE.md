@@ -175,7 +175,7 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在838件）
+npm test         # 計算ロジックのテスト（現在896件）
 npm run build    # out/ に静的出力
 ```
 
@@ -194,6 +194,7 @@ npm run build    # out/ に静的出力
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
+| たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
@@ -202,7 +203,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール25本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト838件
+- ツール26本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト896件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -246,6 +247,14 @@ npm run build    # out/ に静的出力
   （[docs/features/yoikuhi-keisan.md](../docs/features/yoikuhi-keisan.md)）。
   算定表の値を持たず方式を実装しているので、`tests/yoikuhi.test.ts` が
   算定表（表1〜表3）の升目と突き合わせて回帰を見張っている
+- **たばこは「加熱式の課税方式見直し」と「税率の引き上げ」が別の改正**。前者は
+  紙巻たばこへの本数の換算方法の変更で、2026年4月1日・2026年10月1日の2段階。
+  上がり幅が製品の重量と定価で決まるので**一律の金額を出せない**（`packTaxFor()` は
+  揃う前の加熱式に `undefined` を返す。0や紙巻と同額で埋めないこと）。後者は
+  2027年4月から毎年4月に国たばこ税を1本0.5円ずつ3回で、紙巻・加熱式に共通。
+  **増税分は税抜10円/箱だが、たばこ税は消費税の課税対象なので小売価格では11円**。
+  将来の小売価格は認可制のため確定せず、画面では必ず「想定」と添える
+  （[docs/features/tabako-zei-neage.md](../docs/features/tabako-zei-neage.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
