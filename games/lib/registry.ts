@@ -152,6 +152,18 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    // 「スピード」（Speed / Spit）は伝統的なトランプ2人遊びの一般名称で、ルールも
+    // 名称もパブリックドメイン。商標の問題は無い
+    // （docs/features/game-speed.md の「権利関係的に無害な題材」）
+    slug: 'speed',
+    icon: 'SpeedBolt',
+    name: 'スピード',
+    description:
+      '台札と1つ違いの数字を、手番を待たずに出し合うトランプの定番。CPU対戦は反応の速さで強さ3段階。1ゲーム1〜2分。',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     // 「上海」はサン電子（サンソフト）が国内で商標を保有しているため名前に使わない。
     // 一般名称の「麻雀ソリティア」で統一する
     // （docs/features/game-mahjong-solitaire.md の「権利関係の確認」）

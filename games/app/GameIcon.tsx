@@ -203,6 +203,35 @@ function MemoryPairIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * スピード（カードに稲妻）。**これも自前で描いている。**
+ *
+ * 七並べの SevensIcon（カードに「7」）と枠は同じだが、中身を稲妻にして
+ * 「速さを競うカードゲーム」であることを出した。Phosphor の Lightning 単体だと
+ * トランプの面だと分からず、電気・通知系のアイコンに見えてしまう。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function SpeedBoltIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="52" y="32" width="152" height="192" rx="20" />
+      <path d="M140 68l-44 62h64l-44 58" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -219,6 +248,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Blocks: BlocksIcon,
   Sevens: SevensIcon,
   MemoryPair: MemoryPairIcon,
+  SpeedBolt: SpeedBoltIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
