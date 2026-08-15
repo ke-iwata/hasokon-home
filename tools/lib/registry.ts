@@ -149,6 +149,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    slug: 'yoikuhi-keisan',
+    icon: 'HandHeart',
+    name: '養育費 計算ツール',
+    description:
+      '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
+    category: 'お金・社会保険',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',

@@ -175,7 +175,7 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在777件）
+npm test         # 計算ロジックのテスト（現在838件）
 npm run build    # out/ に静的出力
 ```
 
@@ -194,6 +194,7 @@ npm run build    # out/ に静的出力
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
+| 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
@@ -201,7 +202,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール24本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト777件
+- ツール25本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト838件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -234,6 +235,17 @@ npm run build    # out/ に静的出力
   新しい額が実際に効くのは2026年12月拠出分（2027年1月引落分）からなので、
   **「いま出せる額」と必ず並べて出すこと**
   （[docs/features/ideco-kyoshutsu-gendogaku.md](../docs/features/ideco-kyoshutsu-gendogaku.md)）
+- **養育費は「額の決め方」と「2026年4月の新制度」が別物**。額は裁判所の標準算定方式
+  （令和元年12月改定）で、改正民法（令和6年法律第33号）でも変わっていない。
+  改正で増えたのは法定養育費（月2万円 × 子の数）と先取特権（月8万円 × 子の数まで）で、
+  どちらも法務省令（令和7年法務省令第56号）が額を定めている。
+  **法定養育費は2026年4月1日以降に成立した離婚にしか適用されない**（遡及なし。
+  先取特権のほうは施行前の取決めでも施行後に生ずる分には及ぶ）。
+  **先取特権の上限は月8万円で、取り決めた養育費の全額に及ぶわけではない**。
+  この2点は誤解が多いので、画面と解説の両方で独立した見出しにしてある
+  （[docs/features/yoikuhi-keisan.md](../docs/features/yoikuhi-keisan.md)）。
+  算定表の値を持たず方式を実装しているので、`tests/yoikuhi.test.ts` が
+  算定表（表1〜表3）の升目と突き合わせて回帰を見張っている
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
