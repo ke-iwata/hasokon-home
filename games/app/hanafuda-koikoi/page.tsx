@@ -239,6 +239,28 @@ export default function Page() {
 
       <AdUnit position="below-faq" />
 
+      {/* 札の絵柄は CC BY-SA 4.0。帰属表示はライセンスの義務なので消さないこと
+          （出典の詳細は app/_hanafuda/CardFace.tsx の冒頭コメント） */}
+      <p className="hf-credit">
+        札の絵柄:{' '}
+        <a
+          href="https://commons.wikimedia.org/wiki/Category:SVG_Hanafuda_with_green_plants"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Louie Mantia 作の花札セット
+        </a>
+        （
+        <a
+          href="https://creativecommons.org/licenses/by-sa/4.0/deed.ja"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          CC BY-SA 4.0
+        </a>
+        ）を、配信用に縮小して使用しています。
+      </p>
+
       <h2>他のゲーム</h2>
       <div className="game-grid">
         {games

@@ -2270,14 +2270,15 @@ ol {
 
 /* 札は縦長（本物の花札の 3:5 に近い比）。トランプ（.playing-card の 5:7）とは
    別クラスにしてある。並べる枚数も1枚の大きさも違うため */
+/* 縦横比は画像（viewBox 976×1600）に合わせる */
 .hf-card {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 5;
+  aspect-ratio: 976 / 1600;
   padding: 0;
   border: 0;
-  border-radius: 5px;
+  border-radius: 6px;
   background: none;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
@@ -2288,10 +2289,28 @@ button.hf-card {
   cursor: pointer;
 }
 
-.hf-card svg {
+.hf-card img {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* 右上の月数。画像はCC BY-SAの原本を無改変で使うので、
+   バッジは画像に描き込まずHTMLで重ねる（CardFace.tsx の約束を参照） */
+.hf-month {
+  position: absolute;
+  top: 3%;
+  right: 5%;
+  min-width: 1.5em;
+  padding: 0 0.25em;
+  border-radius: 6px;
+  background: rgba(30, 25, 20, 0.78);
+  color: #f5efdf;
+  font-size: clamp(0.6rem, 2vw, 0.8rem);
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
 }
 
 .hf-card.selected {
@@ -2333,12 +2352,12 @@ button.hf-card {
   width: clamp(30px, 8.5vw, 44px);
 }
 
-/* 場。緑の地で「場」であることを示す */
+/* 場。緑の地で「場」であることを示す。左に山札、右に場札（4枚×2列） */
 .hf-table {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
   margin: 10px 0;
   padding: 10px 6px;
   border-radius: 10px;
@@ -2346,36 +2365,47 @@ button.hf-card {
   border: 1px solid rgba(34, 197, 94, 0.22);
 }
 
+/* 場は常に4列。列の実寸から札の大きさが決まるので、画面幅ごとの
+   個別指定は要らない（minmax(0, 1fr) が縮み、max-width が広い画面での
+   肥大を止める）。8枚を超えたら自然に3行目が生まれる。
+   下限は44px（タッチターゲットの目安）を割らないことを実測で確認している。
+   2択で取る札を選ぶ場面ではここが押す先になる */
 .hf-field {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 5px;
-  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 300px;
+  align-content: start;
 }
 
-/* 下限は44px。2択で取る札を選ぶ場面ではここが押す先になるので、
-   タッチターゲットの目安（44px）を下回らせない。折り返す前提の flex なので
-   下限を上げても横スクロールは出ない */
 .hf-field .hf-slot {
-  width: clamp(44px, 11.5vw, 58px);
+  width: 100%;
+  min-width: 0;
 }
 
-.hf-deck,
-.hf-played {
+/* 山札。裏向きの束とめくった／出した札を縦に積んで、場の左に固定幅で置く。
+   場と違って押せる要素が無いので、44pxのタッチターゲットには縛られない
+   （場の4列を44px以上に保つ幅の余裕を、ここを絞ることで作っている） */
+.hf-deck {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
-.hf-deck .hf-slot,
-.hf-played .hf-card {
-  width: clamp(44px, 11.5vw, 58px);
+.hf-deck .hf-slot {
+  width: clamp(34px, 8vw, 50px);
 }
 
 .hf-deck-note {
+  width: clamp(34px, 8vw, 50px);
+  text-align: center;
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
+  line-height: 1.3;
 }
 
 /* 山札の残り枚数。裏面の上に小さく重ねる（枠を増やさない） */
@@ -2397,8 +2427,8 @@ button.hf-card {
 .hf-empty {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 5;
-  border-radius: 5px;
+  aspect-ratio: 976 / 1600;
+  border-radius: 6px;
   border: 1px dashed var(--border);
   background: rgba(148, 163, 184, 0.08);
 }
@@ -2530,4 +2560,10 @@ button.hf-card {
   color: var(--muted);
   font-size: 0.8rem;
   text-align: center;
+}
+
+/* 札の絵柄のクレジット（CC BY-SA の帰属表示。消さないこと） */
+.hf-credit {
+  color: var(--muted);
+  font-size: 0.8rem;
 }

@@ -4,9 +4,9 @@
  * 仕様: docs/features/game-hanafuda-koikoi.md
  *
  * 花札のルールも伝統的な絵柄（松に鶴・芒に月など）もパブリックドメインで、
- * 権利者がいない。**特定メーカーの製品の絵柄は模写せず、絵は自前のSVGで
- * 描き起こす**（`app/_hanafuda/CardFace.tsx`）。名称も一般名称の
- * 「花札 こいこい」だけを使う（games/CLAUDE.md の名称の約束）。
+ * 権利者がいない。絵柄は Louie Mantia 氏の CC BY-SA 4.0 のセットを使っている
+ * （出どころと帰属表示の義務は `app/_hanafuda/CardFace.tsx` の冒頭コメント）。
+ * 名称も一般名称の「花札 こいこい」だけを使う（games/CLAUDE.md の名称の約束）。
  *
  * ## なぜ札のデータだけ別ファイルなのか
  *
