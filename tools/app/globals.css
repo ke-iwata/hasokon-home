@@ -1774,3 +1774,63 @@ label {
   .rl .die-flat.rolling {
     animation: none;
   }}
+
+/* ------------------------------------------------------------------
+   印刷用チェックリスト（docs/features/bosai-bichiku-keisan.md）
+
+   `data-print="sheet"` を付けた要素だけを紙に出す。防災備蓄の計算結果を
+   そのまま買い物リストとして持ち歩けるようにするためのもので、
+   自治体・保険会社の備蓄計算にはない実用差別化点にあたる。
+
+   ページごとに「印刷用の別ページ」を用意していないのは、
+   印刷用ページを作ると計算結果を渡す仕組み（URLパラメータ等）が必要になり、
+   静的書き出しのこのサイトでは入力値がURLに残ってしまうため。
+
+   仕組み: シートを含まない要素をすべて消す。
+   `:has([data-print='sheet'])` に当たるのはシートの祖先だけなので、
+   祖先はそのまま残り、その兄弟（ヘッダ・入力欄・解説・広告・フッタ）が消える。
+   シート自身とその中身は除外している。
+   ページごとにクラスを足さずに済むので、他のツールで印刷したくなったときも
+   `data-print="sheet"` を1つ付けるだけで足りる。
+   ------------------------------------------------------------------ */
+
+@media print {
+  body:has([data-print='sheet'])
+    *:not(:has([data-print='sheet'])):not([data-print='sheet'], [data-print='sheet'] *) {
+    display: none !important;
+  }
+
+  /* 祖先に残る枠・影・余白は紙では邪魔なので落とす */
+  body:has([data-print='sheet']) main,
+  body:has([data-print='sheet']) .card,
+  body:has([data-print='sheet']) [data-print='sheet'] .panel {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    max-width: none;
+  }
+
+  /* チェックボックスは紙でも枠が見えないと書き込めない。
+     ブラウザ既定の描画は印刷時に背景を落とされて枠ごと消えることがあるので、
+     枠線として自前で描く */
+  [data-print='sheet'] input[type='checkbox'] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1px solid #333;
+    border-radius: 2px;
+  }
+
+  /* 品目が分類の見出しと離れて次のページへ送られないようにする */
+  [data-print='sheet'] section {
+    break-inside: avoid;
+  }
+
+  [data-print='sheet'] .hint {
+    color: #444;
+  }
+}

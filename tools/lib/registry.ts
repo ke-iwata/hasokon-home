@@ -218,6 +218,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    slug: 'bosai-bichiku-keisan',
+    icon: 'Package',
+    name: '防災備蓄 計算ツール',
+    description:
+      '家族の人数を入れるだけで、水・食料・カセットボンベ・簡易トイレの必要量が出ます。3日分と7日分を切り替えでき、乳幼児のミルク・おむつ、ペットのフードにも対応。そのまま印刷できる買い物チェックリストつき。',
+    category: '生活・健康',
+    ready: true,
+    updatedAt: '2026-08-15',
+  },
+  {
     slug: 'interval-timer',
     icon: 'Timer',
     name: 'インターバルタイマー',
