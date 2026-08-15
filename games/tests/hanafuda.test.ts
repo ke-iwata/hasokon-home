@@ -263,6 +263,36 @@ describe('役の判定', () => {
     expect(new Set(YAKU_TABLE.map((y) => y.id)).size).toBe(YAKU_TABLE.length);
   });
 
+  /**
+   * 「1枚増えるごとに1文」で伸びるのはタネ・タン・カスだけ。
+   *
+   * この不変条件を機械で固定しておかないと、枚数で決まる役（四光・三光）にも
+   * 同じ計算が当たっていることに気づけない。表の並び順と `group` の排他が
+   * 先に効いて表面化しないため、**並び順を変えた瞬間に黙って点が狂う**。
+   */
+  it('枚数で伸びる役はタネ・タン・カスの3つだけ', () => {
+    expect(YAKU_TABLE.filter((y) => y.extra).map((y) => y.id)).toEqual(['tane', 'tan', 'kasu']);
+  });
+
+  it('光の役は枚数が増えても固定点のまま（三光は光4枚でも5文）', () => {
+    // yakuProgress は排他グループを見ずに全役を並べるので、
+    // 「三光そのものの点数」を排他に隠されずに確かめられる
+    const four = ['1-1', '3-1', '8-1', '12-1'];
+    const list = yakuProgress(four);
+    expect(list.find((p) => p.def.id === 'sankou')).toMatchObject({ done: true, points: 5 });
+    expect(list.find((p) => p.def.id === 'shikou')).toMatchObject({ done: true, points: 8 });
+    // 実際の集計では、光の役はいちばん高い1つだけ（四光の8文）になる
+    expect(evaluateYaku(four).map((y) => y.id)).toEqual(['shikou']);
+    expect(scoreOf(four)).toBe(8);
+
+    // 光5枚でも、四光・三光それぞれの点は動かない
+    const five = [...four, '11-1'];
+    const all = yakuProgress(five);
+    expect(all.find((p) => p.def.id === 'sankou')?.points).toBe(0); // 雨を含むので不成立
+    expect(all.find((p) => p.def.id === 'ame-shikou')).toMatchObject({ done: true, points: 7 });
+    expect(scoreOf(five, { ...DEFAULT_OPTIONS, sake: false })).toBe(10);
+  });
+
   it('役の表に出てくる札はすべて実在する', () => {
     for (const def of YAKU_TABLE) {
       for (const id of [...(def.cards ?? []), ...(def.exclude ?? [])]) {
