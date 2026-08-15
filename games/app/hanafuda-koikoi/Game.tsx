@@ -365,6 +365,33 @@ export default function Game() {
       {capturedRow(CPU)}
 
       <div className="hf-table">
+        {/*
+          左に山札、右に場札（4枚×2列）。「出した札」（手札から出して合わせ待ちの札）は
+          山札の2枚目のスロットに間借りする。どちらも「めくった／出したばかりの札が
+          合わさるのを待っている」という同じ状態なので、一つのスロットで足りる
+        */}
+        <div
+          className="hf-deck"
+          aria-label={state.pending?.source === 'hand' ? '出した札' : '山札'}
+        >
+          <span className="hf-slot">
+            <HanafudaBack />
+            <span className="hf-count">{state.deck.length}</span>
+          </span>
+          <span className="hf-slot">
+            {state.pending ? (
+              <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
+            ) : state.lastDrawn ? (
+              <HanafudaCardView id={state.lastDrawn} showMonth={prefs.showMonth} />
+            ) : (
+              <span className="hf-empty" aria-hidden />
+            )}
+          </span>
+          <span className="hf-deck-note">
+            {state.pending?.source === 'hand' ? '出した札' : 'めくった札'}
+          </span>
+        </div>
+
         <div className="hf-field" aria-label="場札">
           {state.field.map((id) => (
             <span key={id} className="hf-slot">
@@ -378,31 +405,6 @@ export default function Game() {
             </span>
           ))}
         </div>
-
-        <div className="hf-deck" aria-label="山札">
-          <span className="hf-slot">
-            <HanafudaBack />
-            <span className="hf-count">{state.deck.length}</span>
-          </span>
-          <span className="hf-slot">
-            {state.pending?.source === 'deck' ? (
-              <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
-            ) : state.lastDrawn ? (
-              <HanafudaCardView id={state.lastDrawn} showMonth={prefs.showMonth} />
-            ) : (
-              <span className="hf-empty" aria-hidden />
-            )}
-          </span>
-          <span className="hf-deck-note">めくった札</span>
-        </div>
-
-        {/* 出したばかりの手札（合わせる札を選んでいるあいだ、どこにも属さない） */}
-        {state.pending?.source === 'hand' && (
-          <div className="hf-played" aria-label="出した札">
-            <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
-            <span className="hf-deck-note">出した札</span>
-          </div>
-        )}
       </div>
 
       {capturedRow(HUMAN)}
