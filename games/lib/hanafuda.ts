@@ -113,9 +113,10 @@ export type YakuId =
  * 役の定義。
  *
  * - `cards` を持つ役は「その札をすべて持っていれば成立」
- * - `kind` を持つ役は「その種別を `min` 枚以上で成立。1枚増えるごとに1文」
+ * - `kind` を持つ役は「その種別を `min` 枚以上で成立」
  * - `exclude` は「その札を含んでいたら成立しない」（四光・三光の雨）
  * - `group` が同じ役は**いちばん高いものだけ**を採る（光の役どうし）
+ * - `extra` を持つ役だけが「1枚増えるごとに1文」で伸びる（タネ・タン・カス）
  */
 export interface YakuDef {
   id: YakuId;
@@ -127,6 +128,17 @@ export interface YakuDef {
   exclude?: readonly string[];
   kind?: HanafudaKind;
   min?: number;
+  /**
+   * `min` を超えた1枚ごとに1文増えるか。**タネ・タン・カスだけが持つ。**
+   *
+   * この印を付けずに「枚数で決まる役はすべて伸びる」としていたことがある。
+   * 四光（`kind: 'hikari'` / `min: 4`）にも同じ計算が当たっていて、
+   * 光5枚のときの三光が6文になりえた。実際には `group` の排他と表の並び順が
+   * 先に効いて表面化しなかったが、**表の順序を入れ替えただけで黙って点が狂う**。
+   * 伸びる役を明示する側に倒し、`tests/hanafuda.test.ts` が
+   * 「伸びるのはこの3つだけ」と「光の役は固定点」の両方を見張っている。
+   */
+  extra?: boolean;
   /** 排他グループ。同じ値の役は最高点の1つだけ成立する */
   group?: string;
   /** 設定で外せる役（花見酒・月見酒） */
@@ -217,9 +229,33 @@ export const YAKU_TABLE: readonly YakuDef[] = [
     cards: ['8-1', SAKE_CUP],
     optional: true,
   },
-  { id: 'tane', name: 'タネ', note: 'タネ5枚（以降1枚ごとに＋1文）', points: 1, kind: 'tane', min: 5 },
-  { id: 'tan', name: 'タン', note: '短冊5枚（以降1枚ごとに＋1文）', points: 1, kind: 'tanzaku', min: 5 },
-  { id: 'kasu', name: 'カス', note: 'カス10枚（以降1枚ごとに＋1文）', points: 1, kind: 'kasu', min: 10 },
+  {
+    id: 'tane',
+    name: 'タネ',
+    note: 'タネ5枚（以降1枚ごとに＋1文）',
+    points: 1,
+    kind: 'tane',
+    min: 5,
+    extra: true,
+  },
+  {
+    id: 'tan',
+    name: 'タン',
+    note: '短冊5枚（以降1枚ごとに＋1文）',
+    points: 1,
+    kind: 'tanzaku',
+    min: 5,
+    extra: true,
+  },
+  {
+    id: 'kasu',
+    name: 'カス',
+    note: 'カス10枚（以降1枚ごとに＋1文）',
+    points: 1,
+    kind: 'kasu',
+    min: 10,
+    extra: true,
+  },
 ];
 
 /** 成立した役 */
@@ -249,7 +285,10 @@ function countKind(ids: readonly string[], kind: HanafudaKind): number {
 /**
  * 1つの役の進み具合を測る。
  *
- * 枚数系（タネ・タン・カス）は `min` 枚で1文、以降1枚ごとに1文増える。
+ * 枚数で決まる役は `min` 枚で成立する。**`extra` を持つ役（タネ・タン・カス）だけ**
+ * が、そこから1枚増えるごとに1文ずつ伸びる。光の役は枚数で決まるが伸びない
+ * （`YakuDef.extra` のコメントを参照。ここを「枚数系はすべて伸びる」にすると、
+ * 表の並び順を変えただけで三光が6文になる）。
  * 除外札（`exclude`）を持っていると、枚数が足りていても成立しない。
  */
 function progressOf(def: YakuDef, captured: readonly string[]): YakuProgress {
@@ -264,7 +303,8 @@ function progressOf(def: YakuDef, captured: readonly string[]): YakuProgress {
   const blocked = (def.exclude ?? []).some((id) => owned.has(id));
   const have = countKind(captured, kind);
   const done = !blocked && have >= min;
-  return { def, have, need: min, done, points: done ? def.points + (have - min) : 0 };
+  const bonus = def.extra ? have - min : 0;
+  return { def, have, need: min, done, points: done ? def.points + bonus : 0 };
 }
 
 /**
