@@ -11,82 +11,38 @@
  * 3. 干支（十二支・十干十二支）
  * 4. 学年の目安（早生まれ＝1月1日〜4月1日の繰り上がりを含む）
  *
- * 日付は「年・月・日の3つ組」（DateParts）で持ち、`Date` は日数の差を出すときに
- * UTC で作るときだけ使う。ローカルタイムの `Date` で日付を組み立てると、
- * タイムゾーンによって1日ずれるため。
+ * 日付そのものの扱い（DateParts・うるう年・日数の差・曜日）は
+ * `lib/date-parts.ts` に切り出してある。日数計算ツール（`lib/nissu-keisan.ts`）と
+ * 共有するため。ここからは従来どおりの名前で再エクスポートしている。
  */
 
-// ---------------------------------------------------------------- 日付の基本
+import {
+  compareDate,
+  dayOfWeek,
+  daysBetween,
+  formatDate,
+  formatJa,
+  isLeapYear,
+  isValidDate,
+  parseDate,
+  WEEKDAY_LABELS,
+  type DateParts,
+} from './date-parts';
 
-/** 年月日の3つ組。month は 1〜12、day は 1〜31（実在する日だけを入れる） */
-export interface DateParts {
-  year: number;
-  month: number;
-  day: number;
-}
-
-/** うるう年か（グレゴリオ暦） */
-export function isLeapYear(year: number): boolean {
-  return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-}
-
-/** その年月の日数 */
-export function daysInMonth(year: number, month: number): number {
-  if (month === 2) return isLeapYear(year) ? 29 : 28;
-  return [4, 6, 9, 11].includes(month) ? 30 : 31;
-}
-
-/** 実在する日付か（2月30日・4月31日などを弾く） */
-export function isValidDate(parts: DateParts): boolean {
-  const { year, month, day } = parts;
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
-  if (year < 1 || month < 1 || month > 12 || day < 1) return false;
-  return day <= daysInMonth(year, month);
-}
-
-/** 'YYYY-MM-DD' → DateParts。形式が不正・実在しない日付なら null */
-export function parseDate(iso: string): DateParts | null {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
-  if (!m) return null;
-  const parts = { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
-  return isValidDate(parts) ? parts : null;
-}
-
-/** DateParts → 'YYYY-MM-DD'（`<input type="date">` に渡せる形） */
-export function formatDate(parts: DateParts): string {
-  const y = String(parts.year).padStart(4, '0');
-  const m = String(parts.month).padStart(2, '0');
-  const d = String(parts.day).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-/** DateParts → '2026年8月14日' */
-export function formatJa(parts: DateParts): string {
-  return `${parts.year}年${parts.month}月${parts.day}日`;
-}
-
-/** 日付の大小比較（a < b なら負、同日なら0、a > b なら正） */
-export function compareDate(a: DateParts, b: DateParts): number {
-  return a.year - b.year || a.month - b.month || a.day - b.day;
-}
-
-/** 1970-01-01 からの通算日数。差を出すためだけに使う（UTCなので夏時間の影響を受けない） */
-function toDayNumber(parts: DateParts): number {
-  return Date.UTC(parts.year, parts.month - 1, parts.day) / 86_400_000;
-}
-
-/** a から b までの日数（b が後なら正） */
-export function daysBetween(a: DateParts, b: DateParts): number {
-  return toDayNumber(b) - toDayNumber(a);
-}
-
-/** 曜日（0=日〜6=土） */
-export function dayOfWeek(parts: DateParts): number {
-  return new Date(Date.UTC(parts.year, parts.month - 1, parts.day)).getUTCDay();
-}
-
-/** 曜日の日本語表記 */
-export const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'] as const;
+// 年齢計算の利用側（Calculator・テスト）が従来どおり @/lib/nenrei から引けるようにする
+export {
+  compareDate,
+  dayOfWeek,
+  daysBetween,
+  daysInMonth,
+  formatDate,
+  formatJa,
+  isLeapYear,
+  isValidDate,
+  parseDate,
+  WEEKDAY_LABELS,
+} from './date-parts';
+export type { DateParts } from './date-parts';
 
 // ---------------------------------------------------------------- 元号データ
 
