@@ -248,7 +248,7 @@ export default function Page() {
         <Link href="/nenshu-kabe/">年収の壁 計算機</Link>
       </p>
 
-      <ToolMeta slug="yoikuhi-keisan" ymyl>
+      <ToolMeta slug="yoikuhi-keisan" ymyl="legal">
         出典：裁判所「
         <a
           href="https://www.courts.go.jp/toukei_siryou/siryo/H30shihou_houkoku/index.html"

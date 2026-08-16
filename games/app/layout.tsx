@@ -90,6 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
             <p>
               <Link href="/">ゲーム一覧</Link>
+              <Link href="/about/">運営者情報</Link>
               <Link href="/privacy/">プライバシーポリシー</Link>
               <Link href="/contact/">お問い合わせ</Link>
               <a href="/">

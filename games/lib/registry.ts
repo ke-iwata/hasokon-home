@@ -45,7 +45,7 @@ export const games: GameDef[] = [
     name: 'ソリティア',
     description: '定番のクロンダイク。タップで自動移動の簡単操作。もどす機能つき。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'spider',
@@ -53,7 +53,7 @@ export const games: GameDef[] = [
     name: 'スパイダーソリティア',
     description: '1スート〜4スートの3段階。KからAまで揃えて8組完成を目指します。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'freecell',
@@ -69,7 +69,7 @@ export const games: GameDef[] = [
     name: 'マインスイーパー',
     description: '数字をヒントに地雷を避ける定番パズル。初手は必ず安全。初級〜上級。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
   {
     slug: '2048',
@@ -77,7 +77,7 @@ export const games: GameDef[] = [
     name: '2048',
     description: 'スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコア保存。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'nanpre',
@@ -85,7 +85,7 @@ export const games: GameDef[] = [
     name: 'ナンプレ',
     description: '定番の数字パズル。かんたん・ふつう・むずかしいの3段階。答えは必ず1通りです。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'nonogram',
@@ -205,6 +205,6 @@ export const games: GameDef[] = [
     name: 'ブロック崩し',
     description: 'マウスやタッチで操作する定番アクション。面が進むごとに速くなります。',
     ready: true,
-    updatedAt: '2026-08-04',
+    updatedAt: '2026-08-16',
   },
 ];

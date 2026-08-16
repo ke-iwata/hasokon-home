@@ -105,7 +105,7 @@ export default function Page() {
       <h1>自転車の反則金（青切符）早見表・チェッカー</h1>
       <p className="lead">
         2026年4月1日から、自転車にも青切符（交通反則通告制度）が適用されるようになりました。イヤホン・傘さし・歩道の通行など日常の行為を選ぶと、該当する違反名と反則金、青切符か赤切符かが分かります。警察庁の公式一覧にもとづく全
-        {VIOLATION_COUNT}項目の早見表つきです。
+        {VIOLATION_COUNT}項目の早見表つきです。日本の道路交通法にもとづく参考情報で、実際に違反が成立するか・切符が交付されるかは、現場の状況と警察官の判断によります。
       </p>
 
       <Calculator />
@@ -205,7 +205,7 @@ export default function Page() {
         <Link href="/aircon-denkidai/">エアコン電気代 計算機</Link>
       </p>
 
-      <ToolMeta slug="jitensha-hansokukin">
+      <ToolMeta slug="jitensha-hansokukin" ymyl="legal">
         出典：警察庁「
         <a
           href="https://www.npa.go.jp/bureau/traffic/bicycle/pdf/jitensyahansokukoui.pdf"

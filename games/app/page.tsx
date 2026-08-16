@@ -51,6 +51,9 @@ export default function Home() {
       <p className="lead">
         インストール不要・登録不要。開いたらすぐ遊べます。スマホでもPCでも。
       </p>
+      <p className="lead">
+        ソリティア・ナンプレ・リバーシ・花札などの定番を、課金なしでそのまま遊べます。各ページに遊び方とコツ、よくある質問を載せています。ベストスコアなどの記録は、お使いのブラウザ内にだけ保存されます。
+      </p>
       <div className="game-grid">
         {games
           .filter((g) => g.ready)

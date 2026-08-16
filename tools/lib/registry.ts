@@ -68,7 +68,7 @@ export const tools: ToolDef[] = [
       '項目を入れて回すだけ。ランチ・当番・順番決めに。当たった項目を除いて回せば順番決めにも使えます。',
     category: '決める・選ぶ',
     ready: true,
-    updatedAt: '2026-08-01',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'group',
@@ -77,7 +77,7 @@ export const tools: ToolDef[] = [
     description: '名前を入れるだけで班分け・チーム分けをランダムに作成。人数は自動で均等に振り分けます。',
     category: '決める・選ぶ',
     ready: true,
-    updatedAt: '2026-08-01',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'dice',
@@ -86,7 +86,7 @@ export const tools: ToolDef[] = [
     description: 'サイコロをブラウザで。1〜10個まで同時に振れて、合計も出ます。',
     category: '決める・選ぶ',
     ready: true,
-    updatedAt: '2026-08-01',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'kosodate-shienkin',
@@ -156,7 +156,7 @@ export const tools: ToolDef[] = [
       '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'tabako-zei-neage',
@@ -225,7 +225,7 @@ export const tools: ToolDef[] = [
       '2026年4月から自転車も青切符の対象に。イヤホン・傘さし・歩道通行など日常の行為を選ぶと、該当する違反名・反則金・青切符か赤切符かが分かります。警察庁の公式一覧にもとづく全65項目の早見表つき。',
     category: '生活・健康',
     ready: true,
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'bosai-bichiku-keisan',
@@ -293,7 +293,7 @@ export const tools: ToolDef[] = [
       '2つの日付のあいだの日数を計算。初日を含む・含まないの両方を表示し、「◯日後」「◯営業日後」の期日計算にも対応。土日と祝日を除いて数えます。',
     category: '計算・変換',
     ready: true,
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'hebon-romaji',
@@ -321,7 +321,7 @@ export const tools: ToolDef[] = [
     description: '幅と高さから縦横比を計算。リサイズ後のサイズ算出やCSSコピーにも対応。',
     category: '計算・変換',
     ready: true,
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-08-16',
   },
 ];
 
