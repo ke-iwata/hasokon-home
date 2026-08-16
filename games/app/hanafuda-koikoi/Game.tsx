@@ -286,6 +286,12 @@ export default function Game() {
   const targets = choosing && myTurn ? (state.pending?.matches ?? []) : [];
   const progress = yakuProgress(state.captured[HUMAN], rulesOf(prefs)).slice(0, 6);
 
+  /**
+   * 場の列数。基本は4列×2段で、9枚以上になったら列を増やして2段のまま収める。
+   * 札が減っても段数は変えない（足りないぶんは空きスロットで埋める）
+   */
+  const fieldCols = Math.max(4, Math.ceil(state.field.length / 2));
+
   /** 場に出せば取れる札の月（自分の手番のときだけ、手札を光らせる） */
   const playableMonths = new Set(
     state.phase === 'play' && myTurn
@@ -486,14 +492,14 @@ export default function Game() {
 
           {/*
             場は常に2段。9枚以上になったら列を増やして2段のまま収める
-            （段が増えて盤面が上下に伸びないように。運営者の要望）
+            （段が増えて盤面が上下に伸びないように。運営者の要望）。
+            **札が減っても空きスロットで2段を保つ。** 4枚以下になるとグリッドが
+            1段に詰まり、場が87px縮んで下が動いてしまうため
           */}
           <div
             className="hf-field"
             aria-label="場札"
-            style={{
-              gridTemplateColumns: `repeat(${Math.max(4, Math.ceil(state.field.length / 2))}, minmax(0, 1fr))`,
-            }}
+            style={{ gridTemplateColumns: `repeat(${fieldCols}, minmax(0, 1fr))` }}
           >
             {state.field.map((id) => (
               <span key={id} className="hf-slot">
@@ -506,6 +512,11 @@ export default function Game() {
                   fresh={!state.pending && state.lastDrawn === id}
                   onClick={targets.includes(id) ? () => tapField(id) : undefined}
                 />
+              </span>
+            ))}
+            {Array.from({ length: Math.max(0, fieldCols * 2 - state.field.length) }, (_, i) => (
+              <span key={`gap-${i}`} className="hf-slot" aria-hidden>
+                <span className="hf-empty" />
               </span>
             ))}
           </div>
