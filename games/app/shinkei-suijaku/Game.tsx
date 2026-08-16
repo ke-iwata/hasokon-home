@@ -46,33 +46,41 @@ const CPU_MS = 700;
 /** 遊び方・枚数・強さは覚えておく。遊んだ記録ではないので lib/records.ts には入れない */
 const OPTIONS_KEY = 'shinkei-suijaku:options';
 
-function readOptions(): Options {
+/** 画面の設定。ゲームのルール（Options）に、CPU対戦の先攻・後攻を足したもの */
+interface Prefs extends Options {
+  first: 'you' | 'cpu';
+}
+
+const DEFAULT_PREFS: Prefs = { ...DEFAULT_OPTIONS, first: 'you' };
+
+function readPrefs(): Prefs {
   let raw: string | null = null;
   try {
     raw = localStorage.getItem(OPTIONS_KEY);
   } catch {
-    return DEFAULT_OPTIONS;
+    return DEFAULT_PREFS;
   }
-  if (!raw) return DEFAULT_OPTIONS;
+  if (!raw) return DEFAULT_PREFS;
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     return {
-      mode: parsed.mode === 'cpu' || parsed.mode === 'solo' ? parsed.mode : DEFAULT_OPTIONS.mode,
+      mode: parsed.mode === 'cpu' || parsed.mode === 'solo' ? parsed.mode : DEFAULT_PREFS.mode,
       size: (SIZES as readonly number[]).includes(parsed.size as number)
         ? (parsed.size as Size)
-        : DEFAULT_OPTIONS.size,
+        : DEFAULT_PREFS.size,
       level: CPU_LEVELS.includes(parsed.level as CpuLevel)
         ? (parsed.level as CpuLevel)
-        : DEFAULT_OPTIONS.level,
+        : DEFAULT_PREFS.level,
+      first: parsed.first === 'cpu' ? 'cpu' : DEFAULT_PREFS.first,
     };
   } catch {
-    return DEFAULT_OPTIONS;
+    return DEFAULT_PREFS;
   }
 }
 
-function writeOptions(options: Options): void {
+function writePrefs(prefs: Prefs): void {
   try {
-    localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
+    localStorage.setItem(OPTIONS_KEY, JSON.stringify(prefs));
   } catch {
     // 覚えられなくても、その回は普通に遊べる
   }
@@ -81,9 +89,14 @@ function writeOptions(options: Options): void {
 const SEAT_NAMES = ['あなた', 'CPU'];
 
 export default function Game() {
-  const [options, setOptions] = useState<Options>(DEFAULT_OPTIONS);
+  const [options, setOptions] = useState<Prefs>(DEFAULT_PREFS);
   const [state, setState] = useState<MemoryState | null>(null);
   const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
+  /**
+   * スタート待ち。後攻（CPUが先）のとき、配った瞬間にCPUがめくり始めるのを防ぐ。
+   * 「スタート」を押すか、先攻で自分がめくると true になる
+   */
+  const [begun, setBegun] = useState(false);
   const records = useRecords('shinkei-suijaku');
   const timer = useStopwatch();
   const variant = variantOf(options);
@@ -93,12 +106,13 @@ export default function Game() {
   const finished = useRef(false);
 
   const start = useCallback(
-    (next: Options) => {
+    (next: Prefs) => {
       counted.current = false;
       finished.current = false;
       setResult(null);
+      setBegun(false);
       timer.reset();
-      setState(newGame(next));
+      setState(newGame(next, Math.random, next.first === 'cpu' ? CPU : HUMAN));
       trackToolUse('shinkei-suijaku', `new-${variantOf(next)}`);
     },
     [timer],
@@ -110,7 +124,7 @@ export default function Game() {
   useEffect(() => {
     if (dealt.current) return;
     dealt.current = true;
-    const saved = readOptions();
+    const saved = readPrefs();
     setOptions(saved);
     start(saved);
   }, [start]);
@@ -123,9 +137,9 @@ export default function Game() {
     return () => window.clearTimeout(id);
   }, [state]);
 
-  /** CPUの手番。1枚目と2枚目でこの効果が2回走る */
+  /** CPUの手番。1枚目と2枚目でこの効果が2回走る。スタート前（!begun）は動かない */
   useEffect(() => {
-    if (!state || state.finished || state.mode !== 'cpu') return;
+    if (!state || !begun || state.finished || state.mode !== 'cpu') return;
     if (state.turn !== CPU || state.judge !== null) return;
     const id = window.setTimeout(() => {
       setState((s) => {
@@ -135,7 +149,7 @@ export default function Game() {
       });
     }, CPU_MS);
     return () => window.clearTimeout(id);
-  }, [state]);
+  }, [state, begun]);
 
   /** 決着したら記録する */
   useEffect(() => {
@@ -169,13 +183,15 @@ export default function Game() {
       counted.current = true;
       records.start(variant);
     }
+    // 先攻で自分からめくったときは、それをスタートの合図とみなす
+    setBegun(true);
     timer.begin();
     setState(applyFlip(state, pos));
   };
 
-  const change = (next: Options) => {
+  const change = (next: Prefs) => {
     setOptions(next);
-    writeOptions(next);
+    writePrefs(next);
     // 枚数も遊び方も盤の作りが変わるので、その場で配り直す
     start(next);
   };
@@ -261,6 +277,22 @@ export default function Game() {
           </div>
         )}
 
+        {options.mode === 'cpu' && (
+          <div className="seg" role="group" aria-label="先攻・後攻">
+            {(['you', 'cpu'] as const).map((first) => (
+              <button
+                key={first}
+                type="button"
+                className={first === options.first ? 'active' : ''}
+                aria-pressed={first === options.first}
+                onClick={() => change({ ...options, first })}
+              >
+                {first === 'you' ? '先攻' : '後攻'}
+              </button>
+            ))}
+          </div>
+        )}
+
         <button type="button" className="btn" onClick={() => start(options)}>
           最初から
         </button>
@@ -282,6 +314,15 @@ export default function Game() {
       </div>
 
       <RecordStrip items={strip} />
+
+      {/* スタート待ち。後攻のとき、押すまでCPUはめくらない（先攻なら自分の初手でも始まる） */}
+      {!begun && state.mode === 'cpu' && !state.finished && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {state.mode === 'cpu' && (
         <div className="ss-seats">
@@ -345,7 +386,9 @@ export default function Game() {
                 ? state.flipped.length === 0
                   ? '札を1枚タップしてめくってください'
                   : 'もう1枚めくってください'
-                : 'CPUの番です…'}
+                : !begun
+                  ? 'スタートを押すと、CPUから先にめくり始めます'
+                  : 'CPUの番です…'}
         {state.finished && <BestBadge improved={result?.improved ?? null} />}
       </p>
 

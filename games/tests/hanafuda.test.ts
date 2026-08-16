@@ -733,6 +733,14 @@ describe('通しで遊ぶ', () => {
     }
   });
 
+  it('最初の親を指定できる。指定しなければ乱数で決まる', () => {
+    expect(newGame(DEFAULT_OPTIONS, seededRng(1), HUMAN).dealer).toBe(HUMAN);
+    expect(newGame(DEFAULT_OPTIONS, seededRng(1), CPU).dealer).toBe(CPU);
+    // 指定なし（null）は乱数まかせ。どちらかには決まる
+    const dealer = newGame(DEFAULT_OPTIONS, seededRng(1), null).dealer;
+    expect([HUMAN, CPU]).toContain(dealer);
+  });
+
   it('6ヶ月戦を通しても、点は役の合計から外れない', () => {
     const rng = seededRng(2026);
     let state = newGame({ ...DEFAULT_OPTIONS, rounds: 6 }, rng);

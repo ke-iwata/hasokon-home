@@ -191,9 +191,14 @@ export interface MemoryState {
   finished: boolean;
 }
 
+/**
+ * @param first 最初の手番（CPU対戦の「先攻／後攻」設定）。
+ *   ひとりで遊ぶときは指定に関わらず HUMAN
+ */
 export function newGame(
   options: Options = DEFAULT_OPTIONS,
   rng: () => number = Math.random,
+  first: number = HUMAN,
 ): MemoryState {
   const cards = makeCards(options.size, rng);
   return {
@@ -203,7 +208,7 @@ export function newGame(
     cards,
     taken: cards.map(() => null),
     flipped: [],
-    turn: HUMAN,
+    turn: options.mode === 'cpu' ? first : HUMAN,
     pairs: Array.from({ length: playerCount(options.mode) }, () => 0),
     moves: 0,
     cpuKnown: [],

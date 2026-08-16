@@ -124,6 +124,13 @@ export default function Game() {
   const [match, setMatch] = useState<MatchState | null>(null);
   // 設定を読むまでは配らない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
+  /**
+   * スタート待ち。配った直後は false で、CPUは動かない。
+   * 「スタート」を押すか、自分が先に出すと true になる。
+   * ♦7を持つCPUが、開いた瞬間に出し始めるのを防ぐ。
+   * 2回戦以降は「第n回戦へ」を押した時点で始まってよいので、リセットしない
+   */
+  const [begun, setBegun] = useState(false);
   const records = useRecords('shichinarabe');
   const variant = variantOf(rules);
   const entry = records.entry(variant);
@@ -134,6 +141,7 @@ export default function Game() {
   const start = useCallback((nextRules: Rules) => {
     started.current = false;
     recorded.current = false;
+    setBegun(false);
     setMatch(newMatch(nextRules));
     trackToolUse('shichinarabe', `new-${variantOf(nextRules)}`);
   }, []);
@@ -158,15 +166,16 @@ export default function Game() {
   const state = match?.state ?? null;
   const humanTurn = !!state && !state.finished && state.turn === HUMAN;
 
-  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす
+  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす。
+  // スタート前（!begun）は動かない
   useEffect(() => {
-    if (!ready || !state || state.finished || state.turn === HUMAN) return;
+    if (!ready || !begun || !state || state.finished || state.turn === HUMAN) return;
     const timer = window.setTimeout(() => {
       const card = chooseCpuPlay(state, styleOf(state.turn));
       commit(card === null ? applyPass(state) : applyPlay(state, card));
     }, SPEEDS[speed].delay);
     return () => window.clearTimeout(timer);
-  }, [ready, state, commit, speed]);
+  }, [ready, begun, state, commit, speed]);
 
   // 5回戦ぶんが終わったら記録する
   useEffect(() => {
@@ -198,6 +207,8 @@ export default function Game() {
       started.current = true;
       records.start(variant);
     }
+    // ♦7が自分の手にあって先に出すときは、それをスタートの合図とみなす
+    setBegun(true);
     commit(applyPlay(state, card));
   };
 
@@ -207,6 +218,7 @@ export default function Game() {
       started.current = true;
       records.start(variant);
     }
+    setBegun(true);
     commit(applyPass(state));
   };
 
@@ -381,17 +393,30 @@ export default function Game() {
           ? match.finished
             ? `${ROUNDS}回戦が終わりました`
             : `第${match.round}回戦が終わりました`
-          : [
-              state.events.map((e) => eventText(e, state)).join(' / '),
-              humanTurn
-                ? playable.length === 0
-                  ? '出せる札がありません。パスしてください'
-                  : 'あなたの番です。出したい札をタップ'
-                : `${SEAT_NAMES[state.turn]}の番です`,
-            ]
-              .filter(Boolean)
-              .join(' / ')}
+          : !begun
+            ? state.turn === HUMAN
+              ? 'あなたが♦7を持っています。出したい札をタップすると始まります'
+              : 'スタートを押すと始まります（♦7を持っていた人から出します）'
+            : [
+                state.events.map((e) => eventText(e, state)).join(' / '),
+                humanTurn
+                  ? playable.length === 0
+                    ? '出せる札がありません。パスしてください'
+                    : 'あなたの番です。出したい札をタップ'
+                  : `${SEAT_NAMES[state.turn]}の番です`,
+              ]
+                .filter(Boolean)
+                .join(' / ')}
       </p>
+
+      {/* スタート待ち。押すまでCPUは出さない（♦7が自分なら初手でも始まる） */}
+      {!begun && !roundOver && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {roundOver && (
         <div className="sn-result">
@@ -437,7 +462,11 @@ export default function Game() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => setMatch(startNextRound(match))}
+              onClick={() => {
+                // 「第n回戦へ」を押すこと自体がスタートの合図
+                setBegun(true);
+                setMatch(startNextRound(match));
+              }}
             >
               第{match.round + 1}回戦へ
             </button>

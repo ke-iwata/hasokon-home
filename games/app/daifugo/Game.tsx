@@ -150,6 +150,13 @@ export default function Game() {
   const [selected, setSelected] = useState<number[]>([]);
   // 設定を読むまでは配らない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
+  /**
+   * スタート待ち。配った直後は false で、CPUは動かない。
+   * 「スタート」を押すか、自分が先に出すと true になる。
+   * ♦3を持つCPUが、開いた瞬間に出し始めるのを防ぐ。
+   * 2回戦以降は「第n回戦へ」を押した時点で始まってよいので、リセットしない
+   */
+  const [begun, setBegun] = useState(false);
   const records = useRecords('daifugo');
   const entry = records.entry(level);
   // 1試合につき1回だけ数える
@@ -160,6 +167,7 @@ export default function Game() {
     started.current = false;
     recorded.current = false;
     setSelected([]);
+    setBegun(false);
     setMatch(newMatch(nextLevel, nextRules));
     trackToolUse('daifugo', `new-${nextLevel}`);
   }, []);
@@ -186,15 +194,16 @@ export default function Game() {
   const state = match?.state ?? null;
   const humanTurn = !!state && !state.finished && state.turn === HUMAN;
 
-  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす
+  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす。
+  // スタート前（!begun）は動かない
   useEffect(() => {
-    if (!ready || !match || !state || state.finished || state.turn === HUMAN) return;
+    if (!ready || !begun || !match || !state || state.finished || state.turn === HUMAN) return;
     const timer = window.setTimeout(() => {
       const cards = chooseCpuPlay(state, match.level);
       commit(cards === null ? applyPass(state) : applyPlay(state, cards));
     }, SPEEDS[speed].delay);
     return () => window.clearTimeout(timer);
-  }, [ready, match, state, commit, speed]);
+  }, [ready, begun, match, state, commit, speed]);
 
   // 5回戦ぶんが終わったら記録する
   useEffect(() => {
@@ -227,6 +236,8 @@ export default function Game() {
       started.current = true;
       records.start(level);
     }
+    // ♦3が自分の手にあって先に出すときは、それをスタートの合図とみなす
+    setBegun(true);
     setSelected([]);
     commit(applyPlay(state, selectedCards));
   };
@@ -254,6 +265,8 @@ export default function Game() {
   const nextRound = () => {
     if (!match) return;
     setSelected([]);
+    // 「第n回戦へ」を押すこと自体がスタートの合図
+    setBegun(true);
     setMatch(startNextRound(match));
   };
 
@@ -413,14 +426,27 @@ export default function Game() {
           ? match.finished
             ? '5回戦が終わりました'
             : `第${match.round}回戦が終わりました`
-          : events.length > 0
-            ? events.map((e) => EVENT_TEXT[e.kind](SEAT_NAMES[e.player])).join(' / ')
-            : humanTurn
-              ? mustPass
-                ? '出せる札がありません。パスしてください'
-                : 'あなたの番です。札を選んで「出す」'
-              : `${SEAT_NAMES[state.turn]}の番です`}
+          : !begun
+            ? state.turn === HUMAN
+              ? 'あなたが♦3を持っています。札を選んで「出す」と始まります'
+              : 'スタートを押すと始まります（♦3を持つ人から出します）'
+            : events.length > 0
+              ? events.map((e) => EVENT_TEXT[e.kind](SEAT_NAMES[e.player])).join(' / ')
+              : humanTurn
+                ? mustPass
+                  ? '出せる札がありません。パスしてください'
+                  : 'あなたの番です。札を選んで「出す」'
+                : `${SEAT_NAMES[state.turn]}の番です`}
       </p>
+
+      {/* スタート待ち。押すまでCPUは出さない（♦3が自分なら初手でも始まる） */}
+      {!begun && !roundOver && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {roundOver && (
         <div className="df-result">
