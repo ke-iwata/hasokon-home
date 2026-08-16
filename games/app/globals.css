@@ -1561,9 +1561,12 @@ ol {
   font-size: 0.95rem;
 }
 
+/* 空文字〜「1位で上がり」まで入れ替わる。min-height だと2行に増えた瞬間に
+   席が伸びて盤が動くので固定にする（.sn-seat-state と同じ） */
 .df-seat-state {
   display: block;
-  min-height: 1.35em;
+  height: 2.7em;
+  overflow: hidden;
   color: var(--muted);
 }
 
@@ -1619,13 +1622,16 @@ ol {
   }
 }
 
-/* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く */
+/* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く。
+   出たり消えたりするので高さは固定（min-height だと増えた瞬間に盤が動く）。
+   札の帯は最大3つで、320px幅でも1行に収まることを確認済み */
 .df-flags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
-  min-height: 1.9em;
+  height: 1.9em;
+  overflow: hidden;
 }
 
 .df-flag {
@@ -1910,9 +1916,13 @@ ol {
   font-size: 0.95rem;
 }
 
+/* 「パス残り3回・考え中…」は手番のときだけ長くなり、狭い画面では2行になる。
+   min-height だと1行から2行に増えた瞬間に席が伸びて盤が動くので、
+   2行ぶんで固定する（1行のときは下が空くだけ） */
 .sn-seat-state {
   display: block;
-  min-height: 1.35em;
+  height: 2.7em;
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.72rem;
 }
@@ -2299,9 +2309,12 @@ ol {
   }
 }
 
-/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する。
+   **min-height ではなく height。** 下限だけでは2行に増えた瞬間に伸びる */
 .sp-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
