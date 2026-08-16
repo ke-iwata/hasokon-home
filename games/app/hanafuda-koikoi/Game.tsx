@@ -543,25 +543,30 @@ export default function Game() {
       </p>
 
 
-      {state.phase === 'koikoi' && myTurn && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setState(declareStop(state))}>
-            あがる（{scoreOf(state.captured[HUMAN], rulesOf(prefs))}文）
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={state.hands[HUMAN].length === 0}
-            title={state.hands[HUMAN].length === 0 ? '手札が無いので、こいこいをしても流局になります' : undefined}
-            onClick={() => setState(declareKoikoi(state))}
-          >
-            こいこい
-          </button>
-        </div>
-      )}
+      {/*
+        局面ごとのボタン。**条件付きで行ごと出し入れせず、常に置く**
+        （`.result-row` と同じ考え方。出た瞬間に下が57px動いていた）。
+        こいこい・次の月へ・もう一度あそぶ は同時に出ないので1つの行で足りる
+      */}
+      <div className="hf-actions">
+        {state.phase === 'koikoi' && myTurn && (
+          <>
+            <button type="button" className="btn btn-primary" onClick={() => setState(declareStop(state))}>
+              あがる（{scoreOf(state.captured[HUMAN], rulesOf(prefs))}文）
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={state.hands[HUMAN].length === 0}
+              title={state.hands[HUMAN].length === 0 ? '手札が無いので、こいこいをしても流局になります' : undefined}
+              onClick={() => setState(declareKoikoi(state))}
+            >
+              こいこい
+            </button>
+          </>
+        )}
 
-      {state.phase === 'round-over' && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
+        {state.phase === 'round-over' && (
           <button
             type="button"
             className="btn btn-primary"
@@ -573,16 +578,14 @@ export default function Game() {
           >
             {state.round >= prefs.rounds ? '結果を見る' : '次の月へ'}
           </button>
-        </div>
-      )}
+        )}
 
-      {state.phase === 'game-over' && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
+        {state.phase === 'game-over' && (
           <button type="button" className="btn btn-primary" onClick={() => start(prefs)}>
             もう一度あそぶ
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 成立に近い役をハイライトして「何を狙うか」を学べるようにする（仕様書の初心者導線） */}
       <details className="hf-goal">

@@ -2518,6 +2518,9 @@ button.hf-card {
   margin: 8px 0;
 }
 
+/* 「〇〇の取り札」と成立した役の帯。役ができるとチップが増えて2行になり、
+   CPU側は盤の上にあるので盤ごと動く。2行ぶんで固定する
+   （役が多いときは中でスクロールさせる。役の合計は `.hf-yaku.total` に出る） */
 .hf-taken-head {
   display: flex;
   flex-wrap: wrap;
@@ -2526,6 +2529,12 @@ button.hf-card {
   gap: 6px;
   margin-bottom: 4px;
   font-size: 0.78rem;
+  line-height: 1.4;
+  /* 名前の行＋役のチップの行で2行。チップは丸みのぶん行より背が高いので、
+     行の高さそのままだと上下が切れる。少し余裕を持たせてある */
+  height: 3.6em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   color: var(--muted);
 }
 
@@ -2635,6 +2644,19 @@ button.hf-card {
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
+}
+
+/* 局面ごとのボタン（こいこい・次の月へ・もう一度あそぶ）の置き場。
+   中身が無いときも高さを取る。条件付きで行ごと出し入れすると、
+   出た瞬間に下が57px動く（`.result-row` と同じ話） */
+.hf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  height: 43px;
+  margin: 12px 0;
 }
 
 /* 「あと何枚で役になるか」。初めての人が何を狙えばいいか分かるようにする */
