@@ -365,6 +365,43 @@ ol {
   margin: 10px 0;
 }
 
+/* 終局・パスの知らせ。**出ても消えても盤が動かないよう常に同じ高さを取る**
+   （中身が無いときは空のまま置く）。`.hint-row` と同じ考え方 */
+.result-row {
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+/* ---- スタート待ちの幕（app/_cpu/StartGate.tsx） ---- */
+
+/* 盤の入れ物。幕を絶対配置で重ねるための基準 */
+.start-gate {
+  position: relative;
+}
+
+/* 押すまでCPUを動かさない合図。**行として置かず盤に重ねる**のは、
+   出たり消えたりしてもレイアウトが動かないようにするため
+   （行にすると押した瞬間に下が57〜72pxせり上がる。実測） */
+.start-gate-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  /* 盤を透かす。配られた札や初期配置を見てから始められるように */
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+}
+
 /* 盤面の上に置く可変メッセージ行。文言の切り替わりで盤面が上下に
    動かないよう、常に2行分の高さで固定する（1行のときは下が空くだけ）。
    「同じ画面内に位置が変わる要素を混ぜない」ためのクラス */
@@ -1642,8 +1679,13 @@ ol {
 
 /* 実況。文言が1行と2行で切り替わっても盤面が動かないよう高さを固定する
    （.hint-row と同じ考え方） */
+/* 実況と手番の案内。**min-height ではなく height で固定する**。
+   min-height は下限しか決めないので、文言が2行に増えた瞬間に盤が動く
+   （`.hint-row` と同じ考え方）。line-height を明示して「何行ぶん」で決める */
 .df-msg {
-  height: 3em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1927,8 +1969,11 @@ ol {
   opacity: 0.42;
 }
 
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .sn-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
@@ -2120,8 +2165,11 @@ ol {
 }
 
 /* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .ss-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
@@ -2432,6 +2480,16 @@ button.hf-card {
   pointer-events: none;
 }
 
+/* めくる前の空き。枠だけ残して、めくった瞬間に場所が動かないようにする */
+.hf-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 976 / 1600;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
 /* 取り札。種類別の束（.hf-kind-group）を横に流す */
 .hf-taken {
   margin: 8px 0;
@@ -2532,8 +2590,11 @@ button.hf-card {
 }
 
 /* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .hf-msg {
-  min-height: 3.2em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
