@@ -207,4 +207,12 @@ export const games: GameDef[] = [
     ready: true,
     updatedAt: '2026-08-16',
   },
+  {
+    slug: 'pinball',
+    icon: 'Pinball',
+    name: 'ピンボール',
+    description: 'フリッパーで球を打ち返す定番のアクション。バンパーと的で点を稼ぎます。',
+    ready: true,
+    updatedAt: '2026-08-16',
+  },
 ];
