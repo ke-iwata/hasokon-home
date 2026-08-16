@@ -639,6 +639,84 @@ ol {
   }
 }
 
+/* ---- ピンボール ----
+   台は幅1×高さ1.5の座標（lib/pinball.ts）。canvas も同じ比で置く */
+.pb-stage {
+  position: relative;
+  width: 100%;
+  /* 台以外（状態36・記録34・フリッパーのボタン52・補足23・余白と内側の余白）の実測 */
+  --chrome: 215px;
+  --board-max: 340px;
+  /* **高さは幅の1.5倍になる。** 盤ゲームの共通指定（「盤を画面の高さに合わせる」節）は
+     正方形の盤が前提なので、ここは自分で 1.5 で割る */
+  max-width: min(var(--board-max), max(150px, calc((100dvh - var(--chrome)) / 1.5)));
+  margin-inline: auto;
+  aspect-ratio: 1 / 1.5;
+  touch-action: none; /* フリッパーの連打をスクロールに取られない */
+}
+
+.pb-stage canvas {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #111c33; /* ゲーム画面なので明暗どちらでも暗いまま */
+  display: block;
+}
+
+/* 打ち出し前の操作の案内。**台の上に重ねる**（行として置くと、
+   打ち出した瞬間に消えて下が動く）。
+   置くのは**バンパーと的のあいだの空き**（上から32%あたり）。
+   下に置くとフリッパーと排水口が隠れ、45%あたりだと的に重なって
+   透けた黄色が文字の下に出る。どちらも一度やって見づらかった */
+.pb-hint {
+  position: absolute;
+  inset: 32% 8% auto;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pb-hint p {
+  margin: 0;
+}
+
+.pb-hint p + p {
+  margin-top: 4px;
+  color: #94a3b8;
+}
+
+.pb-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* フリッパーの控えのボタン。**押しているあいだ上がる**ので、
+   押しっぱなしにしても文字が選択されないようにする */
+.pb-pads {
+  justify-content: center;
+  margin: 8px 0;
+  user-select: none;
+}
+
+.pb-pads .btn {
+  min-width: 96px;
+  touch-action: none;
+}
+
 /* ---- 2048 ----
    タイルは絶対配置にして transform で動かす。transition がスライドの
    アニメーションになる。下敷きの空セル（.g2048-bg）は常に16個で固定なので、

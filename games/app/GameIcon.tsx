@@ -271,6 +271,32 @@ function HanafudaIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * ピンボール。台の枠と、下向きに開いた2本のフリッパー、その上の球。
+ * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
+ */
+function PinballIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="40" y="24" width="176" height="208" rx="24" />
+      <circle cx="128" cy="96" r="26" fill="currentColor" stroke="none" />
+      <path d="M72 168 L108 196" />
+      <path d="M184 168 L148 196" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -289,6 +315,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   MemoryPair: MemoryPairIcon,
   SpeedBolt: SpeedBoltIcon,
   Hanafuda: HanafudaIcon,
+  Pinball: PinballIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
