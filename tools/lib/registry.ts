@@ -156,7 +156,7 @@ export const tools: ToolDef[] = [
       '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
     category: 'お金・社会保険',
     ready: true,
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'tabako-zei-neage',
@@ -225,7 +225,7 @@ export const tools: ToolDef[] = [
       '2026年4月から自転車も青切符の対象に。イヤホン・傘さし・歩道通行など日常の行為を選ぶと、該当する違反名・反則金・青切符か赤切符かが分かります。警察庁の公式一覧にもとづく全65項目の早見表つき。',
     category: '生活・健康',
     ready: true,
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'bosai-bichiku-keisan',
@@ -293,7 +293,7 @@ export const tools: ToolDef[] = [
       '2つの日付のあいだの日数を計算。初日を含む・含まないの両方を表示し、「◯日後」「◯営業日後」の期日計算にも対応。土日と祝日を除いて数えます。',
     category: '計算・変換',
     ready: true,
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-08-16',
   },
   {
     slug: 'hebon-romaji',
