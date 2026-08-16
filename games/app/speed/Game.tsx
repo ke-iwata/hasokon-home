@@ -401,11 +401,14 @@ export default function Game() {
         </div>
       )}
 
-      <p className="sp-note">
-        場札は{HAND_SIZE}枚。出すたびに山札から補充され、
-        <strong>山札と場札を先に出し切ったほうの勝ち</strong>です。 CPUの強さ「
-        {LEVEL_LABELS[options.level]}」は{LEVEL_NOTES[options.level]}。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p className="sp-note">
+          場札は{HAND_SIZE}枚。出すたびに山札から補充され、
+          <strong>山札と場札を先に出し切ったほうの勝ち</strong>です。 CPUの強さ「
+          {LEVEL_LABELS[options.level]}」は{LEVEL_NOTES[options.level]}。
+        </p>
+      </details>
     </div>
   );
 }

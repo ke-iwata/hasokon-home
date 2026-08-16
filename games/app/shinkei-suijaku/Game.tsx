@@ -422,11 +422,14 @@ export default function Game() {
         </div>
       )}
 
-      <p className="ss-note">
-        同じ数字の2枚がそろえば取れて、<strong>そのままもう一度めくれます</strong>。
-        {options.mode === 'cpu' && `CPUの強さ「${LEVEL_LABELS[options.level]}」は${LEVEL_NOTES[options.level]}。`}
-        枚数は{SIZES.map((s) => sizeLabel(s)).join('・')}から選べます。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p className="ss-note">
+          同じ数字の2枚がそろえば取れて、<strong>そのままもう一度めくれます</strong>。
+          {options.mode === 'cpu' && `CPUの強さ「${LEVEL_LABELS[options.level]}」は${LEVEL_NOTES[options.level]}。`}
+          枚数は{SIZES.map((s) => sizeLabel(s)).join('・')}から選べます。
+        </p>
+      </details>
     </div>
   );
 }

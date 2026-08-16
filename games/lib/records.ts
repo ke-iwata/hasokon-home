@@ -396,29 +396,6 @@ export const RECORDS_NOTE =
   '記録はこの端末のブラウザに保存されます。ブラウザのデータ削除や、' +
   'iPhone / Mac の Safari では7日間訪問がない場合に消えることがあります。';
 
-/** 注記を一度見せたかどうかのフラグ（初回だけ開いて見せ、以後は折りたたむ） */
-const NOTE_SEEN_KEY = 'hasokon-games:records-note:v1';
-
-/** 注記をすでに見せたか。ストレージが使えないときは「見せた」扱いにして邪魔をしない */
-export function noteSeen(storage: RecordStorage | null = browserStorage()): boolean {
-  if (!storage) return true;
-  try {
-    return storage.getItem(NOTE_SEEN_KEY) !== null;
-  } catch {
-    return true;
-  }
-}
-
-/** 注記を見せたことを覚える */
-export function markNoteSeen(storage: RecordStorage | null = browserStorage()): void {
-  if (!storage) return;
-  try {
-    storage.setItem(NOTE_SEEN_KEY, '1');
-  } catch {
-    // 覚えられなければ毎回開くだけ。遊べなくなるわけではない
-  }
-}
-
 /**
  * 勝率（%）。勝ちと負けが決まった対局だけで計算する。
  * まだ1局も決着していなければ null（「勝率0%」と出さないため）。

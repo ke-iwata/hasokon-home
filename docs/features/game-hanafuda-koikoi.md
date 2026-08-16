@@ -31,6 +31,10 @@
 >   セット（Wikimedia Commons）へ置き換えた**（2026-08-15、運営者の指示）。
 >   自前描画の品質が足りなかったため。帰属表示はゲームページ下部にあり、
 >   経緯と義務は games/docs/DECISIONS.md と `app/_hanafuda/CardFace.tsx` を参照。
+> - **設定は「強さ・速さ・配り直す」だけを段に出し、月数・最初の親・ローカルルールは
+>   `<details class="hf-rules">` に畳んだ**（2026-08-16）。設定が4つ＋チェック2つあり、
+>   狭い画面では切り替えだけで3段120px使って盤が画面の外に出ていた。毎局変えるものではない。
+>   経緯は [mobile-one-screen.md](./mobile-one-screen.md)。
 
 ---
 

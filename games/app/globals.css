@@ -380,6 +380,45 @@ ol {
   margin: 6px 0;
 }
 
+/* 画面の見かた（各ゲームの末尾にあった説明文）。**折りたたんで置く。**
+   開いたままだと69〜92px使い、スマホでは盤がそのぶん画面の外に出る。
+   一度読めば済む内容なので、見出しだけ残して畳んでおく */
+.game-tips {
+  margin-top: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.game-tips summary {
+  cursor: pointer;
+}
+
+.game-tips > p {
+  margin-top: 6px;
+}
+
+/* ---- 盤を画面の高さに合わせる ----
+
+   スマホでは「盤より上下の操作・情報」で画面を使い切ってしまい、盤が画面の
+   外に出ていた。盤の大きさを**幅だけでなく画面の高さからも決める**。
+
+   盤はどれも正方形なので、**幅を抑えれば高さも同じだけ縮む**。
+   `--chrome` はそのゲームで盤以外が使う高さ（実測値）、`--board-max` は
+   PCで広がりすぎないための上限。`100dvh` はブラウザのバーを除いた実際の
+   表示高さなので、端末ごとに効く。
+   下限を置いて、極端に低い画面でも遊べない大きさにはしない。
+
+   **各盤の側で `max-width` を書き直さないこと**（この指定が後ろの規則に
+   上書きされて効かなくなる）。広さの上限は `--board-max` で渡す */
+.rv-board,
+.gm-board,
+.ms-board {
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+}
+
+
+
 /* ---- スタート待ちの幕（app/_cpu/StartGate.tsx） ---- */
 
 /* 盤の入れ物。幕を絶対配置で重ねるための基準 */
@@ -678,6 +717,7 @@ ol {
 /* ---- マインスイーパー ---- */
 
 .ms-board {
+  --chrome: 250px;
   display: grid;
   /* マスの文字サイズを盤の実寸から決めるためのコンテナ。
      --ms-cols は Game.tsx が列数を入れる（既定値は初級の9列） */
@@ -686,7 +726,6 @@ ol {
   --ms-gap: 2px;
   gap: var(--ms-gap);
   width: 100%;
-  margin: 0 auto;
   user-select: none;
   touch-action: manipulation;
 }
@@ -1115,12 +1154,14 @@ ol {
 /* ---- リバーシ ---- */
 
 .rv-board {
+  /* 盤以外（設定111・状態36・戦績70・終局43・ボタン43・余白）＝約410px */
+  --chrome: 410px;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   gap: 2px;
   width: 100%;
-  max-width: 460px;
-  margin: 0 auto;
+  /* 上限は --board-max で渡す（実際の max-width は「盤を画面の高さに合わせる」節） */
+  --board-max: 460px;
   padding: 4px;
   border-radius: 6px;
   /* 盤は現実のリバーシ盤と同じ緑地。明暗どちらでも同じ色にする
@@ -1233,12 +1274,12 @@ ol {
    13×13＝169マスを 480px に収めると1マス約35px。スマホ（360px幅）でも
    1マス約26pxになり、指で押せる下限を保てる（仕様書で15×15を採らなかった理由） */
 .gm-board {
+  --chrome: 410px;
   --gm-line: rgba(90, 62, 30, 0.6);
   display: grid;
   grid-template-columns: repeat(13, 1fr);
   width: 100%;
-  max-width: 480px;
-  margin: 0 auto;
+  --board-max: 480px;
   /* 碁盤と同じ木地。明暗どちらのテーマでも同じ色にする（石の白黒が地に負けないため） */
   background: #d8b177;
   /* 罫線は最外の交点で終わる。実物の碁盤と同じく、その外側に縁を残す。
@@ -2626,6 +2667,18 @@ button.hf-card {
   font-size: 0.75rem;
 }
 
+/* 対局の設定（月数・最初の親・ローカルルール）。既定では畳んでおく。
+   大富豪の `.df-rules` と同じ扱い（毎局は変えない設定を段として出さない） */
+.hf-rules summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hf-rules .btn-row {
+  margin: 8px 0 0;
+}
+
 /* 設定のチェック。段（.btn-row）の中に自然に並ぶ大きさにする */
 .hf-toggles {
   gap: 12px;
@@ -2715,4 +2768,224 @@ button.hf-card {
 .hf-credit {
   color: var(--muted);
   font-size: 0.8rem;
+}
+
+/* ---- 狭い画面では操作まわりを詰める ----
+   スマホでは設定の切り替え（`.seg`）が2〜3行に折り返して、盤がそのぶん
+   画面の外に出ていた（実測で設定だけで131〜184px）。1つずつを小さくすれば
+   同じ数でも1行に収まる。設定を隠さずに済むのでこちらを採る */
+@media (max-width: 600px) {
+  /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
+  .card {
+    padding: 10px;
+    margin: 12px 0;
+  }
+
+  .btn-row {
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  .seg button {
+    padding: 7px 10px;
+    font-size: 0.8rem;
+  }
+
+  .btn {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  /* 記録の帯。「記録の保存について」の見出しが長くて2行に折り返し、
+     それだけで30px使っていた。狭い画面では印だけにして数字と同じ行に収める
+     （畳んである中身は変わらないので、押せば読める） */
+  .rec-strip {
+    gap: 4px 10px;
+    margin: 6px 0;
+    padding: 4px 8px;
+    font-size: 0.76rem;
+  }
+
+  /* 行間の 14px は縦にも効く。折り返したときに1行ぶん余計に取られる */
+  .rec-items {
+    gap: 2px 10px;
+  }
+
+  .rec-note summary {
+    font-size: 0;
+  }
+
+  .rec-note summary::after {
+    content: 'ⓘ';
+    font-size: 0.8rem;
+  }
+
+  /* 実況・席の状態は「何行ぶん」で高さを固定してある（文言が伸びても
+     盤が動かないようにするため）。狭い画面ではその確保ぶんを詰める */
+  .df-msg,
+  .sn-msg {
+    height: 3em;
+    margin: 4px 0 0;
+  }
+
+  .ss-msg {
+    height: 2.5em;
+    margin: 4px 0 0;
+  }
+
+  .df-seat-state,
+  .sn-seat-state {
+    height: 1.8em;
+  }
+
+  .df-seat-cards {
+    height: 18px;
+    margin: 2px 0 0;
+  }
+
+  .sn-seat-cards {
+    height: 16px;
+    margin: 2px 0 0;
+  }
+
+  .df-seat,
+  .sn-seat {
+    padding: 5px 4px;
+  }
+
+  .df-seats,
+  .sn-seats {
+    margin: 6px 0;
+  }
+
+  /* 手札は必ず2行に折り返す枚数なので、1枚を小さくすると2行ぶんそのまま縮む */
+  .df-slot,
+  .sn-slot {
+    width: 34px;
+  }
+
+  .df-hand,
+  .sn-hand {
+    margin-top: 6px;
+    gap: 3px;
+  }
+
+  .df-field {
+    min-height: 84px;
+  }
+
+  .df-note,
+  .sn-note,
+  .ss-note {
+    margin-top: 4px;
+  }
+
+  .df-flags {
+    height: 1.6em;
+  }
+
+  .df-note {
+    font-size: 0.75rem;
+  }
+
+  /* ---- 花札 ----
+     いちばん段が多いゲーム。1画面に収めるため、狭い画面では
+     「札を小さくして段数を減らす」方向で詰める（隠す情報は増やさない） */
+
+  /* 手札8枚を**1段**に収める。2段ぶん確保していたのを1段にすると100px浮く。
+     出しても枚数が減るだけで段は増えないので、盤面は動かない */
+  /* 8枚 ＋ 隙間2px×7 が親の幅に収まる大きさ。手札の幅は画面幅のおよそ86%なので、
+     1枚は (0.86 × 100vw − 14px) / 8 ＝ 10.7vw − 1.8px が上限。余裕を見て 10.2vw。
+     **ここを緩めると8枚目が2段目に折り返し、高さは1段ぶんで固定なのではみ出す。**
+     押す先なので、これ以上は絞らない（2段に折り返すより、1段でやや細い札のほうが
+     縦を100px節約でき、札の高さ〈幅×1.64〉が押しやすさを補う） */
+  .hf-hand {
+    --hf-hand-card: clamp(24px, calc(10.2vw - 2px), 44px);
+    gap: 2px;
+    height: calc(var(--hf-hand-card) * 1.64 + 2px);
+    margin: 3px 0;
+  }
+
+  .hf-hand.cpu {
+    --hf-hand-card: clamp(20px, 7vw, 40px);
+    height: calc(var(--hf-hand-card) * 1.64);
+  }
+
+  /* 取り札も1段にして、あふれる分は中で横に流す（種類ごとの束は保つ） */
+  .hf-taken {
+    --hf-taken-card: clamp(18px, 4.8vw, 32px);
+    margin: 3px 0;
+  }
+
+  .hf-taken-head {
+    height: 1.8em;
+    margin-bottom: 2px;
+  }
+
+  .hf-strip {
+    height: calc(0.82rem + 2px + var(--hf-taken-card) * 1.64 + 8px);
+    padding: 3px;
+  }
+
+  .hf-table {
+    margin: 3px 0;
+    padding: 4px 4px;
+  }
+
+  .hf-game .status-bar {
+    margin: 4px 0;
+    font-size: 0.82rem;
+  }
+
+  .hf-toggles {
+    margin: 4px 0;
+  }
+
+  /* 場の高さは幅から決まる（aspect-ratio）。狭い画面では幅を絞って高さを稼ぐ。
+     4列なので、1枚は (幅 - 隙間12px) / 4 ＝ 44.5px。押す先なので44pxは割らない */
+  .hf-field {
+    max-width: 190px;
+  }
+
+  /* 山札は**広げない**。裏の束とめくった札の2枚を縦に積む列なので、幅を10px
+     広げると列の高さが35px伸びて、場（`.hf-field`）より背が高くなって台ごと伸びる。
+     「めくった札」は2行に折り返すが、字を少し詰めれば切れずに収まる */
+  .hf-deck-note {
+    font-size: 0.62rem;
+    line-height: 1.25;
+  }
+
+  /* 設定が4つあるゲームは切り替えだけで3段になる。ここだけさらに詰めて2段にする
+     （隠さずに済ませたいので、まず小さくするほうを試す） */
+  .hf-game .seg button {
+    padding: 5px 7px;
+    font-size: 0.72rem;
+  }
+
+  .hf-game .btn-row .btn {
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+
+  .hf-msg {
+    height: 3em;
+    margin: 4px 0 0;
+  }
+
+  .hf-actions {
+    height: 36px;
+    margin: 5px 0;
+  }
+
+  .hf-goal {
+    margin-top: 4px;
+  }
+
+  .hf-msg {
+    margin: 2px 0 0;
+  }
+
+  .hf-rules .btn-row {
+    margin: 6px 0 0;
+  }
 }

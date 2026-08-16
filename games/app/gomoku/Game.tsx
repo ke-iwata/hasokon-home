@@ -326,12 +326,15 @@ export default function Game() {
         </button>
       </div>
 
-      <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-        あなたは{human === BLACK ? COLOR_LABEL.black : COLOR_LABEL.white}、CPUは「
-        {LEVELS[level].label}」です。先手・後手は上の切り替えで選べます。
-        「待った」は自分が打つ直前まで戻します（あいだのCPUの手も一緒に戻ります）。
-        禁じ手（三三など）はありません。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
+          あなたは{human === BLACK ? COLOR_LABEL.black : COLOR_LABEL.white}、CPUは「
+          {LEVELS[level].label}」です。先手・後手は上の切り替えで選べます。
+          「待った」は自分が打つ直前まで戻します（あいだのCPUの手も一緒に戻ります）。
+          禁じ手（三三など）はありません。
+        </p>
+      </details>
     </div>
   );
 }

@@ -12,8 +12,6 @@ import {
   DEFAULT_VARIANT,
   entryOf,
   loadRecords,
-  markNoteSeen,
-  noteSeen,
   RECORDS_NOTE,
   recordResult,
   recordStart,
@@ -133,16 +131,14 @@ export interface RecordItem {
  * 盤面の上に出す記録の帯。
  *
  * 記録が1つも無いあいだは何も出さない（まだ何も無いのに枠だけあると邪魔なため）。
- * 保存先の注記は、記録がついた最初の1回だけ開いた状態で見せ、以後は折りたたむ。
+ *
+ * **保存先の注記は自分から開かない。** 以前は最初の1回だけ開いて見せていたが、
+ * 帯が139pxになり、スマホでは盤がその分だけ画面から押し出されていた（実測）。
+ * 注記は「消えることがある」という但し書きで、遊ぶ前に読ませるものではない。
+ * 見出し（`summary`）は常に出ているので、知りたい人はそこから開ける。
  */
 export function RecordStrip({ items }: { items: RecordItem[] }) {
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (items.length === 0 || noteSeen()) return;
-    setOpen(true);
-    markNoteSeen();
-  }, [items.length]);
 
   if (items.length === 0) return null;
 

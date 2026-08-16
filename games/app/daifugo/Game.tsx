@@ -500,11 +500,14 @@ export default function Game() {
         {selectedCards.length > 0 && !classify(selectedCards) && '（役になっていません）'}
       </p>
 
-      <p className="df-note">
-        あなたは0番の席で、CPUは「{LEVELS[level].label}」です。
-        <strong>薄く表示されている札は、いまの場には出せません。</strong>
-        カード交換は弱い側が最強の札を、強い側が最弱の札を自動で渡します。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p className="df-note">
+          あなたは0番の席で、CPUは「{LEVELS[level].label}」です。
+          <strong>薄く表示されている札は、いまの場には出せません。</strong>
+          カード交換は弱い側が最強の札を、強い側が最弱の札を自動で渡します。
+        </p>
+      </details>
     </div>
   );
 }
