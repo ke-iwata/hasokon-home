@@ -30,13 +30,27 @@ import { CardView } from '@/app/_cards/CardView';
 import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
 import { formatTime, type Improved } from '@/lib/records';
 import { trackToolUse } from '@/lib/analytics';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 神経衰弱の画面。ロジックは `lib/shinkei-suijaku.ts`（純関数）にあり、ここは入力と描画だけ。
  * 仕様: docs/features/game-shinkei-suijaku.md
  */
 
-/** はずれた2枚を見せておく時間（ms）。仕様の「約1秒」。画面タップで短縮できる */
+/*
+ * 間（ms）。いずれも「ふつう」のときの値で、速さの設定に応じて
+ * `delayFor` が倍率を掛ける（app/_cpu/CpuSpeed.tsx）。
+ * **めくった札を見せる時間も一緒に動かす**。CPUだけ速くしても、
+ * 札が伏せられるのを待つ時間が変わらなければ体感は速くならない
+ */
+/** はずれた2枚を見せておく時間。仕様の「約1秒」。画面タップで短縮できる */
 const MISS_MS = 1000;
 /** 当たった2枚を見せておく時間。取るだけなので短くていい */
 const HIT_MS = 500;
@@ -97,6 +111,8 @@ export default function Game() {
    * 「スタート」を押すか、先攻で自分がめくると true になる
    */
   const [begun, setBegun] = useState(false);
+  /** CPUの速さ。盤の中身は変わらないので、その場で効く（配り直さない） */
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
   const records = useRecords('shinkei-suijaku');
   const timer = useStopwatch();
   const variant = variantOf(options);
@@ -126,16 +142,17 @@ export default function Game() {
     dealt.current = true;
     const saved = readPrefs();
     setOptions(saved);
+    setSpeed(readCpuSpeed('shinkei-suijaku'));
     start(saved);
   }, [start]);
 
   /** めくった2枚の後始末。時間で自然に消える（画面タップでも呼ぶ） */
   useEffect(() => {
     if (!state || state.judge === null) return;
-    const wait = state.judge === 'hit' ? HIT_MS : MISS_MS;
+    const wait = delayFor(state.judge === 'hit' ? HIT_MS : MISS_MS, speed);
     const id = window.setTimeout(() => setState((s) => (s ? resolve(s) : s)), wait);
     return () => window.clearTimeout(id);
-  }, [state]);
+  }, [state, speed]);
 
   /** CPUの手番。1枚目と2枚目でこの効果が2回走る。スタート前（!begun）は動かない */
   useEffect(() => {
@@ -147,9 +164,9 @@ export default function Game() {
         const pos = chooseCpuFlip(s);
         return pos === null ? s : applyFlip(s, pos);
       });
-    }, CPU_MS);
+    }, delayFor(CPU_MS, speed));
     return () => window.clearTimeout(id);
-  }, [state, begun]);
+  }, [state, begun, speed]);
 
   /** 決着したら記録する */
   useEffect(() => {
@@ -198,15 +215,13 @@ export default function Game() {
 
   const strip = useMemo(() => {
     if (options.mode === 'solo') {
-      if (!entry.bestTimeMs && !entry.bestMoves) return [];
+      // 記録が無くても出す（「—」）。初クリアで帯が現れると盤が押し下がるため
       return [
         { label: 'ベストタイム', value: entry.bestTimeMs ? formatTime(entry.bestTimeMs) : '—' },
         { label: '最少手数', value: entry.bestMoves ? `${entry.bestMoves}手` : '—' },
         { label: 'クリア', value: `${entry.wins ?? 0}回` },
       ];
     }
-    const decided = (entry.wins ?? 0) + (entry.losses ?? 0) + (entry.draws ?? 0);
-    if (decided === 0) return [];
     return [
       {
         label: `${LEVEL_LABELS[options.level]}との成績`,
@@ -278,6 +293,16 @@ export default function Game() {
         )}
 
         {options.mode === 'cpu' && (
+          <CpuSpeedSeg
+            value={speed}
+            onChange={(next) => {
+              setSpeed(next);
+              writeCpuSpeed('shinkei-suijaku', next);
+            }}
+          />
+        )}
+
+        {options.mode === 'cpu' && (
           <div className="seg" role="group" aria-label="先攻・後攻">
             {(['you', 'cpu'] as const).map((first) => (
               <button
@@ -315,14 +340,6 @@ export default function Game() {
 
       <RecordStrip items={strip} />
 
-      {/* スタート待ち。後攻のとき、押すまでCPUはめくらない（先攻なら自分の初手でも始まる） */}
-      {!begun && state.mode === 'cpu' && !state.finished && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
       {state.mode === 'cpu' && (
         <div className="ss-seats">
@@ -342,32 +359,37 @@ export default function Game() {
           （仕様の「待ち時間は画面タップで短縮可」）。**短縮はここだけの仕事**で、
           札のクリックもここへバブリングしてくる（flip 側は判定待ちなら何もしない）。
           両方で resolve を呼ぶと同じ局面に2回走るため、片方に寄せてある */}
-      <div
-        className="ss-board"
-        aria-label="場"
-        style={{ '--ss-cols': COLUMNS[state.size] } as React.CSSProperties}
-        onClick={() => {
-          if (state.judge !== null) setState(resolve(state));
-        }}
+      <StartGate
+        show={!begun && state.mode === 'cpu' && !state.finished}
+        onStart={() => setBegun(true)}
       >
-        {state.cards.map((card, pos) => {
-          const owner = state.taken[pos];
-          if (owner !== null) {
+        <div
+          className="ss-board"
+          aria-label="場"
+          style={{ '--ss-cols': COLUMNS[state.size] } as React.CSSProperties}
+          onClick={() => {
+            if (state.judge !== null) setState(resolve(state));
+          }}
+        >
+          {state.cards.map((card, pos) => {
+            const owner = state.taken[pos];
+            if (owner !== null) {
+              return (
+                <span
+                  key={card.id}
+                  className={`ss-taken${state.mode === 'cpu' ? ` p${owner}` : ''}`}
+                  aria-hidden
+                />
+              );
+            }
             return (
-              <span
-                key={card.id}
-                className={`ss-taken${state.mode === 'cpu' ? ` p${owner}` : ''}`}
-                aria-hidden
-              />
+              <span key={card.id} className={`ss-slot${humanTurn ? '' : ' wait'}`}>
+                <CardView card={card} onClick={() => flip(pos)} />
+              </span>
             );
-          }
-          return (
-            <span key={card.id} className={`ss-slot${humanTurn ? '' : ' wait'}`}>
-              <CardView card={card} onClick={() => flip(pos)} />
-            </span>
-          );
-        })}
-      </div>
+          })}
+        </div>
+      </StartGate>
 
       <p className="ss-msg" aria-live="polite">
         {state.finished

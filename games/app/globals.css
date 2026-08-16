@@ -365,6 +365,43 @@ ol {
   margin: 10px 0;
 }
 
+/* 終局・パスの知らせ。**出ても消えても盤が動かないよう常に同じ高さを取る**
+   （中身が無いときは空のまま置く）。`.hint-row` と同じ考え方 */
+.result-row {
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+/* ---- スタート待ちの幕（app/_cpu/StartGate.tsx） ---- */
+
+/* 盤の入れ物。幕を絶対配置で重ねるための基準 */
+.start-gate {
+  position: relative;
+}
+
+/* 押すまでCPUを動かさない合図。**行として置かず盤に重ねる**のは、
+   出たり消えたりしてもレイアウトが動かないようにするため
+   （行にすると押した瞬間に下が57〜72pxせり上がる。実測） */
+.start-gate-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  /* 盤を透かす。配られた札や初期配置を見てから始められるように */
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+}
+
 /* 盤面の上に置く可変メッセージ行。文言の切り替わりで盤面が上下に
    動かないよう、常に2行分の高さで固定する（1行のときは下が空くだけ）。
    「同じ画面内に位置が変わる要素を混ぜない」ためのクラス */
@@ -1524,9 +1561,12 @@ ol {
   font-size: 0.95rem;
 }
 
+/* 空文字〜「1位で上がり」まで入れ替わる。min-height だと2行に増えた瞬間に
+   席が伸びて盤が動くので固定にする（.sn-seat-state と同じ） */
 .df-seat-state {
   display: block;
-  min-height: 1.35em;
+  height: 2.7em;
+  overflow: hidden;
   color: var(--muted);
 }
 
@@ -1582,13 +1622,16 @@ ol {
   }
 }
 
-/* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く */
+/* 革命・縛り・11バックの表示。場の意味が変わるので、盤面のすぐ上に固定で置く。
+   出たり消えたりするので高さは固定（min-height だと増えた瞬間に盤が動く）。
+   札の帯は最大3つで、320px幅でも1行に収まることを確認済み */
 .df-flags {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
   justify-content: center;
-  min-height: 1.9em;
+  height: 1.9em;
+  overflow: hidden;
 }
 
 .df-flag {
@@ -1642,8 +1685,13 @@ ol {
 
 /* 実況。文言が1行と2行で切り替わっても盤面が動かないよう高さを固定する
    （.hint-row と同じ考え方） */
+/* 実況と手番の案内。**min-height ではなく height で固定する**。
+   min-height は下限しか決めないので、文言が2行に増えた瞬間に盤が動く
+   （`.hint-row` と同じ考え方）。line-height を明示して「何行ぶん」で決める */
 .df-msg {
-  height: 3em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1868,9 +1916,13 @@ ol {
   font-size: 0.95rem;
 }
 
+/* 「パス残り3回・考え中…」は手番のときだけ長くなり、狭い画面では2行になる。
+   min-height だと1行から2行に増えた瞬間に席が伸びて盤が動くので、
+   2行ぶんで固定する（1行のときは下が空くだけ） */
 .sn-seat-state {
   display: block;
-  min-height: 1.35em;
+  height: 2.7em;
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.72rem;
 }
@@ -1927,8 +1979,11 @@ ol {
   opacity: 0.42;
 }
 
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .sn-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
@@ -2120,8 +2175,11 @@ ol {
 }
 
 /* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .ss-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
@@ -2251,9 +2309,12 @@ ol {
   }
 }
 
-/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する。
+   **min-height ではなく height。** 下限だけでは2行に増えた瞬間に伸びる */
 .sp-msg {
-  min-height: 2.6em;
+  line-height: 1.5;
+  height: 3em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
@@ -2342,22 +2403,30 @@ button.hf-card {
   min-width: 0;
 }
 
-/* 手札。8枚が1行に入らない幅では2行に折り返す（1枚を小さくしない） */
+/* 手札。8枚が1行に入らない幅では2行に折り返す（1枚を小さくしない）。
+   **高さは配りたて（8枚）のぶんで固定する。** 出すたびに縮むと、CPU側の手札は
+   盤の上にあるので盤ごと動く。減った枚数は下の余白として残るだけ */
 .hf-hand {
+  --hf-hand-card: clamp(44px, 13vw, 66px);
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   justify-content: center;
   gap: 5px;
+  /* 2段ぶん（札の高さ ＝ 幅 × 1.64） */
+  height: calc(2 * var(--hf-hand-card) * 1.64 + 5px);
   margin: 8px 0;
 }
 
 .hf-hand .hf-slot {
-  width: clamp(44px, 13vw, 66px);
+  width: var(--hf-hand-card);
 }
 
-/* CPUの手札は裏向きなので、少し小さく置いて自分の手札と見分ける */
-.hf-hand.cpu .hf-slot {
-  width: clamp(30px, 8.5vw, 44px);
+/* CPUの手札は裏向きなので、少し小さく置いて自分の手札と見分ける。
+   8枚が1段に収まる大きさなので、確保するのも1段ぶん */
+.hf-hand.cpu {
+  --hf-hand-card: clamp(30px, 8.5vw, 44px);
+  height: calc(var(--hf-hand-card) * 1.64);
 }
 
 /* 場。緑の地で「場」であることを示す。左に山札、右に場札（4枚×2列） */
@@ -2387,6 +2456,11 @@ button.hf-card {
   min-width: 0;
   max-width: 300px;
   align-content: start;
+  /* **枠の高さは幅から決める。** 9枚以上になると列が増えて札が細くなり、
+     行の高さ＝札の高さも縮んで場が50px縮んでいた。縦横比で固定すれば、
+     列が増えても枠は動かない（札が小さくなって下に余白が残るだけ）。
+     比は4列2段のとき（幅 4w+3gap、高さ 2×1.64w+gap）から出した */
+  aspect-ratio: 1.25;
 }
 
 .hf-field .hf-slot {
@@ -2432,11 +2506,26 @@ button.hf-card {
   pointer-events: none;
 }
 
+/* めくる前の空き。枠だけ残して、めくった瞬間に場所が動かないようにする */
+.hf-empty {
+  display: block;
+  width: 100%;
+  aspect-ratio: 976 / 1600;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  background: rgba(148, 163, 184, 0.08);
+}
+
 /* 取り札。種類別の束（.hf-kind-group）を横に流す */
 .hf-taken {
+  /* 札の大きさ。高さの計算（.hf-strip）でも使うので変数にしてある */
+  --hf-taken-card: clamp(24px, 7vw, 38px);
   margin: 8px 0;
 }
 
+/* 「〇〇の取り札」と成立した役の帯。役ができるとチップが増えて2行になり、
+   CPU側は盤の上にあるので盤ごと動く。2行ぶんで固定する
+   （役が多いときは中でスクロールさせる。役の合計は `.hf-yaku.total` に出る） */
 .hf-taken-head {
   display: flex;
   flex-wrap: wrap;
@@ -2445,6 +2534,12 @@ button.hf-card {
   gap: 6px;
   margin-bottom: 4px;
   font-size: 0.78rem;
+  line-height: 1.4;
+  /* 名前の行＋役のチップの行で2行。チップは丸みのぶん行より背が高いので、
+     行の高さそのままだと上下が切れる。少し余裕を持たせてある */
+  height: 3.6em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   color: var(--muted);
 }
 
@@ -2476,15 +2571,29 @@ button.hf-card {
   color: var(--muted);
 }
 
+/* 取り札の置き場。**高さを2段ぶんで固定し、あふれたら中でスクロールさせる**。
+   取るたびに伸びると、CPU側の取り札は盤の上にあるので盤ごと押し下がる
+   （実測88px）。枚数は最大24枚まで増えるので、全部ぶんを空けておくのは
+   割に合わない。役の成立は見出しの `.hf-yaku-line` に文字で出ているので、
+   札そのものは2段見えていれば足りる */
 .hf-strip {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 3px 10px;
-  min-height: 34px;
+  /* 1段 ＝ 種類ラベル（0.68rem × 行間1.2）＋ 隙間2px ＋ 札の高さ（幅×1.64） */
+  height: calc(2 * (0.82rem + 2px + var(--hf-taken-card) * 1.64) + 3px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 高さを固定すると、序盤は空きが目立つ。「取り札の置き場」だと分かる
+     受け皿の下地を敷いて、空いていることを意図的に見せる */
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 
 .hf-strip .hf-card {
-  width: clamp(24px, 7vw, 38px);
+  width: var(--hf-taken-card);
 }
 
 /* 取り札の種類（光・タネ・短冊・カス）ごとの束。役は種類単位で数えるので、
@@ -2509,7 +2618,7 @@ button.hf-card {
 }
 
 .hf-kind-cards .hf-card {
-  width: clamp(24px, 7vw, 38px);
+  width: var(--hf-taken-card);
 }
 
 .hf-empty-note {
@@ -2532,11 +2641,27 @@ button.hf-card {
 }
 
 /* 文言が1行と2行を行き来しても盤面が上下に動かないよう、高さを固定する */
+/* 高さは固定（min-height にしない）。理由は .df-msg のコメントを参照 */
 .hf-msg {
-  min-height: 3.2em;
+  line-height: 1.5;
+  height: 4.5em;
+  overflow: hidden;
   margin: 8px 0 0;
   text-align: center;
   font-size: 0.9rem;
+}
+
+/* 局面ごとのボタン（こいこい・次の月へ・もう一度あそぶ）の置き場。
+   中身が無いときも高さを取る。条件付きで行ごと出し入れすると、
+   出た瞬間に下が57px動く（`.result-row` と同じ話） */
+.hf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  height: 43px;
+  margin: 12px 0;
 }
 
 /* 「あと何枚で役になるか」。初めての人が何を狙えばいいか分かるようにする */

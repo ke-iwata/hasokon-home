@@ -22,6 +22,14 @@ import {
 import { trackToolUse } from '@/lib/analytics';
 import { RecordStrip, useRecords } from '@/app/_records/Records';
 import { winRate } from '@/lib/records';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 強さと先手・後手の選択は覚えておく（毎回選び直させない）。
@@ -59,7 +67,8 @@ function readHuman(): Player {
   return readSetting(FIRST_KEY) === 'white' ? WHITE : BLACK;
 }
 
-/** CPUが考えているように見せる最短の間（ms）。速すぎると盤面の変化を追えない */
+/** CPUが考えているように見せる最短の間（ms、「ふつう」のとき）。
+    速すぎると盤面の変化を追えない。3段階の倍率は app/_cpu/CpuSpeed.tsx が持つ */
 const THINK_DELAY = 320;
 
 /** 星（天元と4つの星）。位置の見当をつけるための目印 */
@@ -80,6 +89,8 @@ export default function Game() {
    * 後手（白）のとき、開いた瞬間にCPUが打ち始めるのを防ぐ
    */
   const [begun, setBegun] = useState(false);
+  /** CPUの速さ。対局の中身は変わらないので、その場で効く（仕切り直さない） */
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
   const ended = useRef(false);
   // 対CPUの戦績。強さごとに分けて持つ（docs/features/game-records.md）
   const records = useRecords('gomoku');
@@ -110,6 +121,7 @@ export default function Game() {
   useEffect(() => {
     setLevel(readLevel());
     setHuman(readHuman());
+    setSpeed(readCpuSpeed('gomoku'));
     setReady(true);
   }, []);
 
@@ -122,12 +134,12 @@ export default function Game() {
       const move = chooseMove(current, level);
       setThinking(false);
       if (move >= 0) setHistory((h) => [...h, applyMove(h[h.length - 1], move)]);
-    }, THINK_DELAY);
+    }, delayFor(THINK_DELAY, speed));
     return () => {
       window.clearTimeout(timer);
       setThinking(false);
     };
-  }, [ready, begun, current, human, level]);
+  }, [ready, begun, current, human, level, speed]);
 
   useEffect(() => {
     if (!current.finished || ended.current) return;
@@ -185,6 +197,14 @@ export default function Game() {
             </button>
           ))}
         </div>
+        <CpuSpeedSeg
+          value={speed}
+          onChange={(next) => {
+            setSpeed(next);
+            writeCpuSpeed('gomoku', next);
+          }}
+        />
+
         <div className="seg" role="group" aria-label="自分の色">
           {([BLACK, WHITE] as Player[]).map((c) => (
             <button
@@ -224,75 +244,68 @@ export default function Game() {
         </span>
       </div>
 
-      {/* スタート待ち。押すまでCPUは動かない（先手なら自分の初手でも始まる） */}
-      {!begun && !current.finished && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
       {/* 戦績は「いま選んでいる強さ」のもの。かんたんとつよいは別物なので分ける */}
+      {/* **1局も終えていなくても出す**（0勝0敗0分）。初戦を終えた瞬間に
+          帯が現れると、盤が139px押し下げられる（実測）。空欄を確保するより、
+          最初から数字を見せたほうが場所も情報も無駄にならない */}
       <RecordStrip
-        items={
-          winRate(entry) === null
-            ? []
-            : [
-                {
-                  label: `${LEVELS[level].label}との戦績`,
-                  value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
-                },
-                { label: '勝率', value: `${winRate(entry)}%` },
-              ]
-        }
+        items={[
+          {
+            label: `${LEVELS[level].label}との戦績`,
+            value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
+          },
+          { label: '勝率', value: winRate(entry) === null ? '—' : `${winRate(entry)}%` },
+        ]}
       />
 
-      {current.finished && (
-        <p
-          className="status-bar"
-          style={{
-            color: current.winner === human ? 'var(--ok)' : 'var(--text)',
-            fontWeight: 700,
-          }}
-        >
-          {current.winner === 0
+      {/* 終局の知らせ。**条件付きで出し入れせず、常に置く**（`.result-row` が
+          高さを確保するので、終局した瞬間に盤より下が動かない） */}
+      <p
+        className="result-row"
+        style={{ color: current.winner === human ? 'var(--ok)' : 'var(--text)' }}
+        aria-live="polite"
+      >
+        {!current.finished
+          ? ''
+          : current.winner === 0
             ? '引き分けです（盤が埋まりました）'
             : current.winner === human
               ? '🎉 あなたの勝ちです'
               : 'あなたの負けです'}
-        </p>
-      )}
+      </p>
 
-      <div className="gm-board" role="grid" aria-label="五目並べの盤面">
-        {Array.from({ length: CELLS }, (_, sq) => {
-          const v = current.board[sq];
-          const playable = humanTurn && v === 0;
-          const cls = [
-            'gm-cell',
-            STARS.has(sq) ? 'star' : '',
-            sq === current.last ? 'last' : '',
-            winLine.has(sq) ? 'win' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
-          const what = v === BLACK ? '黒' : v === WHITE ? '白' : '空き';
-          return (
-            <button
-              key={sq}
-              type="button"
-              className={cls}
-              onClick={() => place(sq)}
-              disabled={!playable}
-              aria-label={`${rowOf(sq) + 1}行${colOf(sq) + 1}列 ${what}`}
-            >
-              {v !== 0 && (
-                <span className={`gm-stone ${v === BLACK ? 'black' : 'white'}`} aria-hidden="true" />
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <StartGate show={!begun && !current.finished} onStart={() => setBegun(true)}>
+        <div className="gm-board" role="grid" aria-label="五目並べの盤面">
+          {Array.from({ length: CELLS }, (_, sq) => {
+            const v = current.board[sq];
+            const playable = humanTurn && v === 0;
+            const cls = [
+              'gm-cell',
+              STARS.has(sq) ? 'star' : '',
+              sq === current.last ? 'last' : '',
+              winLine.has(sq) ? 'win' : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            const what = v === BLACK ? '黒' : v === WHITE ? '白' : '空き';
+            return (
+              <button
+                key={sq}
+                type="button"
+                className={cls}
+                onClick={() => place(sq)}
+                disabled={!playable}
+                aria-label={`${rowOf(sq) + 1}行${colOf(sq) + 1}列 ${what}`}
+              >
+                {v !== 0 && (
+                  <span className={`gm-stone ${v === BLACK ? 'black' : 'white'}`} aria-hidden="true" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </StartGate>
 
       <div className="btn-row" style={{ marginTop: 12, justifyContent: 'center' }}>
         <button type="button" className="btn" onClick={undo} disabled={undoTarget === null}>

@@ -19,6 +19,14 @@ import {
 import { trackToolUse } from '@/lib/analytics';
 import { RecordStrip, useRecords } from '@/app/_records/Records';
 import { winRate } from '@/lib/records';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 強さと先手・後手の選択は覚えておく（毎回選び直させない）。
@@ -58,7 +66,8 @@ function readColor(): Player {
   return readSetting(COLOR_KEY) === 'white' ? WHITE : BLACK;
 }
 
-/** CPUが考えているように見せる最短の間（ms）。速すぎると盤面の変化を追えない */
+/** CPUが考えているように見せる最短の間（ms、「ふつう」のとき）。
+    速すぎると盤面の変化を追えない。3段階の倍率は app/_cpu/CpuSpeed.tsx が持つ */
 const THINK_DELAY = 420;
 
 const COLOR_LABEL: Record<'black' | 'white', string> = { black: '黒（先手）', white: '白（後手）' };
@@ -76,6 +85,8 @@ export default function Game() {
    * 後手（白）を選んでいるとき、開いた瞬間にCPUが打ち始めるのを防ぐ
    */
   const [begun, setBegun] = useState(false);
+  /** CPUの速さ。対局の中身は変わらないので、その場で効く（仕切り直さない） */
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
   const finished = useRef(false);
   // 対CPUの戦績。強さごとに分けて持つ（docs/features/game-records.md）
   const records = useRecords('reversi');
@@ -102,6 +113,7 @@ export default function Game() {
     const savedColor = readColor();
     setLevel(savedLevel);
     setHuman(savedColor);
+    setSpeed(readCpuSpeed('reversi'));
     setReady(true);
   }, []);
 
@@ -114,12 +126,12 @@ export default function Game() {
       const move = chooseMove(current, level);
       setThinking(false);
       if (move >= 0) setHistory((h) => [...h, applyMove(h[h.length - 1], move)]);
-    }, THINK_DELAY);
+    }, delayFor(THINK_DELAY, speed));
     return () => {
       window.clearTimeout(timer);
       setThinking(false);
     };
-  }, [ready, begun, current, human, level]);
+  }, [ready, begun, current, human, level, speed]);
 
   useEffect(() => {
     if (!current.finished || finished.current) return;
@@ -177,6 +189,14 @@ export default function Game() {
             </button>
           ))}
         </div>
+        <CpuSpeedSeg
+          value={speed}
+          onChange={(next) => {
+            setSpeed(next);
+            writeCpuSpeed('reversi', next);
+          }}
+        />
+
         <div className="seg" role="group" aria-label="自分の色">
           {([BLACK, WHITE] as Player[]).map((c) => (
             <button
@@ -222,79 +242,83 @@ export default function Game() {
         </span>
       </div>
 
-      {/* スタート待ち。押すまでCPUは動かない（先手なら自分の初手でも始まる） */}
-      {!begun && !current.finished && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
       {/* 戦績は「いま選んでいる強さ」のもの。かんたんとつよいは別物なので分ける */}
+      {/* **1局も終えていなくても出す**（0勝0敗0分）。初戦を終えた瞬間に
+          帯が現れると、盤が139px押し下げられる（実測）。空欄を確保するより、
+          最初から数字を見せたほうが場所も情報も無駄にならない */}
       <RecordStrip
-        items={
-          winRate(entry) === null
-            ? []
-            : [
-                {
-                  label: `${LEVELS[level].label}との戦績`,
-                  value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
-                },
-                { label: '勝率', value: `${winRate(entry)}%` },
-              ]
-        }
+        items={[
+          {
+            label: `${LEVELS[level].label}との戦績`,
+            value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
+          },
+          { label: '勝率', value: winRate(entry) === null ? '—' : `${winRate(entry)}%` },
+        ]}
       />
 
-      {current.passed && !current.finished && (
-        <p className="status-bar" style={{ color: 'var(--muted)' }}>
-          {current.turn === human ? 'CPUは打てる場所が無いのでパスしました。' : 'あなたは打てる場所が無いのでパスになりました。'}
-        </p>
-      )}
-
-      {current.finished && (
-        <p className="status-bar" style={{ color: won === human ? 'var(--ok)' : 'var(--text)', fontWeight: 700 }}>
-          {won === 0
+      {/* パスと終局の知らせ。**条件付きで出し入れせず、常に置く**（`.result-row` が
+          高さを確保するので、出た瞬間に盤より下が動かない） */}
+      <p
+        className="result-row"
+        style={{
+          color: current.finished
+            ? won === human
+              ? 'var(--ok)'
+              : 'var(--text)'
+            : 'var(--muted)',
+          fontWeight: current.finished ? 700 : 400,
+        }}
+        aria-live="polite"
+      >
+        {current.finished
+          ? won === 0
             ? `引き分け（${counts.black} 対 ${counts.white}）`
             : won === human
               ? `🎉 あなたの勝ちです（${humanCount} 対 ${cpuCount}）`
-              : `あなたの負けです（${humanCount} 対 ${cpuCount}）`}
-        </p>
-      )}
+              : `あなたの負けです（${humanCount} 対 ${cpuCount}）`
+          : current.passed
+            ? current.turn === human
+              ? 'CPUは打てる場所が無いのでパスしました。'
+              : 'あなたは打てる場所が無いのでパスになりました。'
+            : ''}
+      </p>
 
-      <div className="rv-board" role="grid" aria-label="リバーシの盤面">
-        {Array.from({ length: 64 }, (_, sq) => {
-          const v = current.board[sq];
-          const playable = humanTurn && moves.includes(sq);
-          const cls = [
-            'rv-cell',
-            playable ? 'playable' : '',
-            sq === current.last ? 'last' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
-          const row = Math.floor(sq / 8) + 1;
-          const col = (sq % 8) + 1;
-          const what = v === BLACK ? '黒' : v === WHITE ? '白' : playable ? '打てます' : '空き';
-          return (
-            <button
-              key={sq}
-              type="button"
-              className={cls}
-              onClick={() => place(sq)}
-              disabled={!playable}
-              aria-label={`${row}行${col}列 ${what}`}
-            >
-              {v !== 0 && (
-                <span className={`rv-disc ${v === BLACK ? 'black' : 'white'}`} aria-hidden="true">
-                  <span className="face b" />
-                  <span className="face w" />
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <StartGate show={!begun && !current.finished} onStart={() => setBegun(true)}>
+        <div className="rv-board" role="grid" aria-label="リバーシの盤面">
+          {Array.from({ length: 64 }, (_, sq) => {
+            const v = current.board[sq];
+            const playable = humanTurn && moves.includes(sq);
+            const cls = [
+              'rv-cell',
+              playable ? 'playable' : '',
+              sq === current.last ? 'last' : '',
+            ]
+              .filter(Boolean)
+              .join(' ');
+            const row = Math.floor(sq / 8) + 1;
+            const col = (sq % 8) + 1;
+            const what = v === BLACK ? '黒' : v === WHITE ? '白' : playable ? '打てます' : '空き';
+            return (
+              <button
+                key={sq}
+                type="button"
+                className={cls}
+                onClick={() => place(sq)}
+                disabled={!playable}
+                aria-label={`${row}行${col}列 ${what}`}
+              >
+                {v !== 0 && (
+                  <span className={`rv-disc ${v === BLACK ? 'black' : 'white'}`} aria-hidden="true">
+                    <span className="face b" />
+                    <span className="face w" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </StartGate>
 
       <div className="btn-row" style={{ marginTop: 12, justifyContent: 'center' }}>
         <button type="button" className="btn" onClick={undo} disabled={undoTarget === null}>
