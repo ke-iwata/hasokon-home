@@ -125,8 +125,7 @@ export default function PrivacyPage() {
       <h2>運営者・お問い合わせ</h2>
       <p>
         本サイトは、同じ運営者による hasokon.com の一部として公開しています。運営者については
-        {/* about は tools 側の固定ページ。basePath（/games）の外なので <a> で絶対パスへ飛ばす */}
-        <a href="/tools/about/">運営者情報</a>
+        <Link href="/about/">運営者情報</Link>
         を、本ポリシーに関するご連絡は
         <Link href="/contact/">お問い合わせフォーム</Link>
         をご覧ください。

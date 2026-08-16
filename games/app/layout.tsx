@@ -90,8 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
             <p>
               <Link href="/">ゲーム一覧</Link>
-              {/* about は tools 側の固定ページ。basePath（/games）の外なので <a> で飛ばす */}
-              <a href="/tools/about/">運営者情報</a>
+              <Link href="/about/">運営者情報</Link>
               <Link href="/privacy/">プライバシーポリシー</Link>
               <Link href="/contact/">お問い合わせ</Link>
               <a href="/">

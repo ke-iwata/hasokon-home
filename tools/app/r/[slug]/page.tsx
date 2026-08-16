@@ -17,6 +17,8 @@ interface Preset {
   lead: string;
   guide: string | null;
   items: { emoji: string; text: string }[];
+  /** 用途ごとの固有の解説（h2 + 段落）。共通の定型文だけの重複ページにしないため */
+  sections: { heading: string; body: string[] }[];
 }
 
 const presets = PRESETS as Preset[];
@@ -88,10 +90,22 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
       <AdUnit position="below-tool" />
 
+      {preset.sections.map((s) => (
+        <div key={s.heading}>
+          <h2>{s.heading}</h2>
+          {s.body.map((text, i) => (
+            <p key={i}>{text}</p>
+          ))}
+        </div>
+      ))}
+
       <h2>候補は自由に書き換えられます</h2>
       <p>
-        あらかじめ候補が入った状態で開きますが、要らないものは消して、必要なものを足せます。書き換えた内容はこの端末に保存され、次に開いたときも残ります。
-        <Link href="/roulette/">項目を空から作る</Link>こともできます。
+        {/* プリセットの編集は保存されない（RouletteApp が preset ありのとき setStored を呼ばない）。
+            「保存される」と書かないこと */}
+        あらかじめ候補が入った状態で開きますが、要らないものは消して、必要なものを足せます。書き換えはこのページを開いているあいだだけ有効で、開き直すと元の候補に戻ります。自分の候補を保存して繰り返し使いたいときは、
+        <Link href="/roulette/">項目を空から作るルーレット</Link>
+        をご利用ください（そちらは書き換えた内容が端末に保存されます）。
       </p>
 
       {preset.guide && (
