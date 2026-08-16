@@ -381,6 +381,14 @@ export type Phase =
   | 'choose'
   /** 山札を1枚めくる */
   | 'draw'
+  /**
+   * めくった札を見せている（まだ場にも取り札にも移していない）。
+   *
+   * めくると同時に場へ流していた頃は、**同じ札が「めくった札」の枠と場の
+   * 両方に出て**「まだ手元にあるのか、もう場に行ったのか」が読めなかった。
+   * 見せる一拍を局面として持ち、移した瞬間に枠から消す。
+   */
+  | 'drawn'
   /** めくった札が場の2枚と合った */
   | 'draw-choose'
   /** 役ができた。あがるか こいこい か */
@@ -660,7 +668,8 @@ export function applyChoice(state: KoikoiState, fieldCardId: string): KoikoiStat
 }
 
 /**
- * 山札を1枚めくる。
+ * 山札を1枚めくる。**めくるだけで、まだ場にも取り札にも移さない**（`drawn`）。
+ * 移すのは次の `settleDrawn`。分けているのは、めくった札を一拍見せるため。
  *
  * 標準の配りでは山札24枚に対してめくるのは16回なので尽きないが、
  * 尽きていたら黙って手番を終える（局面だけで進めなくならないようにする）。
@@ -669,8 +678,20 @@ export function applyDraw(state: KoikoiState): KoikoiState {
   if (state.phase !== 'draw') return state;
   if (state.deck.length === 0) return endTurn({ ...state, lastDrawn: null });
   const card = state.deck[state.deck.length - 1];
-  const next = { ...state, deck: state.deck.slice(0, -1), lastDrawn: card };
-  return place(next, card, 'deck');
+  return { ...state, deck: state.deck.slice(0, -1), lastDrawn: card, phase: 'drawn' };
+}
+
+/**
+ * めくって見せた札を、場に置くか取り札に移す。
+ *
+ * `lastDrawn` は消さない。移したあと、場に流れた札を光らせる目印として使う
+ * （`Game.tsx` の `fresh`）。**「めくった札」の枠に出すかどうかは
+ * `phase === 'drawn'` で決めること。** `lastDrawn` の有無で決めると、
+ * 移したあとも枠に残って同じ札が2か所に出る。
+ */
+export function settleDrawn(state: KoikoiState): KoikoiState {
+  if (state.phase !== 'drawn' || !state.lastDrawn) return state;
+  return place(state, state.lastDrawn, 'deck');
 }
 
 /** その人がいま持っている役 */

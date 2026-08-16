@@ -21,6 +21,7 @@ import {
   playFromHand,
   ROUND_CHOICES,
   scoreOf,
+  settleDrawn,
   variantOf,
   yakuOf,
   yakuProgress,
@@ -60,7 +61,8 @@ import { StartGate } from '@/app/_cpu/StartGate';
  *
  * 山札をめくる `draw` は**どちらの手番でも自動**にした。本物でも手札を出したら
  * 必ずめくるので選択の余地が無く、ボタンを押させると手数が倍になる。
- * ただし間は置く（`DRAW_MS`）。何がめくれて何と合ったのかを見せるため。
+ * ただし間は2回置く。めくるまで（`DRAW_MS`）と、めくった札を見せてから
+ * 場・取り札に移すまで（`SETTLE_MS`）。何がめくれて何と合ったのかを見せるため。
  */
 
 /*
@@ -69,6 +71,8 @@ import { StartGate } from '@/app/_cpu/StartGate';
  */
 /** 山札をめくるまでの間 */
 const DRAW_MS = 750;
+/** めくった札を見せてから、場・取り札に移すまでの間 */
+const SETTLE_MS = 650;
 /** CPUが手札を選ぶまでの間。読みは軽いので、これは演出のための待ち */
 const THINK_MS = 800;
 /** CPUが取り札を選ぶ・こいこいを決めるまでの間 */
@@ -193,6 +197,9 @@ export default function Game() {
     if (s.phase === 'draw') {
       delay = delayFor(DRAW_MS, speed);
       step = () => applyDraw(s);
+    } else if (s.phase === 'drawn') {
+      delay = delayFor(SETTLE_MS, speed);
+      step = () => settleDrawn(s);
     } else if (s.turn === CPU) {
       if (s.phase === 'play') {
         delay = delayFor(THINK_MS, speed);
@@ -487,10 +494,16 @@ export default function Game() {
               <HanafudaBack />
               <span className="hf-count">{state.deck.length}</span>
             </span>
+            {/*
+              ここに出るのは「まだ行き先が決まっていない札」だけ。
+              **`state.lastDrawn` の有無で出さないこと。** めくった札は場か
+              取り札に移ったあとも `lastDrawn` に残る（場に流れた札を光らせる
+              目印に使っている）ので、それで出すと同じ札が枠と場の2か所に出る
+            */}
             <span className="hf-slot">
               {state.pending ? (
                 <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
-              ) : state.lastDrawn ? (
+              ) : state.phase === 'drawn' && state.lastDrawn ? (
                 <HanafudaCardView id={state.lastDrawn} showMonth={prefs.showMonth} />
               ) : (
                 <span className="hf-empty" aria-hidden />
@@ -646,6 +659,8 @@ function message(state: KoikoiState, myTurn: boolean, prefs: Prefs, begun: boole
         : 'CPUが取る札を選んでいます…';
     case 'draw':
       return '山札をめくります…';
+    case 'drawn':
+      return `めくった札は「${cardOf(state.lastDrawn as string).name}」。場に合う札があれば取ります`;
     case 'koikoi':
       return myTurn
         ? `${scoreOf(state.captured[HUMAN], rulesOf(prefs))}文の役ができました。ここであがるか、こいこいで続けるかを選びます`
