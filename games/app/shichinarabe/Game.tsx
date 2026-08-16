@@ -461,11 +461,14 @@ export default function Game() {
         )}
       </div>
 
-      <p className="sn-note">
-        パスは<strong>3回まで</strong>。4回目で失格になり、
-        <strong>手札はすべて場に開きます</strong>。
-        薄く表示されている札は、いまは場につながらないので出せません。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p className="sn-note">
+          パスは<strong>3回まで</strong>。4回目で失格になり、
+          <strong>手札はすべて場に開きます</strong>。
+          薄く表示されている札は、いまは場につながらないので出せません。
+        </p>
+      </details>
     </div>
   );
 }

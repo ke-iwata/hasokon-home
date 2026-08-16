@@ -329,12 +329,15 @@ export default function Game() {
         </button>
       </div>
 
-      <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-        あなたは{human === BLACK ? COLOR_LABEL.black : COLOR_LABEL.white}、CPUは「
-        {LEVELS[level].label}」です。打てる場所は盤の上に薄い丸で出ます。
-        「もどす」は自分が打つ直前まで戻します（あいだのCPUの手も一緒に戻ります）。
-        残り {counts.empty} マス。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
+          あなたは{human === BLACK ? COLOR_LABEL.black : COLOR_LABEL.white}、CPUは「
+          {LEVELS[level].label}」です。打てる場所は盤の上に薄い丸で出ます。
+          「もどす」は自分が打つ直前まで戻します（あいだのCPUの手も一緒に戻ります）。
+          残り {counts.empty} マス。
+        </p>
+      </details>
     </div>
   );
 }

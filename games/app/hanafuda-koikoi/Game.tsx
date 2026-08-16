@@ -372,20 +372,6 @@ export default function Game() {
           ))}
         </div>
 
-        <div className="seg" role="group" aria-label="月数">
-          {ROUND_CHOICES.map((rounds) => (
-            <button
-              key={rounds}
-              type="button"
-              className={rounds === prefs.rounds ? 'active' : ''}
-              aria-pressed={rounds === prefs.rounds}
-              onClick={() => changeRules({ ...prefs, rounds })}
-            >
-              {rounds}ヶ月
-            </button>
-          ))}
-        </div>
-
         <CpuSpeedSeg
           value={speed}
           onChange={(next) => {
@@ -394,44 +380,69 @@ export default function Game() {
           }}
         />
 
-        {/* 最初の親（先攻）。2ヶ月目以降は勝った人が親を続ける（ルールどおり） */}
-        <div className="seg" role="group" aria-label="最初の親">
-          {(Object.keys(FIRST_LABELS) as FirstChoice[]).map((first) => (
-            <button
-              key={first}
-              type="button"
-              className={first === prefs.first ? 'active' : ''}
-              aria-pressed={first === prefs.first}
-              onClick={() => changeRules({ ...prefs, first })}
-            >
-              {FIRST_LABELS[first]}
-            </button>
-          ))}
-        </div>
-
         <button type="button" className="btn" onClick={() => start(prefs)}>
           配り直す
         </button>
       </div>
 
-      <div className="btn-row hf-toggles">
-        <label className="hf-check">
-          <input
-            type="checkbox"
-            checked={prefs.sake}
-            onChange={(e) => changeRules({ ...prefs, sake: e.target.checked })}
-          />
-          花見酒・月見酒を役に入れる
-        </label>
-        <label className="hf-check">
-          <input
-            type="checkbox"
-            checked={prefs.showMonth}
-            onChange={(e) => change({ ...prefs, showMonth: e.target.checked })}
-          />
-          札に月数を出す
-        </label>
-      </div>
+      {/* 月数・最初の親・ローカルルールは**畳んでおく**。
+          このゲームは設定が4つあり、切り替えを全部出すと狭い画面では
+          それだけで3段（実測120px）使って盤が画面の外に出ていた。
+          対局のたびに変えるものではないので、大富豪の `.df-rules` と
+          同じく畳んでおく（仕様は docs/features/mobile-one-screen.md） */}
+      <details className="hf-rules">
+        <summary>対局の設定（月数・最初の親・ローカルルール）</summary>
+
+        <div className="btn-row">
+          <div className="seg" role="group" aria-label="月数">
+            {ROUND_CHOICES.map((rounds) => (
+              <button
+                key={rounds}
+                type="button"
+                className={rounds === prefs.rounds ? 'active' : ''}
+                aria-pressed={rounds === prefs.rounds}
+                onClick={() => changeRules({ ...prefs, rounds })}
+              >
+                {rounds}ヶ月
+              </button>
+            ))}
+          </div>
+
+          {/* 最初の親（先攻）。2ヶ月目以降は勝った人が親を続ける（ルールどおり） */}
+          <div className="seg" role="group" aria-label="最初の親">
+            {(Object.keys(FIRST_LABELS) as FirstChoice[]).map((first) => (
+              <button
+                key={first}
+                type="button"
+                className={first === prefs.first ? 'active' : ''}
+                aria-pressed={first === prefs.first}
+                onClick={() => changeRules({ ...prefs, first })}
+              >
+                {FIRST_LABELS[first]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="btn-row hf-toggles">
+          <label className="hf-check">
+            <input
+              type="checkbox"
+              checked={prefs.sake}
+              onChange={(e) => changeRules({ ...prefs, sake: e.target.checked })}
+            />
+            花見酒・月見酒を役に入れる
+          </label>
+          <label className="hf-check">
+            <input
+              type="checkbox"
+              checked={prefs.showMonth}
+              onChange={(e) => change({ ...prefs, showMonth: e.target.checked })}
+            />
+            札に月数を出す
+          </label>
+        </div>
+      </details>
 
       <div className="status-bar">
         <span>
@@ -603,11 +614,14 @@ export default function Game() {
         </ul>
       </details>
 
-      <p className="hf-note">
-        場札と<strong>同じ月</strong>の手札を出すと2枚とももらえます。役ができたら
-        <strong>あがる</strong>か<strong>こいこい</strong>を選びます。CPUの強さ「
-        {LEVEL_LABELS[prefs.level]}」、{prefs.rounds}ヶ月戦。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p className="hf-note">
+          場札と<strong>同じ月</strong>の手札を出すと2枚とももらえます。役ができたら
+          <strong>あがる</strong>か<strong>こいこい</strong>を選びます。CPUの強さ「
+          {LEVEL_LABELS[prefs.level]}」、{prefs.rounds}ヶ月戦。
+        </p>
+      </details>
     </div>
   );
 }

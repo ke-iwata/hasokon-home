@@ -11,9 +11,7 @@ import {
   entryOf,
   formatTime,
   loadRecords,
-  markNoteSeen,
   mergeEntry,
-  noteSeen,
   parseRecords,
   recordResult,
   recordStart,
@@ -373,20 +371,5 @@ describe('各ゲームの組み込み', () => {
         /localStorage\.(get|set|remove)Item/,
       );
     }
-  });
-});
-
-describe('保存先の注記', () => {
-  it('一度見せたら覚える', () => {
-    const storage = fakeStorage();
-    expect(noteSeen(storage)).toBe(false);
-    markNoteSeen(storage);
-    expect(noteSeen(storage)).toBe(true);
-  });
-
-  it('ストレージが使えないときは「見せた」扱いにして邪魔をしない', () => {
-    expect(noteSeen(null)).toBe(true);
-    expect(noteSeen(throwingStorage)).toBe(true);
-    expect(() => markNoteSeen(throwingStorage)).not.toThrow();
   });
 });

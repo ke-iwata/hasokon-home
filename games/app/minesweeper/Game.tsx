@@ -163,7 +163,9 @@ export default function Game() {
             // minmax(0, 1fr) にしないと、トラックが min-content より縮まず
             // マスが盤の枠からはみ出す（--ms-cols は文字サイズの計算に使う）
             gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-            maxWidth: cols > 9 ? 560 : 380,
+            // 広さの上限は --board-max で渡す。maxWidth を直に書くと、
+            // 画面の高さから盤を抑える指定（globals.css）を上書きしてしまう
+            '--board-max': cols > 9 ? '560px' : '380px',
             '--ms-cols': cols,
           } as React.CSSProperties
         }
@@ -205,10 +207,13 @@ export default function Game() {
         })}
       </div>
 
-      <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-        PC: 左クリックで開く / 右クリックで旗。スマホ: 旗モードに切り替えて旗を立てる。
-        開いた数字をタップすると、旗が揃っていれば周囲をまとめて開けます。
-      </p>
+      <details className="game-tips">
+        <summary>この画面の見かた</summary>
+        <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
+          PC: 左クリックで開く / 右クリックで旗。スマホ: 旗モードに切り替えて旗を立てる。
+          開いた数字をタップすると、旗が揃っていれば周囲をまとめて開けます。
+        </p>
+      </details>
     </div>
   );
 }
