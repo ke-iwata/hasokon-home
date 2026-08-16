@@ -31,8 +31,15 @@ import {
 import { SUIT_SYMBOL } from '@/lib/cards';
 import { CardView, JokerView } from '@/app/_cards/CardView';
 import { RecordStrip, useRecords } from '@/app/_records/Records';
-import { winRate } from '@/lib/records';
 import { trackToolUse } from '@/lib/analytics';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 大富豪の画面。ロジックは `lib/daifugo.ts`（純関数）にあり、ここは入力と描画だけ。
@@ -43,30 +50,19 @@ import { trackToolUse } from '@/lib/analytics';
 const HUMAN = 0;
 const SEAT_NAMES = ['あなた', 'CPU 左', 'CPU 正面', 'CPU 右'];
 
-/** 強さ・ローカルルール・CPUの速さは覚えておく（毎回選び直させない）。
-    遊んだ記録ではないので lib/records.ts には入れない */
+/** 強さ・ローカルルールは覚えておく（毎回選び直させない）。
+    遊んだ記録ではないので lib/records.ts には入れない。
+    CPUの速さは app/_cpu/CpuSpeed.tsx が同じ流儀で持つ */
 const LEVEL_KEY = 'daifugo:level';
 const RULES_KEY = 'daifugo:rules';
-const SPEED_KEY = 'daifugo:speed';
 
 /**
- * CPUが1手打つまでの間（ms）。
+ * CPUが1手打つまでの間（ms、「ふつう」のとき）。
  *
  * 速いと「何が起きたか分からないうちに自分の番が来る」ので、既定はゆっくりめにした。
  * 場の実況（革命・8切りなど）を読む時間が要るため、待ちを消す選択肢は用意していない。
  */
-const SPEEDS = {
-  slow: { label: 'ゆっくり', delay: 2000 },
-  normal: { label: 'ふつう', delay: 1300 },
-  fast: { label: 'はやい', delay: 700 },
-} as const;
-
-type Speed = keyof typeof SPEEDS;
-
-function readSpeed(): Speed {
-  const saved = readSetting(SPEED_KEY);
-  return saved === 'slow' || saved === 'normal' || saved === 'fast' ? saved : 'normal';
-}
+const THINK_MS = 1300;
 
 function readSetting(key: string): string | null {
   try {
@@ -145,7 +141,7 @@ function Card({
 export default function Game() {
   const [level, setLevel] = useState<Level>('normal');
   const [rules, setRules] = useState<Rules>(DEFAULT_RULES);
-  const [speed, setSpeed] = useState<Speed>('normal');
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
   const [match, setMatch] = useState<MatchState | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
   // 設定を読むまでは配らない（静的書き出し時のサーバー側と食い違わないように）
@@ -177,7 +173,7 @@ export default function Game() {
     const savedRules = readRules();
     setLevel(savedLevel);
     setRules(savedRules);
-    setSpeed(readSpeed());
+    setSpeed(readCpuSpeed('daifugo'));
     setMatch(newMatch(savedLevel, savedRules));
     setReady(true);
   }, []);
@@ -201,7 +197,7 @@ export default function Game() {
     const timer = window.setTimeout(() => {
       const cards = chooseCpuPlay(state, match.level);
       commit(cards === null ? applyPass(state) : applyPlay(state, cards));
-    }, SPEEDS[speed].delay);
+    }, delayFor(THINK_MS, speed));
     return () => window.clearTimeout(timer);
   }, [ready, begun, match, state, commit, speed]);
 
@@ -300,22 +296,13 @@ export default function Game() {
           ))}
         </div>
 
-        <div className="seg" role="group" aria-label="CPUの速さ">
-          {(Object.keys(SPEEDS) as Speed[]).map((sp) => (
-            <button
-              key={sp}
-              type="button"
-              className={sp === speed ? 'active' : ''}
-              aria-pressed={sp === speed}
-              onClick={() => {
-                setSpeed(sp);
-                writeSetting(SPEED_KEY, sp);
-              }}
-            >
-              {SPEEDS[sp].label}
-            </button>
-          ))}
-        </div>
+        <CpuSpeedSeg
+          value={speed}
+          onChange={(next) => {
+            setSpeed(next);
+            writeCpuSpeed('daifugo', next);
+          }}
+        />
       </div>
 
       <details className="df-rules">
@@ -347,18 +334,15 @@ export default function Game() {
         </span>
       </div>
 
+      {/* 1試合も終えていなくても出す。初戦の終わりに帯が現れると盤が押し下がるため */}
       <RecordStrip
-        items={
-          winRate(entry) === null
-            ? []
-            : [
-                {
-                  label: `${LEVELS[level].label}との対戦`,
-                  value: `${entry.wins ?? 0}回 大富豪 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
-                },
-                { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
-              ]
-        }
+        items={[
+          {
+            label: `${LEVELS[level].label}との対戦`,
+            value: `${entry.wins ?? 0}回 大富豪 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
+          },
+          { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
+        ]}
       />
 
       <div className="df-seats">
@@ -406,20 +390,22 @@ export default function Game() {
         )}
       </div>
 
-      <div className="df-field" aria-label="場">
-        {state.field ? (
-          <>
-            <span className="df-field-who">{SEAT_NAMES[state.leader]}が出した</span>
-            <span className="df-field-cards">
-              {state.field.cards.map((c) => (
-                <Card key={c.id} card={c} />
-              ))}
-            </span>
-          </>
-        ) : (
-          <span className="df-field-empty">場は空です。好きな役を出せます</span>
-        )}
-      </div>
+      <StartGate show={!begun && !roundOver} onStart={() => setBegun(true)}>
+        <div className="df-field" aria-label="場">
+          {state.field ? (
+            <>
+              <span className="df-field-who">{SEAT_NAMES[state.leader]}が出した</span>
+              <span className="df-field-cards">
+                {state.field.cards.map((c) => (
+                  <Card key={c.id} card={c} />
+                ))}
+              </span>
+            </>
+          ) : (
+            <span className="df-field-empty">場は空です。好きな役を出せます</span>
+          )}
+        </div>
+      </StartGate>
 
       <p className="df-msg" aria-live="polite">
         {roundOver
@@ -439,14 +425,6 @@ export default function Game() {
                 : `${SEAT_NAMES[state.turn]}の番です`}
       </p>
 
-      {/* スタート待ち。押すまでCPUは出さない（♦3が自分なら初手でも始まる） */}
-      {!begun && !roundOver && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
       {roundOver && (
         <div className="df-result">

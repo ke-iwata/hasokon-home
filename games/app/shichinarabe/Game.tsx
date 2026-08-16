@@ -28,6 +28,14 @@ import { isRed, RANK_LABEL, SUITS, SUIT_SYMBOL, type Rank, type Suit } from '@/l
 import { CardView } from '@/app/_cards/CardView';
 import { RecordStrip, useRecords } from '@/app/_records/Records';
 import { trackToolUse } from '@/lib/analytics';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 七並べの画面。ロジックは `lib/shichinarabe.ts`（純関数）にあり、ここは入力と描画だけ。
@@ -43,16 +51,9 @@ const RANKS: Rank[] = Array.from({ length: 13 }, (_, i) => (i + 1) as Rank);
 
 /** ルールとCPUの速さは覚えておく（毎回選び直させない）。遊んだ記録ではないので lib/records.ts には入れない */
 const RULES_KEY = 'shichinarabe:rules';
-const SPEED_KEY = 'shichinarabe:speed';
-
-/** CPUが1手打つまでの間（ms）。大富豪と同じ3段階に揃えてある */
-const SPEEDS = {
-  slow: { label: 'ゆっくり', delay: 1600 },
-  normal: { label: 'ふつう', delay: 1000 },
-  fast: { label: 'はやい', delay: 500 },
-} as const;
-
-type Speed = keyof typeof SPEEDS;
+/** CPUが1手打つまでの間（ms、「ふつう」のとき）。
+    3段階の倍率は app/_cpu/CpuSpeed.tsx が持つ */
+const THINK_MS = 1000;
 
 function readSetting(key: string): string | null {
   try {
@@ -68,11 +69,6 @@ function writeSetting(key: string, value: string): void {
   } catch {
     // 覚えられなくても、その試合は普通に遊べる
   }
-}
-
-function readSpeed(): Speed {
-  const saved = readSetting(SPEED_KEY);
-  return saved === 'slow' || saved === 'normal' || saved === 'fast' ? saved : 'normal';
 }
 
 /** 保存したローカルルール。知らない項目・壊れた値は既定に戻す */
@@ -120,7 +116,7 @@ function variantOf(rules: Rules): string {
 
 export default function Game() {
   const [rules, setRules] = useState<Rules>(DEFAULT_RULES);
-  const [speed, setSpeed] = useState<Speed>('normal');
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
   const [match, setMatch] = useState<MatchState | null>(null);
   // 設定を読むまでは配らない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
@@ -149,7 +145,7 @@ export default function Game() {
   useEffect(() => {
     const savedRules = readRules();
     setRules(savedRules);
-    setSpeed(readSpeed());
+    setSpeed(readCpuSpeed('shichinarabe'));
     setMatch(newMatch(savedRules));
     setReady(true);
   }, []);
@@ -173,7 +169,7 @@ export default function Game() {
     const timer = window.setTimeout(() => {
       const card = chooseCpuPlay(state, styleOf(state.turn));
       commit(card === null ? applyPass(state) : applyPlay(state, card));
-    }, SPEEDS[speed].delay);
+    }, delayFor(THINK_MS, speed));
     return () => window.clearTimeout(timer);
   }, [ready, begun, state, commit, speed]);
 
@@ -248,22 +244,13 @@ export default function Game() {
   return (
     <div className="card cardgame sn-game">
       <div className="btn-row">
-        <div className="seg" role="group" aria-label="CPUの速さ">
-          {(Object.keys(SPEEDS) as Speed[]).map((sp) => (
-            <button
-              key={sp}
-              type="button"
-              className={sp === speed ? 'active' : ''}
-              aria-pressed={sp === speed}
-              onClick={() => {
-                setSpeed(sp);
-                writeSetting(SPEED_KEY, sp);
-              }}
-            >
-              {SPEEDS[sp].label}
-            </button>
-          ))}
-        </div>
+        <CpuSpeedSeg
+          value={speed}
+          onChange={(next) => {
+            setSpeed(next);
+            writeCpuSpeed('shichinarabe', next);
+          }}
+        />
 
         <button type="button" className="btn" onClick={() => start(rules)}>
           最初から
@@ -299,19 +286,16 @@ export default function Game() {
         </span>
       </div>
 
+      {/* 1試合（5回戦）を終えていなくても出す。0勝0敗の帯は情報が薄いが、
+          初戦の終わりに帯が現れると盤が押し下がるほうが困る（実測139px） */}
       <RecordStrip
-        items={
-          // 1試合（5回戦）を終えるまでは出さない。0勝0敗の帯は情報が無い
-          (entry.wins ?? 0) + (entry.losses ?? 0) === 0
-            ? []
-            : [
-                {
-                  label: rules.tunnel ? 'トンネルありの成績' : '標準ルールの成績',
-                  value: `${entry.wins ?? 0}回 1位 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
-                },
-                { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
-              ]
-        }
+        items={[
+          {
+            label: rules.tunnel ? 'トンネルありの成績' : '標準ルールの成績',
+            value: `${entry.wins ?? 0}回 1位 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
+          },
+          { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
+        ]}
       />
 
       <div className="sn-seats">
@@ -355,36 +339,38 @@ export default function Game() {
       {/* 場。4スート×13マスの表で、置かれた札だけが色つきで出る。
           13列を本物のカードの絵で並べるとスマホで1枚が読めない大きさになるため、
           場は数字のマスにして、手札のほうに `_cards` の絵柄を使っている */}
-      <div className="sn-board" aria-label="場">
-        {SUITS.map((suit: Suit) => (
-          <div key={suit} className="sn-row">
-            <span className={`sn-suit${isRed(suit) ? ' red' : ''}`} aria-hidden>
-              {SUIT_SYMBOL[suit]}
-            </span>
-            {RANKS.map((rank) => {
-              const on = state.board[suit][rank];
-              const hit = targets.has(`${suit}-${rank}`);
-              const last =
-                state.last !== null && state.last.suit === suit && state.last.rank === rank;
-              return (
-                <span
-                  key={rank}
-                  className={`sn-cell${on ? ' on' : ''}${hit ? ' hit' : ''}${last ? ' last' : ''}${
-                    isRed(suit) ? ' red' : ''
-                  }`}
-                  aria-label={
-                    on
-                      ? `${SUIT_SYMBOL[suit]}${RANK_LABEL[rank]} は場にあります`
-                      : `${SUIT_SYMBOL[suit]}${RANK_LABEL[rank]} は空き`
-                  }
-                >
-                  {RANK_LABEL[rank]}
-                </span>
-              );
-            })}
-          </div>
-        ))}
-      </div>
+      <StartGate show={!begun && !roundOver} onStart={() => setBegun(true)}>
+        <div className="sn-board" aria-label="場">
+          {SUITS.map((suit: Suit) => (
+            <div key={suit} className="sn-row">
+              <span className={`sn-suit${isRed(suit) ? ' red' : ''}`} aria-hidden>
+                {SUIT_SYMBOL[suit]}
+              </span>
+              {RANKS.map((rank) => {
+                const on = state.board[suit][rank];
+                const hit = targets.has(`${suit}-${rank}`);
+                const last =
+                  state.last !== null && state.last.suit === suit && state.last.rank === rank;
+                return (
+                  <span
+                    key={rank}
+                    className={`sn-cell${on ? ' on' : ''}${hit ? ' hit' : ''}${last ? ' last' : ''}${
+                      isRed(suit) ? ' red' : ''
+                    }`}
+                    aria-label={
+                      on
+                        ? `${SUIT_SYMBOL[suit]}${RANK_LABEL[rank]} は場にあります`
+                        : `${SUIT_SYMBOL[suit]}${RANK_LABEL[rank]} は空き`
+                    }
+                  >
+                    {RANK_LABEL[rank]}
+                  </span>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </StartGate>
 
       {/* 直前に起きたことと、いま誰の番かを両方出す。
           出来事だけを出すと、CPUの手のあとに自分の番が来たことに気づけない */}
@@ -409,14 +395,6 @@ export default function Game() {
                 .join(' / ')}
       </p>
 
-      {/* スタート待ち。押すまでCPUは出さない（♦7が自分なら初手でも始まる） */}
-      {!begun && !roundOver && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
       {roundOver && (
         <div className="sn-result">

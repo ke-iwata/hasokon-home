@@ -39,6 +39,14 @@ import { HanafudaBack, HanafudaCardView } from '@/app/_hanafuda/CardFace';
 import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
 import { type Improved } from '@/lib/records';
 import { trackToolUse } from '@/lib/analytics';
+import {
+  CpuSpeedSeg,
+  delayFor,
+  readCpuSpeed,
+  writeCpuSpeed,
+  type CpuSpeed,
+} from '@/app/_cpu/CpuSpeed';
+import { StartGate } from '@/app/_cpu/StartGate';
 
 /**
  * 花札 こいこい の画面。ロジックは `lib/hanafuda.ts`（純関数）にあり、
@@ -55,11 +63,15 @@ import { trackToolUse } from '@/lib/analytics';
  * ただし間は置く（`DRAW_MS`）。何がめくれて何と合ったのかを見せるため。
  */
 
-/** 山札をめくるまでの間（ms） */
+/*
+ * 自動で進む間（ms）。いずれも「ふつう」のときの値で、
+ * 速さの設定に応じて `delayFor` が倍率を掛ける（app/_cpu/CpuSpeed.tsx）
+ */
+/** 山札をめくるまでの間 */
 const DRAW_MS = 750;
-/** CPUが手札を選ぶまでの間（ms）。読みは軽いので、これは演出のための待ち */
+/** CPUが手札を選ぶまでの間。読みは軽いので、これは演出のための待ち */
 const THINK_MS = 800;
-/** CPUが取り札を選ぶ・こいこいを決めるまでの間（ms） */
+/** CPUが取り札を選ぶ・こいこいを決めるまでの間 */
 const PICK_MS = 600;
 
 /** 遊び方の設定。遊んだ記録ではないので lib/records.ts には入れない */
@@ -131,6 +143,8 @@ export default function Game() {
    * 2ヶ月目以降は「次の月へ」を押した時点で始まってよいので、リセットしない
    */
   const [begun, setBegun] = useState(false);
+  /** CPUの速さ。ルールではなく見せ方の設定なので、配り直さずその場で効く */
+  const [speed, setSpeed] = useState<CpuSpeed>('normal');
 
   const records = useRecords('hanafuda-koikoi');
   const variant = variantOf(rulesOf(prefs));
@@ -161,6 +175,7 @@ export default function Game() {
     dealt.current = true;
     const saved = readPrefs();
     setPrefs(saved);
+    setSpeed(readCpuSpeed('hanafuda-koikoi'));
     start(saved);
   }, [start]);
 
@@ -176,20 +191,20 @@ export default function Game() {
     let step: (() => KoikoiState) | null = null;
 
     if (s.phase === 'draw') {
-      delay = DRAW_MS;
+      delay = delayFor(DRAW_MS, speed);
       step = () => applyDraw(s);
     } else if (s.turn === CPU) {
       if (s.phase === 'play') {
-        delay = THINK_MS;
+        delay = delayFor(THINK_MS, speed);
         step = () => {
           const move = chooseCpuPlay(s);
           return move ? playFromHand(s, move.card) : s;
         };
       } else if (s.phase === 'choose' || s.phase === 'draw-choose') {
-        delay = PICK_MS;
+        delay = delayFor(PICK_MS, speed);
         step = () => applyChoice(s, chooseCpuMatch(s) ?? (s.pending?.matches[0] as string));
       } else if (s.phase === 'koikoi') {
-        delay = PICK_MS;
+        delay = delayFor(PICK_MS, speed);
         step = () => (cpuKoikoi(s) ? declareKoikoi(s) : declareStop(s));
       }
     }
@@ -198,7 +213,7 @@ export default function Game() {
     const run = step;
     const id = window.setTimeout(() => setState(run()), delay);
     return () => window.clearTimeout(id);
-  }, [state, begun]);
+  }, [state, begun, speed]);
 
   /** ゲームが終わったら記録する */
   useEffect(() => {
@@ -248,8 +263,7 @@ export default function Game() {
   };
 
   const strip = useMemo(() => {
-    const decided = (entry.wins ?? 0) + (entry.losses ?? 0) + (entry.draws ?? 0);
-    if (decided === 0) return [];
+    // 1試合も終えていなくても出す。初戦の終わりに帯が現れると盤が押し下がるため
     return [
       {
         label: `${LEVEL_LABELS[prefs.level]}・${prefs.rounds}ヶ月戦の成績`,
@@ -271,6 +285,12 @@ export default function Game() {
   const choosing = state.phase === 'choose' || state.phase === 'draw-choose';
   const targets = choosing && myTurn ? (state.pending?.matches ?? []) : [];
   const progress = yakuProgress(state.captured[HUMAN], rulesOf(prefs)).slice(0, 6);
+
+  /**
+   * 場の列数。基本は4列×2段で、9枚以上になったら列を増やして2段のまま収める。
+   * 札が減っても段数は変えない（足りないぶんは空きスロットで埋める）
+   */
+  const fieldCols = Math.max(4, Math.ceil(state.field.length / 2));
 
   /** 場に出せば取れる札の月（自分の手番のときだけ、手札を光らせる） */
   const playableMonths = new Set(
@@ -366,6 +386,14 @@ export default function Game() {
           ))}
         </div>
 
+        <CpuSpeedSeg
+          value={speed}
+          onChange={(next) => {
+            setSpeed(next);
+            writeCpuSpeed('hanafuda-koikoi', next);
+          }}
+        />
+
         {/* 最初の親（先攻）。2ヶ月目以降は勝った人が親を続ける（ルールどおり） */}
         <div className="seg" role="group" aria-label="最初の親">
           {(Object.keys(FIRST_LABELS) as FirstChoice[]).map((first) => (
@@ -432,59 +460,68 @@ export default function Game() {
       </div>
       {capturedRow(CPU)}
 
-      <div className="hf-table">
-        {/*
-          左に山札、右に場札。「めくった／出したばかりの札が合わさるのを待っている」
-          あいだ（pending）だけ、その札を山札の下に見せる。常設の「めくった札」枠は
-          置かない：合わさらなかった札は場に並ぶ（光って分かる）し、合わさった札は
-          取り札に移るので、済んだ札を残しておく意味が無いため
-        */}
-        <div
-          className="hf-deck"
-          aria-label={state.pending?.source === 'hand' ? '出した札' : '山札'}
-        >
-          <span className="hf-slot">
-            <HanafudaBack />
-            <span className="hf-count">{state.deck.length}</span>
-          </span>
-          {state.pending && (
-            <>
-              <span className="hf-slot">
-                <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
-              </span>
-              <span className="hf-deck-note">
-                {state.pending.source === 'hand' ? '出した札' : 'めくった札'}
-              </span>
-            </>
-          )}
-        </div>
-
-        {/*
-          場は常に2段。9枚以上になったら列を増やして2段のまま収める
-          （段が増えて盤面が上下に伸びないように。運営者の要望）
-        */}
-        <div
-          className="hf-field"
-          aria-label="場札"
-          style={{
-            gridTemplateColumns: `repeat(${Math.max(4, Math.ceil(state.field.length / 2))}, minmax(0, 1fr))`,
-          }}
-        >
-          {state.field.map((id) => (
-            <span key={id} className="hf-slot">
-              <HanafudaCardView
-                id={id}
-                showMonth={prefs.showMonth}
-                highlight={targets.includes(id)}
-                dim={targets.length > 0 && !targets.includes(id)}
-                // 直前に山札から流れてきた札。どこから来たか追えるように光らせる
-                fresh={!state.pending && state.lastDrawn === id}
-                onClick={targets.includes(id) ? () => tapField(id) : undefined}
-              />
+      <StartGate show={!begun && state.phase === 'play'} onStart={() => setBegun(true)}>
+        <div className="hf-table">
+          {/*
+            左に山札、右に場札。山札の下は「いま注目する1枚」の定位置で、
+            めくった札／出した札はここに出る。**中身が無くても枠は残す**
+            （`.hf-empty`）。枠ごと消すと、札が出た瞬間に下の要素が動いて
+            盤面がガタつくため
+          */}
+          <div
+            className="hf-deck"
+            aria-label={state.pending?.source === 'hand' ? '出した札' : '山札'}
+          >
+            <span className="hf-slot">
+              <HanafudaBack />
+              <span className="hf-count">{state.deck.length}</span>
             </span>
-          ))}
+            <span className="hf-slot">
+              {state.pending ? (
+                <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
+              ) : state.lastDrawn ? (
+                <HanafudaCardView id={state.lastDrawn} showMonth={prefs.showMonth} />
+              ) : (
+                <span className="hf-empty" aria-hidden />
+              )}
+            </span>
+            <span className="hf-deck-note">
+              {state.pending?.source === 'hand' ? '出した札' : 'めくった札'}
+            </span>
+          </div>
+
+          {/*
+            場は常に2段。9枚以上になったら列を増やして2段のまま収める
+            （段が増えて盤面が上下に伸びないように。運営者の要望）。
+            **札が減っても空きスロットで2段を保つ。** 4枚以下になるとグリッドが
+            1段に詰まり、場が87px縮んで下が動いてしまうため
+          */}
+          <div
+            className="hf-field"
+            aria-label="場札"
+            style={{ gridTemplateColumns: `repeat(${fieldCols}, minmax(0, 1fr))` }}
+          >
+            {state.field.map((id) => (
+              <span key={id} className="hf-slot">
+                <HanafudaCardView
+                  id={id}
+                  showMonth={prefs.showMonth}
+                  highlight={targets.includes(id)}
+                  dim={targets.length > 0 && !targets.includes(id)}
+                  // 直前に山札から流れてきた札。どこから来たか追えるように光らせる
+                  fresh={!state.pending && state.lastDrawn === id}
+                  onClick={targets.includes(id) ? () => tapField(id) : undefined}
+                />
+              </span>
+            ))}
+            {Array.from({ length: Math.max(0, fieldCols * 2 - state.field.length) }, (_, i) => (
+              <span key={`gap-${i}`} className="hf-slot" aria-hidden>
+                <span className="hf-empty" />
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
+      </StartGate>
 
       {capturedRow(HUMAN)}
       <div className="hf-hand" aria-label="あなたの手札">
@@ -505,34 +542,31 @@ export default function Game() {
         {state.phase === 'game-over' && <BestBadge improved={improved} />}
       </p>
 
-      {/* スタート待ち。押すまで自動進行しない（親が自分なら初手でも始まる） */}
-      {!begun && state.phase === 'play' && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
-            スタート
-          </button>
-        </div>
-      )}
 
-      {state.phase === 'koikoi' && myTurn && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setState(declareStop(state))}>
-            あがる（{scoreOf(state.captured[HUMAN], rulesOf(prefs))}文）
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={state.hands[HUMAN].length === 0}
-            title={state.hands[HUMAN].length === 0 ? '手札が無いので、こいこいをしても流局になります' : undefined}
-            onClick={() => setState(declareKoikoi(state))}
-          >
-            こいこい
-          </button>
-        </div>
-      )}
+      {/*
+        局面ごとのボタン。**条件付きで行ごと出し入れせず、常に置く**
+        （`.result-row` と同じ考え方。出た瞬間に下が57px動いていた）。
+        こいこい・次の月へ・もう一度あそぶ は同時に出ないので1つの行で足りる
+      */}
+      <div className="hf-actions">
+        {state.phase === 'koikoi' && myTurn && (
+          <>
+            <button type="button" className="btn btn-primary" onClick={() => setState(declareStop(state))}>
+              あがる（{scoreOf(state.captured[HUMAN], rulesOf(prefs))}文）
+            </button>
+            <button
+              type="button"
+              className="btn"
+              disabled={state.hands[HUMAN].length === 0}
+              title={state.hands[HUMAN].length === 0 ? '手札が無いので、こいこいをしても流局になります' : undefined}
+              onClick={() => setState(declareKoikoi(state))}
+            >
+              こいこい
+            </button>
+          </>
+        )}
 
-      {state.phase === 'round-over' && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
+        {state.phase === 'round-over' && (
           <button
             type="button"
             className="btn btn-primary"
@@ -544,16 +578,14 @@ export default function Game() {
           >
             {state.round >= prefs.rounds ? '結果を見る' : '次の月へ'}
           </button>
-        </div>
-      )}
+        )}
 
-      {state.phase === 'game-over' && (
-        <div className="btn-row" style={{ justifyContent: 'center' }}>
+        {state.phase === 'game-over' && (
           <button type="button" className="btn btn-primary" onClick={() => start(prefs)}>
             もう一度あそぶ
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 成立に近い役をハイライトして「何を狙うか」を学べるようにする（仕様書の初心者導線） */}
       <details className="hf-goal">
