@@ -35,6 +35,7 @@ import {
   outcome,
   playFromHand,
   scoreOf,
+  settleDrawn,
   variantOf,
   YAKU_TABLE,
   yakuProgress,
@@ -78,6 +79,15 @@ function stateOf(over: Partial<KoikoiState> = {}): KoikoiState {
   };
 }
 
+/**
+ * 山札を1枚めくって行き先まで決める（`draw` → `drawn` → 場か取り札）。
+ * 画面では between に一拍置いて「めくった札」を見せるが、
+ * ロジックの確認では続けて呼ぶ
+ */
+function flip(state: KoikoiState): KoikoiState {
+  return settleDrawn(applyDraw(state));
+}
+
 /** その種別の札をn枚（役の枚数境界を作るのに使う） */
 function someOf(kind: HanafudaKind, n: number, skip: readonly string[] = []): string[] {
   return HANAFUDA_DECK.filter((c) => c.kind === kind && !skip.includes(c.id))
@@ -93,6 +103,8 @@ function allCards(state: KoikoiState): string[] {
     ...state.field,
     ...state.captured.flat(),
     ...(state.pending ? [state.pending.card] : []),
+    // めくって見せている最中の札。まだどこにも属していないのでここで数える
+    ...(state.phase === 'drawn' && state.lastDrawn ? [state.lastDrawn] : []),
   ];
 }
 
@@ -116,6 +128,8 @@ function autoRound(start: KoikoiState, rng: () => number): KoikoiState {
       state = applyChoice(state, pick as string);
     } else if (state.phase === 'draw') {
       state = applyDraw(state);
+    } else if (state.phase === 'drawn') {
+      state = settleDrawn(state);
     } else if (state.phase === 'koikoi') {
       state = cpuKoikoi(state) ? declareKoikoi(state) : declareStop(state);
     }
@@ -450,6 +464,26 @@ describe('手札を出す', () => {
 });
 
 describe('山札をめくる', () => {
+  it('めくるのと移すのは別の一手（めくった札は一拍そこに留まる）', () => {
+    const state = stateOf({
+      hands: [[], ['2-1']],
+      field: ['5-1', '9-3'],
+      deck: ['5-3'],
+      phase: 'draw',
+    });
+    // めくっただけ。まだ場にも取り札にも入っていない
+    const shown = applyDraw(state);
+    expect(shown.phase).toBe('drawn');
+    expect(shown.lastDrawn).toBe('5-3');
+    expect(shown.deck).toEqual([]);
+    expect(shown.field).toEqual(['5-1', '9-3']);
+    expect(shown.captured[HUMAN]).toEqual([]);
+    // 移すとそこから消える。`lastDrawn` は場に流れた札の目印として残す
+    const moved = settleDrawn(shown);
+    expect(moved.phase).not.toBe('drawn');
+    expect(moved.captured[HUMAN]).toEqual(['5-3', '5-1']);
+  });
+
   it('めくった札が合えば取り、手番が相手に移る', () => {
     const state = stateOf({
       hands: [[], ['2-1']],
@@ -457,7 +491,7 @@ describe('山札をめくる', () => {
       deck: ['5-3'],
       phase: 'draw',
     });
-    const next = applyDraw(state);
+    const next = flip(state);
     expect(next.lastDrawn).toBe('5-3');
     expect(next.captured[HUMAN]).toEqual(['5-3', '5-1']);
     expect(next.field).toEqual(['9-3']);
@@ -473,15 +507,15 @@ describe('山札をめくる', () => {
       phase: 'draw',
     });
     // 場に5月が2枚あるので選択になる
-    expect(applyDraw({ ...state, field: ['5-1', '5-2'] }).phase).toBe('draw-choose');
-    const chosen = applyChoice(applyDraw(state), '5-2');
+    expect(flip({ ...state, field: ['5-1', '5-2'] }).phase).toBe('draw-choose');
+    const chosen = applyChoice(flip(state), '5-2');
     expect(chosen.captured[HUMAN]).toEqual(['5-3', '5-2']);
     expect(chosen.phase).toBe('play');
   });
 
   it('合わなければ場に置いて手番が移る', () => {
     const state = stateOf({ hands: [[], ['2-1']], field: ['5-1'], deck: ['9-3'], phase: 'draw' });
-    const next = applyDraw(state);
+    const next = flip(state);
     expect(next.field).toEqual(['5-1', '9-3']);
     expect(next.phase).toBe('play');
     expect(next.turn).toBe(CPU);
@@ -489,7 +523,7 @@ describe('山札をめくる', () => {
 
   it('山札が尽きていたら黙って手番を終える', () => {
     const state = stateOf({ hands: [[], ['2-1']], deck: [], phase: 'draw' });
-    const next = applyDraw(state);
+    const next = flip(state);
     expect(next.phase).toBe('play');
     expect(next.turn).toBe(CPU);
   });
@@ -510,20 +544,20 @@ describe('こいこいとあがり', () => {
   }
 
   it('役ができたら「あがる／こいこい」を選ぶ場面になる', () => {
-    const state = applyDraw(playFromHand(beforeSankou(), '12-1'));
+    const state = flip(playFromHand(beforeSankou(), '12-1'));
     expect(state.phase).toBe('koikoi');
     expect(scoreOf(state.captured[HUMAN])).toBe(5);
   });
 
   it('あがると倍率をかけた点が入り、その月が終わる', () => {
-    const state = declareStop(applyDraw(playFromHand(beforeSankou(), '12-1')));
+    const state = declareStop(flip(playFromHand(beforeSankou(), '12-1')));
     expect(state.phase).toBe('round-over');
     expect(state.result).toMatchObject({ winner: HUMAN, reason: 'agari', base: 5, multiplier: 1, points: 5 });
     expect(state.scores).toEqual([5, 0]);
   });
 
   it('相手がこいこいしていれば、あがった側の点が2倍になる', () => {
-    const state = declareStop(applyDraw(playFromHand(beforeSankou({ koikoi: [0, 1] }), '12-1')));
+    const state = declareStop(flip(playFromHand(beforeSankou({ koikoi: [0, 1] }), '12-1')));
     expect(state.result?.multiplier).toBe(2);
     expect(state.scores).toEqual([10, 0]);
   });
@@ -531,7 +565,7 @@ describe('こいこいとあがり', () => {
   it('7文以上は2倍になる', () => {
     // 雨四光（7文）が完成する
     const state = declareStop(
-      applyDraw(
+      flip(
         playFromHand(
           stateOf({
             hands: [['12-1'], ['2-1']],
@@ -547,21 +581,21 @@ describe('こいこいとあがり', () => {
   });
 
   it('こいこいすると、その点数を超えないと次はあがれない', () => {
-    const declared = declareKoikoi(applyDraw(playFromHand(beforeSankou(), '12-1')));
+    const declared = declareKoikoi(flip(playFromHand(beforeSankou(), '12-1')));
     expect(declared.declared[HUMAN]).toBe(5);
     expect(declared.koikoi[HUMAN]).toBe(1);
     expect(declared.phase).toBe('play');
     expect(declared.turn).toBe(CPU);
 
     // 同じ5文のまま手番が回ってきても、あがる場面にはならない
-    const again = applyDraw(
+    const again = flip(
       playFromHand({ ...declared, turn: HUMAN, hands: [['5-1'], []], deck: ['4-3'] }, '5-1'),
     );
     expect(again.phase).not.toBe('koikoi');
   });
 
   it('手札が尽きたまま誰も上がらなければ流局（点は動かない）', () => {
-    const state = applyDraw(
+    const state = flip(
       playFromHand(stateOf({ hands: [['5-1'], []], field: [], deck: ['4-3'] }), '5-1'),
     );
     expect(state.phase).toBe('round-over');
