@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -43,6 +44,11 @@ export default function PrivacyPage() {
 
       <h1>プライバシーポリシー</h1>
       <p className="lead">本サイト（{SITE_NAME}）における情報の取り扱いについて定めます。</p>
+      <p>
+        本サイトの運営者と、計算の根拠をどう作り検証しているかは
+        <Link href="/about/">運営者情報</Link>
+        をご覧ください。
+      </p>
 
       <h2>入力データの取り扱い</h2>
       <p>
@@ -51,7 +57,7 @@ export default function PrivacyPage() {
 
       <h2>広告配信について</h2>
       <p>
-        本サイトは、第三者配信の広告サービス（Google AdSense）を利用する場合があります。
+        本サイトは、第三者配信の広告サービス「Google AdSense」を利用しています。
         Googleなどの第三者配信事業者は、Cookie（クッキー）を使用して、
         <strong>ユーザーが本サイトや他のサイトに過去にアクセスした際の情報にもとづく広告</strong>
         を配信します。このCookieには氏名・住所・メールアドレス・電話番号などの個人情報は含まれません。
@@ -78,7 +84,7 @@ export default function PrivacyPage() {
 
       <h2>アクセス解析について</h2>
       <p>
-        本サイトは、サービス向上のためGoogleが提供するアクセス解析ツール「Googleアナリティクス」を利用する場合があります。Googleアナリティクスはトラフィックデータの収集のためにCookieを使用します。収集されるのは、閲覧されたページ、滞在時間、参照元、大まかな地域、利用された端末やブラウザの種類、および各ツールが操作された回数などで、
+        本サイトは、サービス向上のためGoogleが提供するアクセス解析ツール「Googleアナリティクス」を利用しています。Googleアナリティクスはトラフィックデータの収集のためにCookieを使用します。収集されるのは、閲覧されたページ、滞在時間、参照元、大まかな地域、利用された端末やブラウザの種類、および各ツールが操作された回数などで、
         <strong>氏名・住所・メールアドレスなど個人を特定する情報は含まれません</strong>
         。また、各ツールに入力された数値や文字列が送信されることもありません。
       </p>
@@ -129,7 +135,7 @@ export default function PrivacyPage() {
       </p>
 
       <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
-        制定日：2026年7月／最終更新：2026年8月2日（アクセス解析の項目を追記）
+        制定日：2026年7月／最終更新：2026年8月16日（広告配信・アクセス解析を現況に合わせた表現にし、運営者情報への参照を追記）
       </p>
     </>
   );

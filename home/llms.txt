@@ -58,5 +58,6 @@
 - [無料計算ツール集 トップ](https://hasokon.com/tools/): ツールの一覧（分類別）
 - [無料ミニゲーム集 トップ](https://hasokon.com/games/): ゲームの一覧
 - [運営者情報](https://hasokon.com/tools/about/): 運営者と、制度に関わる計算機の作り方・情報源について
+- [ゲームの運営者情報](https://hasokon.com/games/about/): ゲームの作り方と、記録・広告の扱いについて
 - [プライバシーポリシー](https://hasokon.com/privacy.html): 広告・アクセス解析とCookieの扱い
 - [お問い合わせ](https://hasokon.com/tools/contact/): 誤りの指摘・要望の連絡先

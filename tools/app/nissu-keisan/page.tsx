@@ -202,7 +202,7 @@ export default function Page() {
 
       <RelatedTools current="nissu-keisan" />
 
-      <ToolMeta slug="nissu-keisan">
+      <ToolMeta slug="nissu-keisan" ymyl="legal">
         祝日は
         <a
           href="https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html"
