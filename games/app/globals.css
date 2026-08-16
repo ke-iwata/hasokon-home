@@ -2390,22 +2390,30 @@ button.hf-card {
   min-width: 0;
 }
 
-/* 手札。8枚が1行に入らない幅では2行に折り返す（1枚を小さくしない） */
+/* 手札。8枚が1行に入らない幅では2行に折り返す（1枚を小さくしない）。
+   **高さは配りたて（8枚）のぶんで固定する。** 出すたびに縮むと、CPU側の手札は
+   盤の上にあるので盤ごと動く。減った枚数は下の余白として残るだけ */
 .hf-hand {
+  --hf-hand-card: clamp(44px, 13vw, 66px);
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   justify-content: center;
   gap: 5px;
+  /* 2段ぶん（札の高さ ＝ 幅 × 1.64） */
+  height: calc(2 * var(--hf-hand-card) * 1.64 + 5px);
   margin: 8px 0;
 }
 
 .hf-hand .hf-slot {
-  width: clamp(44px, 13vw, 66px);
+  width: var(--hf-hand-card);
 }
 
-/* CPUの手札は裏向きなので、少し小さく置いて自分の手札と見分ける */
-.hf-hand.cpu .hf-slot {
-  width: clamp(30px, 8.5vw, 44px);
+/* CPUの手札は裏向きなので、少し小さく置いて自分の手札と見分ける。
+   8枚が1段に収まる大きさなので、確保するのも1段ぶん */
+.hf-hand.cpu {
+  --hf-hand-card: clamp(30px, 8.5vw, 44px);
+  height: calc(var(--hf-hand-card) * 1.64);
 }
 
 /* 場。緑の地で「場」であることを示す。左に山札、右に場札（4枚×2列） */
@@ -2492,6 +2500,8 @@ button.hf-card {
 
 /* 取り札。種類別の束（.hf-kind-group）を横に流す */
 .hf-taken {
+  /* 札の大きさ。高さの計算（.hf-strip）でも使うので変数にしてある */
+  --hf-taken-card: clamp(24px, 7vw, 38px);
   margin: 8px 0;
 }
 
@@ -2534,15 +2544,29 @@ button.hf-card {
   color: var(--muted);
 }
 
+/* 取り札の置き場。**高さを2段ぶんで固定し、あふれたら中でスクロールさせる**。
+   取るたびに伸びると、CPU側の取り札は盤の上にあるので盤ごと押し下がる
+   （実測88px）。枚数は最大24枚まで増えるので、全部ぶんを空けておくのは
+   割に合わない。役の成立は見出しの `.hf-yaku-line` に文字で出ているので、
+   札そのものは2段見えていれば足りる */
 .hf-strip {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 3px 10px;
-  min-height: 34px;
+  /* 1段 ＝ 種類ラベル（0.68rem × 行間1.2）＋ 隙間2px ＋ 札の高さ（幅×1.64） */
+  height: calc(2 * (0.82rem + 2px + var(--hf-taken-card) * 1.64) + 3px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* 高さを固定すると、序盤は空きが目立つ。「取り札の置き場」だと分かる
+     受け皿の下地を敷いて、空いていることを意図的に見せる */
+  padding: 5px;
+  border-radius: 8px;
+  background: var(--surface-2);
 }
 
 .hf-strip .hf-card {
-  width: clamp(24px, 7vw, 38px);
+  width: var(--hf-taken-card);
 }
 
 /* 取り札の種類（光・タネ・短冊・カス）ごとの束。役は種類単位で数えるので、
@@ -2567,7 +2591,7 @@ button.hf-card {
 }
 
 .hf-kind-cards .hf-card {
-  width: clamp(24px, 7vw, 38px);
+  width: var(--hf-taken-card);
 }
 
 .hf-empty-note {
