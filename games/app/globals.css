@@ -2328,6 +2328,14 @@ button.hf-card {
   opacity: 0.42;
 }
 
+/* 直前に山札から場へ流れてきた札。常設の「めくった札」枠を廃止した代わりに、
+   どの札が山札から来たのかを場の上で追えるようにする（取る札の合図
+   （.target の緑）と紛れないよう、控えめな琥珀色の枠にする） */
+.hf-card.fresh {
+  outline: 2px solid rgba(224, 169, 43, 0.85);
+  outline-offset: 1px;
+}
+
 .hf-slot {
   position: relative;
   display: block;
@@ -2365,11 +2373,12 @@ button.hf-card {
   border: 1px solid rgba(34, 197, 94, 0.22);
 }
 
-/* 場は常に4列。列の実寸から札の大きさが決まるので、画面幅ごとの
-   個別指定は要らない（minmax(0, 1fr) が縮み、max-width が広い画面での
-   肥大を止める）。8枚を超えたら自然に3行目が生まれる。
-   下限は44px（タッチターゲットの目安）を割らないことを実測で確認している。
-   2択で取る札を選ぶ場面ではここが押す先になる */
+/* 場は常に2段。列数は Game.tsx がインラインで渡す（基本4列、9枚以上は
+   列を増やして2段のまま収める。段が増えて盤面が上下に動かないように）。
+   列の実寸から札の大きさが決まるので、画面幅ごとの個別指定は要らない
+   （minmax(0, 1fr) が縮み、max-width が広い画面での肥大を止める）。
+   基本の4列では下限44px（タッチターゲットの目安）を割らないことを
+   実測で確認している。2択で取る札を選ぶ場面ではここが押す先になる */
 .hf-field {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2423,17 +2432,7 @@ button.hf-card {
   pointer-events: none;
 }
 
-/* めくる前の空き。枠だけ残して、めくった瞬間に場所が動かないようにする */
-.hf-empty {
-  display: block;
-  width: 100%;
-  aspect-ratio: 976 / 1600;
-  border-radius: 6px;
-  border: 1px dashed var(--border);
-  background: rgba(148, 163, 184, 0.08);
-}
-
-/* 取り札。種類別に整列した並びをそのまま横に流す */
+/* 取り札。種類別の束（.hf-kind-group）を横に流す */
 .hf-taken {
   margin: 8px 0;
 }
@@ -2480,11 +2479,36 @@ button.hf-card {
 .hf-strip {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 3px 10px;
   min-height: 34px;
 }
 
 .hf-strip .hf-card {
+  width: clamp(24px, 7vw, 38px);
+}
+
+/* 取り札の種類（光・タネ・短冊・カス）ごとの束。役は種類単位で数えるので、
+   束に分けてラベル（種類名と枚数）を添えると「あと何枚で役か」がひと目で分かる */
+.hf-kind-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hf-kind-label {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hf-kind-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.hf-kind-cards .hf-card {
   width: clamp(24px, 7vw, 38px);
 }
 

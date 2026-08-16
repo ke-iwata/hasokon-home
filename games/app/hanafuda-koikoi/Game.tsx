@@ -28,7 +28,13 @@ import {
   type KoikoiState,
   type Options,
 } from '@/lib/hanafuda';
-import { cardOf, sortForDisplay, sortHand } from '@/lib/hanafuda-cards';
+import {
+  cardOf,
+  KIND_LABELS,
+  sortForDisplay,
+  sortHand,
+  type HanafudaKind,
+} from '@/lib/hanafuda-cards';
 import { HanafudaBack, HanafudaCardView } from '@/app/_hanafuda/CardFace';
 import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
 import { type Improved } from '@/lib/records';
@@ -59,12 +65,23 @@ const PICK_MS = 600;
 /** 遊び方の設定。遊んだ記録ではないので lib/records.ts には入れない */
 const PREFS_KEY = 'hanafuda-koikoi:options';
 
+/** 最初の親（＝先攻）の決め方 */
+type FirstChoice = 'you' | 'cpu' | 'random';
+
+const FIRST_LABELS: Record<FirstChoice, string> = {
+  you: 'あなたが親',
+  cpu: 'CPUが親',
+  random: 'ランダム',
+};
+
 interface Prefs extends Options {
   /** 札の右上に月数を出すか（初めての人が草木で月を見分けられないため） */
   showMonth: boolean;
+  /** 最初の親（先攻）。2ヶ月目以降は勝った人が親を続ける（ゲームのルール） */
+  first: FirstChoice;
 }
 
-const DEFAULT_PREFS: Prefs = { ...DEFAULT_OPTIONS, showMonth: true };
+const DEFAULT_PREFS: Prefs = { ...DEFAULT_OPTIONS, showMonth: true, first: 'random' };
 
 function readPrefs(): Prefs {
   let raw: string | null = null;
@@ -81,6 +98,7 @@ function readPrefs(): Prefs {
       rounds: ROUND_CHOICES.includes(p.rounds as number) ? (p.rounds as number) : DEFAULT_PREFS.rounds,
       sake: typeof p.sake === 'boolean' ? p.sake : DEFAULT_PREFS.sake,
       showMonth: typeof p.showMonth === 'boolean' ? p.showMonth : DEFAULT_PREFS.showMonth,
+      first: p.first === 'you' || p.first === 'cpu' ? p.first : DEFAULT_PREFS.first,
     };
   } catch {
     return DEFAULT_PREFS;
@@ -106,6 +124,13 @@ export default function Game() {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [state, setState] = useState<KoikoiState | null>(null);
   const [improved, setImproved] = useState<Improved | null>(null);
+  /**
+   * スタート待ち。配った直後は false で、自動進行（CPUの手・山札めくり）は動かない。
+   * 「スタート」を押すか、親（先攻）の自分が先に出すと true になる。
+   * 親がCPUのとき、開いた瞬間にCPUが出し始めるのを防ぐ。
+   * 2ヶ月目以降は「次の月へ」を押した時点で始まってよいので、リセットしない
+   */
+  const [begun, setBegun] = useState(false);
 
   const records = useRecords('hanafuda-koikoi');
   const variant = variantOf(rulesOf(prefs));
@@ -118,7 +143,14 @@ export default function Game() {
     counted.current = false;
     scored.current = false;
     setImproved(null);
-    setState(newGame(rulesOf(next)));
+    setBegun(false);
+    setState(
+      newGame(
+        rulesOf(next),
+        Math.random,
+        next.first === 'you' ? HUMAN : next.first === 'cpu' ? CPU : null,
+      ),
+    );
   }, []);
 
   // 配るのに乱数を使うので、静的書き出しのHTMLと食い違わないよう
@@ -135,9 +167,10 @@ export default function Game() {
   /**
    * 次に自動で進む1歩を予約する。
    * 人間の入力を待つ場面では何も予約しない（`step` が null のまま返る）。
+   * スタート前（!begun）も何も予約しない
    */
   useEffect(() => {
-    if (!state) return;
+    if (!state || !begun) return;
     const s = state;
     let delay = 0;
     let step: (() => KoikoiState) | null = null;
@@ -165,7 +198,7 @@ export default function Game() {
     const run = step;
     const id = window.setTimeout(() => setState(run()), delay);
     return () => window.clearTimeout(id);
-  }, [state]);
+  }, [state, begun]);
 
   /** ゲームが終わったら記録する */
   useEffect(() => {
@@ -202,6 +235,8 @@ export default function Game() {
   const tapHand = (id: string) => {
     if (!state || state.phase !== 'play' || state.turn !== HUMAN) return;
     countPlay();
+    // 親（先攻）の自分が先に出すときは、それをスタートの合図とみなす
+    setBegun(true);
     setState(playFromHand(state, id));
   };
 
@@ -246,10 +281,17 @@ export default function Game() {
       : [],
   );
 
-  /** 1人ぶんの取り札（種類別に自動整列する） */
+  /**
+   * 1人ぶんの取り札。**種類（光・タネ・短冊・カス）ごとの束に分けて見せる**。
+   * こいこいの役は種類単位で数えるので、種類ごとに固まっていると
+   * 「あと何枚で役か」がひと目で分かる（運営者の要望）。
+   */
   const capturedRow = (player: number) => {
     const ids = sortForDisplay(state.captured[player]);
     const yaku = yakuOf(state, player);
+    const groups = (Object.keys(KIND_LABELS) as HanafudaKind[])
+      .map((kind) => ({ kind, ids: ids.filter((id) => cardOf(id).kind === kind) }))
+      .filter((g) => g.ids.length > 0);
     return (
       <div className="hf-taken">
         <div className="hf-taken-head">
@@ -272,10 +314,21 @@ export default function Game() {
           </span>
         </div>
         <div className="hf-strip">
-          {ids.length === 0 ? (
+          {groups.length === 0 ? (
             <span className="hf-empty-note">まだありません</span>
           ) : (
-            ids.map((id) => <HanafudaCardView key={id} id={id} showMonth={prefs.showMonth} />)
+            groups.map((g) => (
+              <span key={g.kind} className="hf-kind-group">
+                <span className="hf-kind-label">
+                  {KIND_LABELS[g.kind]} {g.ids.length}
+                </span>
+                <span className="hf-kind-cards">
+                  {g.ids.map((id) => (
+                    <HanafudaCardView key={id} id={id} showMonth={prefs.showMonth} />
+                  ))}
+                </span>
+              </span>
+            ))
           )}
         </div>
       </div>
@@ -309,6 +362,21 @@ export default function Game() {
               onClick={() => changeRules({ ...prefs, rounds })}
             >
               {rounds}ヶ月
+            </button>
+          ))}
+        </div>
+
+        {/* 最初の親（先攻）。2ヶ月目以降は勝った人が親を続ける（ルールどおり） */}
+        <div className="seg" role="group" aria-label="最初の親">
+          {(Object.keys(FIRST_LABELS) as FirstChoice[]).map((first) => (
+            <button
+              key={first}
+              type="button"
+              className={first === prefs.first ? 'active' : ''}
+              aria-pressed={first === prefs.first}
+              onClick={() => changeRules({ ...prefs, first })}
+            >
+              {FIRST_LABELS[first]}
             </button>
           ))}
         </div>
@@ -366,9 +434,10 @@ export default function Game() {
 
       <div className="hf-table">
         {/*
-          左に山札、右に場札（4枚×2列）。「出した札」（手札から出して合わせ待ちの札）は
-          山札の2枚目のスロットに間借りする。どちらも「めくった／出したばかりの札が
-          合わさるのを待っている」という同じ状態なので、一つのスロットで足りる
+          左に山札、右に場札。「めくった／出したばかりの札が合わさるのを待っている」
+          あいだ（pending）だけ、その札を山札の下に見せる。常設の「めくった札」枠は
+          置かない：合わさらなかった札は場に並ぶ（光って分かる）し、合わさった札は
+          取り札に移るので、済んだ札を残しておく意味が無いため
         */}
         <div
           className="hf-deck"
@@ -378,21 +447,29 @@ export default function Game() {
             <HanafudaBack />
             <span className="hf-count">{state.deck.length}</span>
           </span>
-          <span className="hf-slot">
-            {state.pending ? (
-              <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
-            ) : state.lastDrawn ? (
-              <HanafudaCardView id={state.lastDrawn} showMonth={prefs.showMonth} />
-            ) : (
-              <span className="hf-empty" aria-hidden />
-            )}
-          </span>
-          <span className="hf-deck-note">
-            {state.pending?.source === 'hand' ? '出した札' : 'めくった札'}
-          </span>
+          {state.pending && (
+            <>
+              <span className="hf-slot">
+                <HanafudaCardView id={state.pending.card} showMonth={prefs.showMonth} selected />
+              </span>
+              <span className="hf-deck-note">
+                {state.pending.source === 'hand' ? '出した札' : 'めくった札'}
+              </span>
+            </>
+          )}
         </div>
 
-        <div className="hf-field" aria-label="場札">
+        {/*
+          場は常に2段。9枚以上になったら列を増やして2段のまま収める
+          （段が増えて盤面が上下に伸びないように。運営者の要望）
+        */}
+        <div
+          className="hf-field"
+          aria-label="場札"
+          style={{
+            gridTemplateColumns: `repeat(${Math.max(4, Math.ceil(state.field.length / 2))}, minmax(0, 1fr))`,
+          }}
+        >
           {state.field.map((id) => (
             <span key={id} className="hf-slot">
               <HanafudaCardView
@@ -400,6 +477,8 @@ export default function Game() {
                 showMonth={prefs.showMonth}
                 highlight={targets.includes(id)}
                 dim={targets.length > 0 && !targets.includes(id)}
+                // 直前に山札から流れてきた札。どこから来たか追えるように光らせる
+                fresh={!state.pending && state.lastDrawn === id}
                 onClick={targets.includes(id) ? () => tapField(id) : undefined}
               />
             </span>
@@ -422,9 +501,18 @@ export default function Game() {
       </div>
 
       <p className="hf-msg" aria-live="polite">
-        {message(state, myTurn, prefs)}
+        {message(state, myTurn, prefs, begun)}
         {state.phase === 'game-over' && <BestBadge improved={improved} />}
       </p>
+
+      {/* スタート待ち。押すまで自動進行しない（親が自分なら初手でも始まる） */}
+      {!begun && state.phase === 'play' && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {state.phase === 'koikoi' && myTurn && (
         <div className="btn-row" style={{ justifyContent: 'center' }}>
@@ -445,7 +533,15 @@ export default function Game() {
 
       {state.phase === 'round-over' && (
         <div className="btn-row" style={{ justifyContent: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => setState(nextRound(state))}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              // 「次の月へ」を押すこと自体がスタートの合図（親がCPUでも待たない）
+              setBegun(true);
+              setState(nextRound(state));
+            }}
+          >
             {state.round >= prefs.rounds ? '結果を見る' : '次の月へ'}
           </button>
         </div>
@@ -485,10 +581,15 @@ export default function Game() {
 }
 
 /** 状況の説明。文言をここに集めて、盤面の描画から切り離しておく */
-function message(state: KoikoiState, myTurn: boolean, prefs: Prefs): string {
+function message(state: KoikoiState, myTurn: boolean, prefs: Prefs, begun: boolean): string {
   const r = state.result;
   switch (state.phase) {
     case 'play':
+      if (!begun) {
+        return myTurn
+          ? 'あなたが親（先攻）です。手札をタップすると始まります'
+          : 'CPUが親（先攻）です。スタートを押すと始まります';
+      }
       return myTurn
         ? '場札と同じ月の手札をタップします（合う札が無ければ、出した札が場に残ります）'
         : 'CPUが考えています…';

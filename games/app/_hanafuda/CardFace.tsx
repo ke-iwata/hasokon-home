@@ -75,6 +75,7 @@ export function HanafudaCardView({
   selected = false,
   highlight = false,
   dim = false,
+  fresh = false,
   showMonth = true,
   onClick,
   title,
@@ -83,6 +84,8 @@ export function HanafudaCardView({
   selected?: boolean;
   highlight?: boolean;
   dim?: boolean;
+  /** 直前に山札から場に流れてきた札（どこから来たかを追えるように淡く光らせる） */
+  fresh?: boolean;
   showMonth?: boolean;
   onClick?: () => void;
   title?: string;
@@ -92,6 +95,7 @@ export function HanafudaCardView({
     selected ? 'selected' : '',
     highlight ? 'target' : '',
     dim ? 'dim' : '',
+    fresh ? 'fresh' : '',
   ]
     .filter(Boolean)
     .join(' ');

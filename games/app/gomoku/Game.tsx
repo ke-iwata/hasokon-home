@@ -11,7 +11,6 @@ import {
   initialState,
   isLegalMove,
   LEVELS,
-  opponent,
   resign,
   rowOf,
   undoIndex,
@@ -25,7 +24,7 @@ import { RecordStrip, useRecords } from '@/app/_records/Records';
 import { winRate } from '@/lib/records';
 
 /**
- * 強さと「次の対局の先手」は覚えておく（毎回選び直させない）。
+ * 強さと先手・後手の選択は覚えておく（毎回選び直させない）。
  *
  * リバーシと同じく、これは「設定」であって遊んだ記録ではないので、
  * 記録（docs/features/game-records.md、`lib/records.ts`）には移さずここで持つ。
@@ -55,7 +54,7 @@ function readLevel(): Level {
   return saved === 'easy' || saved === 'normal' || saved === 'hard' ? saved : 'normal';
 }
 
-/** 次の対局で自分が持つ色。先手は1局ごとに入れ替わる（仕様書の先手有利の緩和） */
+/** 自分が持つ色（先手＝黒／後手＝白）。前回の選択を覚えておく */
 function readHuman(): Player {
   return readSetting(FIRST_KEY) === 'white' ? WHITE : BLACK;
 }
@@ -75,6 +74,12 @@ export default function Game() {
   const [thinking, setThinking] = useState(false);
   // 設定を読むまでは対局を始めない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
+  /**
+   * スタート待ち。ページを開いた・仕切り直した直後は false で、CPUは動かない。
+   * 「スタート」を押すか、自分が先に打つと true になる。
+   * 後手（白）のとき、開いた瞬間にCPUが打ち始めるのを防ぐ
+   */
+  const [begun, setBegun] = useState(false);
   const ended = useRef(false);
   // 対CPUの戦績。強さごとに分けて持つ（docs/features/game-records.md）
   const records = useRecords('gomoku');
@@ -86,14 +91,17 @@ export default function Game() {
   const humanTurn = !current.finished && current.turn === human;
 
   /**
-   * 新しい対局を始める。**先手は1局ごとに入れ替える。**
-   * 五目並べは先手が有利なので、色を選ばせるより交互にするほうが公平になる。
+   * 新しい対局を始める。
+   *
+   * 以前は「先手は1局ごとに入れ替える」自動運用だったが、運営者の要望で
+   * **先手・後手を自分で選ぶ**形にした（選んだ色は次回のために覚える）。
    */
   const start = useCallback((nextLevel: Level, nextHuman: Player) => {
     ended.current = false;
     recorded.current = false;
     setHistory([initialState(BLACK)]);
     setThinking(false);
+    setBegun(false);
     setHuman(nextHuman);
     writeSetting(FIRST_KEY, nextHuman === BLACK ? 'black' : 'white');
     trackToolUse('gomoku', `new-${nextLevel}-${nextHuman === BLACK ? 'black' : 'white'}`);
@@ -105,9 +113,10 @@ export default function Game() {
     setReady(true);
   }, []);
 
-  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす
+  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす。
+  // スタート前（!begun）は動かない
   useEffect(() => {
-    if (!ready || current.finished || current.turn === human) return;
+    if (!ready || !begun || current.finished || current.turn === human) return;
     setThinking(true);
     const timer = window.setTimeout(() => {
       const move = chooseMove(current, level);
@@ -118,7 +127,7 @@ export default function Game() {
       window.clearTimeout(timer);
       setThinking(false);
     };
-  }, [ready, current, human, level]);
+  }, [ready, begun, current, human, level]);
 
   useEffect(() => {
     if (!current.finished || ended.current) return;
@@ -133,6 +142,8 @@ export default function Game() {
 
   const place = (sq: number) => {
     if (!humanTurn || !isLegalMove(current, sq)) return;
+    // 先手で自分から打ったときは、それをスタートの合図とみなす
+    setBegun(true);
     setHistory((h) => [...h, applyMove(h[h.length - 1], sq)]);
   };
 
@@ -149,6 +160,11 @@ export default function Game() {
     // 強さを変えると対局は仕切り直しになるが、**先手は入れ替えない**。
     // 入れ替えると「強さを選び直しただけで後手にされた」ように見える
     start(next, human);
+  };
+
+  /** 先手（黒）・後手（白）の選び直し。対局は仕切り直しになる */
+  const changeColor = (next: Player) => {
+    start(level, next);
   };
 
   const winLine = new Set(current.line);
@@ -169,6 +185,19 @@ export default function Game() {
             </button>
           ))}
         </div>
+        <div className="seg" role="group" aria-label="自分の色">
+          {([BLACK, WHITE] as Player[]).map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={c === human ? 'active' : ''}
+              aria-pressed={c === human}
+              onClick={() => changeColor(c)}
+            >
+              {COLOR_LABEL[c === BLACK ? 'black' : 'white']}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="status-bar">
@@ -185,13 +214,24 @@ export default function Game() {
         <span>
           {current.finished
             ? '対局終了'
-            : thinking
-              ? 'CPUが考えています…'
-              : humanTurn
-                ? 'あなたの番です'
-                : 'CPUの番です'}
+            : !begun
+              ? 'スタート待ち'
+              : thinking
+                ? 'CPUが考えています…'
+                : humanTurn
+                  ? 'あなたの番です'
+                  : 'CPUの番です'}
         </span>
       </div>
+
+      {/* スタート待ち。押すまでCPUは動かない（先手なら自分の初手でも始まる） */}
+      {!begun && !current.finished && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {/* 戦績は「いま選んでいる強さ」のもの。かんたんとつよいは別物なので分ける */}
       <RecordStrip
@@ -268,14 +308,14 @@ export default function Game() {
         >
           投了
         </button>
-        <button type="button" className="btn" onClick={() => start(level, opponent(human))}>
+        <button type="button" className="btn" onClick={() => start(level, human)}>
           次の対局
         </button>
       </div>
 
       <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
         あなたは{human === BLACK ? COLOR_LABEL.black : COLOR_LABEL.white}、CPUは「
-        {LEVELS[level].label}」です。<strong>先手は1局ごとに入れ替わります。</strong>
+        {LEVELS[level].label}」です。先手・後手は上の切り替えで選べます。
         「待った」は自分が打つ直前まで戻します（あいだのCPUの手も一緒に戻ります）。
         禁じ手（三三など）はありません。
       </p>

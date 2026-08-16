@@ -566,11 +566,16 @@ export function dealRound(
 /**
  * 新しいゲーム（1回戦目から）。
  *
- * 最初の親は乱数で決める。本来は札を引いて決めるが、それだけのために
+ * 最初の親は `firstDealer` で指定できる（画面の「親（先攻）」設定）。
+ * 省略か null なら乱数で決める。本来は札を引いて決めるが、それだけのために
  * 1画面を挟むと、遊び始めるまでが遠くなる。
  */
-export function newGame(options: Options = DEFAULT_OPTIONS, rng: () => number = Math.random): KoikoiState {
-  const dealer = rng() < 0.5 ? HUMAN : CPU;
+export function newGame(
+  options: Options = DEFAULT_OPTIONS,
+  rng: () => number = Math.random,
+  firstDealer: number | null = null,
+): KoikoiState {
+  const dealer = firstDealer ?? (rng() < 0.5 ? HUMAN : CPU);
   return dealRound({ options, round: 1, dealer, scores: [0, 0] }, rng);
 }
 

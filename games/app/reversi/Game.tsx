@@ -70,6 +70,12 @@ export default function Game() {
   const [thinking, setThinking] = useState(false);
   // 設定を読むまでは対局を始めない（静的書き出し時のサーバー側と食い違わないように）
   const [ready, setReady] = useState(false);
+  /**
+   * スタート待ち。ページを開いた・配り直した直後は false で、CPUは動かない。
+   * 「スタート」を押すか、自分が先に打つと true になる。
+   * 後手（白）を選んでいるとき、開いた瞬間にCPUが打ち始めるのを防ぐ
+   */
+  const [begun, setBegun] = useState(false);
   const finished = useRef(false);
   // 対CPUの戦績。強さごとに分けて持つ（docs/features/game-records.md）
   const records = useRecords('reversi');
@@ -87,6 +93,7 @@ export default function Game() {
     recorded.current = false;
     setHistory([initialState()]);
     setThinking(false);
+    setBegun(false);
     trackToolUse('reversi', `new-${nextLevel}-${nextHuman === BLACK ? 'black' : 'white'}`);
   }, []);
 
@@ -98,9 +105,10 @@ export default function Game() {
     setReady(true);
   }, []);
 
-  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす
+  // CPUの手番。読みは同期処理なので、いったん描画させてから動かす。
+  // スタート前（!begun）は動かない
   useEffect(() => {
-    if (!ready || current.finished || current.turn === human) return;
+    if (!ready || !begun || current.finished || current.turn === human) return;
     setThinking(true);
     const timer = window.setTimeout(() => {
       const move = chooseMove(current, level);
@@ -111,7 +119,7 @@ export default function Game() {
       window.clearTimeout(timer);
       setThinking(false);
     };
-  }, [ready, current, human, level]);
+  }, [ready, begun, current, human, level]);
 
   useEffect(() => {
     if (!current.finished || finished.current) return;
@@ -125,6 +133,8 @@ export default function Game() {
 
   const place = (sq: number) => {
     if (!humanTurn || !moves.includes(sq)) return;
+    // 先手で自分から打ったときは、それをスタートの合図とみなす
+    setBegun(true);
     setHistory((h) => [...h, applyMove(h[h.length - 1], sq)]);
   };
 
@@ -202,13 +212,24 @@ export default function Game() {
         <span>
           {current.finished
             ? '対局終了'
-            : thinking
-              ? 'CPUが考えています…'
-              : humanTurn
-                ? 'あなたの番です'
-                : 'CPUの番です'}
+            : !begun
+              ? 'スタート待ち'
+              : thinking
+                ? 'CPUが考えています…'
+                : humanTurn
+                  ? 'あなたの番です'
+                  : 'CPUの番です'}
         </span>
       </div>
+
+      {/* スタート待ち。押すまでCPUは動かない（先手なら自分の初手でも始まる） */}
+      {!begun && !current.finished && (
+        <div className="btn-row" style={{ justifyContent: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => setBegun(true)}>
+            スタート
+          </button>
+        </div>
+      )}
 
       {/* 戦績は「いま選んでいる強さ」のもの。かんたんとつよいは別物なので分ける */}
       <RecordStrip

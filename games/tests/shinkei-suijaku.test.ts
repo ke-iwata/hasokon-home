@@ -172,6 +172,13 @@ describe('newGame', () => {
     expect(newGame({ ...DEFAULT_OPTIONS, mode: 'solo' }, seededRng(1)).pairs).toEqual([0]);
     expect(newGame({ ...DEFAULT_OPTIONS, mode: 'cpu' }, seededRng(1)).pairs).toEqual([0, 0]);
   });
+
+  it('CPU対戦では後攻（CPUが先）を選べる。ひとりでは指定しても自分から', () => {
+    expect(newGame({ ...DEFAULT_OPTIONS, mode: 'cpu' }, seededRng(1), CPU).turn).toBe(CPU);
+    expect(newGame({ ...DEFAULT_OPTIONS, mode: 'cpu' }, seededRng(1), HUMAN).turn).toBe(HUMAN);
+    // ひとり遊びにCPUの手番は無いので、指定は無視して常に自分から
+    expect(newGame({ ...DEFAULT_OPTIONS, mode: 'solo' }, seededRng(1), CPU).turn).toBe(HUMAN);
+  });
 });
 
 describe('canFlip / applyFlip', () => {
