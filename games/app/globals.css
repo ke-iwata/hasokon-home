@@ -1229,6 +1229,158 @@ ol {
   right: 0;
 }
 
+/* ---- ピラミッドソリティア（docs/features/game-pyramid-solitaire.md） ---- */
+
+/* ピラミッドは**絶対配置で組む**。段ごとに半マスずれるのでグリッドでは表せない。
+   左右の位置と幅は「札1枚 ＝ 盤幅の 1/7」を単位に、縦は「段の送り」で送る
+   （位置の計算は app/pyramid-solitaire/Game.tsx の cardStyle）。
+
+   盤の高さ ＝ 札の高さ × (1 + 6 × 段の送り)
+           ＝ 盤幅/7 × 1.4 × 4.12
+           ＝ 盤幅 × 0.824
+   なので aspect-ratio と max-width の割り算はどちらもこの 0.824 から来ている。
+   共通の「盤を画面の高さに合わせる」節は正方形の盤が前提なので、
+   ピンボールの .pb-stage と同じように自分で割る。
+   **段の送り 0.52 は Game.tsx の STEP と同じ値**（片方だけ直さないこと）*/
+.py-board {
+  /* 盤以外（状態26・記録34・案内43・山札の行96・ボタン36・余白と内側の余白）の実測＝316px */
+  --chrome: 316px;
+  --board-max: 430px;
+  position: relative;
+  width: 100%;
+  max-width: min(var(--board-max), max(210px, calc((100dvh - var(--chrome)) / 0.824)));
+  margin-inline: auto;
+  aspect-ratio: 1000 / 824;
+}
+
+/* 位置と幅は Game.tsx が %で渡す。高さは .playing-card の aspect-ratio から出る */
+.py-board .playing-card {
+  position: absolute;
+}
+
+/* 覆われている札。取れないことを明るさで見せる（数字は読める明るさに留める）。
+   **押せなくはしない** — 押したときに揺れで「まだ取れない」と伝えるほうが、
+   何も起きないより初見に親切 */
+.py-board .playing-card.covered {
+  filter: brightness(0.82);
+}
+
+/* 選択・ヒントの枠は、下の段の札に隠されないよう前面へ出す。
+   この2つが付くのは覆われていない札だけなので、重なりの順序は狂わない */
+.py-board .playing-card.selected,
+.py-board .playing-card.hinted {
+  z-index: 2;
+}
+
+.playing-card.hinted {
+  box-shadow: 0 0 0 3px #fbbf24;
+}
+
+/* 合計13にならない組・まだ取れない札を押したときの揺れ（仕様の「短い揺れ」）。
+   長さは Game.tsx の SHAKE_MS と揃える */
+@keyframes py-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6%); }
+  45% { transform: translateX(6%); }
+  70% { transform: translateX(-3%); }
+}
+
+.playing-card.shake {
+  animation: py-shake 320ms ease;
+  z-index: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .playing-card.shake {
+    animation: none;
+    outline: 3px solid var(--danger);
+  }
+}
+
+/* 山札・捨て札と、その横の案内。
+   **数え方も「同じ配りをもう一度」も、この1行の中に収める。**
+   別々の行として下に積むと、スマホでカードの高さが77px伸びて
+   ピラミッドが画面から押し出された（実測）。山札の高さのほうが高いので、
+   横に置くぶんには縦を1pxも使わない。
+
+   札の幅は盤と切り離して clamp で決める（盤幅の 1/7 に合わせると、
+   広い画面で山札だけ大きくなりすぎる） */
+.py-piles {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.py-pile {
+  width: clamp(44px, 13vw, 58px);
+  flex: 0 0 auto;
+}
+
+.py-side {
+  flex: 1 1 auto;
+  max-width: 240px;
+}
+
+/* 配り番号と「同じ配りをもう一度」。幅320pxの端末では、この列に使える幅が
+   156pxしかないので、ボタンの文字だけ一段小さくして1行に収める */
+.py-side .btn {
+  width: 100%;
+  font-size: 0.78rem;
+  padding-inline: 8px;
+}
+
+.py-seed {
+  height: 1.4em;
+  line-height: 1.4;
+  overflow: hidden;
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* 枚数・引き直し回数の案内。**height で1行ぶんを確保する**（文言が伸び縮みしても
+   下のボタンが動かない。games/CLAUDE.md「画面の約束」の1） */
+.py-pile-label {
+  display: block;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 山札は絵柄を持たない（裏面の地の色だけ）ので、枚数を縦にも中央へ寄せる */
+.py-pile .playing-card.back {
+  justify-content: center;
+}
+
+/* 山札の裏面に重ねる残り枚数 */
+.py-count {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  align-self: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* 数え方の早見（仕様「画面に常時表示して初見でも迷わせない」）。
+   文言は変わらないが、折り返しの段数ぶんの高さは固定しておく */
+.py-legend {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 /* ---- リバーシ ---- */
 
 .rv-board {

@@ -297,6 +297,34 @@ function PinballIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * ピラミッドソリティア。三角形を2本の横線で3段に割った形。
+ *
+ * 札を三角に並べた形も試したが、22pxだと1枚が5px弱になって潰れた。
+ * 段のある三角のほうが小さくても「ピラミッド」と読める。
+ * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
+ */
+function PyramidIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M128 32 L228 216 L28 216 Z" />
+      <path d="M76 128 H180" />
+      <path d="M52 172 H204" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -316,6 +344,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   SpeedBolt: SpeedBoltIcon,
   Hanafuda: HanafudaIcon,
   Pinball: PinballIcon,
+  Pyramid: PyramidIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

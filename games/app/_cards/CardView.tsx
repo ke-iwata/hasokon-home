@@ -253,17 +253,24 @@ export function CardView({
   selected = false,
   onClick,
   style,
+  className = '',
+  labelSuffix = '',
 }: {
   card: Card;
   selected?: boolean;
   onClick?: () => void;
   style?: React.CSSProperties;
+  /** ゲームごとの追加の状態（ピラミッドの `covered` / `hinted` / `shake` など） */
+  className?: string;
+  /** 読み上げに足す補足（ピラミッドの「いまは取れません」など） */
+  labelSuffix?: string;
 }) {
+  const extra = className ? ` ${className}` : '';
   if (!card.faceUp) {
     return (
       <button
         type="button"
-        className="playing-card back"
+        className={`playing-card back${extra}`}
         onClick={onClick}
         style={style}
         aria-label="裏向きの札"
@@ -275,10 +282,10 @@ export function CardView({
   return (
     <button
       type="button"
-      className={`playing-card${selected ? ' selected' : ''}`}
+      className={`playing-card${selected ? ' selected' : ''}${extra}`}
       onClick={onClick}
       style={style}
-      aria-label={`${SUIT_SYMBOL[card.suit]}${RANK_LABEL[card.rank]}`}
+      aria-label={`${SUIT_SYMBOL[card.suit]}${RANK_LABEL[card.rank]}${labelSuffix}`}
     >
       <FaceSvg card={card} />
     </button>
