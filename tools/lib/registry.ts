@@ -318,10 +318,11 @@ export const tools: ToolDef[] = [
     slug: 'aspect-ratio',
     icon: 'Crop',
     name: 'アスペクト比計算機',
-    description: '幅と高さから縦横比を計算。リサイズ後のサイズ算出やCSSコピーにも対応。',
+    description:
+      '幅と高さから縦横比を計算。16:9の逆引き早見表やリサイズ後のサイズ算出、CSSコピーにも対応。',
     category: '計算・変換',
     ready: true,
-    updatedAt: '2026-08-16',
+    updatedAt: '2026-08-17',
   },
 ];
 
