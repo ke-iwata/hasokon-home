@@ -245,7 +245,9 @@ export const games: GameDef[] = [
     icon: 'Pinball',
     name: 'ピンボール',
     description: 'フリッパーで球を打ち返す定番のアクション。バンパーと的で点を稼ぎます。',
-    stage: 'public',
+    // 打ち出しと打ち返しの手応えを実機で確かめてから公開する。
+    // 仕様書（docs/features/game-pinball.md）の状態行に公開の条件を書いてある
+    stage: 'preview',
     updatedAt: '2026-08-16',
   },
 ];
