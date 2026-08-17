@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import ToolClient from '@/app/_roulette/ToolClient';
-import { SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
 
 const title = 'グループ分けツール｜班分け・チーム分けをランダムに';
 const description =
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/group/` },
+  robots: robotsFor('group'),
 };
 
 const faq = [

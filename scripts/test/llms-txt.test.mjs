@@ -24,7 +24,7 @@ const ORIGIN = 'https://hasokon.com';
 // ---------------------------------------------------------------- registry
 
 /**
- * registry.ts の配列（tools / games）から slug・name・ready を読み取る。
+ * registry.ts の配列（tools / games）から slug・name・stage を読み取る。
  *
  * TypeScript をそのまま import できないので字面から拾っている。
  * 書き方を変えて読めなくなったら「エントリが少なすぎる」で落ちるようにしてある
@@ -44,7 +44,9 @@ function parseRegistry(source, arrayName) {
       return {
         slug: pick(/slug:\s*'([^']+)'/),
         name: pick(/name:\s*'([^']+)'/),
-        ready: /ready:\s*true/.test(block),
+        // 公開の段階（docs/features/feature-flags.md）。
+        // `public` 以外は llms.txt に載せない
+        stage: (block.match(/stage:\s*'([^']+)'/) ?? [])[1],
       };
     });
 }
@@ -54,8 +56,8 @@ const GAMES = parseRegistry(read('games/lib/registry.ts'), 'games');
 
 /** 公開中のページ（URL → 表示名）。llms.txt に載っていなければならないもの */
 const PUBLISHED = new Map([
-  ...TOOLS.filter((t) => t.ready).map((t) => [`${ORIGIN}/tools/${t.slug}/`, t.name]),
-  ...GAMES.filter((g) => g.ready).map((g) => [`${ORIGIN}/games/${g.slug}/`, g.name]),
+  ...TOOLS.filter((t) => t.stage === 'public').map((t) => [`${ORIGIN}/tools/${t.slug}/`, t.name]),
+  ...GAMES.filter((g) => g.stage === 'public').map((g) => [`${ORIGIN}/games/${g.slug}/`, g.name]),
 ]);
 
 // ---------------------------------------------------------------- llms.txt
@@ -149,13 +151,15 @@ describe('llms.txt のリンク先', () => {
     }
   });
 
-  it('準備中・削除済みのツールやゲームを載せていない', () => {
-    const ready = new Set([...TOOLS, ...GAMES].filter((e) => e.ready).map((e) => e.slug));
+  it('公開前・削除済みのツールやゲームを載せていない', () => {
+    const published = new Set(
+      [...TOOLS, ...GAMES].filter((e) => e.stage === 'public').map((e) => e.slug),
+    );
     for (const { url } of LINKS) {
       const m = /\/(?:tools|games)\/([^/]+)\/$/.exec(url);
       if (!m) continue;
       if (['about', 'privacy', 'contact'].includes(m[1])) continue; // 固定ページ
-      assert.ok(ready.has(m[1]), `registry に ready なエントリが無い: ${url}`);
+      assert.ok(published.has(m[1]), `registry に公開中のエントリが無い: ${url}`);
     }
   });
 });

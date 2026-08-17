@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { categories, tools, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { categories, publicTools, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 import ToolIcon from '@/app/ToolIcon';
@@ -70,7 +70,7 @@ export default function Home() {
       </section>
 
       {categories.map((cat) => {
-        const list = tools.filter((t) => t.category === cat);
+        const list = publicTools.filter((t) => t.category === cat);
         if (list.length === 0) return null;
         return (
           <section key={cat}>
@@ -79,28 +79,15 @@ export default function Home() {
               <span className="count">{list.length}件</span>
             </div>
             <div className="tool-grid">
-              {list.map((t) =>
-                t.ready ? (
-                  <Link key={t.slug} className="tool-card" href={`/${t.slug}/`}>
-                    <div className="icon">
-                      <ToolIcon name={t.icon} />
-                    </div>
-                    <div className="name">{t.name}</div>
-                    <div className="desc">{t.description}</div>
-                  </Link>
-                ) : (
-                  <div key={t.slug} className="tool-card coming" aria-disabled="true">
-                    <div className="icon">
-                      <ToolIcon name={t.icon} />
-                    </div>
-                    <div className="name">
-                      {t.name}
-                      <span className="badge">準備中</span>
-                    </div>
-                    <div className="desc">{t.description}</div>
+              {list.map((t) => (
+                <Link key={t.slug} className="tool-card" href={`/${t.slug}/`}>
+                  <div className="icon">
+                    <ToolIcon name={t.icon} />
                   </div>
-                )
-              )}
+                  <div className="name">{t.name}</div>
+                  <div className="desc">{t.description}</div>
+                </Link>
+              ))}
             </div>
           </section>
         );

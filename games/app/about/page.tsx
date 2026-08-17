@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COPYRIGHT_HOLDER, SITE_NAME, SITE_UPDATED_AT, SITE_URL, games } from '@/lib/registry';
+import { COPYRIGHT_HOLDER, games, publicGames, SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 
@@ -34,7 +34,7 @@ const jsonLd = {
 };
 
 export default function AboutPage() {
-  const ready = games.filter((g) => g.ready).length;
+  const published = publicGames.length;
 
   return (
     <>
@@ -77,7 +77,7 @@ export default function AboutPage() {
           </tr>
           <tr>
             <th style={{ textAlign: 'left' }}>公開ゲーム数</th>
-            <td style={{ textAlign: 'left' }}>{ready}本</td>
+            <td style={{ textAlign: 'left' }}>{published}本</td>
           </tr>
           <tr>
             <th style={{ textAlign: 'left' }}>お問い合わせ</th>

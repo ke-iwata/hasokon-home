@@ -49,6 +49,28 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 - **docs/features/README.md に一覧・状態の表を復活させない**。状態は各仕様書冒頭の
   `**状態**：` 行だけで管理し、仕様書の追加・更新で README は触らない
 
+## 公開の段階（フィーチャーフラグ）
+
+`games` / `tools` の `lib/registry.ts` の `stage` が、**そのツール・ゲームを
+公開するかどうかの唯一の切り替え**。仕様は
+[docs/features/feature-flags.md](./docs/features/feature-flags.md)。
+
+| stage | 一覧・sitemap・llms.txt | `robots` | URLを直接叩くと |
+|---|---|---|---|
+| `wip` / `preview` | 出さない | `noindex` | **見える**（秘密にはできない） |
+| `public` | 出す | 既定 | 見える |
+
+- **一覧を出すときは `publicGames` / `publicTools` を通す。**
+  `games` / `tools` を直に `filter` しない（書き忘れが公開事故になる）
+- **ページの `metadata` に `robots: robotsFor('<slug>')` を書く**
+  （書き忘れは `{games,tools}/tests/stage.test.ts` が落とす）
+- **`home/index.html` のカードと `home/llms.txt` の行は、`public` にするPRで足す。**
+  `home/` にはビルド工程が無いので `stage` が効かない。ここだけは運用で守る
+- **フラグは「まだ公開していない」ためのもの。** 一度公開したものを引っ込めるのは
+  別の作業（URLがインデックスされているので、消すと404になる）
+- **フラグは腐る。** 仕様書の `**状態**：` 行に「いつ `public` にするか」を書き、
+  公開するPRで `stage` を上げる
+
 ## リリースの約束
 
 **本番へのリリース（v* タグ）は運営者の承認が必要。AIエージェントは自発的にリリースしないこと。**

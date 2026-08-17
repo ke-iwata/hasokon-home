@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/jitensha-hansokukin/` },
+  robots: robotsFor('jitensha-hansokukin'),
 };
 
 const faq = [
