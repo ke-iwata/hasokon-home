@@ -4,6 +4,24 @@
  */
 export type ToolCategory = 'お金・社会保険' | '生活・健康' | '計算・変換' | '決める・選ぶ';
 
+/**
+ * 公開の段階。**機能を本番リリースから外すための唯一の切り替え**。
+ *
+ * 仕様は [docs/features/feature-flags.md](../../docs/features/feature-flags.md)。
+ * ここを `public` 以外にすると、一覧・「関連」・sitemap・llms.txt から外れ、
+ * ページには `noindex` が付く。**ただしページ自体は建って配られる**ので、
+ * URLを知っていれば見える（秘密にはできない）。
+ *
+ * ファイルごと本番に置きたくない場合は仕様書の「レベル2」が要る（未実装）。
+ */
+export type Stage =
+  /** 作りかけ。手元で見るだけ */
+  | 'wip'
+  /** テスト環境で見てもらう段階。まだ公開しない */
+  | 'preview'
+  /** 公開中 */
+  | 'public';
+
 export interface ToolDef {
   /** URLパス（先頭・末尾スラッシュなし） */
   slug: string;
@@ -18,8 +36,8 @@ export interface ToolDef {
    * 絵文字は端末ごとに絵柄も色も変わり、サイトの配色に馴染まないので使わない。
    */
   icon: string;
-  /** 実装済みフラグ。false のツールは一覧に「準備中」と表示しリンクしない */
-  ready: boolean;
+  /** 公開の段階。`public` 以外は一覧にも sitemap にも出さない */
+  stage: Stage;
   /**
    * 内容を最後に更新した日（'YYYY-MM-DD'）。sitemap の lastmod に使う。
    * ビルド日時ではなく実際に中身を変えた日を入れること。
@@ -67,7 +85,7 @@ export const tools: ToolDef[] = [
     description:
       '項目を入れて回すだけ。ランチ・当番・順番決めに。当たった項目を除いて回せば順番決めにも使えます。',
     category: '決める・選ぶ',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -76,7 +94,7 @@ export const tools: ToolDef[] = [
     name: 'グループ分け',
     description: '名前を入れるだけで班分け・チーム分けをランダムに作成。人数は自動で均等に振り分けます。',
     category: '決める・選ぶ',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -85,7 +103,7 @@ export const tools: ToolDef[] = [
     name: 'サイコロ',
     description: 'サイコロをブラウザで。1〜10個まで同時に振れて、合計も出ます。',
     category: '決める・選ぶ',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -95,7 +113,7 @@ export const tools: ToolDef[] = [
     description:
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-07-01',
   },
   {
@@ -105,7 +123,7 @@ export const tools: ToolDef[] = [
     description:
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-03',
   },
   {
@@ -115,7 +133,7 @@ export const tools: ToolDef[] = [
     description:
       '年末調整でいくら戻るかを計算。給与明細の源泉徴収税額を入れるだけで差額が出ます。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなったかも表示します。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-12',
   },
   {
@@ -125,7 +143,7 @@ export const tools: ToolDef[] = [
     description:
       '働きながら年金をもらうと、いくら止まるかを計算。令和8年4月から基準額が月51万円→65万円に引き上げられました（「62万円」ではありません）。改正前との差額と、あといくら稼げるかも出ます。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -135,7 +153,7 @@ export const tools: ToolDef[] = [
     description:
       '2026年12月の改正でiDeCoの上限は会社員なら月6.2万円へ。ただし「6.2万円 − 事業主掛金」があなたの上限です。勤め先の事業主掛金を入れて、上限と年間の節税額、70歳までの累計を計算します。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -145,7 +163,7 @@ export const tools: ToolDef[] = [
     description:
       '「高校無償化」でも結局いくら払うのかを計算。2026年4月に所得制限が撤廃され私立は年45万7,200円まで支援されますが、超過分と対象外の入学金・制服・教材は残ります。公立と比べた3年間の総額が出ます。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -155,7 +173,7 @@ export const tools: ToolDef[] = [
     description:
       '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -165,7 +183,7 @@ export const tools: ToolDef[] = [
     description:
       'たばこ税は2027年4月から毎年4月に1本0.5円ずつ、3回に分けて上がります（1箱20本で1回あたり税込11円）。銘柄の価格を入れると2029年4月までの想定価格が分かり、1日の本数から月間・年間の負担額と増える分、買わなくなった場合に浮く額まで計算できます。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-15',
   },
   {
@@ -175,7 +193,7 @@ export const tools: ToolDef[] = [
     description:
       '119万・130万・178万…あなたに関係する「年収の壁」と影響を判定。2026年10月の106万円の壁撤廃（週20時間の壁）に対応。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-11',
   },
   {
@@ -185,7 +203,7 @@ export const tools: ToolDef[] = [
     description:
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃に対応。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -194,7 +212,7 @@ export const tools: ToolDef[] = [
     name: '傷病手当金 計算機',
     description: '病気やケガで休職したときにもらえる傷病手当金の日額・総額を計算。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -204,7 +222,7 @@ export const tools: ToolDef[] = [
     description:
       '医療費が高額になったとき、1か月の自己負担がいくらまでで済むかを計算。2026年8月の改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応。改正前の額と並べて表示します。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -214,7 +232,7 @@ export const tools: ToolDef[] = [
     description:
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -224,7 +242,7 @@ export const tools: ToolDef[] = [
     description:
       '2026年4月から自転車も青切符の対象に。イヤホン・傘さし・歩道通行など日常の行為を選ぶと、該当する違反名・反則金・青切符か赤切符かが分かります。警察庁の公式一覧にもとづく全65項目の早見表つき。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -234,7 +252,7 @@ export const tools: ToolDef[] = [
     description:
       '家族の人数を入れるだけで、水・食料・カセットボンベ・簡易トイレの必要量が出ます。3日分と7日分を切り替えでき、乳幼児のミルク・おむつ、ペットのフードにも対応。そのまま印刷できる買い物チェックリストつき。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-15',
   },
   {
@@ -244,7 +262,7 @@ export const tools: ToolDef[] = [
     description:
       'トレーニング用のインターバルタイマー。タバタ式・HIITのプリセット付きで、運動・休憩・セット数を自由に設定。ビープ音で切り替えを知らせます。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-11',
   },
   {
@@ -254,7 +272,7 @@ export const tools: ToolDef[] = [
     description:
       '起床時刻から逆算して、スッキリ起きられる就寝時刻を90分サイクルで提案。仮眠・昼寝の時間も計算。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -263,7 +281,7 @@ export const tools: ToolDef[] = [
     name: 'エアコン電気代 計算機',
     description: 'エアコンの消費電力と使用時間から、1日・1ヶ月の電気代を計算。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-07-01',
   },
   {
@@ -272,7 +290,7 @@ export const tools: ToolDef[] = [
     name: '割り勘計算機',
     description: '飲み会の合計金額と人数から一人あたりの支払額を計算。傾斜配分にも対応。',
     category: '生活・健康',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-07-01',
   },
   {
@@ -282,7 +300,7 @@ export const tools: ToolDef[] = [
     description:
       '生年月日から満年齢を計算。西暦⇔和暦（明治〜令和）の変換と早見表、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -292,7 +310,7 @@ export const tools: ToolDef[] = [
     description:
       '2つの日付のあいだの日数を計算。初日を含む・含まないの両方を表示し、「◯日後」「◯営業日後」の期日計算にも対応。土日と祝日を除いて数えます。',
     category: '計算・変換',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -301,7 +319,7 @@ export const tools: ToolDef[] = [
     name: 'ヘボン式ローマ字変換',
     description: '氏名のふりがなをパスポート表記のヘボン式ローマ字に変換。五十音の一覧表つき。',
     category: '計算・変換',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -311,7 +329,7 @@ export const tools: ToolDef[] = [
     description:
       '半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選べます。',
     category: '計算・変換',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-02',
   },
   {
@@ -321,7 +339,7 @@ export const tools: ToolDef[] = [
     description:
       '幅と高さから縦横比を計算。16:9の逆引き早見表やリサイズ後のサイズ算出、CSSコピーにも対応。',
     category: '計算・変換',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-17',
   },
 ];
@@ -332,3 +350,35 @@ export const categories: ToolCategory[] = [
   '決める・選ぶ',
   '計算・変換',
 ];
+
+/**
+ * 公開中のツールだけ。**一覧・関連ツール・sitemap はすべてここを通す。**
+ * `tools` を直に filter しないこと（見落としが公開事故になる）
+ */
+export const publicTools = tools.filter((t) => t.stage === 'public');
+
+/**
+ * `stage` から検索避けを決める規則。**`robotsFor` と分けてあるのは、
+ * registry の中身に関係なく規則そのものをテストできるようにするため**
+ * （いま全部 `public` なので、規則を registry 越しにしか見られないと
+ * 「非公開なら noindex」の確認が書けない）。
+ */
+export function robotsForStage(stage: Stage): { index: false; follow: false } | undefined {
+  return stage === 'public' ? undefined : { index: false, follow: false };
+}
+
+/**
+ * ページの検索避け。公開前のものは `noindex` にする。
+ *
+ * 一覧にも sitemap にも出していなくても、URLは配られている。
+ * 誰かが共有すれば拾われうるので、ページ側でも断っておく。
+ * 各 `page.tsx` の `metadata` に `robots: robotsFor('<slug>')` を書く
+ * （書き忘れは `tests/stage.test.ts` が落とす）。
+ *
+ * registry に無い slug は `undefined`（＝既定のまま）。ここで noindex にすると、
+ * registry に載せない特設ページまで巻き込んで検索から消える
+ */
+export function robotsFor(slug: string): { index: false; follow: false } | undefined {
+  const found = tools.find((x) => x.slug === slug);
+  return found ? robotsForStage(found.stage) : undefined;
+}

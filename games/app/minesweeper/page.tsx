@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { games, SITE_URL } from '@/lib/registry';
+import { publicGames, robotsFor, SITE_URL } from '@/lib/registry';
 import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
@@ -15,6 +15,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/minesweeper/` },
+  robots: robotsFor('minesweeper'),
 };
 
 const faq = [
@@ -121,8 +122,8 @@ export default function Page() {
 
       <h2>他のゲーム</h2>
       <div className="game-grid">
-        {games
-          .filter((g) => g.ready && g.slug !== 'minesweeper')
+        {publicGames
+          .filter((g) => g.slug !== 'minesweeper')
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">

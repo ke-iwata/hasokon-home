@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { categories, tools } from '@/lib/registry';
+import { categories, publicTools } from '@/lib/registry';
 
 export const metadata: Metadata = {
   title: 'ページが見つかりません',
@@ -22,7 +22,7 @@ export default function NotFound() {
       </p>
 
       {categories.map((cat) => {
-        const list = tools.filter((t) => t.category === cat && t.ready);
+        const list = publicTools.filter((t) => t.category === cat);
         if (list.length === 0) return null;
         return (
           <section key={cat}>
