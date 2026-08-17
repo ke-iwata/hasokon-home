@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { games, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { publicGames, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 import GameIcon from '@/app/GameIcon';
@@ -55,8 +55,7 @@ export default function Home() {
         ソリティア・ナンプレ・リバーシ・花札などの定番を、課金なしでそのまま遊べます。各ページに遊び方とコツ、よくある質問を載せています。ベストスコアなどの記録は、お使いのブラウザ内にだけ保存されます。
       </p>
       <div className="game-grid">
-        {games
-          .filter((g) => g.ready)
+        {publicGames
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">

@@ -89,7 +89,12 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
      （[docs/features/breadcrumbs.md](../docs/features/breadcrumbs.md)。
      入れ忘れは `tests/jsonld.test.ts` が落とす）
 4. `app/{slug}/Calculator.tsx` — `'use client'`。`useState` で入力を持ち、lib の関数を呼ぶだけ
-5. `lib/registry.ts` にエントリを追加し `ready: true` に。
+5. `lib/registry.ts` にエントリを追加。**`stage` は公開してよいと決まるまで
+   `'preview'`**（一覧・sitemap・llms.txt から外れ、`noindex` が付く。
+   仕様は [docs/features/feature-flags.md](../docs/features/feature-flags.md)）。
+   `page.tsx` の `metadata` には `robots: robotsFor('{slug}')` を書く
+   （書き忘れは `tests/stage.test.ts` が落とす）。
+   一覧は `tools` ではなく **`publicTools`** を通す。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
 6. `npm test && npm run build` が通ることを確認
 

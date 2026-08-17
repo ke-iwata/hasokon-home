@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITE_UPDATED_AT, SITE_URL, tools } from '@/lib/registry';
+import { publicTools, SITE_UPDATED_AT, SITE_URL, tools } from '@/lib/registry';
 import GUIDES from '@/lib/roulette/guides.json';
 import PRESETS from '@/lib/roulette/presets.json';
 
@@ -8,7 +8,7 @@ export const dynamic = 'force-static';
 
 /**
  * sitemap.xml を自動生成する。
- * lib/registry.ts に ready: true のツールを追加すれば自動で載る。
+ * lib/registry.ts に stage: 'public' のツールを追加すれば自動で載る。
  *
  * lastmod にはビルド日時ではなく registry の updatedAt を使う。
  * ビルドのたびに現在時刻を入れると全ページが毎回「更新された」ことになり、
@@ -43,14 +43,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  const toolPages: MetadataRoute.Sitemap = tools
-    .filter((t) => t.ready)
-    .map((t) => ({
-      url: `${SITE_URL}/${t.slug}/`,
-      lastModified: t.updatedAt,
-      changeFrequency: 'monthly' as const,
-      priority: 0.8,
-    }));
+  const toolPages: MetadataRoute.Sitemap = publicTools.map((t) => ({
+    url: `${SITE_URL}/${t.slug}/`,
+    lastModified: t.updatedAt,
+    changeFrequency: 'monthly' as const,
+    priority: 0.8,
+  }));
 
   // 用途別ルーレット（/r/<slug>/）と使い方の記事（/guide/<slug>/）。
   // registry には載せない（トップの一覧はツール単位にしたいため）が、
