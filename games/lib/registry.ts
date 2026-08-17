@@ -93,7 +93,7 @@ export const games: GameDef[] = [
     name: 'ピラミッドソリティア',
     description:
       '足して13になる2枚を取り除いてピラミッドを崩すソリティア。Kは1枚で取れます。タップだけの簡単操作。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-17',
   },
   {
