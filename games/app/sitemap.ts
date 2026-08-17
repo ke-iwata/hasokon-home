@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { games, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
+import { publicGames, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
 
 // output: 'export' では静的生成であることの明示が必要
 export const dynamic = 'force-static';
@@ -25,13 +25,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'yearly',
       priority: 0.3,
     },
-    ...games
-      .filter((g) => g.ready)
-      .map((g) => ({
-        url: `${SITE_URL}/${g.slug}/`,
-        lastModified: g.updatedAt,
-        changeFrequency: 'monthly' as const,
-        priority: 0.8,
-      })),
+    ...publicGames.map((g) => ({
+      url: `${SITE_URL}/${g.slug}/`,
+      lastModified: g.updatedAt,
+      changeFrequency: 'monthly' as const,
+      priority: 0.8,
+    })),
   ];
 }

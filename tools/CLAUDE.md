@@ -89,7 +89,12 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
      （[docs/features/breadcrumbs.md](../docs/features/breadcrumbs.md)。
      入れ忘れは `tests/jsonld.test.ts` が落とす）
 4. `app/{slug}/Calculator.tsx` — `'use client'`。`useState` で入力を持ち、lib の関数を呼ぶだけ
-5. `lib/registry.ts` にエントリを追加し `ready: true` に。
+5. `lib/registry.ts` にエントリを追加。**`stage` は公開してよいと決まるまで
+   `'preview'`**（一覧・sitemap・llms.txt から外れ、`noindex` が付く。
+   仕様は [docs/features/feature-flags.md](../docs/features/feature-flags.md)）。
+   `page.tsx` の `metadata` には `robots: robotsFor('{slug}')` を書く
+   （書き忘れは `tests/stage.test.ts` が落とす）。
+   一覧は `tools` ではなく **`publicTools`** を通す。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
 6. `npm test && npm run build` が通ることを確認
 
@@ -175,7 +180,7 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # 計算ロジックのテスト（現在981件）
+npm test         # 計算ロジックのテスト（現在1000件）
 npm run build    # out/ に静的出力
 ```
 
@@ -204,7 +209,7 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール28本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト981件
+- ツール28本 / 用途別ルーレット10本 / 使い方の記事6本 / テスト1000件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、

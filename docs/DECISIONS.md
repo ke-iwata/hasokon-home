@@ -22,6 +22,23 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 **カードの説明に「スペース・改行の有無」を入れた。** 文字数カウントは
 老舗の専用サイトが多く、一覧の時点で「何が違うのか」が伝わらないと選ばれない。
 両方を同時に表示することと原稿用紙換算・目標文字数を短く並べた。
+## 2026-08-17：`home/` のツール・ゲーム一覧は「公開するPR」で足す約束にした
+
+tools / games の registry に公開の段階（`stage`）を入れた
+（[features/feature-flags.md](./features/feature-flags.md)）。`public` 以外は
+一覧・sitemap・llms.txt から外れて `noindex` が付くが、**`home/` にはビルド工程が
+無いのでこの切り替えが効かない**。
+
+`home/` を素のHTMLのままにしているのは意図的な選択なので、ビルドを足すのではなく
+**運用の約束**にした:
+
+- `home/index.html` のカードと `home/llms.txt` の行は、**`stage` を `public` にするPRで足す**。
+  機能そのもののPRでは足さない
+- `scripts/test/llms-txt.test.mjs` は `stage: 'public'` のものだけを突き合わせる。
+  公開中のものが llms.txt に無ければ落ち、公開前のものが載っていても落ちる（両方向）
+
+約束はルートの `CLAUDE.md` に書いた。
+
 
 ## 2026-08-15：トップとllms.txtに防災備蓄 計算ツールを足した（ツール26本目）
 

@@ -14,7 +14,10 @@
 ヘボン式ローマ字の2本だけではクラスタとして面が薄かった
 （[features/mojisu-count.md](../../docs/features/mojisu-count.md)）。
 `lib/mojisu-count.ts`（純関数）＋ `app/mojisu-count/` の1ページで、
-外部データも法令根拠も持たない。
+外部データも法令根拠も持たない。registry には `stage: 'public'` で登録し、
+ページの `metadata` に `robots: robotsFor('mojisu-count')` を付けている
+（公開の段階の仕組みは [features/feature-flags.md](../../docs/features/feature-flags.md)）。
+公開するPRなので、`home/index.html` のカードと `home/llms.txt` の行も同じPRに含めた。
 
 **数え方を仕様として固定し、テストで見張っている。** 文字数カウントは
 「どう数えたか」で答えが変わる。実装を後から触ったときに黙って基準が動くと
@@ -43,6 +46,64 @@
 あわせて `countChars()` の判定に絵文字の範囲（U+1F300〜U+1FAFF）を足した。
 Unicode の East Asian Width が Wide なのに半角として数えていたため
 （内訳の合計が改行を除いた文字数と一致することもテストで固定した）。
+## 2026-08-17：アスペクト比計算機に逆引き早見表と「比率の変換」の節を足した
+
+`lib/aspect-ratio.ts` に `lookupTable()` と `LOOKUP_16_9` / `LOOKUP_COMPACT` を足し、
+ページに「16:9・9:16の逆引き早見表（幅から高さ）」（16:9は9列、4:3・3:2・21:9は簡易版）と
+「アスペクト比の変換のやり方（4:3を16:9にするなど）」の節を出した。
+FAQを3問（幅1280のときの高さ・1920x1080がなぜ16:9か・4:3を16:9にする方法）追加し、
+title を `アスペクト比 計算機・早見表｜16:9のサイズ変換と一覧` に、description を
+「逆引き早見表」「16:9のサイズ一覧」「変換のやり方」を含む形に変えた。仕様は
+[docs/features/aspect-ratio-gyakubiki-seo.md](../../docs/features/aspect-ratio-gyakubiki-seo.md)。
+
+**理由**：Search Console（2026-08-17 取得・直近28日）で `/tools/aspect-ratio/` は
+ツール系ページで最多の30表示を集めているのに掲載順位48.5で止まっていた。
+表示が付いているクエリは「16 9 px」「9 16 比率」「1920 かける 1080 比率」
+「アスペクト比 変換」など、**比率から具体的なpx寸法を引きたい／比率間で変換したい**
+意図に寄っていて、幅と高さから比率を出す既存の作りとは向きが逆だった。
+新規ページを作るより、既に表示が出ているページの向きを合わせる方が早い。
+
+**表の値はハードコードせず `scaleByWidth()` から作っている。** 比率は不変なので
+ビルド時に1度評価されるだけで静的HTMLに焼かれるが、値を手で書くと計算機の答えと
+表がずれる余地が残る（`tests/aspect-ratio.test.ts` が全行を `scaleByWidth()` と
+突き合わせ、9:16の読み替えが成り立つことも見張っている）。
+
+**計算ロジック（`simplify` / `nearestCommonRatio` / `scaleBy*`）と Calculator は触っていない。**
+表示が出ているページの改修なので、退行の余地を作らず本文とメタデータだけを厚くする方針。
+四捨五入が入る行（854x480 など）には「（約）」を付けて、割り切れる行と区別している。
+## 2026-08-17：公開の段階（`stage`）を入れて、機能ごとに本番リリースから外せるようにした
+
+運営者から「feature flag みたいなので機能ごとに本番デプロイから対象外にするとか
+できたりしない？」。方針を [docs/features/feature-flags.md](../../docs/features/feature-flags.md) にまとめ、
+**3段階のうちレベル1（「載せない」）だけを実装した**。
+
+`ready: boolean` を **`stage: 'wip' | 'preview' | 'public'`** に置き換えた。
+`public` 以外は一覧・「関連ツール」・sitemap・llms.txt から外れ、ページに
+`noindex` が付く。**ただしページ自体は建って配られる**ので、URLを知っていれば見える
+（秘密にはできない）。ファイルごと本番に置かない「レベル2」はまだ入れていない。
+
+**`ready` は残さず置き換えた。** 2つあると二重管理になる。
+なお `ready: false` のエントリは1つも無く、仕組みは眠ったままだった。
+
+**一覧は `publicTools` を通す。`tools` を直に `filter` しないこと。**
+一覧を出す場所が増えるたびに条件を書き写すことになり、書き忘れが公開事故になる。
+
+**`robotsForStage` を `robotsFor` と分けた。** registry の中身に関係なく規則そのものを
+テストできるようにするため。いま全エントリが `public` なので、registry 越しにしか
+見られないと「非公開なら noindex」の確認が書けない。
+
+見張りは `tests/stage.test.ts`（8件）。**全ページが `robots: robotsFor('<slug>')` を
+書いていること**も含めている。書き忘れると、そのページだけ非公開にしても noindex が
+付かず、気づくのは検索結果に出てからになる。
+
+実際に1本を `preview` にしてビルドし、sitemap・一覧・「関連ツール」から消えて
+`<meta name="robots" content="noindex, nofollow">` が付くこと、ページ自体は建つことを
+確認した。あわせて `home/llms.txt` に行が残っていると
+`scripts/test/llms-txt.test.mjs` が落ちることも確認している（両方向に効く）。
+
+**`home/` にはビルド工程が無いので `stage` が効かない。** トップのカードと
+`llms.txt` の行は「`public` にするPR」で足す運用の約束にして、ルート `CLAUDE.md` に書いた。
+
 
 ## 2026-08-16：用途別ルーレット10ページに固有本文を足し、薄い3ツールを増強した
 

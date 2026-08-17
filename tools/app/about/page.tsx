@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { COPYRIGHT_HOLDER, SITE_NAME, SITE_UPDATED_AT, SITE_URL, tools } from '@/lib/registry';
+import { COPYRIGHT_HOLDER, publicTools, SITE_NAME, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 
@@ -34,7 +34,7 @@ const jsonLd = {
 };
 
 export default function AboutPage() {
-  const ready = tools.filter((t) => t.ready).length;
+  const published = publicTools.length;
 
   return (
     <>
@@ -67,7 +67,7 @@ export default function AboutPage() {
           </tr>
           <tr>
             <th style={{ textAlign: 'left' }}>公開ツール数</th>
-            <td style={{ textAlign: 'left' }}>{ready}本（このほかに用途別ルーレットと使い方の記事があります）</td>
+            <td style={{ textAlign: 'left' }}>{published}本（このほかに用途別ルーレットと使い方の記事があります）</td>
           </tr>
           <tr>
             <th style={{ textAlign: 'left' }}>お問い合わせ</th>

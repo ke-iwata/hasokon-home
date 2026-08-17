@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import ToolClient from '@/app/_roulette/ToolClient';
-import { SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
 
 const title = 'サイコロを振る｜1〜10個をまとめて振れる無料ツール';
 const description =
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/dice/` },
+  robots: robotsFor('dice'),
 };
 
 const faq = [

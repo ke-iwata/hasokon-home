@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import RouletteApp from '@/app/_roulette/RouletteApp';
-import { SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
 import { TOOLS } from '@/lib/roulette/tools';
 
 const title = 'ルーレット｜好きな項目を入れて回せる無料ルーレット';
@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/roulette/` },
+  robots: robotsFor('roulette'),
 };
 
 const faq = [
