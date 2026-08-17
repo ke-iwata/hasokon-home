@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import Timer from './Timer';
-import { SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
 
 const title = 'インターバルタイマー｜タバタ・HIIT対応の無料トレーニングタイマー';
 const description =
@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title,
   description,
   alternates: { canonical: `${SITE_URL}/interval-timer/` },
+  robots: robotsFor('interval-timer'),
 };
 
 const faq = [

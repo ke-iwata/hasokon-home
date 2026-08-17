@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { tools, type ToolCategory } from '@/lib/registry';
+import { publicTools, tools, type ToolCategory } from '@/lib/registry';
 import ToolIcon from '@/app/ToolIcon';
 
 /**
@@ -22,12 +22,12 @@ export default function RelatedTools({
   limit?: number;
 }) {
   const self = tools.find((t) => t.slug === current);
-  const ready = tools.filter((t) => t.ready && t.slug !== current);
+  const candidates = publicTools.filter((t) => t.slug !== current);
 
   // 同じカテゴリを優先し、足りなければ他のカテゴリで埋める。
   // 「お金・社会保険」など件数の少ないカテゴリでも、リンクが2〜3本で終わらないようにするため
-  const sameCategory = ready.filter((t) => t.category === self?.category);
-  const others = ready.filter((t) => t.category !== self?.category);
+  const sameCategory = candidates.filter((t) => t.category === self?.category);
+  const others = candidates.filter((t) => t.category !== self?.category);
   const list = [...sameCategory, ...others].slice(0, limit);
   if (list.length === 0) return null;
 

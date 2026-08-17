@@ -1,6 +1,7 @@
 # 機能ごとに本番リリースから外す仕組み（フィーチャーフラグ）
 
-**状態**：提案（未実装。方針の合意待ち）
+**状態**：レベル1のみ実装済み（2026-08-17。本番反映はタグリリース待ち）。
+レベル2・3は未実装（必要になってから）
 **対象**：`games/` `tools/`（`home/` は事情が違う。後述）
 **起票**：2026-08-16（運営者の「feature flag みたいなので機能ごとに本番デプロイから
 対象外にするとかできたりしない？」から）
@@ -49,13 +50,14 @@
 ような）は置けない。ブラウザで `location.hostname` を見る手はあるが、
 **HTMLの中身は本番にも入る**ので、SEO・AdSense の観点では隠したことにならない。
 
-## 提案：3段階に分けて、まず1と2だけ入れる
+## 3段階に分ける（入れたのはレベル1だけ）
 
 「本番から外す」と一口に言っても強さが3段階ある。**必要な強さだけ使うのが安い。**
 
 ### レベル1「載せない」（`stage` を registry に持たせる。ワークフローは触らない）
 
-`ready: boolean` を `stage: 'wip' | 'preview' | 'public'` に置き換える。
+**実装済み（2026-08-17）。** `ready: boolean` を `stage: 'wip' | 'preview' | 'public'` に
+置き換えた。
 
 | stage | 一覧・sitemap・llms.txt | `robots` | URLを直接叩くと |
 |---|---|---|---|
@@ -63,10 +65,32 @@
 | `preview` | 出さない | `noindex` | 見える |
 | `public` | 出す | 既定 | 見える |
 
-- 触るのは registry と、いま `ready` を見ている4か所＋各ページの `metadata.robots`
-- **ワークフローは変えない。成果物はテストと本番で同じ。**
+実際に触ったもの:
+
+| ファイル | 変更 |
+|---|---|
+| `{games,tools}/lib/registry.ts` | `Stage` 型・`stage` フィールド・`publicGames` / `publicTools`・`robotsForStage` / `robotsFor` |
+| 一覧・「他のゲーム」・関連ツール・`not-found`・`about` | `filter((x) => x.ready)` をやめて `publicGames` / `publicTools` を通す |
+| `app/sitemap.ts`（両方） | 同上 |
+| 全ページの `page.tsx`（ゲーム18・ツール27） | `metadata` に `robots: robotsFor('<slug>')` |
+| `{games,tools}/tests/stage.test.ts` | 新設（各8件） |
+| `scripts/test/llms-txt.test.mjs` | `ready` → `stage` |
+
+- **ワークフローは変えていない。成果物はテストと本番で同じ。**
 - 守れるのは「検索から見つかること」「トップから辿れること」。
   **秘密にはできない**（URLを知っていれば見える）
+
+**`publicGames` / `publicTools` を通すこと。`games` / `tools` を直に `filter`
+しないこと。** 一覧を出す場所が増えるたびに条件を書き写すことになり、
+書き忘れが公開事故になる。
+
+**`robotsForStage` を `robotsFor` と分けてある**のは、registry の中身に関係なく
+規則そのものをテストできるようにするため。いま全エントリが `public` なので、
+registry 越しにしか見られないと「非公開なら noindex」の確認が書けない。
+
+実際に1本を `preview` にしてビルドし、**sitemap・トップの一覧・「他のゲーム」から
+消えて `<meta name="robots" content="noindex, nofollow">` が付く**こと、
+**ページ自体は建つ**ことを確認済み（2026-08-17）。
 
 **多くの場合これで足りる。** 実際に困るのは「未完成のページが Google に拾われる」
 「AdSense の審査で薄いページとして見られる」「トップから辿れて完成品に見える」で、
@@ -74,7 +98,8 @@
 
 ### レベル2「本番には置かない」（`SITE_STAGE` ＋ ビルド後の間引き）
 
-レベル1で足りないとき（＝ファイルそのものを本番に置きたくないとき）だけ足す。
+**未実装。** レベル1で足りないとき（＝ファイルそのものを本番に置きたくないとき）
+だけ足す。`stage` はそのまま使えるので、足すのはワークフローと間引きスクリプトだけ。
 
 1. `deploy.yml` が環境を渡す。タグなら `SITE_STAGE=production`、main なら `test`
 2. registry の `stage` と `SITE_STAGE` を突き合わせ、**ビルド後に `out/<slug>/` を
@@ -95,7 +120,7 @@ registry という単一の情報源から一箇所で効く。
 S3 同期は `--delete` 付きなので、本番から消えたページは実際に消える。
 CloudFront も毎回 `/*` を invalidate しているので残らない。
 
-### レベル3「実行時に出し分け」（既定では採らない）
+### レベル3「実行時に出し分け」（採らない）
 
 `location.hostname` を見てブラウザ側で隠す方法。**既定では使わない。**
 
@@ -118,8 +143,11 @@ CloudFront も毎回 `/*` を invalidate しているので残らない。
 - 公開前は「registry に `preview` で入れる」まで。トップに載るのは公開のとき
 
 いま `home/index.html` の更新を機能PRに含めているので、そこだけ分けることになる。
-**その代わり、`llms-txt.test.mjs` は `stage: 'public'` のものだけを突き合わせるよう
-直す必要がある**（そうしないとテストが「載せろ」と言い続けてフラグと喧嘩する）。
+
+`llms-txt.test.mjs` は `stage: 'public'` のものだけを突き合わせるよう直した（実装済み）。
+**この向きの見張りは両方向に効く**：公開中のものが llms.txt に無ければ落ち、
+公開前のものが llms.txt に載っていても落ちる。1本を `preview` にしたとき、
+llms.txt の行が残っていて落ちることを確認済み。
 
 ## 落とし穴（先に書いておく）
 

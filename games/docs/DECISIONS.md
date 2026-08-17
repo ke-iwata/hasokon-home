@@ -8,6 +8,40 @@
 
 ---
 
+## 2026-08-17：公開の段階（`stage`）を入れて、機能ごとに本番リリースから外せるようにした
+
+運営者から「feature flag みたいなので機能ごとに本番デプロイから対象外にするとか
+できたりしない？」。方針を [docs/features/feature-flags.md](../../docs/features/feature-flags.md) にまとめ、
+**3段階のうちレベル1（「載せない」）だけを実装した**。
+
+`ready: boolean` を **`stage: 'wip' | 'preview' | 'public'`** に置き換えた。
+`public` 以外は一覧・「他のゲーム」・sitemap・llms.txt から外れ、ページに
+`noindex` が付く。**ただしページ自体は建って配られる**ので、URLを知っていれば見える
+（秘密にはできない）。ファイルごと本番に置かない「レベル2」はまだ入れていない。
+
+**`ready` は残さず置き換えた。** 2つあると二重管理になる。
+なお `ready: false` のエントリは1つも無く、仕組みは眠ったままだった。
+
+**一覧は `publicGames` を通す。`games` を直に `filter` しないこと。**
+一覧を出す場所が増えるたびに条件を書き写すことになり、書き忘れが公開事故になる。
+
+**`robotsForStage` を `robotsFor` と分けた。** registry の中身に関係なく規則そのものを
+テストできるようにするため。いま全エントリが `public` なので、registry 越しにしか
+見られないと「非公開なら noindex」の確認が書けない。
+
+見張りは `tests/stage.test.ts`（8件）。**全ページが `robots: robotsFor('<slug>')` を
+書いていること**も含めている。書き忘れると、そのページだけ非公開にしても noindex が
+付かず、気づくのは検索結果に出てからになる。
+
+実際に1本を `preview` にしてビルドし、sitemap・一覧・「他のゲーム」から消えて
+`<meta name="robots" content="noindex, nofollow">` が付くこと、ページ自体は建つことを
+確認した。あわせて `home/llms.txt` に行が残っていると
+`scripts/test/llms-txt.test.mjs` が落ちることも確認している（両方向に効く）。
+
+**`home/` にはビルド工程が無いので `stage` が効かない。** トップのカードと
+`llms.txt` の行は「`public` にするPR」で足す運用の約束にして、ルート `CLAUDE.md` に書いた。
+
+
 ## 2026-08-16：ピンボールを追加した（ゲーム18本目・2つ目の物理もの）
 
 運営者から「昔のWindowsにあったピンボールゲームライクなゲームを追加できない？」。

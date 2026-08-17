@@ -2,12 +2,32 @@
  * ゲームレジストリ
  * ここに追加すると、トップページの一覧と sitemap に自動反映される。
  */
+
+/**
+ * 公開の段階。**機能を本番リリースから外すための唯一の切り替え**。
+ *
+ * 仕様は [docs/features/feature-flags.md](../../docs/features/feature-flags.md)。
+ * ここを `public` 以外にすると、一覧・「関連」・sitemap・llms.txt から外れ、
+ * ページには `noindex` が付く。**ただしページ自体は建って配られる**ので、
+ * URLを知っていれば見える（秘密にはできない）。
+ *
+ * ファイルごと本番に置きたくない場合は仕様書の「レベル2」が要る（未実装）。
+ */
+export type Stage =
+  /** 作りかけ。手元で見るだけ */
+  | 'wip'
+  /** テスト環境で見てもらう段階。まだ公開しない */
+  | 'preview'
+  /** 公開中 */
+  | 'public';
+
 export interface GameDef {
   slug: string;
   name: string;
   description: string;
   icon: string;
-  ready: boolean;
+  /** 公開の段階。`public` 以外は一覧にも sitemap にも出さない */
+  stage: Stage;
   /** 内容を最後に更新した日（sitemap の lastmod。ビルド日ではない） */
   updatedAt: string;
 }
@@ -44,7 +64,7 @@ export const games: GameDef[] = [
     icon: 'Cards',
     name: 'ソリティア',
     description: '定番のクロンダイク。タップで自動移動の簡単操作。もどす機能つき。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -52,7 +72,7 @@ export const games: GameDef[] = [
     icon: 'Spade',
     name: 'スパイダーソリティア',
     description: '1スート〜4スートの3段階。KからAまで揃えて8組完成を目指します。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -60,7 +80,7 @@ export const games: GameDef[] = [
     icon: 'Club',
     name: 'フリーセル',
     description: '全部の札が最初から見えている実力型のトランプパズル。まとめて移動にも対応。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-11',
   },
   {
@@ -68,7 +88,7 @@ export const games: GameDef[] = [
     icon: 'Bomb',
     name: 'マインスイーパー',
     description: '数字をヒントに地雷を避ける定番パズル。初手は必ず安全。初級〜上級。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -76,7 +96,7 @@ export const games: GameDef[] = [
     icon: 'SquaresFour',
     name: '2048',
     description: 'スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコア保存。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -84,7 +104,7 @@ export const games: GameDef[] = [
     icon: 'GridNine',
     name: 'ナンプレ',
     description: '定番の数字パズル。かんたん・ふつう・むずかしいの3段階。答えは必ず1通りです。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -92,7 +112,7 @@ export const games: GameDef[] = [
     icon: 'GridFour',
     name: 'ノノグラム',
     description: '数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問。答えは必ず1通りです。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-11',
   },
   {
@@ -100,7 +120,7 @@ export const games: GameDef[] = [
     icon: 'Stones',
     name: 'リバーシ',
     description: '挟んで裏返す定番の対戦ゲーム。CPUは かんたん・ふつう・つよい の3段階。先手・後手も選べます。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-12',
   },
   {
@@ -112,7 +132,7 @@ export const games: GameDef[] = [
     name: '五目並べ',
     description:
       '13×13の盤に先に5つ並べたほうが勝ちの定番ボードゲーム。CPUは かんたん・ふつう・つよい の3段階。禁じ手なし。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -124,7 +144,7 @@ export const games: GameDef[] = [
     name: '大富豪',
     description:
       'CPU3人と5回戦を戦うトランプの定番。8切り・革命・縛りに対応し、都落ち・11バック・スペ3返しも切り替えられます。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -136,7 +156,7 @@ export const games: GameDef[] = [
     name: '七並べ',
     description:
       'CPU3人と5回戦を戦うトランプの定番。パスは3回まで、4回目で失格して手札が場に開きます。トンネルも切り替え可能。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -148,7 +168,7 @@ export const games: GameDef[] = [
     name: '神経衰弱',
     description:
       'めくった2枚が同じ数字ならもらえる定番のカードゲーム。ひとりでタイムアタック、CPU対戦は強さ3段階。12〜52枚から選べます。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-14',
   },
   {
@@ -160,7 +180,7 @@ export const games: GameDef[] = [
     name: 'スピード',
     description:
       '台札と1つ違いの数字を、手番を待たずに出し合うトランプの定番。CPU対戦は反応の速さで強さ3段階。1ゲーム1〜2分。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-15',
   },
   {
@@ -173,7 +193,7 @@ export const games: GameDef[] = [
     name: '花札 こいこい',
     description:
       '日本の伝統札で遊ぶ2人用の定番。CPU対戦は強さ3段階で、6ヶ月戦と12ヶ月戦を選べます。役の一覧と、あと何枚で役になるかの案内つき。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-15',
   },
   {
@@ -185,7 +205,7 @@ export const games: GameDef[] = [
     name: '麻雀ソリティア',
     description:
       '亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配ります。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -196,7 +216,7 @@ export const games: GameDef[] = [
     name: 'ブロックパズル',
     description:
       '8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べます。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-13',
   },
   {
@@ -204,7 +224,7 @@ export const games: GameDef[] = [
     icon: 'Racquet',
     name: 'ブロック崩し',
     description: 'マウスやタッチで操作する定番アクション。面が進むごとに速くなります。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
   {
@@ -212,7 +232,39 @@ export const games: GameDef[] = [
     icon: 'Pinball',
     name: 'ピンボール',
     description: 'フリッパーで球を打ち返す定番のアクション。バンパーと的で点を稼ぎます。',
-    ready: true,
+    stage: 'public',
     updatedAt: '2026-08-16',
   },
 ];
+
+/**
+ * 公開中のゲームだけ。**一覧・「他のゲーム」・sitemap はすべてここを通す。**
+ * `games` を直に filter しないこと（見落としが公開事故になる）
+ */
+export const publicGames = games.filter((g) => g.stage === 'public');
+
+/**
+ * `stage` から検索避けを決める規則。**`robotsFor` と分けてあるのは、
+ * registry の中身に関係なく規則そのものをテストできるようにするため**
+ * （いま全部 `public` なので、規則を registry 越しにしか見られないと
+ * 「非公開なら noindex」の確認が書けない）。
+ */
+export function robotsForStage(stage: Stage): { index: false; follow: false } | undefined {
+  return stage === 'public' ? undefined : { index: false, follow: false };
+}
+
+/**
+ * ページの検索避け。公開前のものは `noindex` にする。
+ *
+ * 一覧にも sitemap にも出していなくても、URLは配られている。
+ * 誰かが共有すれば拾われうるので、ページ側でも断っておく。
+ * 各 `page.tsx` の `metadata` に `robots: robotsFor('<slug>')` を書く
+ * （書き忘れは `tests/stage.test.ts` が落とす）。
+ *
+ * registry に無い slug は `undefined`（＝既定のまま）。ここで noindex にすると、
+ * registry に載せない特設ページまで巻き込んで検索から消える
+ */
+export function robotsFor(slug: string): { index: false; follow: false } | undefined {
+  const found = games.find((x) => x.slug === slug);
+  return found ? robotsForStage(found.stage) : undefined;
+}
