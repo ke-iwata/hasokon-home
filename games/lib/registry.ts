@@ -84,6 +84,19 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-11',
   },
   {
+    // 「ピラミッド」は19世紀から遊ばれている伝統的なソリティアの一般名称で、
+    // ルールにも名称にも権利者はいない（クロンダイク・スパイダーと同じ扱い）
+    // （docs/features/game-pyramid-solitaire.md の「権利関係は無害」）。
+    // ソリティア群をまとめて見せたいので、一覧では freecell の直後に置く
+    slug: 'pyramid-solitaire',
+    icon: 'Pyramid',
+    name: 'ピラミッドソリティア',
+    description:
+      '足して13になる2枚を取り除いてピラミッドを崩すソリティア。Kは1枚で取れます。タップだけの簡単操作。',
+    stage: 'public',
+    updatedAt: '2026-08-17',
+  },
+  {
     slug: 'minesweeper',
     icon: 'Bomb',
     name: 'マインスイーパー',

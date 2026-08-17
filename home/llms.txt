@@ -38,6 +38,7 @@
 - [ソリティア](https://hasokon.com/games/solitaire/): 定番のクロンダイク。タップで自動移動の簡単操作で、もどす機能つき
 - [スパイダーソリティア](https://hasokon.com/games/spider/): 1スート〜4スートの3段階。KからAまで揃えて8組の完成を目指す
 - [フリーセル](https://hasokon.com/games/freecell/): 全部の札が最初から見えている実力型のトランプパズル。まとめて移動に対応
+- [ピラミッドソリティア](https://hasokon.com/games/pyramid-solitaire/): 7段に積んだ28枚から、足して13になる2枚（A+Q・2+J・3+10…）を取り除いてピラミッドを崩すソリティア。Kは1枚で取れる。山札の引き直しは2回まで
 - [マインスイーパー](https://hasokon.com/games/minesweeper/): 数字をヒントに地雷を避ける定番パズル。初手は必ず安全で、初級〜上級の3段階
 - [2048](https://hasokon.com/games/2048/): スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコアを保存する
 - [ナンプレ](https://hasokon.com/games/nanpre/): 定番の数字パズル（数独）。かんたん・ふつう・むずかしいの3段階で、答えは必ず1通り
