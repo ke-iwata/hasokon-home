@@ -170,6 +170,10 @@ describe('countChars', () => {
     expect(countChars('🎲').total).toBe(1);
   });
 
+  it('絵文字は全角として数える（East Asian Width が Wide のため）', () => {
+    expect(countChars('🎲')).toEqual({ total: 1, full: 1, half: 0 });
+  });
+
   it('空文字は0件', () => {
     expect(countChars('')).toEqual({ total: 0, full: 0, half: 0 });
   });

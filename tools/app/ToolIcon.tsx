@@ -1,4 +1,5 @@
 import {
+  ArticleIcon,
   BabyIcon,
   BicycleIcon,
   CalendarCheckIcon,
@@ -47,6 +48,7 @@ import {
 type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
+  Article: ArticleIcon,
   Baby: BabyIcon,
   Bicycle: BicycleIcon,
   CalendarCheck: CalendarCheckIcon,
