@@ -314,6 +314,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-16',
   },
   {
+    slug: 'mojisu-count',
+    icon: 'Article',
+    name: '文字数カウント',
+    description:
+      '文字数をその場でカウント。スペース・改行の有無、行数・段落数、原稿用紙換算、目標文字数に対応。',
+    category: '計算・変換',
+    stage: 'public',
+    updatedAt: '2026-08-17',
+  },
+  {
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',

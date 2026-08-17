@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
@@ -233,6 +234,14 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="hebon-romaji" />
+
+      <p style={{ fontSize: '0.9rem' }}>
+        関連ツール：
+        <Link href="/mojisu-count/">文字数カウント</Link>
+        （スペース・改行の有無や原稿用紙の枚数まで数えます）／
+        <Link href="/hankaku-zenkaku/">半角⇔全角 変換</Link>
+        （全角と半角を種類ごとにまとめて変換します）
+      </p>
 
       <ToolMeta slug="hebon-romaji">
         パスポート用ヘボン式ローマ字の表記ルールにもとづく参考表示です。氏名表記と戸籍フリガナの関係は

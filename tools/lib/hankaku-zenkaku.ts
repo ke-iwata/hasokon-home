@@ -215,7 +215,9 @@ export function countChars(input: string): CharCount {
       (code >= 0xfe30 && code <= 0xfe6f) ||
       (code >= 0xff00 && code <= 0xff60) ||
       (code >= 0xffe0 && code <= 0xffe6) ||
-      // 絵文字などの追加面
+      // 絵文字（Unicodeの East Asian Width が Wide の範囲。記号・顔・乗り物など）
+      (code >= 0x1f300 && code <= 0x1faff) ||
+      // 追加面の漢字（𩸽 など）
       code >= 0x20000;
     if (isFull) full += 1;
     else half += 1;

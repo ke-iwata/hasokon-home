@@ -174,6 +174,8 @@ export default function Page() {
 
       <p style={{ fontSize: '0.9rem' }}>
         関連ツール：
+        <Link href="/mojisu-count/">文字数カウント</Link>
+        （スペース・改行の有無や原稿用紙の枚数まで数えます）／
         <Link href="/hebon-romaji/">ヘボン式ローマ字変換</Link>
         （ふりがなをパスポート表記のローマ字に変換します）
       </p>
