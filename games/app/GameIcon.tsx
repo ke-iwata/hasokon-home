@@ -353,10 +353,15 @@ function TriPeaksIcon({ size = 26 }: IconProps) {
 }
 
 /**
- * スネーク。折り返しながら伸びた体と、これから食べる餌（丸）の形。
+ * スネーク。うねる体と、目のある頭。
  *
- * ヘビそのものの絵（頭と目）は22pxでは潰れるので、**盤の上の軌跡**として描く。
- * 「折り返して畳む」というこのゲームの見た目そのものなので、小さくても読める。
+ * **直角の折り返しで描かないこと。** 盤の上の軌跡として
+ * `M40 56 H152 V124 H40 V192 H140` のように描いたところ、22pxでも200pxでも
+ * **数字の「2.」にしか見えなかった**（運営者からの指摘）。カードが20枚並ぶ一覧では
+ * 通し番号と誤解されうる。曲線のうねりなら他の19本のどれとも紛れない。
+ *
+ * 目は**塗りの穴**（`fillRule="evenodd"` の内側の輪）で開けている。
+ * 背景色を塗ると明暗どちらかのテーマで消えるが、穴なら地の色がそのまま出る。
  * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
  */
 function SnakeIcon({ size = 26 }: IconProps) {
@@ -368,13 +373,18 @@ function SnakeIcon({ size = 26 }: IconProps) {
       viewBox="0 0 256 256"
       fill="none"
       stroke="currentColor"
-      strokeWidth={20}
+      strokeWidth={22}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M40 56 H152 V124 H40 V192 H140" />
-      <circle cx="204" cy="192" r="12" fill="currentColor" stroke="none" />
+      <path d="M28 164 C 56 112 84 112 112 164 S 168 216 196 164" />
+      <path
+        fillRule="evenodd"
+        fill="currentColor"
+        stroke="none"
+        d="M212 96 a32 32 0 1 0 0.1 0 Z M222 109 a9 9 0 1 1 -0.1 0 Z"
+      />
     </svg>
   );
 }
