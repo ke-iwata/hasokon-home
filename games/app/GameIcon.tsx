@@ -352,6 +352,33 @@ function TriPeaksIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * スネーク。折り返しながら伸びた体と、これから食べる餌（丸）の形。
+ *
+ * ヘビそのものの絵（頭と目）は22pxでは潰れるので、**盤の上の軌跡**として描く。
+ * 「折り返して畳む」というこのゲームの見た目そのものなので、小さくても読める。
+ * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
+ */
+function SnakeIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={20}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M40 56 H152 V124 H40 V192 H140" />
+      <circle cx="204" cy="192" r="12" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -373,6 +400,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
   TriPeaks: TriPeaksIcon,
+  Snake: SnakeIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

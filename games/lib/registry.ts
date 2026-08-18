@@ -254,6 +254,19 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-16',
   },
   {
+    // ヘビゲームは1976年の Blockade 系に始まるジャンルの通称で、ルールにも
+    // 「スネーク」という一般名称にも権利者はいない（特定機種の実装名やロゴは使わない）
+    // （docs/features/game-snake.md の「権利フリー」）。
+    // アーケード系をまとめて見せたいので、一覧ではブロック崩しの直後に置く
+    slug: 'snake',
+    icon: 'Snake',
+    name: 'スネーク',
+    description:
+      '餌を食べるほど長くなるヘビを操作する定番アーケード。壁と自分の体をよけてハイスコアを狙います。スワイプと矢印キーに対応。',
+    stage: 'public',
+    updatedAt: '2026-08-18',
+  },
+  {
     slug: 'pinball',
     icon: 'Pinball',
     name: 'ピンボール',
