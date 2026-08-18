@@ -352,6 +352,43 @@ function TriPeaksIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * スネーク。うねる体と、目のある頭。
+ *
+ * **直角の折り返しで描かないこと。** 盤の上の軌跡として
+ * `M40 56 H152 V124 H40 V192 H140` のように描いたところ、22pxでも200pxでも
+ * **数字の「2.」にしか見えなかった**（運営者からの指摘）。カードが20枚並ぶ一覧では
+ * 通し番号と誤解されうる。曲線のうねりなら他の19本のどれとも紛れない。
+ *
+ * 目は**塗りの穴**（`fillRule="evenodd"` の内側の輪）で開けている。
+ * 背景色を塗ると明暗どちらかのテーマで消えるが、穴なら地の色がそのまま出る。
+ * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
+ */
+function SnakeIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={22}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M28 164 C 56 112 84 112 112 164 S 168 216 196 164" />
+      <path
+        fillRule="evenodd"
+        fill="currentColor"
+        stroke="none"
+        d="M212 96 a32 32 0 1 0 0.1 0 Z M222 109 a9 9 0 1 1 -0.1 0 Z"
+      />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -373,6 +410,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
   TriPeaks: TriPeaksIcon,
+  Snake: SnakeIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

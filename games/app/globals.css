@@ -412,7 +412,8 @@ ol {
    上書きされて効かなくなる）。広さの上限は `--board-max` で渡す */
 .rv-board,
 .gm-board,
-.ms-board {
+.ms-board,
+.sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
 }
@@ -637,6 +638,80 @@ ol {
   h1 {
     font-size: 1.25rem;
   }
+}
+
+/* ---- スネーク ----
+   盤は正方形（17×17マス）なので、大きさは「盤を画面の高さに合わせる」節の
+   共通指定に任せる（ここで max-width を書き直さないこと）。
+   `--chrome` は盤以外が使う高さの実測値（記録の帯を出した状態で、パンくず・見出し・
+   リード文・状態・記録・一時停止の段まで含めて388px。狭い画面では415px）。
+   ここを小さく見積もると、記録が付いたとたんに盤が画面からはみ出す */
+.sk-stage {
+  position: relative;
+  width: 100%;
+  --chrome: 400px;
+  --board-max: 420px;
+  aspect-ratio: 1 / 1;
+  touch-action: none; /* スワイプをページのスクロールに取られない */
+}
+
+.sk-stage canvas {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0b1220; /* ゲーム画面なので明暗どちらでも暗いまま */
+  display: block;
+}
+
+.sk-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 8px;
+  text-align: center;
+  /* **幕は明暗どちらのテーマでも暗いので、文字色は固定の明るい色で置く。**
+     `var(--text)` のままだと、明るいテーマで暗い文字が暗い幕に乗って読めない */
+  color: #f1f5f9;
+}
+
+/* 幕の中の補足（操作の案内）。上と同じ理由で `var(--muted)` を使わない */
+.sk-overlay .sk-sub {
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+/* 盤面制覇の見出し。`var(--ok)` は明るいテーマでは暗い緑になる */
+.sk-overlay .sk-win {
+  color: #4ade80;
+}
+
+.sk-controls {
+  justify-content: center;
+  margin: 8px 0 0;
+}
+
+/* 遊んでいる最中に押す唯一のボタンなので、44pxを割らない大きさにする */
+.sk-controls .btn {
+  min-width: 120px;
+  min-height: 44px;
+}
+
+/* 押せない局面でも段ごと消さない（消すと盤の位置が動く）。
+   押せないことは見た目で伝える */
+.sk-controls .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.sk-controls .btn:disabled:hover {
+  border-color: var(--border);
 }
 
 /* ---- ピンボール ----
