@@ -1,8 +1,7 @@
 # 新ツール「QRコード作成」（完全ローカル生成・データ送信なしを正面に出す）
 
-**状態**：実装済み・公開前（2026-08-18。`stage: 'preview'` で登録してあり、
-一覧・sitemap・llms.txt には出ていない。**テスト環境で確認できたら、公開するPRで
-`stage: 'public'` に上げ、`home/index.html` のカードと `home/llms.txt` の行を足す**）
+**状態**：**公開済み**（2026-08-18。`stage: 'public'` に上げ、`home/index.html` の
+カードと `home/llms.txt` の行を足した。本番への反映は次の `v*` タグのリリース）
 **対象**：`tools/`（`hasokon.com/tools/qr-code/`）
 **起票**：2026-08-18
 
