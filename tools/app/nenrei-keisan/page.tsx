@@ -5,12 +5,25 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
-import { ERAS, warekiTable } from '@/lib/nenrei';
+import {
+  ageForBirthYear,
+  ERAS,
+  gyakubikiTable,
+  GYAKUBIKI_MAX_AGE,
+  HAYAMIHYO_BASE_YEAR,
+  warekiTable,
+  warekiYearLabels,
+} from '@/lib/nenrei';
 import Calculator from './Calculator';
 
-const title = '年齢計算・西暦和暦変換｜満年齢と昭和・平成・令和の早見表';
-const description =
-  '生年月日から満年齢を計算。西暦と和暦（明治・大正・昭和・平成・令和）を相互に変換でき、「昭和45年生まれは何歳」「令和8年は西暦何年」がすぐ分かります。誕生日までの日数・干支・入学卒業年の目安つき。早見表も掲載した無料ツールです。';
+/**
+ * 表・見出し・title の基準年。`lib/nenrei.ts` の定数に一本化してある
+ * （年が変わると `tests/nenrei.test.ts` が落ちて更新を促す）。
+ */
+const baseYear = HAYAMIHYO_BASE_YEAR;
+
+const title = `年齢計算・年齢早見表【${baseYear}年版】｜満何歳何ヶ月と西暦和暦変換`;
+const description = `生年月日から満年齢と「満何歳何ヶ月」を計算。${baseYear}年版の年齢早見表（生まれ年→満年齢）と、「18歳は何年生まれ？」を引ける逆引き早見表つき。西暦と和暦（明治・大正・昭和・平成・令和）を相互に変換でき、「昭和45年生まれは何歳」「令和8年は西暦何年」もすぐ分かります。誕生日までの日数・干支・入学卒業年の目安つきの無料ツールです。`;
 
 export const metadata: Metadata = {
   title,
@@ -20,6 +33,18 @@ export const metadata: Metadata = {
 };
 
 const faq = [
+  {
+    q: '満18歳になるのは何年生まれですか？',
+    a: `${baseYear}年に満18歳になるのは、誕生日を迎えたあとの人が${baseYear - 18}年（${warekiYearLabels(baseYear - 18).join('・')}）生まれ、誕生日がまだの人が${baseYear - 19}年（${warekiYearLabels(baseYear - 19).join('・')}）生まれです。満年齢は誕生日で変わるため、同じ「18歳」でも生まれ年は2つにまたがります。学年でまとめて言いたいときは「${baseYear - 19}年4月2日〜${baseYear - 18}年4月1日生まれ」が同じ学年（${baseYear - 19}年度生まれ）で、この学年が${baseYear}年度中に全員18歳になります。ほかの年齢はこのページの「年齢の逆引き早見表」で0歳から100歳まで引けます。`,
+  },
+  {
+    q: '満何歳何ヶ月はどう数えますか？',
+    a: '満年齢と同じ数え方を月に当てはめます。つまり、生まれた日と同じ日（応当日）を迎えるたびに1ヶ月増え、まだ迎えていない月は数えません。たとえば5月15日生まれの人が8月10日時点なら、8月15日をまだ迎えていないので「2ヶ月と26日」となります。応当日が存在しない月（1月31日生まれの2月など）は、民法143条2項ただし書きにより月の末日の終了時に満了するため、翌月1日から1ヶ月増えるものとして計算しています。母子健康手帳などで使う「生後◯ヶ月」は、この通算月数のことです。このページの計算機は満年齢の下に「満◯歳◯ヶ月（◯日）」を表示します。',
+  },
+  {
+    q: '年齢早見表は何年基準ですか？',
+    a: `${baseYear}年（${warekiYearLabels(baseYear).join('・')}）基準です。年齢早見表は「その年に何歳になるか」を示すものなので、年が変われば答えも1つずれます。このページの表は基準年を1か所の定数で管理していて、年が変わるとテストが落ちて更新されるようにしてあります。表の年齢は「その年の誕生日を迎えたあとの満年齢」を主に置き、誕生日がまだの人の年齢をかっこで併記しています。特定の日付時点の年齢が必要なときは、ページ上部の計算機で基準日を変えてください。`,
+  },
   {
     q: '満年齢と数え年の違いは何ですか？',
     a: '満年齢は生まれた日を0歳とし、誕生日が来るたびに1歳ずつ増える数え方で、現在の日本では法律上も日常でも満年齢を使います。一方の数え年は、生まれた時点を1歳とし、以後は誕生日ではなく1月1日に全員が1歳ずつ増える数え方です。そのため数え年は、誕生日を迎える前なら満年齢＋2歳、迎えた後なら満年齢＋1歳になります。七五三や厄年、年忌法要など一部の慣習では今も数え年が使われることがありますが、このツールが出すのは満年齢です。',
@@ -84,18 +109,27 @@ const jsonLd = {
   ],
 };
 
+/** 生まれ年から、基準年の満年齢を表すセルの文言を作る */
+function ageCell(year: number): string {
+  const age = ageForBirthYear(year, baseYear);
+  if (!age) return '—';
+  if (age.before === null) return `0歳（${baseYear}年生まれ）`;
+  return `${age.after}歳（誕生日前は${age.before}歳）`;
+}
+
 /** 早見表は元号ごとに1つの表にする。改元年は両方の元号に現れる */
 function WarekiTable({ era }: { era: string }) {
   const rows = warekiTable(era);
   return (
     <table>
       <caption style={{ captionSide: 'top', textAlign: 'left', padding: '4px 0' }}>
-        {era}の西暦・和暦対応
+        {era}の西暦・和暦・年齢（{baseYear}年基準）
       </caption>
       <thead>
         <tr>
           <th scope="col">和暦</th>
           <th scope="col">西暦</th>
+          <th scope="col">{baseYear}年の年齢</th>
           <th scope="col">干支</th>
           <th scope="col">備考</th>
         </tr>
@@ -105,8 +139,44 @@ function WarekiTable({ era }: { era: string }) {
           <tr key={row.label}>
             <th scope="row">{row.label}</th>
             <td>{row.year}年</td>
+            <td>{ageCell(row.year)}</td>
             <td>{row.eto}</td>
             <td>{row.note ?? ''}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** 「◯歳は何年生まれ？」の逆引き早見表（0〜100歳） */
+function GyakubikiTable() {
+  return (
+    <table>
+      <caption style={{ captionSide: 'top', textAlign: 'left', padding: '4px 0' }}>
+        年齢から生まれ年を引く（{baseYear}年基準）
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">年齢</th>
+          <th scope="col">
+            {baseYear}年の誕生日を迎えた人
+          </th>
+          <th scope="col">
+            {baseYear}年の誕生日がまだの人
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {gyakubikiTable(baseYear).map((row) => (
+          <tr key={row.age}>
+            <th scope="row">{row.age}歳</th>
+            <td>
+              {row.bornAfter}年{row.bornAfterWareki && `（${row.bornAfterWareki}）`}生まれ
+            </td>
+            <td>
+              {row.bornBefore}年{row.bornBeforeWareki && `（${row.bornBeforeWareki}）`}生まれ
+            </td>
           </tr>
         ))}
       </tbody>
@@ -124,9 +194,12 @@ export default function Page() {
 
       <Breadcrumb trail={trail} />
 
-      <h1>年齢計算・西暦和暦変換</h1>
+      <h1>年齢計算・年齢早見表【{baseYear}年版】</h1>
       <p className="lead">
-        生年月日を入れるだけで、今日時点の満年齢と和暦表記が分かります。西暦でも和暦（明治・大正・昭和・平成・令和）でも入力でき、誕生日までの日数・干支・入学卒業年の目安もまとめて表示します。基準日を変えれば「あの日に何歳だったか」も計算できます。
+        生年月日を入れるだけで、今日時点の満年齢と「満何歳何ヶ月」、和暦表記が分かります。西暦でも和暦（明治・大正・昭和・平成・令和）でも入力でき、誕生日までの日数・干支・入学卒業年の目安もまとめて表示します。下には
+        <a href="#hayamihyo">{baseYear}年版の年齢早見表</a>と
+        <a href="#gyakubiki">「◯歳は何年生まれ？」の逆引き早見表</a>
+        も置いています。基準日を変えれば「あの日に何歳だったか」も計算できます。
       </p>
 
       <Calculator buildDate={new Date().toISOString()} />
@@ -200,9 +273,26 @@ export default function Page() {
         この結果、同じ学年になるのは「4月2日生まれ〜翌年4月1日生まれ」の範囲になります。1月1日から4月1日までに生まれた人がいわゆる早生まれで、同じ暦年に生まれた4月2日以降の人より1学年上になります。上の計算機では、この規則にもとづいて小学校入学から大学卒業（4年制・現役）までの年月を表示します。浪人・留年・飛び級・海外の学校を経た場合は当てはまりません。
       </p>
 
-      <h2>西暦・和暦 早見表</h2>
+      <h2>満何歳何ヶ月の数え方</h2>
       <p>
-        明治から令和までの対応表です。改元のあった年は両方の元号に現れます（備考欄に「◯月◯日まで」「◯月◯日から」と記載）。干支は暦年（1月1日〜12月31日）を単位に十干十二支で示しています。
+        保育園・幼稚園の申込書や母子健康手帳、健診の案内では「満◯歳◯ヶ月」「生後◯ヶ月」を書く欄があります。月の数え方は満年齢と同じで、
+        <strong>生まれた日と同じ日（応当日）を迎えるたびに1ヶ月増え、まだ迎えていない月は数えません</strong>
+        。5月15日生まれの人が8月10日時点なら、8月15日をまだ迎えていないので「2ヶ月と26日」です。
+      </p>
+      <p>
+        応当日が存在しない月もあります。1月31日生まれの人の1ヶ月後は、2月31日が無いので民法143条2項ただし書きにより2月の末日（2月28日）の終了時に満了し、3月1日から1ヶ月になります。2月29日生まれが平年は3月1日に年をとるのと同じ考え方です。上の計算機は満年齢の下に「満◯歳◯ヶ月（◯日）」を表示し、2歳未満のときは「生後◯ヶ月」も併記します。
+      </p>
+
+      <h2 id="hayamihyo">年齢早見表【{baseYear}年版】（西暦・和暦・年齢）</h2>
+      <p>
+        明治から令和までの、西暦・和暦・
+        <strong>{baseYear}年時点の満年齢</strong>
+        の対応表です。年齢の列は「{baseYear}
+        年の誕生日を迎えたあとの満年齢」を主に置き、誕生日がまだの人の年齢をかっこで併記しています（満年齢は誕生日で変わるため、1つの生まれ年に答えが2つあります）。
+        {baseYear}年より後に生まれる年は「—」です。
+      </p>
+      <p>
+        改元のあった年は両方の元号に現れます（備考欄に「◯月◯日まで」「◯月◯日から」と記載）。干支は暦年（1月1日〜12月31日）を単位に十干十二支で示しています。特定の日付時点の年齢が要るときは、ページ上部の計算機で基準日を変えてください。
       </p>
       <div className="note">
         明治元年〜明治5年の月日は旧暦（太陰太陽暦）です。日本がグレゴリオ暦（新暦）に切り替えたのは明治6年1月1日（1873年1月1日）で、それ以前は和暦の月日と西暦の月日が対応しません。表の年の対応は目安としてご利用ください。
@@ -210,6 +300,19 @@ export default function Page() {
       {[...ERAS].reverse().map((era) => (
         <WarekiTable key={era.name} era={era.name} />
       ))}
+
+      <h2 id="gyakubiki">◯歳は何年生まれ？（逆引き早見表・{baseYear}年基準）</h2>
+      <p>
+        年齢から生まれ年を引く表です。0歳から{GYAKUBIKI_MAX_AGE}
+        歳まで、{baseYear}年に誕生日を迎えたあとの人と、まだの人の2列に分けています。
+      </p>
+      <p>
+        学年で数えたいときは1つずれることがあります。たとえば
+        {baseYear}年度に18歳になる学年は「{baseYear - 19}年4月2日〜{baseYear - 18}年4月1日生まれ」（
+        {baseYear - 19}年度生まれ）で、{baseYear - 19}年生まれと{baseYear - 18}
+        年生まれの両方を含みます。年齢の要件が年度で決まる手続き（受験・免許・各種手当など）では、生まれ年ではなく生年月日で確認してください。
+      </p>
+      <GyakubikiTable />
 
       <h2>よくある質問</h2>
       {faq.map((f) => (

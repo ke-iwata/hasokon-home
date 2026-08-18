@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ageAt,
+  ageDetail,
+  ageForBirthYear,
   calcNenrei,
   compareDate,
   daysBetween,
@@ -10,10 +12,14 @@ import {
   formatDate,
   formatJa,
   fromWareki,
+  GYAKUBIKI_MAX_AGE,
+  gyakubikiTable,
+  HAYAMIHYO_BASE_YEAR,
   isLeapYear,
   isValidDate,
   isWarekiError,
   maxEraYear,
+  monthAnniversary,
   nextBirthday,
   parseDate,
   schoolYears,
@@ -35,6 +41,13 @@ import {
  */
 
 const d = (iso: string): DateParts => parseDate(iso) as DateParts;
+
+/** base から days 日後の日付。通し検証で1日ずつ進めるために使う */
+const fromDayOffset = (base: DateParts, days: number): DateParts => {
+  const ms = Date.UTC(base.year, base.month - 1, base.day) + days * 86_400_000;
+  const dt = new Date(ms);
+  return { year: dt.getUTCFullYear(), month: dt.getUTCMonth() + 1, day: dt.getUTCDate() };
+};
 
 describe('日付の基本', () => {
   it('うるう年を判定する（100年・400年の例外を含む）', () => {
@@ -424,5 +437,243 @@ describe('calcNenrei（まとめ）', () => {
     const result = calcNenrei(d('1860-01-01'), d('1900-01-01'));
     expect(result?.birthWareki).toBeNull();
     expect(result?.age).toBe(40);
+  });
+});
+
+/**
+ * ここから下は年齢早見表まわり（仕様: docs/features/nenrei-hayamihyo-seo.md）。
+ *
+ * 満◯歳◯ヶ月の境界（誕生日当日・月末生まれ・うるう年2/29）と、
+ * 早見表の基準年が古びていないかを見張る。
+ */
+
+describe('月の応当日（monthAnniversary）', () => {
+  it('0ヶ月後は生年月日そのもの', () => {
+    expect(monthAnniversary(d('1990-05-15'), 0)).toEqual(d('1990-05-15'));
+  });
+
+  it('同じ日を応当日にして月をまたぐ', () => {
+    expect(monthAnniversary(d('1990-05-15'), 1)).toEqual(d('1990-06-15'));
+    expect(monthAnniversary(d('1990-05-15'), 12)).toEqual(d('1991-05-15'));
+    expect(monthAnniversary(d('1990-05-15'), 19)).toEqual(d('1991-12-15'));
+  });
+
+  it('31日生まれで応当日が無い月は、翌月1日に繰り下がる（民法143条2項ただし書き）', () => {
+    // 1月31日の1ヶ月後は2月31日＝存在しない。2月28日の終了時に満了するので3月1日から1ヶ月
+    expect(monthAnniversary(d('2026-01-31'), 1)).toEqual(d('2026-03-01'));
+    expect(monthAnniversary(d('2026-01-31'), 2)).toEqual(d('2026-03-31'));
+    // 4月・6月・9月・11月は30日までなので同じ繰り下がりが起きる
+    expect(monthAnniversary(d('2026-03-31'), 1)).toEqual(d('2026-05-01'));
+    expect(monthAnniversary(d('2026-08-31'), 1)).toEqual(d('2026-10-01'));
+  });
+
+  it('うるう年の2月29日には応当日がある（平年は3月1日）', () => {
+    expect(monthAnniversary(d('2024-01-31'), 1)).toEqual(d('2024-03-01'));
+    expect(monthAnniversary(d('2024-02-29'), 12)).toEqual(d('2025-03-01'));
+    expect(monthAnniversary(d('2024-02-29'), 48)).toEqual(d('2028-02-29'));
+  });
+
+  it('12月をまたいで年が繰り上がる', () => {
+    expect(monthAnniversary(d('2026-12-15'), 1)).toEqual(d('2027-01-15'));
+    expect(monthAnniversary(d('2026-11-30'), 1)).toEqual(d('2026-12-30'));
+  });
+});
+
+describe('満◯歳◯ヶ月（ageDetail）', () => {
+  it('誕生日当日は◯歳0ヶ月0日', () => {
+    expect(ageDetail(d('1990-05-15'), d('2026-05-15'))).toEqual({
+      years: 36,
+      months: 0,
+      days: 0,
+      totalMonths: 432,
+    });
+  });
+
+  it('誕生日の前日はまだ増えない（11ヶ月と数日）', () => {
+    const detail = ageDetail(d('1990-05-15'), d('2026-05-14'));
+    expect(detail?.years).toBe(35);
+    expect(detail?.months).toBe(11);
+    expect(detail?.days).toBe(29);
+  });
+
+  it('応当日の前日と当日で月数が変わる', () => {
+    expect(ageDetail(d('1990-05-15'), d('2026-08-14'))?.months).toBe(2);
+    expect(ageDetail(d('1990-05-15'), d('2026-08-14'))?.days).toBe(30);
+    expect(ageDetail(d('1990-05-15'), d('2026-08-15'))?.months).toBe(3);
+    expect(ageDetail(d('1990-05-15'), d('2026-08-15'))?.days).toBe(0);
+  });
+
+  it('生まれた日そのものは0歳0ヶ月0日', () => {
+    expect(ageDetail(d('2026-08-18'), d('2026-08-18'))).toEqual({
+      years: 0,
+      months: 0,
+      days: 0,
+      totalMonths: 0,
+    });
+  });
+
+  it('乳児は通算月数（生後◯ヶ月）で引ける', () => {
+    expect(ageDetail(d('2026-01-10'), d('2026-08-09'))?.totalMonths).toBe(6);
+    expect(ageDetail(d('2026-01-10'), d('2026-08-10'))?.totalMonths).toBe(7);
+  });
+
+  it('31日生まれは翌月1日に月数が増える（2月28日はまだ0ヶ月）', () => {
+    expect(ageDetail(d('2026-01-31'), d('2026-02-28'))?.totalMonths).toBe(0);
+    expect(ageDetail(d('2026-01-31'), d('2026-02-28'))?.days).toBe(28);
+    expect(ageDetail(d('2026-01-31'), d('2026-03-01'))?.totalMonths).toBe(1);
+    expect(ageDetail(d('2026-01-31'), d('2026-03-01'))?.days).toBe(0);
+  });
+
+  it('2月29日生まれは平年の3月1日に年齢と月数が増える', () => {
+    expect(ageDetail(d('2024-02-29'), d('2025-02-28'))).toEqual({
+      years: 0,
+      months: 11,
+      days: 30,
+      totalMonths: 11,
+    });
+    expect(ageDetail(d('2024-02-29'), d('2025-03-01'))).toEqual({
+      years: 1,
+      months: 0,
+      days: 0,
+      totalMonths: 12,
+    });
+    // うるう年は応当日そのもので増える
+    expect(ageDetail(d('2024-02-29'), d('2028-02-29'))?.years).toBe(4);
+  });
+
+  it('基準日が生年月日より前なら null', () => {
+    expect(ageDetail(d('2026-08-18'), d('2026-08-17'))).toBeNull();
+  });
+
+  it('years は ageAt と必ず一致し、端数は応当日の区間に収まる（通し検証）', () => {
+    // 月末生まれ・うるう日生まれ・改元日生まれを含む生年月日で、
+    // 生後 12000 日ぶん（約33年）を1日ずつ確かめる。
+    // expect をループの中で回すと1万件単位で遅くなるので、破れた条件だけを集めて最後に見る
+    const births = ['1990-05-15', '2024-02-29', '2026-01-31', '1926-12-25', '2000-06-30'];
+    const broken: string[] = [];
+
+    for (const iso of births) {
+      const birth = d(iso);
+      for (let offset = 0; offset <= 12_000; offset += 1) {
+        const base = fromDayOffset(birth, offset);
+        const detail = ageDetail(birth, base);
+        const at = `${iso} + ${offset}日（${formatDate(base)}）`;
+        if (detail === null) {
+          broken.push(`${at}: null が返った`);
+          continue;
+        }
+        if (detail.years !== ageAt(birth, base)) broken.push(`${at}: years が ageAt と違う`);
+        if (detail.months < 0 || detail.months > 11) broken.push(`${at}: months が 0〜11 の外`);
+        if (detail.totalMonths !== detail.years * 12 + detail.months) {
+          broken.push(`${at}: totalMonths が years/months と合わない`);
+        }
+        if (detail.days < 0) broken.push(`${at}: days が負`);
+        // 端数の日数は「直前の応当日から基準日まで」で、次の応当日には届かない
+        if (compareDate(monthAnniversary(birth, detail.totalMonths), base) > 0) {
+          broken.push(`${at}: 応当日を先取りしている`);
+        }
+        if (compareDate(monthAnniversary(birth, detail.totalMonths + 1), base) <= 0) {
+          broken.push(`${at}: 次の応当日を過ぎているのに数えていない`);
+        }
+      }
+    }
+
+    expect(broken.slice(0, 5)).toEqual([]);
+  });
+});
+
+describe('年齢早見表の基準年', () => {
+  /**
+   * 【このテストが落ちたら】`lib/nenrei.ts` の `HAYAMIHYO_BASE_YEAR` を今年に直す。
+   * title の「【◯年版】」も本文も表も、この定数から作られるのでここだけで済む。
+   */
+  it('HAYAMIHYO_BASE_YEAR が今年と一致する（年が変わったら更新する）', () => {
+    expect(HAYAMIHYO_BASE_YEAR).toBe(new Date().getFullYear());
+  });
+
+  it('早見表の掲載上限は基準年より先まである（表の末尾に達したら TABLE_END_YEAR を伸ばす）', () => {
+    expect(TABLE_END_YEAR).toBeGreaterThan(HAYAMIHYO_BASE_YEAR);
+  });
+});
+
+describe('生まれ年→年齢（ageForBirthYear）', () => {
+  it('誕生日を迎えた人と、まだの人の2つを返す', () => {
+    expect(ageForBirthYear(1990, 2026)).toEqual({ after: 36, before: 35 });
+    expect(ageForBirthYear(2008, 2026)).toEqual({ after: 18, before: 17 });
+  });
+
+  it('基準年生まれは0歳のみ（誕生日前の年齢は無い）', () => {
+    expect(ageForBirthYear(2026, 2026)).toEqual({ after: 0, before: null });
+  });
+
+  it('基準年より後に生まれる年は null（早見表では「—」にする）', () => {
+    expect(ageForBirthYear(2027, 2026)).toBeNull();
+    expect(ageForBirthYear(2040, 2026)).toBeNull();
+  });
+
+  it('和暦の早見表の行と突き合わせても合う（昭和45年生まれは56歳）', () => {
+    const showa45 = warekiTable('昭和').find((row) => row.eraYear === 45);
+    expect(showa45?.year).toBe(1970);
+    expect(ageForBirthYear(showa45?.year as number, 2026)?.after).toBe(56);
+  });
+});
+
+describe('逆引き早見表（gyakubikiTable）', () => {
+  const rows = gyakubikiTable(2026);
+
+  it('0歳から100歳まで載る', () => {
+    expect(rows).toHaveLength(GYAKUBIKI_MAX_AGE + 1);
+    expect(rows[0].age).toBe(0);
+    expect(rows[rows.length - 1].age).toBe(GYAKUBIKI_MAX_AGE);
+  });
+
+  it('18歳は2008年生まれ（誕生日後）と2007年生まれ（誕生日前）', () => {
+    const row = rows.find((r) => r.age === 18);
+    expect(row?.bornAfter).toBe(2008);
+    expect(row?.bornAfterWareki).toBe('平成20年');
+    expect(row?.bornBefore).toBe(2007);
+    expect(row?.bornBeforeWareki).toBe('平成19年');
+  });
+
+  it('20歳は2006年・2005年生まれ', () => {
+    const row = rows.find((r) => r.age === 20);
+    expect(row?.bornAfter).toBe(2006);
+    expect(row?.bornBefore).toBe(2005);
+  });
+
+  it('0歳は基準年生まれと前年生まれ', () => {
+    expect(rows[0].bornAfter).toBe(2026);
+    expect(rows[0].bornAfterWareki).toBe('令和8年');
+    expect(rows[0].bornBefore).toBe(2025);
+  });
+
+  it('改元のあった年は和暦を2つ並べる（隠さない）', () => {
+    const heisei1 = rows.find((r) => r.bornAfter === 1989);
+    expect(heisei1?.bornAfterWareki).toBe('昭和64年・平成元年');
+    const reiwa1 = rows.find((r) => r.bornAfter === 2019);
+    expect(reiwa1?.bornAfterWareki).toBe('平成31年・令和元年');
+  });
+
+  it('年齢と生まれ年の関係が全行で保たれる（ageForBirthYear と往復する）', () => {
+    for (const row of rows) {
+      expect(row.bornAfter).toBe(2026 - row.age);
+      expect(row.bornBefore).toBe(row.bornAfter - 1);
+      expect(ageForBirthYear(row.bornAfter, 2026)?.after).toBe(row.age);
+      expect(ageForBirthYear(row.bornBefore, 2026)?.before).toBe(row.age);
+    }
+  });
+
+  it('明治より前まで遡る年は和暦が空になる（旧暦なので出さない）', () => {
+    const old = gyakubikiTable(2026, 200);
+    expect(old.find((r) => r.bornAfter === 1867)?.bornAfterWareki).toBe('');
+    expect(old.find((r) => r.bornAfter === 1868)?.bornAfterWareki).toBe('明治元年');
+  });
+});
+
+describe('calcNenrei に満◯歳◯ヶ月が入る', () => {
+  it('age と detail.years が一致し、月・日の端数も返る', () => {
+    const result = calcNenrei(d('1990-05-15'), d('2026-08-18'));
+    expect(result?.age).toBe(36);
+    expect(result?.detail).toEqual({ years: 36, months: 3, days: 3, totalMonths: 435 });
   });
 });
