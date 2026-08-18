@@ -164,6 +164,164 @@ describe('PREFECTURES（47都道府県のデータ）', () => {
   });
 });
 
+/**
+ * 令和8年度の答申データの追補（8都道府県 → 28都道府県）。
+ *
+ * 仕様: docs/features/saitei-chingin-r8-toshin-tsuiho.md
+ *
+ * 8〜9月は毎週どこかの県の答申が出るので、ここは**追補のたびに増える**テスト。
+ * 焼き込む金額は各県労働局の報道発表（一次情報）から読み取ったもので、
+ * 集計サイトの数字を写したものではない。
+ */
+describe('令和8年度の答申データ（労働局の報道発表で確認できた県）', () => {
+  /** 答申を確認できた県。追補したらここに足す */
+  const ANSWERED: ReadonlyArray<readonly [string, number]> = [
+    ['北海道', 1131],
+    ['宮城', 1098],
+    ['栃木', 1125],
+    ['群馬', 1120],
+    ['埼玉', 1196],
+    ['千葉', 1195],
+    ['東京', 1280],
+    ['神奈川', 1279],
+    ['新潟', 1108],
+    ['富山', 1119],
+    ['石川', 1113],
+    ['福井', 1112],
+    ['長野', 1117],
+    ['岐阜', 1121],
+    ['静岡', 1154],
+    ['愛知', 1195],
+    ['三重', 1143],
+    ['滋賀', 1136],
+    ['大阪', 1231],
+    ['兵庫', 1172],
+    ['奈良', 1107],
+    ['和歌山', 1101],
+    ['鳥取', 1090],
+    ['島根', 1092],
+    ['岡山', 1104],
+    ['山口', 1101],
+    ['香川', 1092],
+    ['福岡', 1114],
+  ];
+
+  it.each(ANSWERED)('%s の答申額は %i 円（労働局の報道発表どおり）', (name, yen) => {
+    expect(byName(name).answered?.yen).toBe(yen);
+  });
+
+  it('答申済みは28都道府県で、それ以外は答申を持たない', () => {
+    const withAnswer = PREFECTURES.filter((p) => p.answered).map((p) => p.name);
+    expect(withAnswer.sort()).toEqual(ANSWERED.map(([n]) => n).sort());
+    expect(withAnswer).toHaveLength(28);
+  });
+
+  /**
+   * このツールを直した動機そのもの。目安を上回った県では、目安から機械的に足した
+   * 見込み額が実際の答申額より**低く**出ていた。追補後はその県が答申額を返す。
+   */
+  it('目安を上回った県は、目安ベースの見込みより高い答申額を返す', () => {
+    const overMeyasu = [
+      ['宮城', 60],
+      ['鳥取', 60],
+      ['石川', 59],
+      ['福井', 59],
+      ['島根', 59],
+      ['新潟', 58],
+      ['山口', 58],
+      ['栃木', 57],
+      ['群馬', 57],
+      ['富山', 57],
+      ['静岡', 57],
+      ['岡山', 57],
+      ['福岡', 57],
+    ] as const;
+    for (const [name, raise] of overMeyasu) {
+      const pref = byName(name);
+      const meyasuYen = pref.currentYen + MEYASU_BY_RANK[pref.rank];
+      const r = revisionOf(pref, new Date('2026-08-18'));
+      expect(r.raise, `${name}: 引上げ額`).toBe(raise);
+      expect(r.yen, `${name}: 答申額が見込みを上回っていない`).toBeGreaterThan(meyasuYen);
+      expect(r.status, `${name}`).toBe('答申');
+    }
+  });
+
+  it('埼玉はAランクの目安54円を1円上回る55円の引上げ', () => {
+    const saitama = byName('埼玉');
+    expect(saitama.answered?.yen).toBe(1196);
+    expect(revisionOf(saitama, new Date('2026-08-18')).raise).toBe(55);
+  });
+
+  it('労働局が発効予定日を示した県は、その日を過ぎると「発効済み」になる', () => {
+    const dated = [
+      ['宮城', '2026-10-01'],
+      ['栃木', '2026-10-01'],
+      ['埼玉', '2026-10-01'],
+      ['長野', '2026-10-02'],
+      ['岡山', '2026-10-02'],
+      ['石川', '2026-10-03'],
+      ['滋賀', '2026-10-03'],
+      ['鳥取', '2026-10-03'],
+      ['福井', '2026-10-04'],
+      ['奈良', '2026-10-04'],
+      ['福岡', '2026-10-04'],
+      ['山口', '2026-10-08'],
+      ['島根', '2026-10-10'],
+      ['静岡', '2026-10-15'],
+    ] as const;
+    for (const [name, on] of dated) {
+      const pref = byName(name);
+      expect(pref.answered?.effectiveOn, `${name}: 発効予定日`).toBe(on);
+      const dayBefore = new Date(`${on}T00:00:00Z`);
+      dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+      expect(revisionOf(pref, dayBefore).status, `${name}: 発効前`).toBe('答申');
+      expect(revisionOf(pref, new Date(`${on}T00:00:00`)).status, `${name}: 発効日`).toBe(
+        '発効済み',
+      );
+    }
+  });
+
+  /**
+   * 答申文が「効力発生の日 法定どおり」とだけ書く県、報道発表が「最短で」「早ければ」
+   * 10月◯日と条件付きで書く県は、発効日を持たせない（決め打ちしない）。
+   * この県は日付が過ぎても「答申」のままになる。
+   */
+  it('発効日が示されていない県は日付を持たず、日が過ぎても「答申」のまま', () => {
+    for (const name of ['群馬', '新潟', '富山', '岐阜', '和歌山', '香川']) {
+      const pref = byName(name);
+      expect(pref.answered, `${name}: 答申が無い`).toBeDefined();
+      expect(pref.answered?.effectiveOn, `${name}: 発効日を決め打ちしている`).toBeUndefined();
+      expect(revisionOf(pref, new Date('2026-12-01')).status, `${name}`).toBe('答申');
+    }
+  });
+
+  /**
+   * 広島は 2026-08-17 に答申が出たと報じられたが、労働局の発表が出ていないので
+   * 入れていない。二次情報だけで答申額を書かない約束を、テストでも見張る。
+   */
+  it('労働局の発表を確認できていない県は「目安」のまま（二次情報で足さない）', () => {
+    const hiroshima = byName('広島');
+    expect(hiroshima.answered).toBeUndefined();
+    expect(revisionOf(hiroshima, new Date('2026-08-18')).status).toBe('目安');
+  });
+
+  it('答申の出典URLは県ごとに違う（使い回しの取り違えを防ぐ）', () => {
+    const urls = PREFECTURES.filter((p) => p.answered).map((p) => p.answered!.source.url);
+    expect(new Set(urls).size).toBe(urls.length);
+  });
+
+  it('追補分の出典の確認日はデータ最終確認日に揃っている', () => {
+    for (const p of PREFECTURES) {
+      if (!p.answered) continue;
+      expect(p.answered.source.checkedAt, `${p.name}`).toBe(DATA_CHECKED_AT);
+    }
+  });
+
+  it('データ最終確認日を追補した日まで進めてある', () => {
+    expect(DATA_CHECKED_AT >= '2026-08-18').toBe(true);
+  });
+});
+
 describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
   it('令和8年度の目安は A:54円・B:56円・C:56円', () => {
     expect(MEYASU_BY_RANK).toEqual({ A: 54, B: 56, C: 56 });
