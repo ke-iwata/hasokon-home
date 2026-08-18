@@ -334,6 +334,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-18',
   },
   {
+    slug: 'password',
+    icon: 'Key',
+    name: 'パスワード生成',
+    description:
+      '安全なパスワードを10件まとめて作成。生成はブラウザ内で完結し、送信も保存もしません。強さの目安と、覚えやすいパスフレーズにも対応。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-18',
+  },
+  {
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',

@@ -1,7 +1,8 @@
 # 新ツール「パスワード生成」（完全ローカル生成系の2本目）
 
-**状態**：提案（2026-08-18 起票）。実装時は `wip` で入れ、ページ・テストが
-揃ったPRで `public` に上げる（home のカード・llms.txt は公開PRで追加）
+**状態**：実装済み・公開前（2026-08-18。`stage: 'preview'` で登録してあり、
+一覧・sitemap・llms.txt には出ていない。**テスト環境で確認できたら、公開するPRで
+`stage: 'public'` に上げ、`home/index.html` のカードと `home/llms.txt` の行を足す**）
 **対象**：`tools/`（`hasokon.com/tools/password/`）
 **起票**：2026-08-18
 
