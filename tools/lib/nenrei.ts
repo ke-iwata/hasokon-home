@@ -10,6 +10,8 @@
  * 2. 西暦⇔和暦の相互変換（明治以降）
  * 3. 干支（十二支・十干十二支）
  * 4. 学年の目安（早生まれ＝1月1日〜4月1日の繰り上がりを含む）
+ * 5. 満◯歳◯ヶ月と、年齢早見表・逆引き早見表
+ *    （仕様: docs/features/nenrei-hayamihyo-seo.md）
  *
  * 日付そのものの扱い（DateParts・うるう年・日数の差・曜日）は
  * `lib/date-parts.ts` に切り出してある。日数計算ツール（`lib/nissu-keisan.ts`）と
@@ -20,6 +22,7 @@ import {
   compareDate,
   dayOfWeek,
   daysBetween,
+  daysInMonth,
   formatDate,
   formatJa,
   isLeapYear,
@@ -95,6 +98,27 @@ export const GREGORIAN_START = '1873-01-01';
  * 固定値で持つ。表の末尾に近づいたら伸ばす。
  */
 export const TABLE_END_YEAR = 2040;
+
+/**
+ * 【データ更新箇所】年齢早見表・逆引き早見表の基準年（「◯年版」の◯）。
+ *
+ * 「今年の誕生日で何歳になるか」「18歳は何年生まれか」は**基準年が変わると答えが変わる**。
+ * 静的書き出しのサイトなので `new Date()` をページに埋めると、ビルドし直さないかぎり
+ * 前の年のまま配信されつづける。かといってビルド時刻から作ると、
+ * 年をまたいだときに title の「【◯年版】」や本文の言い回しだけが取り残されて
+ * 表と食い違う（表は新しい年、文章は去年、という腐り方をする）。
+ *
+ * そこで**基準年を1つの定数に固定し、`tests/nenrei.test.ts` で
+ * `new Date().getFullYear()` と一致することを検証している**。
+ * 年が変わると最初のテスト実行で落ちるので、更新が強制される
+ * （`lib/saitei-chingin.ts` の `DATA_CHECKED_AT` と同じ「鮮度を見張る」やり方）。
+ *
+ * 年が変わったらこの値だけを直せば、title・見出し・本文・2つの表がまとめて追随する。
+ */
+export const HAYAMIHYO_BASE_YEAR = 2026;
+
+/** 逆引き早見表（年齢→生まれ年）に載せる最大の年齢 */
+export const GYAKUBIKI_MAX_AGE = 100;
 
 /** 元号名から Era を引く */
 export function findEra(name: string): Era | undefined {
@@ -280,6 +304,70 @@ export function warekiTable(eraName: string): WarekiTableRow[] {
   return rows;
 }
 
+// ------------------------------------------------------- 年齢早見表・逆引き
+
+/** ある年に生まれた人が、基準年に何歳になるか */
+export interface AgeInYear {
+  /** 基準年の誕生日を迎えたあとの満年齢 */
+  after: number;
+  /** 基準年の誕生日をまだ迎えていない人の満年齢。生まれ年＝基準年のときは null */
+  before: number | null;
+}
+
+/**
+ * 生まれ年（西暦）→ 基準年の満年齢。年齢早見表の「年齢」列に使う。
+ *
+ * 満年齢は誕生日で変わるので、1つの生まれ年に対して答えは2つある
+ * （誕生日を迎えたか、まだか）。表では両方を並べて出す。
+ *
+ * @returns 基準年より後に生まれる年（未来）は null
+ */
+export function ageForBirthYear(birthYear: number, baseYear: number): AgeInYear | null {
+  const after = baseYear - birthYear;
+  if (after < 0) return null;
+  return { after, before: after > 0 ? after - 1 : null };
+}
+
+/** 逆引き早見表（年齢→生まれ年）の1行 */
+export interface GyakubikiRow {
+  /** 満年齢 */
+  age: number;
+  /** 基準年の誕生日を迎えていれば、この年の生まれ */
+  bornAfter: number;
+  /** bornAfter の和暦表記。改元のあった年は2つ並ぶ（'昭和64年・平成元年'） */
+  bornAfterWareki: string;
+  /** 基準年の誕生日がまだなら、この年の生まれ */
+  bornBefore: number;
+  /** bornBefore の和暦表記 */
+  bornBeforeWareki: string;
+}
+
+/**
+ * 「◯歳は何年生まれ？」の逆引き早見表。
+ *
+ * 満年齢は誕生日で変わるため、同じ年齢でも生まれ年は2つにまたがる
+ * （基準年に誕生日を迎えた人と、まだの人）。両方を列で出す。
+ */
+export function gyakubikiTable(
+  baseYear: number,
+  maxAge: number = GYAKUBIKI_MAX_AGE
+): GyakubikiRow[] {
+  const label = (year: number): string => warekiYearLabels(year).join('・');
+  const rows: GyakubikiRow[] = [];
+  for (let age = 0; age <= maxAge; age++) {
+    const bornAfter = baseYear - age;
+    const bornBefore = bornAfter - 1;
+    rows.push({
+      age,
+      bornAfter,
+      bornAfterWareki: label(bornAfter),
+      bornBefore,
+      bornBeforeWareki: label(bornBefore),
+    });
+  }
+  return rows;
+}
+
 // ---------------------------------------------------------------- 干支
 
 /** 十干 */
@@ -351,6 +439,58 @@ export function ageAt(birth: DateParts, base: DateParts): number {
     age -= 1;
   }
   return age;
+}
+
+/**
+ * 生年月日から n ヶ月後の「応当日」。
+ *
+ * 民法143条2項ただし書きにより、応当日が無い月（31日生まれの4月など）は
+ * **その月の末日の終了時**に期間が満了する。満了した状態で過ごす初日は翌月1日なので、
+ * 満年齢で2月29日生まれが平年は3月1日に増えるのと同じ流儀にそろえてある
+ * （`nextBirthday()` 参照）。
+ *
+ * 例: 1月31日生まれの1ヶ月後は3月1日（2月28日の終了時に満了するため）。
+ */
+export function monthAnniversary(birth: DateParts, months: number): DateParts {
+  const index = birth.year * 12 + (birth.month - 1) + months;
+  const year = Math.floor(index / 12);
+  const month = (index % 12) + 1;
+  if (birth.day <= daysInMonth(year, month)) return { year, month, day: birth.day };
+  return month === 12 ? { year: year + 1, month: 1, day: 1 } : { year, month: month + 1, day: 1 };
+}
+
+/** 満◯歳◯ヶ月◯日の内訳 */
+export interface AgeDetail {
+  /** 満年齢（年）。`ageAt()` と同じ値 */
+  years: number;
+  /** 年の端数の月数（0〜11） */
+  months: number;
+  /** 月の端数の日数（0以上。月の長さによって最大30） */
+  days: number;
+  /** 生まれてからの通算月数（「生後◯ヶ月」に使う） */
+  totalMonths: number;
+}
+
+/**
+ * 基準日時点の「満◯歳◯ヶ月◯日」。
+ *
+ * 月の数え方は満年齢と同じで、**応当日を迎えていない月は数えない**。
+ * 通算月数は「月の差 − （基準日の日が誕生日の日より前なら1）」で求まり、
+ * これは `monthAnniversary()` を満たす最大の n と一致する
+ * （31日生まれ・2月29日生まれの繰り上がりも含めて一致することはテストで固定している）。
+ *
+ * @returns 基準日が生年月日より前なら null（未来の生年月日は計算しない）
+ */
+export function ageDetail(birth: DateParts, base: DateParts): AgeDetail | null {
+  if (compareDate(base, birth) < 0) return null;
+  let totalMonths = (base.year - birth.year) * 12 + (base.month - birth.month);
+  if (base.day < birth.day) totalMonths -= 1;
+  return {
+    years: Math.floor(totalMonths / 12),
+    months: totalMonths % 12,
+    days: daysBetween(monthAnniversary(birth, totalMonths), base),
+    totalMonths,
+  };
 }
 
 /** 次の誕生日 */
@@ -473,6 +613,8 @@ export interface NenreiResult {
   base: DateParts;
   /** 基準日時点の満年齢 */
   age: number;
+  /** 満◯歳◯ヶ月◯日の内訳（`age` と `detail.years` は同じ値） */
+  detail: AgeDetail;
   /** 生年月日の和暦。明治より前は null */
   birthWareki: WarekiDate | null;
   /** 生まれた日の曜日（'金' など） */
@@ -499,6 +641,7 @@ export function calcNenrei(birth: DateParts, base: DateParts): NenreiResult | nu
     birth,
     base,
     age: ageAt(birth, base),
+    detail: ageDetail(birth, base) as AgeDetail,
     birthWareki: toWareki(birth),
     birthWeekday: WEEKDAY_LABELS[dayOfWeek(birth)],
     zodiac: zodiac(birth.year),

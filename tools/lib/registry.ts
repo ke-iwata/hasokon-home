@@ -298,10 +298,10 @@ export const tools: ToolDef[] = [
     icon: 'CalendarDots',
     name: '年齢計算・西暦和暦変換',
     description:
-      '生年月日から満年齢を計算。西暦⇔和暦（明治〜令和）の変換と早見表、誕生日までの日数・干支・学年の目安つき。',
+      '生年月日から満年齢と満何歳何ヶ月を計算。年齢早見表・「◯歳は何年生まれ」の逆引き、西暦⇔和暦（明治〜令和）の変換、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-08-18',
   },
   {
     slug: 'nissu-keisan',

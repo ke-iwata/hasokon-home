@@ -226,6 +226,22 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                 <span className="value">{result.age}</span>
                 <span className="unit">歳</span>
               </div>
+              {/*
+                書類の「満何歳何ヶ月」欄や、乳幼児の月齢のための表示。
+                （）内は◯ヶ月を数えたあとの端数の日数で、通算日数ではない
+              */}
+              <p style={{ margin: '6px 0 0', fontWeight: 700 }}>
+                満{result.detail.years}歳{result.detail.months}ヶ月（{result.detail.days}日）
+                {result.detail.totalMonths < 24 && (
+                  <span className="chip" style={{ marginLeft: 8 }}>
+                    生後{result.detail.totalMonths}ヶ月
+                  </span>
+                )}
+              </p>
+              <p className="hint" style={{ margin: '2px 0 0' }}>
+                （）内は{result.detail.months}
+                ヶ月を数えたあとの端数の日数です。月の数え方は満年齢と同じで、応当日を迎えていない月は数えません。
+              </p>
               <dl className="kv" style={{ marginTop: 10 }}>
                 <div>
                   <dt>生年月日</dt>
