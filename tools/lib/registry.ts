@@ -324,6 +324,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-17',
   },
   {
+    slug: 'qr-code',
+    icon: 'QrCode',
+    name: 'QRコード作成',
+    description:
+      'URL・テキスト・Wi-Fi設定のQRコードをその場で作成。生成はブラウザ内で完結し、期限のない静的QRをPNG・SVGで保存できます。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-18',
+  },
+  {
     slug: 'hebon-romaji',
     icon: 'Translate',
     name: 'ヘボン式ローマ字変換',
