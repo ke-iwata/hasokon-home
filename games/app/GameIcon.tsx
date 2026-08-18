@@ -325,6 +325,33 @@ function PyramidIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * トライピークス。3つの山（ピーク）を1本の折れ線で描いた形。
+ *
+ * ピラミッド（PyramidIcon）と同じ三角の系統だが、**山が3つ並ぶ**ことで
+ * 見分けが付く。札を積んだ形は22pxでは潰れるので、輪郭だけにしてある。
+ * home/index.html にも同じ形を置いてある（座標を見比べられるように数値で持つ）
+ */
+function TriPeaksIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 200 L56 96 L92 200 L128 96 L164 200 L200 96 L236 200" />
+      <path d="M20 200 H236" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -345,6 +372,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Hanafuda: HanafudaIcon,
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
+  TriPeaks: TriPeaksIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

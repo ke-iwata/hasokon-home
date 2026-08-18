@@ -97,6 +97,19 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-17',
   },
   {
+    // 「トライピークス」（Tri Peaks / Three Peaks）は1989年に考案された
+    // ソリティアの一般名称で、ルールにも名称にも権利者はいない
+    // （docs/features/game-tripeaks.md の「権利関係は無害」）。
+    // ソリティア群をまとめて見せたいので、一覧ではピラミッドの直後に置く
+    slug: 'tripeaks',
+    icon: 'TriPeaks',
+    name: 'トライピークス',
+    description:
+      '捨て札と1つ違いの札を取り除いて3つの山を崩すソリティア。AはKにも2にもつながります。連鎖を伸ばすほど高得点。',
+    stage: 'public',
+    updatedAt: '2026-08-18',
+  },
+  {
     slug: 'minesweeper',
     icon: 'Bomb',
     name: 'マインスイーパー',
