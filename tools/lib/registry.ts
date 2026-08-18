@@ -233,7 +233,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-08-18',
   },
   {
     slug: 'jitensha-hansokukin',
@@ -322,6 +322,17 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'public',
     updatedAt: '2026-08-17',
+  },
+  {
+    slug: 'qr-code',
+    icon: 'QrCode',
+    name: 'QRコード作成',
+    description:
+      'URL・テキスト・Wi-Fi設定のQRコードをその場で作成。生成はブラウザ内で完結し、期限のない静的QRをPNG・SVGで保存できます。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-18',
   },
   {
     slug: 'hebon-romaji',
