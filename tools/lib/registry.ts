@@ -386,6 +386,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-02',
   },
   {
+    slug: 'gazo-resize',
+    icon: 'Image',
+    name: '画像リサイズ・圧縮',
+    description:
+      '写真のサイズ変更とファイルサイズの圧縮を、アップロードなしで。処理はブラウザ内で完結し、位置情報（EXIF）も残りません。「300KB以下」のような目標サイズ指定とJPEG・PNG・WebPの変換に対応。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
     slug: 'tsubo-heibei',
     icon: 'Ruler',
     name: '坪・平米・畳 変換',
