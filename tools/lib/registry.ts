@@ -218,6 +218,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'shitsugyo-hoken',
+    icon: 'Briefcase',
+    name: '失業保険（基本手当）計算機',
+    description:
+      '退職したら失業保険がいくら・いつからもらえるかを計算。令和8年8月1日改定の日額（上限7,450〜9,110円）に対応し、基本手当日額・所定給付日数・総額に加えて、待期7日と給付制限を踏まえた支給開始日まで出します。自己都合の給付制限は2ヶ月ではなく原則1ヶ月です。',
+    category: 'お金・社会保険',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
     slug: 'shobyo-teate',
     icon: 'FirstAidKit',
     name: '傷病手当金 計算機',
