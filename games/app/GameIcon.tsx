@@ -389,6 +389,46 @@ function SnakeIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 色水ソート。色水の量が違う試験管3本。
+ *
+ * 底の丸みは `app/color-sort/Game.tsx` の試験管と同じ「半円の底」で、
+ * 一覧に並んだときにゲーム画面と同じものだと分かるようにしている。
+ * 中身は塗り（`currentColor`）で、量を変えて「並べ替える途中」を表す。
+ * 上は開いたまま閉じない（閉じると3本の縦棒に見えて他のアイコンと紛れる）。
+ */
+function TubesIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      {/* [左端, 色水の水面] の順。座標は計算式ではなく数値で持つ（絵を見比べられるように） */}
+      {[
+        [40, 108],
+        [108, 152],
+        [176, 76],
+      ].map(([x, fill]) => (
+        <g key={x}>
+          <path d={`M${x} 40 V176 A20 20 0 0 0 ${x + 40} 176 V40`} />
+          <path
+            d={`M${x} ${fill} V176 A20 20 0 0 0 ${x + 40} 176 V${fill} Z`}
+            fill="currentColor"
+            stroke="none"
+          />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -411,6 +451,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Pyramid: PyramidIcon,
   TriPeaks: TriPeaksIcon,
   Snake: SnakeIcon,
+  Tubes: TubesIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

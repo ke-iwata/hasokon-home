@@ -218,6 +218,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'shitsugyo-hoken',
+    icon: 'Briefcase',
+    name: '失業保険（基本手当）計算機',
+    description:
+      '退職したら失業保険がいくら・いつからもらえるかを計算。令和8年8月1日改定の日額（上限7,450〜9,110円）に対応し、基本手当日額・所定給付日数・総額に加えて、待期7日と給付制限を踏まえた支給開始日まで出します。自己都合の給付制限は2ヶ月ではなく原則1ヶ月です。',
+    category: 'お金・社会保険',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
     slug: 'shobyo-teate',
     icon: 'FirstAidKit',
     name: '傷病手当金 計算機',
@@ -380,6 +391,17 @@ export const tools: ToolDef[] = [
     name: '画像リサイズ・圧縮',
     description:
       '写真のサイズ変更とファイルサイズの圧縮を、アップロードなしで。処理はブラウザ内で完結し、位置情報（EXIF）も残りません。「300KB以下」のような目標サイズ指定とJPEG・PNG・WebPの変換に対応。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
+    slug: 'tsubo-heibei',
+    icon: 'Ruler',
+    name: '坪・平米・畳 変換',
+    description:
+      '坪・平米（㎡）・畳をまとめて相互変換。1坪＝400/121㎡を丸めずに計算し、30坪は何平米・6畳は何平米の逆引き早見表つき。畳は京間・中京間・江戸間・団地間と不動産広告の1.62㎡換算を切り替えられます。',
     category: '計算・変換',
     // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
     stage: 'preview',
