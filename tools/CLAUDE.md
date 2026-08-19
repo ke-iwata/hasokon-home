@@ -193,6 +193,7 @@ npm run build    # out/ に静的出力
 | 毎年3月 | 協会けんぽの料率改定を `lib/hatarakizon.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照） |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・働き損・在職老齢年金の4ツールが参照） |
 | 毎年度（在職老齢年金） | 支給停止調整額を `lib/zaishoku-rorei-nenkin.ts` の `FISCAL_YEARS` に1行追加（賃金の変動に応じて毎年度改定される） |
+| 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
@@ -210,8 +211,8 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール29本（ほかに公開前が3本：`password` / `shuzei-kaisei` / `tsubo-heibei`。`stage: 'preview'`）/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1283件
+- ツール29本（ほかに公開前が4本：`password` / `shuzei-kaisei` / `tsubo-heibei` /
+  `shitsugyo-hoken`。`stage: 'preview'`）/ 用途別ルーレット10本 / 使い方の記事6本 / テスト1337件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -282,6 +283,16 @@ npm run build    # out/ に静的出力
   「1畳 = 1.62㎡以上」（不動産の表示に関する公正競争規約施行規則）。畳の寸法は
   **mmの整数**で持つこと。メートルの小数で掛けると団地間の1.445㎡が1.44㎡に落ちる
   （[docs/features/tsubo-heibei-jo-henkan.md](../docs/features/tsubo-heibei-jo-henkan.md)）
+- **失業保険（基本手当）は「およそ50〜80%」で丸めない。** `lib/shitsugyo-hoken.ts` は
+  厚労省「基本手当日額の計算式及び金額」の逓減式をそのまま実装している。
+  **60〜64歳だけ逓減帯に算式が2本あり、低いほうを採る**（`y = 0.05w + 12,120×0.4`）。
+  片方だけだと賃金日額9,000円あたりで200円ほど過大に出る。給付制限は
+  **令和7年4月1日以降の離職なら原則1ヶ月**（「2ヶ月」は旧制度）で、5年内に2回以上の
+  自己都合離職と重責解雇は3ヶ月。**教育訓練等による解除は重責解雇には効かない**ので、
+  `restrictionFor()` は重責解雇を教育訓練の判定より先に返している。
+  **所定給付日数の表（category）・給付制限（reason）・受給資格の被保険者期間の要件は
+  独立した3つの軸**で、どれか一つからは導けない（`insuredMonthsRequired()` のコメント参照）
+  （[docs/features/shitsugyo-hoken-kihon-teate.md](../docs/features/shitsugyo-hoken-kihon-teate.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
