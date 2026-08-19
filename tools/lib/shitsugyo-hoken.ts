@@ -594,6 +594,40 @@ export function buildSchedule(input: {
   };
 }
 
+// ------------------------------------------------------- 受給資格の被保険者期間
+
+/**
+ * 受給資格に必要な被保険者期間（月）。原則は離職前2年間に12ヶ月以上。
+ */
+export const INSURED_MONTHS_GENERAL = 12;
+
+/**
+ * 要件が緩和される離職の被保険者期間（月）。離職前1年間に6ヶ月以上で足りる。
+ *
+ * 対象は**特定受給資格者**（倒産・解雇・退職勧奨など）と
+ * **特定理由離職者**（更新を希望した契約の雇止め、体調・家族の介護・配偶者の転勤など
+ * 正当な理由のある自己都合）。
+ */
+export const INSURED_MONTHS_RELAXED = 6;
+
+/**
+ * 受給資格の被保険者期間の要件が緩和される離職かを、離職の区分から推定する。
+ *
+ * **`category` だけでは決まらない。** 特定理由離職者のうち「正当な理由のある自己都合」は
+ * 所定給付日数が一般の表（`category: 'ippan'`）なのに、被保険者期間は6ヶ月で足りる。
+ * 逆に定年退職・更新を希望しなかった契約期間の満了は、給付制限が無い（`reason: 'company'`）
+ * のに一般の受給資格者なので12ヶ月が要る。
+ * どちらも `category` と `reason` からは導けないので、**呼び出し側が明示する**のが既定で、
+ * この関数は指定が無いときの控えめな推定（特定受給資格者だけ緩和）にとどめる。
+ */
+export function insuredMonthsRequired(input: {
+  category: LeaveCategory;
+  relaxedEligibility?: boolean;
+}): number {
+  const relaxed = input.relaxedEligibility ?? input.category === 'tokutei';
+  return relaxed ? INSURED_MONTHS_RELAXED : INSURED_MONTHS_GENERAL;
+}
+
 // ------------------------------------------------------------------ まとめ
 
 /** 計算の入力 */
@@ -612,6 +646,12 @@ export interface KihonTeateInput {
   pastSelfLeaves?: number;
   /** 教育訓練等を受けた（受けている） */
   training?: boolean;
+  /**
+   * 受給資格の被保険者期間の要件が緩和される離職か（特定受給資格者・特定理由離職者）。
+   * **`category` からは導けない**ので、画面のように離職理由が分かる側から必ず渡すこと
+   * （`insuredMonthsRequired` のコメントを参照）。省略時は特定受給資格者だけ緩和とみなす
+   */
+  relaxedEligibility?: boolean;
   /** 離職日 'YYYY-MM-DD'。渡すとスケジュールを組み立てる */
   leaveDate?: DateParts;
   /** 受給資格決定日 'YYYY-MM-DD'。省略すると離職日の2週間後として扱う */
@@ -647,10 +687,14 @@ export interface KihonTeateResult {
   schedule: Schedule | null;
   /** 65歳以上の離職（基本手当ではなく高年齢求職者給付金になる） */
   age65OrOver: boolean;
+  /** 受給資格に必要な被保険者期間（月）。12（原則）か6（緩和） */
+  insuredMonthsRequired: number;
   /**
-   * 一般の離職者で被保険者であった期間が1年未満。
-   * 自己都合では原則、離職前2年間に被保険者期間12ヶ月以上が必要で、
-   * この欄は特定理由離職者（6ヶ月で足りる）のためのもの
+   * 加入期間が1年未満で、**かつ**12ヶ月の要件が課される離職か。
+   * このときは「そもそも受給資格が無いかもしれない」と断る必要がある。
+   *
+   * 6ヶ月で足りる離職（特定受給資格者・特定理由離職者）では**出さない**。
+   * 出すと、実際には受給できる人に「資格が無い」と誤解させる
    */
   eligibilityCaution: boolean;
 }
@@ -670,6 +714,7 @@ export function calcKihonTeate(input: KihonTeateInput): KihonTeateResult {
   const wage = wageDailyFrom(input.totalWage6m, rule);
   const benefitDaily = benefitDailyFrom(wage.value, rule);
   const prescribed = prescribedDaysFor({ category: input.category, age, tenure: input.tenure });
+  const required = insuredMonthsRequired(input);
 
   const restriction = restrictionFor({
     reason: input.reason,
@@ -700,6 +745,7 @@ export function calcKihonTeate(input: KihonTeateInput): KihonTeateResult {
     restriction,
     schedule,
     age65OrOver: age > AGE_MAX,
-    eligibilityCaution: input.category === 'ippan' && input.tenure === 'lt1',
+    insuredMonthsRequired: required,
+    eligibilityCaution: input.tenure === 'lt1' && required === INSURED_MONTHS_GENERAL,
   };
 }

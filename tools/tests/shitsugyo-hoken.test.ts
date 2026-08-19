@@ -4,6 +4,8 @@ import {
   BENEFIT_DAILY_MIN,
   BENEFIT_RATE_RULES,
   CERTIFICATION_INTERVAL_DAYS,
+  INSURED_MONTHS_GENERAL,
+  INSURED_MONTHS_RELAXED,
   RESTRICTION_MONTHS_BEFORE_REFORM,
   RESTRICTION_MONTHS_DEFAULT,
   RESTRICTION_MONTHS_LONG,
@@ -15,6 +17,7 @@ import {
   benefitRuleFor,
   buildSchedule,
   calcKihonTeate,
+  insuredMonthsRequired,
   prescribedDaysFor,
   restrictionFor,
   tenureBandFor,
@@ -580,6 +583,7 @@ describe('calcKihonTeate（全体）', () => {
       reason: 'self',
     });
     expect(r.eligibilityCaution).toBe(true);
+    expect(r.insuredMonthsRequired).toBe(INSURED_MONTHS_GENERAL);
     // 会社都合（特定受給資格者）では出さない
     expect(
       calcKihonTeate({
@@ -590,6 +594,124 @@ describe('calcKihonTeate（全体）', () => {
         reason: 'company',
       }).eligibilityCaution,
     ).toBe(false);
+  });
+
+  /**
+   * 画面の離職理由5種すべて × 加入1年未満。
+   *
+   * `category` にも `reason` にも寄せられないのがここの肝。
+   * 「正当な理由のある自己都合」は `category: 'ippan'` なのに6ヶ月で足り、
+   * 「定年退職・更新を希望しなかった契約満了」は `reason: 'company'` なのに12ヶ月が要る。
+   * どちらか一方だけを見て判定すると、**受給できる人に「資格が無い」と表示する**
+   * （または資格要件の注意を出すべき人に出さない）。
+   */
+  it('加入1年未満の受給資格の注意は、離職理由ごとに出し分ける', () => {
+    const cases: {
+      name: string;
+      category: 'ippan' | 'tokutei';
+      reason: 'self' | 'company' | 'grave';
+      relaxedEligibility: boolean;
+      caution: boolean;
+      months: number;
+    }[] = [
+      {
+        name: '自己都合',
+        category: 'ippan',
+        reason: 'self',
+        relaxedEligibility: false,
+        caution: true,
+        months: INSURED_MONTHS_GENERAL,
+      },
+      {
+        name: '会社都合（特定受給資格者）',
+        category: 'tokutei',
+        reason: 'company',
+        relaxedEligibility: true,
+        caution: false,
+        months: INSURED_MONTHS_RELAXED,
+      },
+      {
+        name: '正当な理由のある自己都合（特定理由離職者）',
+        category: 'ippan',
+        reason: 'company',
+        relaxedEligibility: true,
+        caution: false,
+        months: INSURED_MONTHS_RELAXED,
+      },
+      {
+        name: '定年退職・更新を希望しなかった契約満了',
+        category: 'ippan',
+        reason: 'company',
+        relaxedEligibility: false,
+        caution: true,
+        months: INSURED_MONTHS_GENERAL,
+      },
+      {
+        name: '重責解雇',
+        category: 'ippan',
+        reason: 'grave',
+        relaxedEligibility: false,
+        caution: true,
+        months: INSURED_MONTHS_GENERAL,
+      },
+    ];
+
+    for (const c of cases) {
+      const r = calcKihonTeate({
+        totalWage6m: 300_000 * 6,
+        age: 30,
+        tenure: 'lt1',
+        category: c.category,
+        reason: c.reason,
+        relaxedEligibility: c.relaxedEligibility,
+      });
+      expect(r.eligibilityCaution, c.name).toBe(c.caution);
+      expect(r.insuredMonthsRequired, c.name).toBe(c.months);
+    }
+  });
+
+  it('加入1年以上なら、どの離職理由でも受給資格の注意は出さない', () => {
+    for (const { value } of TENURE_BANDS.filter((b) => b.value !== 'lt1')) {
+      for (const relaxedEligibility of [true, false]) {
+        const r = calcKihonTeate({
+          totalWage6m: 300_000 * 6,
+          age: 30,
+          tenure: value,
+          category: 'ippan',
+          reason: 'self',
+          relaxedEligibility,
+        });
+        expect(r.eligibilityCaution, value).toBe(false);
+      }
+    }
+  });
+
+  it('就職困難者は所定給付日数の話で、受給資格の要件とは別の軸', () => {
+    // 就職困難者でも自己都合で辞めれば12ヶ月要件はそのまま課される
+    const r = calcKihonTeate({
+      totalWage6m: 300_000 * 6,
+      age: 30,
+      tenure: 'lt1',
+      category: 'konnan',
+      reason: 'self',
+      relaxedEligibility: false,
+    });
+    expect(r.prescribed.days).toBe(150);
+    expect(r.eligibilityCaution).toBe(true);
+  });
+});
+
+describe('insuredMonthsRequired（受給資格に必要な被保険者期間）', () => {
+  it('明示された緩和の有無をそのまま使う', () => {
+    expect(insuredMonthsRequired({ category: 'ippan', relaxedEligibility: true })).toBe(6);
+    expect(insuredMonthsRequired({ category: 'ippan', relaxedEligibility: false })).toBe(12);
+    expect(insuredMonthsRequired({ category: 'tokutei', relaxedEligibility: false })).toBe(12);
+  });
+
+  it('省略時は特定受給資格者だけ緩和とみなす（控えめな推定）', () => {
+    expect(insuredMonthsRequired({ category: 'tokutei' })).toBe(INSURED_MONTHS_RELAXED);
+    expect(insuredMonthsRequired({ category: 'ippan' })).toBe(INSURED_MONTHS_GENERAL);
+    expect(insuredMonthsRequired({ category: 'konnan' })).toBe(INSURED_MONTHS_GENERAL);
   });
 
   it('賃金総額が0や負でも壊れず、下限額で計算される', () => {

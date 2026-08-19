@@ -38,6 +38,16 @@
 画面からは選べてしまうが、0日と出すと「1円ももらえない」と誤読される。日数のある区分まで
 下げて引き、`PrescribedDaysResult.adjusted` で断る形にした。
 
+**受給資格の被保険者期間（12ヶ月か6ヶ月か）は、`category` にも `reason` にも寄せられない。**
+所定給付日数の表（`category`）・給付制限（`reason`）・受給資格の要件は**3つとも独立した軸**で、
+「正当な理由のある自己都合」は `category: 'ippan'`（一般の表）なのに6ヶ月で足り、
+「定年退職・更新を希望しなかった契約満了」は `reason: 'company'`（給付制限なし）なのに
+12ヶ月が要る。最初は `category === 'ippan'` だけで注意書きを出していて、
+**特定理由離職者に「受給資格がない」と読める表示をしていた**（レビューで指摘されて修正）。
+`KihonTeateInput.relaxedEligibility` を明示的に受け取る形にし、離職理由5種すべて ×
+加入1年未満をテストで固定した。`insuredMonthsRequired()` の既定の推定は
+「特定受給資格者だけ緩和」という控えめな側に倒してある。
+
 ## 2026-08-19：最低賃金チェッカーの第2次追補（28→30都道府県・広島と秋田）
 
 仕様は [features/saitei-chingin-r8-toshin-tsuiho.md](../../docs/features/saitei-chingin-r8-toshin-tsuiho.md)

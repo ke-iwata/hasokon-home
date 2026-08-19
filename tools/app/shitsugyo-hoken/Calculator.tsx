@@ -22,14 +22,25 @@ const fmtYen = (yen: number) => `${Math.round(yen).toLocaleString('ja-JP')}円`;
 /**
  * 離職理由の選択肢。
  *
- * 所定給付日数のテーブル（`category`）と給付制限（`reason`）は別の軸だが、
- * 利用者に2つ選ばせると必ず食い違うので、実際の離職理由1つから両方を決める。
+ * 制度上は**3つの軸が独立している**ので、1つの離職理由から3つとも決める。
+ * 利用者に3つ選ばせると必ず食い違う。
+ *
+ * - `category` … 所定給付日数のどの表を引くか
+ * - `reason` … 給付制限があるか
+ * - `relaxedEligibility` … 受給資格の被保険者期間が6ヶ月で足りるか
+ *
+ * **この3つは連動しない。** 「正当な理由のある自己都合」は日数が一般の表なのに
+ * 給付制限が無く、被保険者期間も6ヶ月で足りる。「定年退職・更新を希望しなかった
+ * 契約満了」は給付制限こそ無いが一般の受給資格者なので12ヶ月が要る。
+ * `reason` から受給資格の要件を導くと、この2つを取り違える。
  */
 const REASONS: {
   value: string;
   label: string;
   category: Exclude<LeaveCategory, 'konnan'>;
   reason: LeaveReason;
+  /** 特定受給資格者・特定理由離職者（被保険者期間6ヶ月で受給資格） */
+  relaxedEligibility: boolean;
   hint?: string;
 }[] = [
   {
@@ -37,6 +48,7 @@ const REASONS: {
     label: '自己都合（転職・結婚・転居など）',
     category: 'ippan',
     reason: 'self',
+    relaxedEligibility: false,
     hint: '待期7日のあとに給付制限（原則1ヶ月）があります。',
   },
   {
@@ -44,27 +56,31 @@ const REASONS: {
     label: '会社都合（倒産・解雇・退職勧奨・雇止めなど）',
     category: 'tokutei',
     reason: 'company',
-    hint: '特定受給資格者として、所定給付日数が長くなり給付制限もありません。',
+    relaxedEligibility: true,
+    hint: '特定受給資格者として、所定給付日数が長くなり給付制限もありません。被保険者期間は6ヶ月以上で受給資格を得られます。',
   },
   {
     value: 'justified',
     label: '正当な理由のある自己都合（病気・家族の介護・配偶者の転勤など）',
     category: 'ippan',
     reason: 'company',
-    hint: '特定理由離職者にあたると給付制限はありません。所定給付日数は自己都合と同じ表です。',
+    relaxedEligibility: true,
+    hint: '特定理由離職者にあたると給付制限はありません。被保険者期間も6ヶ月以上で受給資格を得られます。所定給付日数は自己都合と同じ表です。',
   },
   {
     value: 'retirement',
     label: '定年退職・契約期間の満了（更新を希望しなかった）',
     category: 'ippan',
     reason: 'company',
-    hint: '給付制限はありません。所定給付日数は自己都合と同じ表です。',
+    relaxedEligibility: false,
+    hint: '給付制限はありません。ただし一般の受給資格者なので、被保険者期間は12ヶ月以上必要です。所定給付日数も自己都合と同じ表です。',
   },
   {
     value: 'grave',
     label: '重責解雇（自分の重大な責任による解雇）',
     category: 'ippan',
     reason: 'grave',
+    relaxedEligibility: false,
     hint: '給付制限は3ヶ月で、教育訓練等を受けても解除されません。',
   },
 ];
@@ -102,6 +118,9 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
     tenure,
     category: konnan ? 'konnan' : picked.category,
     reason: picked.reason,
+    // 就職困難者かどうかは所定給付日数の話で、受給資格の要件とは別の軸。
+    // 就職困難者が自己都合で辞めれば12ヶ月要件はそのまま課される
+    relaxedEligibility: picked.relaxedEligibility,
     pastSelfLeaves: Number(pastSelfLeaves) || 0,
     training,
     leaveDate: leave ?? undefined,
@@ -356,9 +375,12 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 
       {r.eligibilityCaution && (
         <div className="note">
-          自己都合などの一般の離職では、原則として<strong>離職前2年間に被保険者期間が12ヶ月以上</strong>
-          必要です。加入期間が1年未満の場合、そもそも受給資格がないことがあります
-          （倒産・解雇・雇止めなどでは6ヶ月以上で受給できます）。
+          選んだ離職理由では、原則として
+          <strong>離職前2年間に被保険者期間が12ヶ月以上</strong>
+          必要です。加入期間が1年未満の場合、そもそも受給資格がないことがあります。
+          倒産・解雇・雇止めや、病気・家族の介護・配偶者の転勤などの
+          「正当な理由のある自己都合」にあたる場合は、離職前1年間に6ヶ月以上で受給できます。
+          離職理由の区分はハローワークが離職票をもとに決定するので、心当たりがあれば相談してください。
         </div>
       )}
 

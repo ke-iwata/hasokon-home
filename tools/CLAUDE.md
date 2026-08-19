@@ -212,7 +212,7 @@ npm run build    # out/ に静的出力
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
 - ツール29本（ほかに公開前が3本：`password` / `shuzei-kaisei` / `shitsugyo-hoken`。
-  `stage: 'preview'`）/ 用途別ルーレット10本 / 使い方の記事6本 / テスト1295件
+  `stage: 'preview'`）/ 用途別ルーレット10本 / 使い方の記事6本 / テスト1300件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
