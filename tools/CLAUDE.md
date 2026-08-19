@@ -210,8 +210,8 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール29本（ほかに公開前が2本：`password` / `shuzei-kaisei`。`stage: 'preview'`）/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1243件
+- ツール29本（ほかに公開前が3本：`password` / `shuzei-kaisei` / `tsubo-heibei`。`stage: 'preview'`）/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1283件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -276,6 +276,12 @@ npm run build    # out/ に静的出力
   期間そのものを名前にする）。比較する2つの段階は `BEFORE_STAGE_ID` / `AFTER_STAGE_ID`
   で固定してあり、開いた日で切り替わらない
   （[docs/features/shuzei-kaisei-hayamihyo.md](../docs/features/shuzei-kaisei-hayamihyo.md)）
+- **坪・畳は法定計量単位ではない**（面積の法定計量単位は㎡）。1坪 = 400/121㎡ は
+  1尺 = 10/33m・1間 = 6尺・1坪 = 1間四方から導ける値で、**分数のまま持ち丸めは表示時だけ**
+  （`lib/tsubo-heibei.ts`）。畳は規格ごとに違い、既定は不動産広告と同じ
+  「1畳 = 1.62㎡以上」（不動産の表示に関する公正競争規約施行規則）。畳の寸法は
+  **mmの整数**で持つこと。メートルの小数で掛けると団地間の1.445㎡が1.44㎡に落ちる
+  （[docs/features/tsubo-heibei-jo-henkan.md](../docs/features/tsubo-heibei-jo-henkan.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
