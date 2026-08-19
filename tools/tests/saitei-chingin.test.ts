@@ -165,7 +165,7 @@ describe('PREFECTURES（47都道府県のデータ）', () => {
 });
 
 /**
- * 令和8年度の答申データの追補（8都道府県 → 28都道府県）。
+ * 令和8年度の答申データの追補（8都道府県 → 28都道府県 → 30都道府県）。
  *
  * 仕様: docs/features/saitei-chingin-r8-toshin-tsuiho.md
  *
@@ -178,6 +178,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   const ANSWERED: ReadonlyArray<readonly [string, number]> = [
     ['北海道', 1131],
     ['宮城', 1098],
+    ['秋田', 1090],
     ['栃木', 1125],
     ['群馬', 1120],
     ['埼玉', 1196],
@@ -201,6 +202,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     ['鳥取', 1090],
     ['島根', 1092],
     ['岡山', 1104],
+    ['広島', 1141],
     ['山口', 1101],
     ['香川', 1092],
     ['福岡', 1114],
@@ -210,10 +212,10 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     expect(byName(name).answered?.yen).toBe(yen);
   });
 
-  it('答申済みは28都道府県で、それ以外は答申を持たない', () => {
+  it('答申済みは30都道府県で、それ以外は答申を持たない', () => {
     const withAnswer = PREFECTURES.filter((p) => p.answered).map((p) => p.name);
     expect(withAnswer.sort()).toEqual(ANSWERED.map(([n]) => n).sort());
-    expect(withAnswer).toHaveLength(28);
+    expect(withAnswer).toHaveLength(30);
   });
 
   /**
@@ -224,6 +226,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     const overMeyasu = [
       ['宮城', 60],
       ['鳥取', 60],
+      ['秋田', 59],
       ['石川', 59],
       ['福井', 59],
       ['島根', 59],
@@ -267,6 +270,8 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['福岡', '2026-10-04'],
       ['山口', '2026-10-08'],
       ['島根', '2026-10-10'],
+      ['広島', '2026-10-11'],
+      ['秋田', '2026-10-14'],
       ['静岡', '2026-10-15'],
     ] as const;
     for (const [name, on] of dated) {
@@ -296,13 +301,39 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   /**
-   * 広島は 2026-08-17 に答申が出たと報じられたが、労働局の発表が出ていないので
-   * 入れていない。二次情報だけで答申額を書かない約束を、テストでも見張る。
+   * 第2次追補（2026-08-19）で入れた2県。
+   * 広島は労働局が報道発表ではなく**異議申出のための公示**で額と発効日を示していて、
+   * 秋田は報道発表（PDF）。どちらも一次情報なので出典に持たせている。
    */
-  it('労働局の発表を確認できていない県は「目安」のまま（二次情報で足さない）', () => {
+  it('第2次追補の2県は一次情報どおりの額・答申日・発効日を持つ', () => {
     const hiroshima = byName('広島');
-    expect(hiroshima.answered).toBeUndefined();
-    expect(revisionOf(hiroshima, new Date('2026-08-18')).status).toBe('目安');
+    expect(hiroshima.answered?.yen).toBe(1141);
+    expect(hiroshima.answered?.answeredOn).toBe('2026-08-17');
+    expect(hiroshima.answered?.effectiveOn).toBe('2026-10-11');
+    expect(revisionOf(hiroshima, new Date('2026-08-19')).raise).toBe(56);
+
+    const akita = byName('秋田');
+    expect(akita.answered?.yen).toBe(1090);
+    expect(akita.answered?.answeredOn).toBe('2026-08-18');
+    expect(akita.answered?.effectiveOn).toBe('2026-10-14');
+    expect(revisionOf(akita, new Date('2026-08-19')).raise).toBe(59);
+  });
+
+  /**
+   * まだ答申が出ていない17県。二次情報（集計サイト）だけで答申額を書かない約束を
+   * テストでも見張る。答申が出て労働局の発表を確認できた県は、ここから ANSWERED へ移す。
+   */
+  it('未答申の17県は「目安」のまま（二次情報で足さない）', () => {
+    const notAnswered = [
+      '青森', '岩手', '山形', '福島', '茨城', '山梨', '京都', '徳島', '愛媛',
+      '高知', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄',
+    ];
+    for (const name of notAnswered) {
+      const pref = byName(name);
+      expect(pref.answered, `${name}: 一次情報を確認せずに答申を足していないか`).toBeUndefined();
+      expect(revisionOf(pref, new Date('2026-08-19')).status, `${name}`).toBe('目安');
+    }
+    expect(PREFECTURES.filter((p) => !p.answered)).toHaveLength(notAnswered.length);
   });
 
   it('答申の出典URLは県ごとに違う（使い回しの取り違えを防ぐ）', () => {
@@ -336,10 +367,10 @@ describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
 
 describe('revisionOf', () => {
   it('答申が無い県はランク別の目安を足した「目安」として返す', () => {
-    const akita = byName('秋田'); // Cランク・答申前
-    const r = revisionOf(akita, new Date('2026-08-14'));
+    const aomori = byName('青森'); // Cランク・答申前
+    const r = revisionOf(aomori, new Date('2026-08-14'));
     expect(r.status).toBe('目安');
-    expect(r.yen).toBe(akita.currentYen + 56);
+    expect(r.yen).toBe(aomori.currentYen + 56);
     expect(r.raise).toBe(56);
     // 目安の出どころは厚労省の目安の答申
     expect(r.source.url).toContain('mhlw.go.jp');
