@@ -260,11 +260,12 @@ describe('得点', () => {
   it('的を全部倒すと倍率が上がって的が戻る', () => {
     const base = initialState();
     // 最後の1枚だけ残した状態から倒す
-    const t = base.targets[3];
+    const last = base.targets.length - 1;
+    const t = base.targets[last];
     const s: PinballState = {
       ...base,
       status: 'playing',
-      targets: base.targets.map((x, i) => (i === 3 ? x : { ...x, down: true })),
+      targets: base.targets.map((x, i) => (i === last ? x : { ...x, down: true })),
       ball: { x: t.x + t.w / 2, y: t.y - BALL_R - 0.01, vx: 0, vy: 1.2 },
     };
     const next = run(s, 3);
@@ -275,12 +276,13 @@ describe('得点', () => {
 
   it('倍率は5で頭打ちになる', () => {
     const base = initialState();
-    const t = base.targets[3];
+    const last = base.targets.length - 1;
+    const t = base.targets[last];
     const s: PinballState = {
       ...base,
       status: 'playing',
       multiplier: 5,
-      targets: base.targets.map((x, i) => (i === 3 ? x : { ...x, down: true })),
+      targets: base.targets.map((x, i) => (i === last ? x : { ...x, down: true })),
       ball: { x: t.x + t.w / 2, y: t.y - BALL_R - 0.01, vx: 0, vy: 1.2 },
     };
     expect(run(s, 3).multiplier).toBe(5);
@@ -364,7 +366,7 @@ describe('詰まり対策', () => {
     const s: PinballState = {
       ...base,
       status: 'playing',
-      ball: { x: 0.19, y: 0.6, vx: 0, vy: 1 },
+      ball: { x: 0.5, y: 0.85, vx: 0, vy: 1 },
       restSec: 1.49,
     };
     expect(run(s, 1).restSec).toBe(0);
@@ -417,17 +419,34 @@ describe('台の形', () => {
 });
 
 describe('遊びとして成立している', () => {
-  /** 1球が落ちるまでのフレーム数を測る */
-  function survive(pick: (s: PinballState, frame: number) => { left: boolean; right: boolean }): number {
-    let s = launch(initialState(), 0.5);
+  /**
+   * 球1つぶんの寿命（秒）。**打ち出しの強さを9通り試して平均を見る。**
+   *
+   * 物理は初期値のわずかな違いで結果が大きく振れるので、1回だけ測ると
+   * 「たまたま長かった/短かった」を掴んで、意味のない数字で見張ることになる
+   * （実際、同じ台で1回測りだと連打5.1秒、9回の平均だと15.0秒だった）。
+   * 打ち直し（弱い打ち出しでレーンに戻る）は球を失っていないので、自動で打ち直す。
+   */
+  const PULLS = [0, 0.12, 0.25, 0.37, 0.5, 0.62, 0.75, 0.87, 1];
+  const CAP = 60 * 150;
+
+  function life(pull: number, pick: (s: PinballState, f: number) => { left: boolean; right: boolean }) {
+    let s = initialState();
     const start = s.balls;
     let frames = 0;
-    while (s.balls === start && frames < 60 * 90) {
-      s = step(s, FRAME, { ...pick(s, frames), plunger: false });
+    let pulling = Math.max(1, Math.round(pull * 60));
+    while (s.balls === start && frames < CAP) {
+      const ready = s.status === 'ready';
+      s = step(s, FRAME, { ...pick(s, frames), plunger: ready && pulling-- > 0 });
+      if (!ready) pulling = Math.max(1, Math.round(pull * 60));
       frames += 1;
     }
-    return frames;
+    return frames / 60;
   }
+
+  const lives = (pick: (s: PinballState, f: number) => { left: boolean; right: boolean }) =>
+    PULLS.map((p) => life(p, pick));
+  const mean = (xs: number[]) => xs.reduce((a, c) => a + c, 0) / xs.length;
 
   const idle = () => ({ left: false, right: false });
   /** 球が下りてきたときだけ近い側を振る＝ちゃんと狙って打つ人 */
@@ -441,12 +460,20 @@ describe('遊びとして成立している', () => {
     return { left: on, right: on };
   };
 
-  it('狙って振れば、放っておくよりずっと長く球を保てる', () => {
-    expect(survive(aimed)).toBeGreaterThan(survive(idle) * 3);
+  it('放っておけば球は必ず落ちる（どこにも挟まらない）', () => {
+    const xs = lives(idle);
+    expect(mean(xs)).toBeLessThan(8);
+    // **1つでも落ちない打ち出しがあってはいけない。** 楔になる隙間があると、
+    // 球がそこで止まって遊びが終わらなくなる（実測で55秒動かなかったことがある）
+    expect(Math.max(...xs)).toBeLessThan(15);
   });
 
-  it('**両方を連打するだけでは球は保てない。**' +
+  it('**両方を連打しても、いつかは落ちる。**' +
     ' フリッパーの先端の隙間が狭すぎると、連打で永久に落ちなくなって遊びが成立しない', () => {
-    expect(survive(mash)).toBeLessThan(survive(idle) * 2);
+    expect(Math.max(...lives(mash))).toBeLessThan(60);
+  });
+
+  it('**狙って振るほうが連打よりはっきり良い。**これが崩れると腕前の意味が無くなる', () => {
+    expect(mean(lives(aimed))).toBeGreaterThan(mean(lives(mash)) * 2);
   });
 });
