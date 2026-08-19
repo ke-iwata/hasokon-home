@@ -1,7 +1,8 @@
 # 新ツール「画像リサイズ・圧縮」（完全ローカル生成系の3本目）
 
-**状態**：提案（2026-08-19 起票。実装したら `stage: 'preview'` で登録 →
-テスト環境で確認できたら公開するPRで `'public'` に上げる）
+**状態**：実装済み・公開前（2026-08-19 実装。`stage: 'preview'` なので一覧・sitemap・
+llms.txt には出ておらず `noindex`。**テスト環境で確認できたら、公開するPRで
+`stage: 'public'` に上げ、`home/index.html` のカードと `home/llms.txt` の行を足す**）
 **対象**：`tools/`（`hasokon.com/tools/gazo-resize/`）
 **起票**：2026-08-19
 
