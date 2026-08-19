@@ -27,6 +27,20 @@
  *
  * 語を足すときは上の基準をテストが見張っているので、npm test を通してから入れること。
  * **語数を変えると1語あたりのビット数が半端になる**ので、足すなら同時に減らす。
+ *
+ * ## 固有名詞かどうかの線引き（機械では判定できないので目視で守る）
+ *
+ * テストが見ているのは語数・重複・文字種・長さ・紛らわしさだけで、
+ * **「固有名詞が混ざっていないか」は人が読むしかない。** 判断の基準はこう置いた。
+ *
+ * - **入れない**：地名・施設名・商標・人名を先に連想させる語。
+ *   `kiyomizu`（清水）をこれで外した。「清らかな水」という普通名詞ではあるが、
+ *   清水寺・地名・姓のほうが先に立つ（代わりに `yukidoke`（雪解け）を入れて
+ *   2048語を保っている）
+ * - **入れてよい**：まず普通名詞として読める語。人名や商標にも使われていることは、
+ *   それ自体では除外の理由にしない。`sakura`（桜）・`midori`（緑）・`izumi`（泉）・
+ *   `kirin`（麒麟）・`asahi`（朝日）・`fuji`（藤）はこちらに置いている。
+ *   ここまで外し始めると日常語の多くが消えて、リストが痩せてしまう
  */
 
 /**
@@ -139,7 +153,7 @@ kikyuu kimochi kimono kimuchi kinako kinen kinenbi kingendai
 kinjo kinniku kinoko kinou kinri kinsei kinu kinyou
 kioku kion kippu kiri kirin kiro kiroku kiryoku
 kisetsu kisha kishou kisoku kissaten kita kitsune kitte
-kiui kiwi kiyomizu koara kobune kodai kodomo kofun
+kiui kiwi koara kobune kodai kodomo kofun
 kogarashi koinu kojou koke kokkai kokoa kokonatsu kokoro
 kokuban kokugo kokumin kokumotsu kokusai kokusaika kokyaku kokyuu
 komatsuna kombu kome komugi kona konbea konbini kondate
@@ -285,7 +299,7 @@ yashi yashoku yasumi yasuri yatai yoake yoga yohou
 yokin yoko yokusou yonaka yorokobi yoru yosan yoshuu
 yotei yotto youchien youfuku yougan youguruto youkan youkashi
 youshitsu youshoku yoyaku yozora yuba yubiwa yuga yukata
-yuki yume yunomi yuri yutanpo yuubin yuudachi yuuenchi
+yuki yukidoke yume yunomi yuri yutanpo yuubin yuudachi yuuenchi
 yuugata yuuhi yuuki yuukyuu yuuyake yuwakashi yuzu zabuton
 zaiko zairyou zaisei zakka zakuro zangyou zaru zasshi
 zeikin zeisei zenbu zenpou zensai zensen zerii zoukin
