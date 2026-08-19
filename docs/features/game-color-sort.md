@@ -55,7 +55,8 @@
    オプションで用意する（リラックス系は高齢層・女性層が多く、配慮が効く）
 6. **ページ構成**：既存ゲームページと同じ
    （metadata / JSON-LD(VideoGame+FAQPage+BreadcrumbList) / パンくず / 遊び方 /
-   コツ / FAQ / AdUnit×2 / 他のゲーム一覧）。registry へは `stage: 'wip'` で追加
+   コツ / FAQ / AdUnit×2 / 他のゲーム一覧）。registry へは `stage: 'preview'` で追加
+   （`games/CLAUDE.md` の追加手順どおり、公開が決まるまで `'preview'`）
 7. **テスト**：注げる条件・まとめて移動・クリア判定・逆操作生成の可解性を
    純関数（`games/lib/color-sort.ts`）の単体テストで固定
 
