@@ -386,6 +386,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-02',
   },
   {
+    slug: 'tsubo-heibei',
+    icon: 'Ruler',
+    name: '坪・平米・畳 変換',
+    description:
+      '坪・平米（㎡）・畳をまとめて相互変換。1坪＝400/121㎡を丸めずに計算し、30坪は何平米・6畳は何平米の逆引き早見表つき。畳は京間・中京間・江戸間・団地間と不動産広告の1.62㎡換算を切り替えられます。',
+    category: '計算・変換',
+    // 公開の判断は運営者。ページとテストが揃ったので test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
     slug: 'aspect-ratio',
     icon: 'Crop',
     name: 'アスペクト比計算機',

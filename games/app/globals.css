@@ -1187,6 +1187,105 @@ ol {
   gap: 3px;
 }
 
+/* ---- 色水ソート（docs/features/game-color-sort.md） ----
+
+   盤は「試験管の列」で、他のゲームと違い**正方形ではない**。共通の
+   「盤を画面の高さに合わせる」節は正方形の盤が前提なので使わず、
+   ここでは**試験管1本の幅**を画面の幅と高さの両方から決める。
+   1本の縦横比は 44:148（`Game.tsx` の viewBox と同じ）なので、
+   幅を抑えれば高さも同じ割合で縮む。
+
+   `--cs-rows` は折り返しの行数で、`Game.tsx` が変数として渡す
+   （**幅そのものをインラインで渡さない**。渡すとこの高さの制限ごと消える）。
+   行数は「1行7本まで」で数えている。広い画面では実際にはもっと入って行数が減るが、
+   そのときは見積もりより小さくなるだけで、はみ出す側には転ばない。
+   `--cs-chrome` は盤以外が使う高さの実測値（1280×800で460px） */
+.cs-board {
+  --cs-chrome: 460px;
+  /* 幅から決まる大きさと、画面の高さを行数で割った1行ぶんの、小さいほうを採る。
+     0.297 は 44 ÷ 148（試験管の縦横比）。
+     **下限の32pxはここで譲らない**（押す先なので、これ以上細くするより
+     むずかしい〈14本〉だけ画面から少しはみ出すほうを選ぶ）。上限は52px */
+  --cs-tube-w: clamp(
+    32px,
+    min(11vw, calc((100dvh - var(--cs-chrome)) / var(--cs-rows, 2) * 0.297)),
+    52px
+  );
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 6px;
+  /* 選んだ試験管は持ち上がる。そのぶんの余白を先に取り、盤の高さを動かさない */
+  padding-top: 14px;
+}
+
+/* 押す先そのもの。中身はガラスの絵だけなので、ボタンの装飾は全部落とす。
+   幅は細いが高さが3倍以上あるので、指で押す面積は十分に取れている */
+.cs-tube {
+  width: var(--cs-tube-w);
+  padding: 0;
+  border: none;
+  background: none;
+  line-height: 0;
+  cursor: pointer;
+  /* 持ち上げは transform で行う（レイアウトを動かさないため） */
+  transition: transform 0.12s ease-out;
+}
+
+.cs-tube svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 選択中。**持ち上げと輪郭の2つで示す**（色だけに頼らない） */
+.cs-tube.selected {
+  transform: translateY(-14px);
+}
+
+.cs-tube.selected .cs-outline {
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+/* ガラスの内側。色水の入っていない部分の地になる */
+.cs-glass {
+  fill: var(--surface-2);
+}
+
+.cs-outline {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-tube {
+    transition: none;
+  }
+}
+
+/* 模様の切り替え（色覚多様性への配慮）。段（.btn-row）の中に自然に並ぶ大きさにする */
+.cs-pattern {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 押せない局面でもボタンを消さない（消すと段が詰まって盤の位置が動く）。
+   押せないことは見た目で伝える */
+.cs-game .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.cs-game .btn:disabled:hover {
+  border-color: var(--border);
+}
+
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
 
 .cardgame {
@@ -3417,5 +3516,23 @@ button.hf-card {
 
   .hf-rules .btn-row {
     margin: 6px 0 0;
+  }
+
+  /* ---- 色水ソート ----
+     設定の段が「難易度＋ボタン3つ＋模様の切り替え」で2段（78px）になるぶん、
+     盤以外の高さが広い画面より増える。375×667で実測した内訳は
+     パンくず22・見出し36・リード55・設定78・状態26・結果43・見かた23＋余白で実測455px。
+     少し余裕を見た470pxを `--cs-chrome` に入れて、試験管をそのぶん細くする
+     （本数は減らせないので幅で吸収する）。
+     これで375×667のとき「かんたん」604px・「ふつう／むずかしい」688px（実測）。
+     むずかしいの21pxぶんは、32pxの下限を割ってまで詰めない（上のコメント参照） */
+  .cs-board {
+    --cs-chrome: 470px;
+    gap: 8px 4px;
+    padding-top: 10px;
+  }
+
+  .cs-pattern {
+    font-size: 0.78rem;
   }
 }
