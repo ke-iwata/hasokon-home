@@ -26,7 +26,7 @@
  * **出典を確認せずにエントリを足さないこと**。tests/saitei-chingin.test.ts が
  * 出典の欠落を落とす。
  *
- * ■ 一次情報（2026-08-18 取得）
+ * ■ 一次情報（2026-08-19 取得）
  * - 厚生労働省「地域別最低賃金の全国一覧」
  *   https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/
  *   → PDF「令和７年度地域別最低賃金全国一覧」の表を47件そのまま写したものが
@@ -46,7 +46,7 @@
 import { evaluateKabe, nextWall, type KabeResult } from './nenshu-kabe';
 
 /** データ全体の最終確認日 'YYYY-MM-DD'。ページに「データ最終更新日」として表示する */
-export const DATA_CHECKED_AT = '2026-08-18';
+export const DATA_CHECKED_AT = '2026-08-19';
 
 /** 現行（改定前）の年度。表の見出しに使う */
 export const CURRENT_FY_LABEL = '令和7年度';
@@ -133,7 +133,7 @@ export interface Prefecture {
  * `currentYen` / `currentEffectiveOn` は厚労省「令和７年度地域別最低賃金全国一覧」、
  * `rank` は厚労省「令和８年度地域別最低賃金額改定の目安について」から。
  * `answered` は都道府県労働局の報道発表で確認できたものだけを入れている
- * （2026-08-18 時点で28都道府県。残りは目安ベースの見込み表示になる）。
+ * （2026-08-19 時点で30都道府県。残りは目安ベースの見込み表示になる）。
  *
  * `effectiveOn` は労働局が日付を示しているものだけに入れる。答申文が
  * 「効力発生の日 法定どおり」とだけ書く県（群馬・岡山の答申文など）や、
@@ -179,7 +179,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 5, name: '秋田', rank: 'C', currentYen: 1031, currentEffectiveOn: '2026-03-31', source: SOURCE_MHLW_LIST },
+  {
+    code: 5,
+    name: '秋田',
+    rank: 'C',
+    currentYen: 1031,
+    currentEffectiveOn: '2026-03-31',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1090,
+      answeredOn: '2026-08-18',
+      effectiveOn: '2026-10-14',
+      source: {
+        label: '秋田労働局「秋田県最低賃金を時間額1,090円に」',
+        url: 'https://jsite.mhlw.go.jp/akita-roudoukyoku/content/contents/002779440.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   { code: 6, name: '山形', rank: 'C', currentYen: 1032, currentEffectiveOn: '2025-12-23', source: SOURCE_MHLW_LIST },
   { code: 7, name: '福島', rank: 'B', currentYen: 1033, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
   { code: 8, name: '茨城', rank: 'B', currentYen: 1074, currentEffectiveOn: '2025-10-12', source: SOURCE_MHLW_LIST },
@@ -596,9 +613,26 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  // 広島は 2026-08-17 に答申（報道ベースで時間額1,141円）だが、2026-08-18 時点で
-  // 広島労働局の報道発表・議事録に出ていないため入れない（二次情報だけでは足さない）
-  { code: 34, name: '広島', rank: 'B', currentYen: 1085, currentEffectiveOn: '2025-11-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 34,
+    name: '広島',
+    rank: 'B',
+    currentYen: 1085,
+    currentEffectiveOn: '2025-11-01',
+    source: SOURCE_MHLW_LIST,
+    // 広島労働局は報道発表ではなく異議申出のための公示で額と発効日を示している。
+    // 公示は最低賃金法11条・12条にもとづく一次情報なので、これを出典にする
+    answered: {
+      yen: 1141,
+      answeredOn: '2026-08-17',
+      effectiveOn: '2026-10-11',
+      source: {
+        label: '広島労働局「広島県最低賃金改正決定に係る関係者からの意見に関する公示」',
+        url: 'https://jsite.mhlw.go.jp/hiroshima-roudoukyoku/content/contents/002778056.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 35,
     name: '山口',
