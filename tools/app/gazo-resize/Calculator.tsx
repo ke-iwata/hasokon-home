@@ -9,9 +9,13 @@ import {
   kilobytesToBytes,
   MAX_FILES,
   mimeTypeFor,
+  orientationToApply,
+  orientationProbeBytes,
   orientationTransform,
   orientedSize,
   outputFileName,
+  probeSaysBrowserApplies,
+  visibleSize,
   QUALITY_MAX,
   QUALITY_MIN,
   DEFAULT_QUALITY,
@@ -95,6 +99,9 @@ function context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
  * 変換は「回転 → 左右反転 → 中央へ移動」の順に効く（Canvas は後に呼んだ変換ほど
  * 描画対象の近くに掛かる）。ここで描き直した時点で EXIF は結果として消え、
  * 位置情報も撮影日時も出力には残らない。
+ *
+ * 渡すのは「**こちらで掛けるべき**向き」（`orientationToApply()` の戻り値）。
+ * ブラウザが復号時に既に反映している場合は 1 が渡り、ここでは何もしない。
  */
 function drawOriented(bitmap: ImageBitmap, orientation: number | null): HTMLCanvasElement {
   const transform = orientationTransform(orientation);
@@ -132,6 +139,33 @@ function encode(canvas: HTMLCanvasElement, mime: string, quality?: number): Prom
       quality,
     );
   });
+}
+
+/**
+ * このブラウザの `createImageBitmap()` が EXIF の向きを自分で反映するか。
+ *
+ * **オプション（`imageOrientation`）は信用できない。** Chromium は 141 の時点でも
+ * `'none'` を無視して常に EXIF を反映して返す（whatwg/html#7210）。
+ * 反映済みの画像にこちらでも回転を掛けると二重補正になり、縦撮りの写真が
+ * かえって横倒しになるため、判定用の極小JPEG（画素2×1・Orientation=6）を
+ * 1度だけ復号して実際の挙動を見る。結果はタブの生存中ずっと変わらないので使い回す。
+ */
+let orientationProbe: Promise<boolean> | null = null;
+function browserAppliesExifOrientation(): Promise<boolean> {
+  orientationProbe ??= (async () => {
+    try {
+      const blob = new Blob([orientationProbeBytes()], { type: 'image/jpeg' });
+      const bitmap = await createImageBitmap(blob);
+      const applies = probeSaysBrowserApplies({ width: bitmap.width, height: bitmap.height });
+      bitmap.close();
+      return applies;
+    } catch {
+      // 判定できないときは「ブラウザに任せる」側に倒す。
+      // 二重に回して壊すより、回さずに元のまま出すほうが実害が小さい
+      return true;
+    }
+  })();
+  return orientationProbe;
 }
 
 /** ブラウザにファイルを保存させる。生成物は手元にしかないので送信は起きない */
@@ -223,9 +257,13 @@ export default function Calculator() {
       // 元の寸法を先に出しておく（処理前に「何px→何px」が見えるように）
       for (const entry of added) {
         try {
-          const bitmap = await createImageBitmap(entry.file, { imageOrientation: 'none' });
+          const bitmap = await createImageBitmap(entry.file);
           const orientation = await readOrientation(entry.file);
-          const size = orientedSize({ width: bitmap.width, height: bitmap.height }, orientation);
+          const size = visibleSize(
+            { width: bitmap.width, height: bitmap.height },
+            orientation,
+            await browserAppliesExifOrientation(),
+          );
           bitmap.close();
           setItems((prev) =>
             prev.map((item) =>
@@ -260,9 +298,11 @@ export default function Calculator() {
   /** 1枚を処理する。ここが実際の描画とエンコード */
   const processItem = async (item: Item): Promise<Result> => {
     const orientation = await readOrientation(item.file);
-    const bitmap = await createImageBitmap(item.file, { imageOrientation: 'none' });
+    const applies = await browserAppliesExifOrientation();
+    const bitmap = await createImageBitmap(item.file);
     try {
-      const oriented = drawOriented(bitmap, orientation);
+      // ブラウザが既に向きを直しているなら、ここでは回さない（二重補正を避ける）
+      const oriented = drawOriented(bitmap, orientationToApply(orientation, applies));
       const target = computeTargetSize(
         { width: oriented.width, height: oriented.height },
         spec,
@@ -316,14 +356,23 @@ export default function Calculator() {
   };
 
   const onRun = async () => {
-    if (running || items.length === 0) return;
+    // 読み込みに失敗したものは処理しない（`canRun` の判定と揃える）
+    const targets = items.filter((item) => item.status !== 'error');
+    if (running || targets.length === 0) return;
     setRunning(true);
     releaseUrls();
-    setItems((prev) => prev.map((item) => ({ ...item, status: 'working', result: undefined, message: undefined })));
+    const ids = new Set(targets.map((item) => item.id));
+    setItems((prev) =>
+      prev.map((item) =>
+        ids.has(item.id)
+          ? { ...item, status: 'working', result: undefined, message: undefined }
+          : item,
+      ),
+    );
     trackToolUse('gazo-resize', `run-${mode}`);
 
     // 1枚ずつ順番に処理する。大きな画像を同時に展開するとメモリを使い切るため
-    for (const item of items) {
+    for (const item of targets) {
       try {
         const result = await processItem(item);
         setItems((prev) =>

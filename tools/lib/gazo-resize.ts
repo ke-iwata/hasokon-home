@@ -466,3 +466,75 @@ export function orientedSize(size: Size, orientation: number | null): Size {
     ? { width: size.height, height: size.width }
     : { width: size.width, height: size.height };
 }
+
+/* ------------------------------------------------------------------ *
+ * ブラウザが EXIF の向きを自分で反映するかの判定
+ * ------------------------------------------------------------------ */
+
+/**
+ * 判定に使う極小のJPEG（base64）。**画素は 2×1、EXIF の Orientation は 6**。
+ *
+ * `createImageBitmap()` が EXIF を反映するなら 1×2（縦長）で、
+ * 反映しないなら 2×1（横長）で返ってくる。この1枚を復号するだけで、
+ * そのブラウザが自動で回すかどうかが分かる。
+ *
+ * **なぜ実測するのか。** 仕様上は `imageOrientation: 'none'` を渡せば
+ * 「EXIF を反映しない生の画素」が返るはずだが、Chromium は 141 の時点でも
+ * この指定を無視して**常に EXIF を反映した状態**で返す
+ * （[whatwg/html#7210](https://github.com/whatwg/html/issues/7210)）。
+ * 反映済みの画像にこちらでも回転を掛けると二重補正になり、
+ * 縦撮りの写真がかえって横倒しになる。オプションの意味を信用せず、
+ * 実際に返ってきた寸法で決める。
+ */
+export const ORIENTATION_PROBE_JPEG_BASE64 =
+  '/9j/4QAiRXhpZgAASUkqAAgAAAABABIBAwABAAAABgAAAAAAAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAABAAIDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAb/xAAbEAEAAAcAAAAAAAAAAAAAAAAAAQMFBjZ0sv/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwt/HqZqSuIAA//9k=';
+
+/** 判定用JPEGの、EXIF を反映していないときの寸法 */
+export const ORIENTATION_PROBE_STORED_SIZE: Size = { width: 2, height: 1 };
+
+/**
+ * 判定用JPEGのバイト列。
+ * `Blob` に渡せるよう、実体が `ArrayBuffer` であることを型でも示している
+ * （`Uint8Array<ArrayBufferLike>` は `BlobPart` として受け付けられない）。
+ */
+export function orientationProbeBytes(): Uint8Array<ArrayBuffer> {
+  const binary = atob(ORIENTATION_PROBE_JPEG_BASE64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+/**
+ * 判定用JPEGを復号した寸法から、「ブラウザが EXIF の向きを自分で反映したか」を判定する。
+ * 縦長（1×2）で返ってきていれば反映済み。
+ */
+export function probeSaysBrowserApplies(decoded: Size): boolean {
+  return decoded.height > decoded.width;
+}
+
+/**
+ * こちらで掛けるべき回転。
+ *
+ * ブラウザが既に反映しているなら**何もしない**（1 = そのまま）。
+ * 反映しないブラウザでだけ、EXIF から読んだ向きを自分で掛ける。
+ */
+export function orientationToApply(
+  orientation: number | null,
+  browserApplies: boolean,
+): number | null {
+  return browserApplies ? 1 : orientation;
+}
+
+/**
+ * 復号した画像の「見た目上の寸法」。
+ *
+ * ブラウザが EXIF を反映していれば、返ってきた寸法がそのまま見た目の寸法になる。
+ * 反映していない場合だけ、EXIF の向きで縦横を読み替える。
+ */
+export function visibleSize(
+  decoded: Size,
+  orientation: number | null,
+  browserApplies: boolean,
+): Size {
+  return browserApplies
+    ? { width: decoded.width, height: decoded.height }
+    : orientedSize(decoded, orientation);
+}

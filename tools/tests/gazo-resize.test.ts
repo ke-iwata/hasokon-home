@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   ACCEPTED_TYPES,
   computeTargetSize,
+  ORIENTATION_PROBE_STORED_SIZE,
+  orientationProbeBytes,
+  orientationToApply,
+  probeSaysBrowserApplies,
+  visibleSize,
   downscaleSteps,
   extensionFor,
   formatBytes,
@@ -446,5 +451,70 @@ describe('orientationTransform / orientedSize', () => {
       width: 750,
       height: 1000,
     });
+  });
+});
+
+/**
+ * ブラウザが EXIF の向きを自分で反映するかの判定。
+ *
+ * `createImageBitmap(blob, { imageOrientation: 'none' })` は仕様上「反映しない生の画素」を
+ * 返すはずだが、**Chromium 141 はこの指定を無視して常に反映する**（whatwg/html#7210。
+ * この環境の Chromium 141.0.7390.37 で実測）。反映済みの画像にこちらでも回転を掛けると
+ * 二重補正になり、縦撮りの写真がかえって横倒しになる。
+ * オプションの意味ではなく、判定用JPEGの実測で決める。
+ */
+describe('ブラウザの自動回転の判定', () => {
+  it('判定用JPEGは、EXIF を読める最小のJPEGになっている（向き6・画素2×1）', () => {
+    const bytes = orientationProbeBytes();
+    expect(bytes[0]).toBe(0xff); // SOI
+    expect(bytes[1]).toBe(0xd8);
+    expect(readExifOrientation(bytes)).toBe(6);
+    // ページに埋め込む定数なので、大きくなっていないことも見張る
+    expect(bytes.length).toBeLessThan(1024);
+    expect(ORIENTATION_PROBE_STORED_SIZE).toEqual({ width: 2, height: 1 });
+  });
+
+  it('縦長（1×2）で返ってきたら、ブラウザが向きを反映している', () => {
+    expect(probeSaysBrowserApplies({ width: 1, height: 2 })).toBe(true);
+    expect(probeSaysBrowserApplies(ORIENTATION_PROBE_STORED_SIZE)).toBe(false);
+  });
+
+  it('ブラウザが反映するなら、こちらでは回さない（二重補正を避ける）', () => {
+    for (const orientation of [1, 2, 3, 4, 5, 6, 7, 8, null]) {
+      expect(orientationToApply(orientation, true)).toBe(1);
+    }
+  });
+
+  it('ブラウザが反映しないなら、EXIF から読んだ向きをこちらで掛ける', () => {
+    expect(orientationToApply(6, false)).toBe(6);
+    expect(orientationToApply(3, false)).toBe(3);
+    expect(orientationToApply(null, false)).toBeNull();
+  });
+
+  it('見た目上の寸法は、ブラウザが反映済みならそのまま', () => {
+    // 縦撮り（画素は 4000x3000・向き6）を反映済みで返すブラウザ → 3000x4000 が届く
+    expect(visibleSize({ width: 3000, height: 4000 }, 6, true)).toEqual({
+      width: 3000,
+      height: 4000,
+    });
+  });
+
+  it('見た目上の寸法は、ブラウザが反映しないときだけ縦横を読み替える', () => {
+    expect(visibleSize({ width: 4000, height: 3000 }, 6, false)).toEqual({
+      width: 3000,
+      height: 4000,
+    });
+    expect(visibleSize({ width: 4000, height: 3000 }, 3, false)).toEqual({
+      width: 4000,
+      height: 3000,
+    });
+  });
+
+  it('どちらのブラウザでも、最後に得られる見た目の寸法は一致する', () => {
+    // 反映するブラウザは 3000x4000 を返し、反映しないブラウザは 4000x3000 を返す。
+    // 判定を通せば、どちらも同じ「縦 3000x4000」になる
+    expect(visibleSize({ width: 3000, height: 4000 }, 6, true)).toEqual(
+      visibleSize({ width: 4000, height: 3000 }, 6, false),
+    );
   });
 });
