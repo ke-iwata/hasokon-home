@@ -200,6 +200,7 @@ npm run build    # out/ に静的出力
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
+| 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
@@ -209,8 +210,8 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール29本（ほかに公開前が1本：`password`。`stage: 'preview'`）/ 用途別ルーレット10本 /
-  使い方の記事6本 / テスト1191件
+- ツール29本（ほかに公開前が2本：`password` / `shuzei-kaisei`。`stage: 'preview'`）/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1243件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -265,6 +266,16 @@ npm run build    # out/ に静的出力
   **増税分は税抜10円/箱だが、たばこ税は消費税の課税対象なので小売価格では11円**。
   将来の小売価格は認可制のため確定せず、画面では必ず「想定」と添える
   （[docs/features/tabako-zei-neage.md](../docs/features/tabako-zei-neage.md)）
+- **酒税の2026年10月改正は「一本化」なので、上がるものと下がるものが同時にある**。
+  ビール系飲料が1klあたり155,000円に揃うため、ビールは350mlで▲9.10円の**減税**、
+  発泡酒（麦芽比率25%未満）・第三のビールは+7.26円、チューハイ等は+7.00円の増税。
+  `estimateBurden()` の合計は**マイナスにもなる**ので、絶対値や「増加分だけ」に
+  丸めないこと（内訳は `annualIncrease` / `annualDecrease`）。
+  第三のビールは税率区分としては2023年10月に発泡酒へ統合済みで、計算機では1つにまとめ、
+  早見表には行を残してある。**段階の見出しに「現行」と書かない**（静的書き出しなので
+  期間そのものを名前にする）。比較する2つの段階は `BEFORE_STAGE_ID` / `AFTER_STAGE_ID`
+  で固定してあり、開いた日で切り替わらない
+  （[docs/features/shuzei-kaisei-hayamihyo.md](../docs/features/shuzei-kaisei-hayamihyo.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
