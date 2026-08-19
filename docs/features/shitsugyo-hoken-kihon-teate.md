@@ -1,8 +1,8 @@
 # 新ツール「失業保険（雇用保険の基本手当）計算機」
 
-**状態**：実装済み・公開前（2026-08-19 起票、同日実装。令和8年8月1日改定の日額に対応し
-`stage: 'preview'` で登録した → テスト環境で確認できたら、公開するPRで `'public'` に上げ、
-同じPRで `home/index.html` のカードと `home/llms.txt` の行を足す）
+**状態**：**公開済み**（2026-08-19。令和8年8月1日改定の日額に対応した状態で
+`stage: 'public'` に上げ、同じPRで `home/index.html` のカードと `home/llms.txt` の行を
+足した）
 **対象**：`tools/`（`hasokon.com/tools/shitsugyo-hoken/`）
 **起票**：2026-08-19
 
