@@ -70,6 +70,50 @@ export interface Target {
   down: boolean;
 }
 
+/**
+ * スピナー。プランジャーのレーンの途中に立てた回転板。
+ *
+ * 球が通り抜けるたびに回り、回っているあいだ点が入る（勢いが強いほど長く回る）。
+ * **通り抜けを妨げない**——当たり判定を持たせると打ち出しが台の上まで届かなくなるので、
+ * 「線をまたいだか」だけを見て加点する。
+ */
+export interface Spinner {
+  x: number;
+  /** レーンを横切る線の高さ */
+  y: number;
+  /** 線の幅（レーンの内寸） */
+  w: number;
+  /** 描画用の回転角（ラジアン） */
+  angle: number;
+  /** 残りの回転の勢い（0で止まる） */
+  spin: number;
+}
+
+/**
+ * 吸い込みホール（サドン）。落ちた球をしばらく抱えてから撃ち出す。
+ *
+ * **抱えているあいだ球は落ちない**ので、遊びに「ひと呼吸」が生まれる。
+ * 撃ち出したあとに入り口へ戻って即再捕獲されないよう、`cool` を置いてある
+ * （これが無いと吸い込み → 撃ち出し → 吸い込みを繰り返して抜け出せない）
+ */
+export interface Saucer {
+  x: number;
+  y: number;
+  r: number;
+  /** 抱えている残り秒数（0なら空） */
+  hold: number;
+  /** 撃ち出した直後の無効時間（秒） */
+  cool: number;
+}
+
+/** 天井のレーン。3つ全部を通すとボーナスと倍率が上がる */
+export interface Lane {
+  x: number;
+  y: number;
+  w: number;
+  lit: boolean;
+}
+
 export interface Flipper {
   pivotX: number;
   pivotY: number;
@@ -82,7 +126,17 @@ export interface Flipper {
   angle: number;
 }
 
-export type HitKind = 'bumper' | 'kicker' | 'target' | 'clear' | 'drain' | 'launch';
+export type HitKind =
+  | 'bumper'
+  | 'kicker'
+  | 'target'
+  | 'clear'
+  | 'drain'
+  | 'launch'
+  | 'spinner'
+  | 'saucer'
+  | 'lane'
+  | 'laneClear';
 
 export interface PinballState {
   ball: Ball;
@@ -90,6 +144,9 @@ export interface PinballState {
   flippers: [Flipper, Flipper];
   bumpers: Bumper[];
   targets: Target[];
+  spinner: Spinner;
+  saucer: Saucer;
+  lanes: Lane[];
   score: number;
   /** 残りの球（打ち出し前の球を含む） */
   balls: number;
@@ -135,7 +192,26 @@ const SLING_KICK = 0.55;
 const BUMPER_KICK = 1.15;
 
 /** 得点。倍率を掛ける前の素点 */
-const POINTS = { bumper: 100, kicker: 10, target: 250, clear: 1000 } as const;
+const POINTS = {
+  bumper: 100,
+  kicker: 10,
+  target: 250,
+  clear: 1000,
+  /** スピナーは半回転ごと。強く打つほど長く回るので、打ち出しの手応えになる */
+  spinner: 60,
+  saucer: 500,
+  lane: 50,
+  laneClear: 1000,
+} as const;
+
+/** スピナーの回りかた。`spin` は「残りの回転量（ラジアン）」で、毎秒この割合で減る */
+const SPIN_PER_SPEED = 26;
+const SPIN_DECAY = 1.6;
+/** 吸い込みホールが球を抱える秒数と、撃ち出したあと吸わない秒数 */
+const SAUCER_HOLD = 0.7;
+const SAUCER_COOL = 0.6;
+/** 吸い込みホールから撃ち出す速さ（上のバンパー地帯へ送り込む強さ） */
+const SAUCER_KICK = 2.35;
 
 /**
  * 台の壁。
@@ -189,6 +265,27 @@ export function buildTargets(): Target[] {
 }
 
 /**
+ * スピナーはレーンの中に置く。打ち出した球が**必ず**通るので、
+ * 「強く打つと長く回って点が伸びる」が打ち出しの手応えになる
+ */
+export function buildSpinner(): Spinner {
+  return { x: LANE_X, y: 0.72, w: 0.085, angle: 0, spin: 0 };
+}
+
+/**
+ * 吸い込みホールは盤面のまんなか（バンパーと的のあいだ）。
+ * ここは元は素通りの空白で、落ちてくる球にさわれる場所が無かった
+ */
+export function buildSaucer(): Saucer {
+  return { x: 0.5, y: 0.55, r: 0.042, hold: 0, cool: 0 };
+}
+
+/** 天井のレーン。打ち出した球が回り込みから流れ込む道の途中に置く */
+export function buildLanes(): Lane[] {
+  return [0.17, 0.35, 0.53].map((x) => ({ x, y: 0.17, w: 0.12, lit: false }));
+}
+
+/**
  * フリッパー。支点は左右の斜面（`kicker`）の下端に合わせる。
  *
  * **先端どうしの隙間は球3つぶんは空けること。** 隙間が球1〜2つぶんだと、
@@ -220,6 +317,9 @@ export function initialState(): PinballState {
     flippers: buildFlippers(),
     bumpers: buildBumpers(),
     targets: buildTargets(),
+    spinner: buildSpinner(),
+    saucer: buildSaucer(),
+    lanes: buildLanes(),
     score: 0,
     balls: 3,
     multiplier: 1,
@@ -353,6 +453,9 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
   const hits: HitKind[] = [];
   let flippers = state.flippers;
   let plunger = state.plunger;
+  // スピナーは球と関係なく惰性で回り続ける（打ち出したあとの余韻）。
+  // 点は「回った分」に付くので、回転の管理は状態の側に置く
+  const spinner = spinDown(state.spinner, clamped);
 
   // ---- 打ち出し前。プランジャーを引いて、離した瞬間に打ち出す
   if (state.status === 'ready') {
@@ -360,6 +463,7 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
       return {
         ...state,
         hits: [],
+        spinner,
         plunger: Math.min(1, plunger + PLUNGER_RATE * clamped),
         ball: waitingBall(),
         flippers: swingBoth(flippers, input, clamped),
@@ -372,6 +476,7 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
         plunger: 0,
         restSec: 0,
         hits: ['launch'],
+        spinner,
         ball: { x: LANE_X, y: BALL_START_Y, vx: 0, vy: -(LAUNCH_MIN + LAUNCH_ADD * plunger) },
         flippers: swingBoth(flippers, input, clamped),
       };
@@ -379,6 +484,7 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
     return {
       ...state,
       hits: [],
+      spinner,
       ball: waitingBall(),
       flippers: swingBoth(flippers, input, clamped),
     };
@@ -387,9 +493,47 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
   // ---- 遊んでいる最中
   const ball: Ball = { ...state.ball };
   let targets = state.targets;
+  let lanes = state.lanes;
+  let saucer = { ...state.saucer, cool: Math.max(0, state.saucer.cool - clamped) };
   let score = state.score;
   let multiplier = state.multiplier;
   const sub = clamped / SUBSTEPS;
+
+  // ---- 吸い込みホールに抱えられている最中は、物理を止めて待たせる。
+  // ここで `continue` せずに下の substep を回すと、抱えたはずの球が
+  // 重力で落ちていってしまう
+  if (saucer.hold > 0) {
+    const hold = saucer.hold - clamped;
+    if (hold > 0) {
+      return {
+        ...state,
+        ball: { x: saucer.x, y: saucer.y, vx: 0, vy: 0 },
+        spinner,
+        saucer: { ...saucer, hold },
+        flippers: swingBoth(flippers, input, clamped),
+        hits: [],
+        restSec: 0,
+      };
+    }
+    // 抱え終わり。真上のバンパー地帯へ撃ち出す（わずかに横へ振って毎回同じ道にしない）
+    return {
+      ...state,
+      ball: {
+        x: saucer.x,
+        y: saucer.y - saucer.r - BALL_R,
+        vx: (state.score % 2 === 0 ? 1 : -1) * 0.35,
+        vy: -SAUCER_KICK,
+      },
+      spinner,
+      saucer: { ...saucer, hold: 0, cool: SAUCER_COOL },
+      flippers: swingBoth(flippers, input, clamped),
+      hits: [],
+      restSec: 0,
+    };
+  }
+
+  let spinBoost = 0;
+  let captured = false;
 
   for (let i = 0; i < SUBSTEPS; i += 1) {
     const before = flippers;
@@ -401,8 +545,51 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
     ball.vy += GRAVITY * sub;
     ball.vx -= ball.vx * FRICTION * sub;
     ball.vy -= ball.vy * FRICTION * sub;
+    const prevY = ball.y;
     ball.x += ball.vx * sub;
     ball.y += ball.vy * sub;
+
+    // ---- スピナー。**線をまたいだか**だけを見る。
+    // ここに当たり判定を置くと打ち出しが台の上まで届かなくなる
+    if (
+      Math.abs(ball.x - spinner.x) < spinner.w / 2 &&
+      (prevY - spinner.y) * (ball.y - spinner.y) <= 0 &&
+      prevY !== ball.y
+    ) {
+      spinBoost += Math.abs(ball.vy) * SPIN_PER_SPEED;
+    }
+
+    // ---- 天井のレーン。3つ全部を通すとボーナスと倍率。
+    // **「線をまたいだか」で見る**（重なっているかで見ると、3つそろえて消灯した
+    // 直後にまだ帯の中にいる球が同じレーンを点け直してしまう）
+    for (let li = 0; li < lanes.length; li += 1) {
+      const lane = lanes[li];
+      if (lane.lit) continue;
+      if (Math.abs(ball.x - lane.x) > lane.w / 2) continue;
+      if ((prevY - lane.y) * (ball.y - lane.y) > 0 || prevY === ball.y) continue;
+      lanes = lanes.map((x, xi) => (xi === li ? { ...x, lit: true } : x));
+      score += POINTS.lane * multiplier;
+      hits.push('lane');
+      if (lanes.every((x) => x.lit)) {
+        score += POINTS.laneClear * multiplier;
+        multiplier = Math.min(5, multiplier + 1);
+        lanes = buildLanes();
+        hits.push('laneClear');
+      }
+    }
+
+    // ---- 吸い込みホール。入ったら抱えて、下の物理をこのフレームで打ち切る
+    if (saucer.cool <= 0 && Math.hypot(ball.x - saucer.x, ball.y - saucer.y) < saucer.r) {
+      saucer = { ...saucer, hold: SAUCER_HOLD };
+      ball.x = saucer.x;
+      ball.y = saucer.y;
+      ball.vx = 0;
+      ball.vy = 0;
+      score += POINTS.saucer * multiplier;
+      hits.push('saucer');
+      captured = true;
+      break;
+    }
 
     for (const w of WALLS) {
       const c = contactSegment(ball, w.x1, w.y1, w.x2, w.y2, WALL_R);
@@ -461,6 +648,31 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
     clampSpeed(ball);
   }
 
+  // ---- スピナーの回った分を点にする。半回転ごとに1回
+  const spun: Spinner = { ...spinner, spin: Math.min(SPIN_MAX, spinner.spin + spinBoost) };
+  const turns =
+    Math.floor(spinner.angle / Math.PI) - Math.floor(state.spinner.angle / Math.PI);
+  if (turns > 0) {
+    score += POINTS.spinner * turns * multiplier;
+    hits.push('spinner');
+  }
+
+  if (captured) {
+    return {
+      ...state,
+      ball,
+      flippers,
+      targets,
+      lanes,
+      saucer,
+      spinner: spun,
+      score,
+      multiplier,
+      hits,
+      restSec: 0,
+    };
+  }
+
   // ---- 詰まり対策。壁や的の上で止まったままにならないよう軽く突く
   let restSec = Math.hypot(ball.vx, ball.vy) < 0.1 ? state.restSec + clamped : 0;
   if (restSec > 1.5) {
@@ -474,13 +686,31 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
     const balls = state.balls - 1;
     hits.push('drain');
     if (balls <= 0) {
-      return { ...state, ball, flippers, targets, score, multiplier, balls: 0, status: 'gameover', hits, restSec: 0 };
+      return {
+        ...state,
+        ball,
+        flippers,
+        targets,
+        lanes,
+        saucer,
+        spinner: spun,
+        score,
+        multiplier,
+        balls: 0,
+        status: 'gameover',
+        hits,
+        restSec: 0,
+      };
     }
     return {
       ...state,
       ball: waitingBall(),
       flippers,
+      // 球を落としたら的もレーンも元に戻る（倍率が1に戻るのと同じ扱い）
       targets: buildTargets(),
+      lanes: buildLanes(),
+      saucer: buildSaucer(),
+      spinner: spun,
       score,
       multiplier: 1,
       balls,
@@ -493,10 +723,34 @@ export function step(state: PinballState, dt: number, input: PinballInput): Pinb
 
   // ---- 打ち出しが弱くてレーンに戻ってきたら、打ち直させる
   if (ball.x > LANE_LEFT + BALL_R && ball.y > BALL_START_Y && ball.vy >= 0) {
-    return { ...state, ball: waitingBall(), flippers, targets, score, multiplier, status: 'ready', plunger: 0, hits, restSec: 0 };
+    return {
+      ...state,
+      ball: waitingBall(),
+      flippers,
+      targets,
+      lanes,
+      saucer,
+      spinner: spun,
+      score,
+      multiplier,
+      status: 'ready',
+      plunger: 0,
+      hits,
+      restSec: 0,
+    };
   }
 
-  return { ...state, ball, flippers, targets, score, multiplier, hits, restSec };
+  return { ...state, ball, flippers, targets, lanes, saucer, spinner: spun, score, multiplier, hits, restSec };
+}
+
+/** スピナーの回転の上限（ラジアン/秒）。速すぎると描画がただのちらつきになる */
+const SPIN_MAX = 46;
+
+/** スピナーを惰性で回す。球と関係なく、勢いが尽きるまで回り続ける */
+function spinDown(spinner: Spinner, dt: number): Spinner {
+  if (spinner.spin <= 0) return spinner;
+  const spin = Math.max(0, spinner.spin - spinner.spin * SPIN_DECAY * dt);
+  return { ...spinner, angle: spinner.angle + spinner.spin * dt, spin };
 }
 
 /** 打ち出し前でもフリッパーは動かす（構えられるようにする） */

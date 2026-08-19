@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   BALL_R,
+  buildLanes,
+  buildSaucer,
   buildTargets,
   contactSegment,
   flipperTip,
@@ -29,6 +31,117 @@ function run(state: PinballState, frames: number, input: PinballInput = IDLE): P
 function launch(state: PinballState, sec = 0.5): PinballState {
   return step(run(state, Math.max(1, Math.round(sec * 60)), PULL), FRAME, IDLE);
 }
+
+describe('スピナー（レーンの回転板）', () => {
+  it('打ち出すと回り、回った分だけ点が入る', () => {
+    const shot = launch(initialState(), 0.5);
+    // 打ち出した球はレーンを上ってスピナーの線をまたぐ
+    const s = run(shot, 30);
+    expect(s.spinner.spin).toBeGreaterThan(0);
+    expect(s.score).toBeGreaterThan(0);
+  });
+
+  it('**強く打つほど長く回って点が伸びる。**これが打ち出しの手応えになる', () => {
+    const weak = run(launch(initialState(), 0), 90).score;
+    const strong = run(launch(initialState(), 1), 90).score;
+    expect(strong).toBeGreaterThan(weak);
+  });
+
+  it('勢いは尽きる（回りっぱなしで点が入り続けない）', () => {
+    const s = run(launch(initialState(), 1), 60 * 8);
+    expect(s.spinner.spin).toBeLessThan(0.5);
+  });
+});
+
+describe('天井のレーン', () => {
+  /** レーンの真上に球を置いて、通り抜けさせる */
+  function pass(state: PinballState, index: number): PinballState {
+    const lane = state.lanes[index];
+    return step(
+      { ...state, ball: { x: lane.x, y: lane.y - 0.02, vx: 0, vy: 1.2 } },
+      FRAME,
+      IDLE,
+    );
+  }
+
+  it('通ると点灯して点が入る', () => {
+    const s = pass(launch(initialState()), 0);
+    expect(s.lanes[0].lit).toBe(true);
+    expect(s.lanes[1].lit).toBe(false);
+  });
+
+  it('同じレーンを何度通っても二重に点は入らない', () => {
+    const once = pass(launch(initialState()), 0);
+    const twice = pass(once, 0);
+    expect(twice.score).toBe(once.score);
+  });
+
+  it('3つそろうと倍率が上がり、レーンは消灯して次を狙える', () => {
+    let s = launch(initialState());
+    const before = s.multiplier;
+    for (let i = 0; i < 3; i += 1) s = pass(s, i);
+    expect(s.multiplier).toBe(before + 1);
+    expect(s.lanes.every((l) => !l.lit)).toBe(true);
+  });
+});
+
+describe('吸い込みホール', () => {
+  /** ホールの真上に球を置く */
+  function drop(state: PinballState): PinballState {
+    const h = state.saucer;
+    return step({ ...state, ball: { x: h.x, y: h.y - 0.01, vx: 0, vy: 0.5 } }, FRAME, IDLE);
+  }
+
+  it('入ると抱えて、点が入る', () => {
+    const s = drop(launch(initialState()));
+    expect(s.saucer.hold).toBeGreaterThan(0);
+    expect(s.score).toBeGreaterThan(0);
+  });
+
+  it('**抱えているあいだ球は落ちない。**重力で抜けていくと待つ意味が無くなる', () => {
+    const held = drop(launch(initialState()));
+    const later = run(held, 30);
+    expect(later.ball.x).toBeCloseTo(held.saucer.x);
+    expect(later.ball.y).toBeCloseTo(held.saucer.y);
+    expect(later.balls).toBe(held.balls);
+  });
+
+  it('しばらくすると上へ撃ち出される', () => {
+    let s = drop(launch(initialState()));
+    const held = s.saucer.hold;
+    // 抱えているあいだは動かない。抱え終わった最初のフレームを見る
+    while (s.saucer.hold > 0) s = step(s, FRAME, IDLE);
+    expect(held).toBeGreaterThan(0);
+    expect(s.ball.vy).toBeLessThan(0);
+    expect(s.ball.y).toBeLessThan(buildSaucer().y);
+  });
+
+  it('**撃ち出した直後は吸い込まない。**でないと出入りを繰り返して抜け出せない', () => {
+    const shot = run(drop(launch(initialState())), 60);
+    expect(shot.saucer.cool).toBeGreaterThan(0);
+    // 出口に置き直しても、冷却中は捕まらない
+    const again = step(
+      { ...shot, ball: { x: shot.saucer.x, y: shot.saucer.y, vx: 0, vy: 0 } },
+      FRAME,
+      IDLE,
+    );
+    expect(again.saucer.hold).toBe(0);
+  });
+});
+
+describe('球を落としたとき', () => {
+  it('的とレーンは元に戻る（倍率が1に戻るのと同じ扱い）', () => {
+    let s = launch(initialState());
+    s = step({ ...s, lanes: buildLanes().map((l) => ({ ...l, lit: true })) }, FRAME, IDLE);
+    // 台の下へ抜けさせる
+    s = step({ ...s, ball: { ...s.ball, x: 0.45, y: TABLE_H + 0.1, vx: 0, vy: 2 } }, FRAME, IDLE);
+    expect(s.balls).toBe(2);
+    expect(s.multiplier).toBe(1);
+    expect(s.lanes.every((l) => !l.lit)).toBe(true);
+    expect(s.targets.every((t) => !t.down)).toBe(true);
+    expect(s.saucer.hold).toBe(0);
+  });
+});
 
 describe('初期状態', () => {
   it('球はレーンの底で打ち出しを待つ', () => {
