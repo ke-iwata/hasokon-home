@@ -187,6 +187,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-15',
   },
   {
+    slug: 'shuzei-kaisei',
+    icon: 'BeerStein',
+    name: '酒税改正 早見表・負担額計算',
+    description:
+      '2026年10月1日にビール系飲料の酒税が1klあたり155,000円に一本化されます。ビールは350mlで9.10円の減税、発泡酒・第三のビールは7.26円、チューハイ等は7.00円の増税。週に飲む本数を入れると、年間の負担がいくら増える（減る）かと、9月中に買うと得なものが分かります。',
+    category: 'お金・社会保険',
+    // 公開の判断は運営者。施行前（9月上旬）の公開を想定して test 環境で確認してもらう段階
+    stage: 'preview',
+    updatedAt: '2026-08-19',
+  },
+  {
     slug: 'nenshu-kabe',
     icon: 'Wall',
     name: '年収の壁 計算機',

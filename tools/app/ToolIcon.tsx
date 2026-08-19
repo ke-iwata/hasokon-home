@@ -1,6 +1,7 @@
 import {
   ArticleIcon,
   BabyIcon,
+  BeerSteinIcon,
   BicycleIcon,
   CalendarCheckIcon,
   CalendarDotsIcon,
@@ -52,6 +53,7 @@ type PhosphorIcon = typeof WallIcon;
 const ICONS: Record<string, PhosphorIcon> = {
   Article: ArticleIcon,
   Baby: BabyIcon,
+  BeerStein: BeerSteinIcon,
   Bicycle: BicycleIcon,
   CalendarCheck: CalendarCheckIcon,
   CalendarDots: CalendarDotsIcon,
