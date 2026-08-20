@@ -314,6 +314,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-07-01',
   },
   {
+    slug: 'waribiki-percent',
+    icon: 'Percent',
+    name: '割引・パーセント計算',
+    description:
+      '「30%オフはいくら？」「割引率は何%？」を、税込／税抜と端数の丸め方（切り捨て・四捨五入・切り上げ）を選んで計算。二重割引（30%オフからさらに20%オフ）や、〇%オフ早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-08-20',
+  },
+  {
     slug: 'nenrei-keisan',
     icon: 'CalendarDots',
     name: '年齢計算・西暦和暦変換',
