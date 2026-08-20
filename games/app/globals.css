@@ -2074,6 +2074,137 @@ ol {
   }
 }
 
+/* ---- 二角取り（docs/features/game-nikakudori.md） ----
+   麻雀ソリティアと絵柄（.mj-face）を共有するため、牌の中身の SVG は同じ TileFace を使う。
+   ただし盤面は「1層の格子」なので、絶対配置ではなく grid で置く。ソリティア側の
+   .mj-tile は position:absolute で aspect-ratio を持たないため直接は流用できない。
+   盤の縦横比は 牌のアスペクト（40:54）× cols/rows で決まる。 */
+.nk-board {
+  --nk-cols: 10;
+  --nk-rows: 6;
+  --nk-gap: 3px;
+  --nk-pad: 4%;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--nk-cols), 1fr);
+  gap: var(--nk-gap);
+  padding: var(--nk-pad);
+  background: var(--mj-felt);
+  border-radius: var(--radius-sm);
+  width: 100%;
+  /* 幅は --board-max で制限。中に敷いた牌の aspect-ratio が高さを決める */
+  max-width: var(--board-max, 460px);
+  margin: 6px auto 0;
+}
+
+.nk-slot {
+  aspect-ratio: 40 / 54;
+}
+
+.nk-empty {
+  background: transparent;
+  /* 消えた牌の位置は空きマスとして残す。線を描くとき格子の中に「窓」があるように見える */
+  border-radius: 14%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14);
+}
+
+.nk-tile {
+  aspect-ratio: 40 / 54;
+  display: block;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #b7ab93;
+  border-radius: 14%;
+  background: linear-gradient(155deg, #fffdf6 0%, #f7f1e3 55%, #e9e0ca 100%);
+  box-shadow: 2px 3px 0 rgba(52, 40, 22, 0.3);
+  cursor: pointer;
+  min-width: 0;
+  min-height: 0;
+}
+
+.nk-tile:hover {
+  background: linear-gradient(155deg, #ffffff 0%, #fbf7ec 55%, #f0e8d4 100%);
+}
+
+.nk-tile.selected {
+  border-color: var(--accent);
+  background: linear-gradient(155deg, #fffdf6 0%, #eaf7ef 55%, #cfe9da 100%);
+  box-shadow:
+    0 0 0 2px var(--accent),
+    2px 3px 0 rgba(52, 40, 22, 0.3);
+}
+
+.nk-tile.hinted {
+  animation: nk-hint 0.66s ease-in-out 3;
+}
+
+@keyframes nk-hint {
+  50% {
+    box-shadow:
+      0 0 0 3px #f0b429,
+      2px 3px 0 rgba(52, 40, 22, 0.3);
+  }
+}
+
+.nk-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #e8e4dc;
+  font-size: 0.9rem;
+}
+
+/* 消せた瞬間の経路。盤いっぱいに敷いた SVG に polyline を描く。
+   preserveAspectRatio="none" で盤の縦横比のまま伸縮する */
+.nk-path {
+  position: absolute;
+  inset: var(--nk-pad);
+  width: calc(100% - 2 * var(--nk-pad));
+  height: calc(100% - 2 * var(--nk-pad));
+  pointer-events: none;
+  overflow: visible;
+}
+
+.nk-path polyline {
+  fill: none;
+  stroke: #f0b429;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 3px rgba(240, 180, 41, 0.8));
+  animation: nk-path-flash 0.4s ease-out forwards;
+}
+
+@keyframes nk-path-flash {
+  0% {
+    opacity: 0;
+    stroke-width: 4;
+  }
+  30% {
+    opacity: 1;
+    stroke-width: 4;
+  }
+  100% {
+    opacity: 0;
+    stroke-width: 6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nk-tile.hinted {
+    animation: none;
+    box-shadow:
+      0 0 0 3px #f0b429,
+      2px 3px 0 rgba(52, 40, 22, 0.3);
+  }
+  .nk-path polyline {
+    animation: none;
+    opacity: 0.9;
+  }
+}
+
 /* ---- 大富豪（docs/features/game-daifugo.md） ---- */
 
 /* 場・手札とも1枚の幅を clamp で決める。トランプの絵柄（.playing-card）は

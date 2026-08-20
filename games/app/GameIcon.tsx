@@ -87,6 +87,40 @@ function TilesIcon({ size = 26 }: IconProps) {
 }
 
 /**
+ * 二角取り（同じ印の牌2枚を「曲がり角のある線」でつなぐ）。**自前で描いている。**
+ *
+ * 麻雀ソリティア（TilesIcon）と客層が重なるので、一覧で並んだときに紛れないよう
+ * **2枚を折れ線でつなぐ**形にした。このゲームの核は「経路がつながるかどうか」なので、
+ * それを描く。線は始点→上→右→終点の**2曲がり**にして、遊び方がひとめで伝わる。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function TilesPathIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 2枚の牌（左下と右上）。中央のドットが「同じ絵柄」の目印 */}
+      <rect x="28" y="140" width="72" height="88" rx="12" />
+      <circle cx="64" cy="184" r="12" fill="currentColor" stroke="none" />
+      <rect x="156" y="28" width="72" height="88" rx="12" />
+      <circle cx="192" cy="72" r="12" fill="currentColor" stroke="none" />
+      {/* 2枚をつなぐ折れ線（2曲がり）。実線で「経路が立った」感じを出す */}
+      <polyline points="64,140 64,72 156,72" />
+    </svg>
+  );
+}
+
+/**
  * 五目並べ（斜めに並んだ石）。**リバーシ・麻雀ソリティアと同じく自前で描いている。**
  *
  * リバーシの StonesIcon（白石と黒石が横に2つ）と紛れないよう、
@@ -441,6 +475,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Racquet: RacquetIcon,
   Stones: StonesIcon,
   Tiles: TilesIcon,
+  TilesPath: TilesPathIcon,
   FiveInARow: FiveInARowIcon,
   Blocks: BlocksIcon,
   Sevens: SevensIcon,
