@@ -260,10 +260,11 @@ export default function Game() {
       <details className="game-tips">
         <summary>この画面の見かた</summary>
         <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
-          丸い<strong>バンパー</strong>は100点、横に並ぶ<strong>的</strong>は250点、
-          まんなかの紫の<strong>吸い込みホール</strong>は500点（少し抱えてから上へ撃ち出します）。
-          天井の<strong>レーン</strong>は50点、通路の<strong>スピナー</strong>は回っているあいだ点が入ります。
-          <strong>的4つ</strong>か<strong>レーン3つ</strong>をそろえるとボーナス1000点で倍率が1つ上がります（最大5倍）。
+          丸い<strong>バンパー</strong>は100点、左の階段状の<strong>的</strong>は250点、
+          紫の<strong>吸い込みホール</strong>は500点（少し抱えてから上へ撃ち出します）。
+          天井の<strong>レーン</strong>は50点で、<strong>左の周回レーン</strong>に打ち上げると通ります。
+          打ち出しの通路の<strong>スピナー</strong>は回っているあいだ点が入ります。
+          <strong>的3つ</strong>か<strong>レーン3つ</strong>をそろえるとボーナス1000点で倍率が1つ上がります（最大5倍）。
           球を落とすと倍率は1に戻ります。球は3つです。
         </p>
       </details>
@@ -425,7 +426,7 @@ function drawPlayfield(ctx: CanvasRenderingContext2D, w: number, h: number, k: n
   ctx.fillRect(0, 0, w, h);
 
   // 上のバンパー地帯にだけ淡い明かりを置く。台の「奥」が分かる
-  const glow = ctx.createRadialGradient(0.48 * k, 0.34 * k, 0.02 * k, 0.48 * k, 0.34 * k, 0.62 * k);
+  const glow = ctx.createRadialGradient(0.52 * k, 0.4 * k, 0.02 * k, 0.52 * k, 0.4 * k, 0.62 * k);
   glow.addColorStop(0, 'rgba(96, 165, 250, 0.20)');
   glow.addColorStop(1, 'rgba(96, 165, 250, 0)');
   ctx.fillStyle = glow;
@@ -436,7 +437,7 @@ function drawPlayfield(ctx: CanvasRenderingContext2D, w: number, h: number, k: n
   ctx.lineWidth = Math.max(1, 0.004 * k);
   for (const r of [0.2, 0.3, 0.4]) {
     ctx.beginPath();
-    ctx.arc(0.48 * k, 0.34 * k, r * k, 0, Math.PI * 2);
+    ctx.arc(0.52 * k, 0.4 * k, r * k, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -528,6 +529,20 @@ function drawWalls(ctx: CanvasRenderingContext2D, fx: Fx, k: number): void {
   for (const pass of [0, 1] as const) {
     for (const wall of WALLS) {
       const kicker = wall.kind === 'kicker';
+      // 一方通行の門は**細い破線**にして「壁ではない」と分かるようにする
+      if (wall.kind === 'gate') {
+        if (pass === 0) continue;
+        ctx.save();
+        ctx.setLineDash([0.02 * k, 0.02 * k]);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+        ctx.lineWidth = Math.max(1, 0.006 * k);
+        ctx.beginPath();
+        ctx.moveTo(wall.x1 * k, wall.y1 * k);
+        ctx.lineTo(wall.x2 * k, wall.y2 * k);
+        ctx.stroke();
+        ctx.restore();
+        continue;
+      }
       if (pass === 0) {
         ctx.strokeStyle = kicker ? '#9d174d' : '#334155';
         ctx.lineWidth = WALL_R * 2 * k;
