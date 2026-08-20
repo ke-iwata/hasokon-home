@@ -235,6 +235,19 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    // 「二角取り」はジャンルの一般名称。仕様書の状態欄のとおり運営者が J-PlatPat で
+    // 商標確認を行うまで `preview` に置く。公開時に home/index.html・home/llms.txt を
+    // 同PRで足すこと（docs/features/game-nikakudori.md の状態行）。
+    // 麻雀ソリティアと客層が重なるので、一覧では隣に置く
+    slug: 'nikakudori',
+    icon: 'TilesPath',
+    name: '二角取り',
+    description:
+      '曲がり角2回以内の経路で同じ麻雀牌を2つずつ消していくパズル。3段階の広さから選べます。必ず最後まで消せる盤面を配り、詰んだら「並べ替え」で解決します。',
+    stage: 'preview',
+    updatedAt: '2026-08-20',
+  },
+  {
     // 「Block Blast」「Woodoku」等は他社の固有名なので使わず、一般名詞の
     // 「ブロックパズル」で立てる（docs/features/game-block-puzzle.md の「権利関係」）
     slug: 'block-puzzle',
