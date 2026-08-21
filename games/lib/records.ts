@@ -428,6 +428,14 @@ export function decidedGames(entry: RecordEntry): number {
 /**
  * 平均スコア。合計（`scoreSum`）を決着したゲームの数で割る。
  * まだ1ゲームも終えていない、または合計が無ければ null（「平均0点」と出さないため）。
+ *
+ * **`scoreSum` を持ち始める前から遊ばれているゲームには使わないこと。**
+ * `scoreSum` はこの項目を足した2026-08-21以降のゲームぶんしか積まれていないのに、
+ * 割る数（`decidedGames`）にはそれ以前に遊んだ回も入っている。
+ * 2048やスネークのように以前からスコアを記録しているゲームでこれを出すと、
+ * 平均が実際よりはるかに低く見える（既に50回遊んだ人が10回足すと6分の1になる）。
+ * 古いゲームで平均を出したくなったら、`scoreSum` を積み始めた時点からの
+ * ゲーム数を別に持つ（`plays` も同じ理由で割る数には使えない）。
  */
 export function averageScore(entry: RecordEntry): number | null {
   const decided = decidedGames(entry);
