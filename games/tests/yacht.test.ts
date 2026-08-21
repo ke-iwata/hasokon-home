@@ -519,6 +519,23 @@ describe('CPU', () => {
     }
   });
 
+  /**
+   * **このスイートでいちばん重いテスト。局数を増やさないこと。**
+   *
+   * `chooseHold`（つよい）は32通りのキープ × 振り直しの出目を読むので、
+   * 1局ぶんでも他のテストより桁が違う。30局で回していたときは
+   * 手元で3.0秒・CIで5.3秒かかり、**vitest の既定のタイムアウト5秒を超えて
+   * mainのデプロイが落ちた**（2026-08-21）。手元では通るのにCIだけ落ちる、
+   * いちばん気づきにくい壊れ方だった。
+   *
+   * 12局でも つよい と かんたん の平均点差は53点あり（30局でも55.8点）、
+   * 局数を増やしても差は変わらない。判定は不等式1本なので、
+   * 差が二桁ある以上サンプルを増やす意味がない。
+   * 所要時間は他の強さ比較テスト（五目並べ1.1秒・リバーシ1.6秒）と同じ水準になる。
+   *
+   * 明示のタイムアウトは、将来CPUの評価を重くしたときに
+   * 「テストが落ちた」ではなく「遅くなった」と分かるようにするための保険。
+   */
   it('つよいCPUはかんたんCPUより平均点が高い', () => {
     const play = (level: Level, seed: number): number => {
       const rng = seededRng(seed);
@@ -538,12 +555,12 @@ describe('CPU', () => {
       return totalScore(sheet);
     };
 
-    const games = 30;
+    const games = 12;
     const average = (level: Level): number => {
       let sum = 0;
       for (let i = 0; i < games; i += 1) sum += play(level, 1000 + i);
       return sum / games;
     };
     expect(average('hard')).toBeGreaterThan(average('easy'));
-  });
+  }, 30_000);
 });
