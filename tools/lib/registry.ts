@@ -207,6 +207,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-11',
   },
   {
+    slug: 'invoice-nozeigaku',
+    icon: 'Receipt',
+    name: 'インボイス 納税額 比較計算機',
+    description:
+      '2割特例が終わったあと、3割特例・簡易課税・本則課税のどれが一番安いかを1画面で比較。簡易課税の届出期限（原則と、2割特例からの移行の特則）と業種別みなし仕入率の早見表つき。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-08-21',
+  },
+  {
     slug: 'hatarakizon',
     icon: 'Scales',
     name: '社会保険 損得計算機',
