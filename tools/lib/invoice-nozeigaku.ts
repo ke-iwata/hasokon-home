@@ -217,6 +217,33 @@ export const SPECIAL_RATES = {
 
 export type SpecialId = keyof typeof SPECIAL_RATES;
 
+/**
+ * 特例が使える課税期間（個人事業者＝暦年）。
+ *
+ * - 2割特例：令和5年10月1日から令和8年9月30日までの日の属する各課税期間。
+ *   個人事業者は暦年なので**令和5年分（2023年）〜令和8年分（2026年）**
+ * - 3割特例：**個人事業者の令和9年分（2027年）・令和10年分（2028年）**の2年間
+ *
+ * 【データ更新箇所】特例の年が変わったらここを直す。
+ */
+export const NIWARI_YEARS = { first: 2023, last: 2026 } as const;
+export const SANWARI_YEARS = { first: 2027, last: 2028 } as const;
+
+/**
+ * 個人事業者がその年に使える特例（無ければ null）。
+ *
+ * **`YEARS`（画面の選択肢）を引かずに、制度の年そのものから答えること。**
+ * ここを選択肢の表から引く実装にしていたため、`kaniDeadline()` が
+ * 前年（選択肢に無い2025年）を尋ねた瞬間に throw してページごと落ちた。
+ * 前年・翌年を尋ねるのは届出期限の判定に必要な当たり前の操作なので、
+ * この関数は**過去も未来も含めたどの年でも答えられる**必要がある。
+ */
+export function specialFor(year: number): SpecialId | null {
+  if (year >= NIWARI_YEARS.first && year <= NIWARI_YEARS.last) return 'niwari';
+  if (year >= SANWARI_YEARS.first && year <= SANWARI_YEARS.last) return 'sanwari';
+  return null;
+}
+
 export interface YearDef {
   /** 暦年（個人事業者は課税期間＝暦年） */
   year: number;
@@ -224,47 +251,44 @@ export interface YearDef {
   eraLabel: string;
   /** 選択肢の表示名 */
   label: string;
-  /** その年に使える特例。無ければ null */
-  special: SpecialId | null;
   /** その年に何が起きるのかの1行説明 */
   note: string;
 }
 
 /**
- * 個人事業者が選ぶ「申告する年」。
+ * 個人事業者が選ぶ「申告する年」＝**画面の選択肢**。
  *
  * 2029年分（令和11年分）以降は特例が無く、選択肢の顔ぶれが変わらないので
- * 1行にまとめてある（`isOpenEnded` の年）。
+ * 1行にまとめてある。
  *
- * 【データ更新箇所】特例の年・割合が変わったらここを直す。
+ * **どの特例が使えるかはここに持たせない**（`specialFor()` が唯一の情報源）。
+ * 同じことを2箇所に書くと、片方だけ直したときに黙って食い違う。
+ *
+ * 【データ更新箇所】選択肢を増やすときはここ。特例の年は `specialFor()` 側。
  */
 export const YEARS: YearDef[] = [
   {
     year: 2026,
     eraLabel: '令和8年分',
     label: '2026年分（令和8年分）',
-    special: 'niwari',
     note: '2割特例が使える最後の年。個人事業者の課税期間は暦年なので、令和8年9月30日をまたぐ2026年分までが対象になる',
   },
   {
     year: 2027,
     eraLabel: '令和9年分',
     label: '2027年分（令和9年分）',
-    special: 'sanwari',
     note: '2割特例は終わり、個人事業者に限り3割特例が使える1年目',
   },
   {
     year: 2028,
     eraLabel: '令和10年分',
     label: '2028年分（令和10年分）',
-    special: 'sanwari',
     note: '3割特例が使える最後の年',
   },
   {
     year: 2029,
     eraLabel: '令和11年分',
     label: '2029年分（令和11年分）以降',
-    special: null,
     note: '特例は無くなり、簡易課税か本則課税のどちらかを選ぶ',
   },
 ];
@@ -272,17 +296,19 @@ export const YEARS: YearDef[] = [
 /** 特例が無くなる最初の年。これ以降は年を分けても選択肢が変わらない */
 export const OPEN_ENDED_YEAR = 2029;
 
+/**
+ * 画面の選択肢としての年の定義（表示名・説明）。
+ *
+ * 選択肢に無い年で呼ぶのは呼び出し側の誤りなので投げる。
+ * **ただし「その年に使える特例」をこれ経由で引かないこと**（`specialFor()` を使う）。
+ * 判定に前年・翌年が要るときにここへ来ると、選択肢の外に出て落ちる。
+ */
 export function yearDef(year: number): YearDef {
   const found = YEARS.find((y) => y.year === year);
   if (found) return found;
   // 2030年分以降は2029年分と同じ顔ぶれ。年の指定だけ受け入れて末尾の定義を返す
   if (year > OPEN_ENDED_YEAR) return YEARS[YEARS.length - 1];
   throw new Error(`対象外の年です: ${year}`);
-}
-
-/** 個人事業者がその年に使える特例（無ければ null） */
-export function specialFor(year: number): SpecialId | null {
-  return yearDef(year).special;
 }
 
 // ---------------------------------------------------------------------------
@@ -371,6 +397,16 @@ export interface Comparison {
   methods: MethodResult[];
   /** 選べるもののうち納税額が最も少ないもの。入力が0のときも先頭を返す */
   best: MethodResult;
+  /**
+   * 最安と**同額**の方式すべて（`best` を含む）。
+   *
+   * 第3種（みなし仕入率70%）の簡易課税は3割特例とちょうど同額になるなど、
+   * 同点はふつうに起きる。`best` だけを見て「最安」を出すと、
+   * 同額の片方にだけ印が付いて優劣があるように見えてしまう
+   * （このツール自身が「第3種は同じであって安いではない」と言っている以上、
+   * 画面でそれを裏切らないこと）。
+   */
+  bestIds: MethodId[];
   /** 選べるものだけを納税額の少ない順に並べたもの */
   ranked: MethodResult[];
   /**
@@ -507,6 +543,7 @@ export function compareMethods(input: InvoiceInput): Comparison {
 
   const ranked = methods.filter((m) => m.available).sort((a, b) => a.tax - b.tax);
   const best = ranked[0] ?? methods[methods.length - 1];
+  const bestIds = ranked.filter((m) => m.tax === best.tax).map((m) => m.id);
 
   // 本則以外でいちばん安い方式と釣り合う仕入割合。
   // 本則 = 売上税額 ×(1 − r) なので、r = 1 − （相手の割合）で並ぶ
@@ -520,6 +557,7 @@ export function compareMethods(input: InvoiceInput): Comparison {
     salesTax,
     methods,
     best,
+    bestIds,
     ranked,
     honsokuBreakEvenPercent,
     empty: netSales <= 0,
@@ -611,6 +649,12 @@ export function filingDeadline(year: number): string {
  *
  * **原則の期限は「前年の大晦日」なので、原則だけを見た人は年が明けた時点で
  * 「もう手遅れ」と誤解する。** 特則があれば1年以上あとまで間に合う。
+ *
+ * なお「確定申告期限まで」に緩和されたのは**翌課税期間が令和8年10月1日以後に
+ * 終了する場合**で、それ以前は「翌課税期間中」だった。このツールが扱うのは
+ * 個人事業者（課税期間＝暦年）の2026年分以降だけなので、翌課税期間は必ず
+ * 12月31日に終わり、常に緩和後の扱いになる。法人を扱うようになったら
+ * ここに分岐が要る（決算月によっては翌課税期間が令和8年9月30日以前に終わる）。
  */
 export function kaniDeadline(year: number): KaniDeadline {
   // 原則の期限は前年12月31日。12月29〜31日は「これらの日の翌日」の対象なので、

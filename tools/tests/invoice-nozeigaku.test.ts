@@ -110,7 +110,35 @@ describe('一次資料から写した値', () => {
 });
 
 describe('年ごとに使える特例', () => {
-  it('2割特例が使えるのは2026年分だけ（令和8年9月30日の属する課税期間まで）', () => {
+  /**
+   * **`YEARS` に載っている年は、どの関数を通しても落ちないこと。**
+   *
+   * `specialFor()` を「画面の選択肢の表」から引く実装にしていたため、
+   * `kaniDeadline(2026)` が前年（選択肢に無い2025年）を尋ねた瞬間に throw し、
+   * 「2026年分」を選ぶとページごと落ちていた（PR #158 のレビューで発覚）。
+   * 個別の年を足すだけだと `YEARS` に行を足したときに同じ穴が空くので、
+   * **表を回して**不変条件として固定する。
+   */
+  it('YEARS の全ての年で kaniDeadline / compareMethods / yearDef が落ちない', () => {
+    for (const y of YEARS) {
+      expect(() => kaniDeadline(y.year), `kaniDeadline(${y.year})`).not.toThrow();
+      expect(() => yearDef(y.year), `yearDef(${y.year})`).not.toThrow();
+      expect(() => compareMethods(input({ year: y.year })), `compare(${y.year})`).not.toThrow();
+    }
+  });
+
+  it('特例の判定は前年・翌年など YEARS の外の年でも答えられる', () => {
+    // 届出期限の判定は必ず前年を尋ねる。選択肢の外に出ても落ちてはいけない
+    expect(() => specialFor(2020)).not.toThrow();
+    expect(() => specialFor(2100)).not.toThrow();
+    expect(specialFor(2020)).toBeNull();
+    expect(specialFor(2100)).toBeNull();
+  });
+
+  it('2割特例は令和5年分〜令和8年分（2023〜2026年）', () => {
+    expect(specialFor(2022)).toBeNull();
+    expect(specialFor(2023)).toBe('niwari');
+    expect(specialFor(2025)).toBe('niwari');
     expect(specialFor(2026)).toBe('niwari');
     expect(specialFor(2027)).not.toBe('niwari');
     expect(specialFor(2028)).not.toBe('niwari');
@@ -130,6 +158,14 @@ describe('年ごとに使える特例', () => {
 
   it('対象外の年は投げる（黙って特例なしにしない）', () => {
     expect(() => yearDef(2025)).toThrow();
+  });
+
+  it('YEARS は特例の年を持たない（specialFor が唯一の情報源）', () => {
+    // 同じことを2箇所に書くと片方だけ直したときに黙って食い違う。
+    // 表の側に `special` を復活させないための番人
+    for (const y of YEARS) {
+      expect(y, `YEARS[${y.year}]`).not.toHaveProperty('special');
+    }
   });
 
   it('YEARS は年の昇順で、元号の表記が暦年と対応している', () => {
@@ -311,6 +347,39 @@ describe('4方式の比較', () => {
     expect(r.best).toBe(r.ranked[0]);
   });
 
+  /**
+   * 第3種の簡易課税は 1 − 0.7 = 30% で、3割特例とちょうど同額になる。
+   * `best` だけを見て「最安」の印を付けると、同額の片方にだけ印が付いて
+   * 優劣があるように見える。このツール自身が「第3種は3割特例と同じであって
+   * 安いではない」と言っている以上、画面でそれを裏切らないこと。
+   */
+  it('同額のときは最安が複数返る（第3種・2027年分は3割特例と簡易課税が同額）', () => {
+    const r = compareMethods(input({ year: 2027, businessType: 'type3' }));
+    expect(r.methods.find((m) => m.id === 'kani')!.tax).toBe(
+      r.methods.find((m) => m.id === 'sanwari')!.tax,
+    );
+    expect([...r.bestIds].sort()).toEqual(['kani', 'sanwari']);
+  });
+
+  it('同額が無いときの bestIds は1つだけ', () => {
+    const r = compareMethods(input({ year: 2027, businessType: 'type5' }));
+    expect(r.bestIds).toEqual(['sanwari']);
+  });
+
+  it('bestIds は best と同額の、選べる方式だけを含む', () => {
+    for (const year of YEARS.map((y) => y.year)) {
+      for (const type of BUSINESS_TYPES.map((t) => t.id)) {
+        const r = compareMethods(input({ year, businessType: type }));
+        expect(r.bestIds).toContain(r.best.id);
+        for (const id of r.bestIds) {
+          const m = r.methods.find((x) => x.id === id)!;
+          expect(m.available, `${year}/${type}/${id}`).toBe(true);
+          expect(m.tax).toBe(r.best.tax);
+        }
+      }
+    }
+  });
+
   it('選べない方式にも「使える条件」の説明が付く', () => {
     const r = compareMethods(input({ year: 2029 }));
     for (const m of r.methods) expect(m.condition.length).toBeGreaterThan(0);
@@ -321,6 +390,23 @@ describe('簡易課税制度選択届出書の提出期限', () => {
   it('原則は適用したい年の前年12月31日', () => {
     expect(kaniDeadline(2027).principle).toBe('2026-12-31');
     expect(kaniDeadline(2029).principle).toBe('2028-12-31');
+  });
+
+  /**
+   * 国税庁 インボイスQ&A 問117 の設例そのもの。
+   * 「令和7年分まで2割特例により申告を行った個人事業者が令和8年分の確定申告期限までに
+   * 『消費税簡易課税制度選択届出書（令和8年分から適用を受ける旨を記載したもの）』を
+   * 提出すれば、令和8年分から簡易課税制度の適用を受けることができます」
+   *
+   * このページの主題そのものの年で、届出期限パネルの価値がいちばん高いところ。
+   * ここが throw していた（PR #158 のレビューで発覚）。
+   */
+  it('2026年分から簡易課税にするなら、特則で2027年3月31日まで間に合う（問117の設例）', () => {
+    const d = kaniDeadline(2026);
+    expect(d.hasSpecial).toBe(true);
+    expect(d.previousSpecial).toBe('niwari'); // 2025年分は2割特例が使えた年
+    expect(d.principle).toBe('2025-12-31');
+    expect(d.special).toBe('2027-03-31');
   });
 
   it('2027年分から簡易課税にするなら、特則で2028年3月31日まで間に合う', () => {
@@ -352,7 +438,7 @@ describe('簡易課税制度選択届出書の提出期限', () => {
   });
 
   it('特則の期限は必ず原則よりあと（これが「もう手遅れ」の誤解を防ぐ肝）', () => {
-    for (const year of [2027, 2028, 2029, 2030]) {
+    for (const year of [2026, 2027, 2028, 2029, 2030]) {
       const d = kaniDeadline(year);
       if (!d.special) continue;
       expect(parseYmd(d.special).getTime()).toBeGreaterThan(parseYmd(d.principle).getTime());

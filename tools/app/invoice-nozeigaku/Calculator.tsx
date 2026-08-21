@@ -17,7 +17,7 @@ import {
   kaniDeadline,
   methodLabel,
   type BusinessTypeId,
-  type MethodResult,
+  type Comparison,
 } from '@/lib/invoice-nozeigaku';
 
 /** 入力欄の数値を読む。空欄・不正な値は0にする */
@@ -58,6 +58,8 @@ export default function Calculator() {
 
   const def = YEARS.find((y) => y.year === year) ?? YEARS[YEARS.length - 1];
   const deadline = kaniDeadline(year);
+  /** 最安が同額で並んでいるか（第3種の簡易課税と3割特例など） */
+  const tied = result.bestIds.length > 1;
   const track = () => trackToolUse('invoice-nozeigaku', 'calculate');
 
   return (
@@ -177,10 +179,15 @@ export default function Calculator() {
         <>
           <div className="panel">
             <div className="metric">
-              <span className="label">{def.label}でいちばん安いのは</span>
+              <span className="label">
+                {def.label}でいちばん安いのは
+                {tied && '（同額で2つ以上あります）'}
+              </span>
             </div>
             <div className="metric" style={{ marginTop: 4 }}>
-              <span className="value">{result.best.label}</span>
+              <span className="value">
+                {result.bestIds.map((id) => methodLabel(id)).join('・')}
+              </span>
               <span className="unit">{formatYen(result.best.tax)}</span>
             </div>
             <p className="hint" style={{ marginTop: 6 }}>
@@ -212,9 +219,11 @@ export default function Calculator() {
                   <tr key={m.id}>
                     <th scope="row" style={{ fontWeight: 600 }}>
                       {m.label}
-                      {m.id === result.best.id && <span className="chip">最安</span>}
+                      {result.bestIds.includes(m.id) && (
+                        <span className="chip">{tied ? '最安（同額）' : '最安'}</span>
+                      )}
                     </th>
-                    <td style={{ opacity: m.available ? 1 : 0.55 }}>
+                    <td style={{ opacity: m.available ? 1 : 0.55, whiteSpace: 'nowrap' }}>
                       {m.available ? <strong>{formatYen(m.tax)}</strong> : formatYen(m.tax)}
                     </td>
                     <td style={{ opacity: m.available ? 1 : 0.55 }}>
@@ -238,7 +247,7 @@ export default function Calculator() {
             前々年と大きく違う年は実際の基準期間の額でご確認ください。
           </p>
 
-          <KaniDeadlinePanel deadline={deadline} best={result.best} />
+          <KaniDeadlinePanel deadline={deadline} comparison={result} />
 
           <div className="panel quiet">
             <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
@@ -280,11 +289,14 @@ export default function Calculator() {
  */
 function KaniDeadlinePanel({
   deadline,
-  best,
+  comparison,
 }: {
   deadline: ReturnType<typeof kaniDeadline>;
-  best: MethodResult;
+  comparison: Comparison;
 }) {
+  const { best, bestIds } = comparison;
+  // 同額で並んだときも「簡易課税を選ぶ必要はありません」と言わないこと
+  const kaniIsBest = bestIds.includes('kani');
   return (
     <div className="panel">
       <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
@@ -321,7 +333,7 @@ function KaniDeadlinePanel({
           適用したい課税期間が始まる前日までに提出する必要があります。
         </p>
       )}
-      {best.id !== 'kani' && (
+      {!kaniIsBest && (
         <p className="hint" style={{ marginTop: 8 }}>
           いまの入力では{best.label}
           がいちばん安いので、簡易課税を選ぶ必要はありません。ただし

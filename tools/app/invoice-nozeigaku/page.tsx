@@ -28,6 +28,7 @@ import {
   formatPercent,
   hayamihyo,
   kaniDeadline,
+  specialFor,
 } from '@/lib/invoice-nozeigaku';
 import Calculator from './Calculator';
 
@@ -195,9 +196,9 @@ export default function Page() {
               <tr key={y.year}>
                 <th scope="row">{y.label}</th>
                 <td>
-                  {y.special === 'niwari'
+                  {specialFor(y.year) === 'niwari'
                     ? `2割特例（売上税額 × ${formatPercent(SPECIAL_RATES.niwari)}）`
-                    : y.special === 'sanwari'
+                    : specialFor(y.year) === 'sanwari'
                       ? `3割特例（売上税額 × ${formatPercent(SPECIAL_RATES.sanwari)}）`
                       : 'なし'}
                 </td>
@@ -405,6 +406,9 @@ export default function Page() {
           （税抜100万円以上）を仕入れた場合など
         </li>
         <li>一般課税で高額特定資産（税抜1,000万円以上）を仕入れた場合</li>
+        <li>
+          一般課税で金または白金の地金等を仕入れた金額の合計額（税抜）が200万円以上である場合
+        </li>
         <li>課税期間の特例（1か月・3か月への短縮）の適用を受けている年</li>
         <li>3割特例では、その課税期間の初日に恒久的施設を有しない国外事業者である場合</li>
       </ul>
