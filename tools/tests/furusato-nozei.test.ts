@@ -6,6 +6,11 @@ import {
   calcFurusato,
   estimateSocialInsurance,
   applyHousingLoan,
+  hayamihyo,
+  hayamihyoInput,
+  HAYAMIHYO_FAMILIES,
+  HAYAMIHYO_INCOMES,
+  HAYAMIHYO_UNIT,
   housingLoanResidentCap,
   incomeTaxRate,
   salaryDeduction,
@@ -441,5 +446,93 @@ describe('calcFurusato 住宅ローン控除との併用', () => {
 
   it('所得税額は速算表どおり', () => {
     expect(calcFurusato(base()).incomeTax.amount).toBe(89_250); // 1,785,000 × 5%
+  });
+});
+
+describe('控除上限額の早見表', () => {
+  const rows = hayamihyo();
+
+  it('年収軸は300万〜1,500万円（800万までは50万円刻み、以降100万円刻み）', () => {
+    expect(HAYAMIHYO_INCOMES[0]).toBe(3_000_000);
+    expect(HAYAMIHYO_INCOMES[HAYAMIHYO_INCOMES.length - 1]).toBe(15_000_000);
+    expect(HAYAMIHYO_INCOMES).toHaveLength(18);
+    for (let i = 1; i < HAYAMIHYO_INCOMES.length; i++) {
+      const step = HAYAMIHYO_INCOMES[i] - HAYAMIHYO_INCOMES[i - 1];
+      expect(step).toBe(HAYAMIHYO_INCOMES[i] <= 8_000_000 ? 500_000 : 1_000_000);
+    }
+  });
+
+  it('家族構成は4列。子2人は高校生1人 + 大学生1人', () => {
+    expect(HAYAMIHYO_FAMILIES.map((f) => f.id)).toEqual([
+      'single',
+      'couple',
+      'child1',
+      'child2',
+    ]);
+    const child2 = HAYAMIHYO_FAMILIES.find((f) => f.id === 'child2')!;
+    // 16〜18歳（一般）1人 + 19〜22歳（特定扶養親族）1人
+    expect(child2.dependentsGeneral).toBe(1);
+    expect(child2.dependentsSpecific).toBe(1);
+    // 「独身・共働き」だけが配偶者控除を受けない
+    expect(HAYAMIHYO_FAMILIES.filter((f) => f.spouse === 'none')).toHaveLength(1);
+  });
+
+  it('生成の前提が仕様どおり（介護保険料なし・その他控除0・ワンストップ特例）', () => {
+    const input = hayamihyoInput(5_000_000, HAYAMIHYO_FAMILIES[0]);
+    expect(input.socialInsurance).toBeNull(); // estimateSocialInsurance の概算を使う
+    expect(input.kaigo).toBe(false); // 40歳未満相当
+    expect(input.onestop).toBe(true);
+    expect(input.otherDeductionsIncomeTax).toBe(0);
+    expect(input.otherDeductionsResidentTax).toBe(0);
+    expect(input.housingLoanCredit).toBe(0);
+    expect(input.dependentsElderly).toBe(0);
+    expect(input.donation).toBe(0); // 上限額いっぱいで計算する
+  });
+
+  /**
+   * 早見表はスクリーンショットで持ち帰られるため、計算機の上限額を1円でも
+   * 超える数字を載せると、その差がそのままユーザーの自己負担増になる。
+   * 一致ではなく不等式で見るので、将来 HAYAMIHYO_UNIT を変えてもテストが生き続ける。
+   */
+  it('全セルが同じ条件の calcFurusato の上限額以下（切り捨て・安全側）', () => {
+    expect(rows).toHaveLength(HAYAMIHYO_INCOMES.length);
+    for (const row of rows) {
+      expect(row.limits).toHaveLength(HAYAMIHYO_FAMILIES.length);
+      row.limits.forEach((cell, i) => {
+        const { limit } = calcFurusato(hayamihyoInput(row.income, HAYAMIHYO_FAMILIES[i]));
+        expect(cell).toBeLessThanOrEqual(limit);
+        // 切り捨てなので、落とした端数は表示単位の幅に収まる
+        expect(limit - cell).toBeLessThan(HAYAMIHYO_UNIT);
+        expect(cell % HAYAMIHYO_UNIT).toBe(0);
+        expect(cell).toBeGreaterThanOrEqual(0);
+      });
+    }
+  });
+
+  it('同じ年収なら、扶養が増えるほど上限額は下がる（同額はありうる）', () => {
+    for (const row of rows) {
+      for (let i = 1; i < row.limits.length; i++) {
+        expect(row.limits[i]).toBeLessThanOrEqual(row.limits[i - 1]);
+      }
+    }
+  });
+
+  it('同じ家族構成なら、年収が上がるほど上限額は下がらない', () => {
+    for (let f = 0; f < HAYAMIHYO_FAMILIES.length; f++) {
+      for (let i = 1; i < rows.length; i++) {
+        expect(rows[i].limits[f]).toBeGreaterThanOrEqual(rows[i - 1].limits[f]);
+      }
+    }
+  });
+
+  it('令和8年分の前提で生成されている（500万円・独身は約58,000円）', () => {
+    // 令和7年以前の前提だと所得税率10%のままで約61,000円になる。
+    // 令和8年分は課税所得が下がって5%区分になり、上限額も下がる
+    const single = rows.find((r) => r.income === 5_000_000)!.limits[0];
+    expect(single).toBeGreaterThan(55_000);
+    expect(single).toBeLessThan(60_000);
+    expect(calcFurusato(hayamihyoInput(5_000_000, HAYAMIHYO_FAMILIES[0])).incomeTax.rate).toBe(
+      0.05,
+    );
   });
 });

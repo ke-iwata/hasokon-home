@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import { hayamihyo, HAYAMIHYO_FAMILIES } from '@/lib/furusato-nozei';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -8,9 +9,9 @@ import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
 
-const title = 'ふるさと納税 控除額計算機｜上限額と所得税・住民税の内訳';
+const title = 'ふるさと納税 控除額の計算機・上限額早見表｜令和8年分';
 const description =
-  'ふるさと納税の控除上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住民税の基本分・特例分、ワンストップ特例にも対応。2026年（令和8年）の税制改正に対応しています。';
+  'ふるさと納税の控除上限額を年収×家族構成の早見表で確認でき、所得税・住民税それぞれからいくら控除されるかも内訳まで計算できます。住民税の基本分・特例分、ワンストップ特例にも対応。2026年（令和8年分）の税制改正に対応しています。';
 
 export const metadata: Metadata = {
   title,
@@ -54,7 +55,7 @@ const faq = [
   },
   {
     q: '早見表と金額が違うのはなぜですか？',
-    a: '前提条件が違うためです。一般的な早見表は社会保険料を「給与収入の15%」と仮定していますが、厚生年金の保険料には上限があるため、実際の負担率は年収が高いほど下がります。この計算機は上限を反映した概算を使い、源泉徴収票の「社会保険料等の金額」を直接入力することもできます。正確に出したい場合は入力してください。',
+    a: '前提条件が違うためです。一般的な早見表は社会保険料を「給与収入の15%」と仮定していますが、厚生年金の保険料には上限があるため、実際の負担率は年収が高いほど下がります。また令和8年分から基礎控除・給与所得控除が引き上げられており、この改正が反映されていない早見表もあります。なお、このページに載せている早見表は計算機とまったく同じロジックから生成しているので、表と計算結果が食い違うことはありません（早見表は介護保険料なし・その他の所得控除0円という前提で作っているため、そこが違う方は計算機のほうをご覧ください）。この計算機では源泉徴収票の「社会保険料等の金額」を直接入力することもできます。正確に出したい場合は入力してください。',
   },
   {
     q: '共働きの場合、どちらが寄付すべきですか？',
@@ -100,6 +101,19 @@ const box = {
   borderRadius: 10,
 };
 
+/**
+ * 静的HTMLに焼き込む早見表。
+ * 表の数値は手書きせず lib のロジックから生成するので、上の計算機と食い違わない。
+ * 生成の前提は lib/furusato-nozei.ts の hayamihyoInput にあり、表の直下で開示している。
+ */
+const hayamihyoRows = hayamihyo();
+
+/** 列見出しの年齢注記など、見出しに添える小さい文字 */
+const subLabel = { fontWeight: 400, fontSize: '0.85em' };
+
+const man = (yen: number) => `${(yen / 10_000).toLocaleString('ja-JP')}万円`;
+const formatYen = (yen: number) => `${yen.toLocaleString('ja-JP')}円`;
+
 export default function Page() {
   return (
     <>
@@ -114,12 +128,75 @@ export default function Page() {
       <p className="lead">
         自己負担2,000円で寄付できる上限額に加えて、
         <strong>所得税・住民税それぞれからいくら控除されるのか</strong>
-        を内訳まで表示します。2026年（令和8年）の税制改正に対応。
+        を内訳まで表示します。だいたいの規模感だけ知りたい方は
+        <a href="#hayamihyo">年収×家族構成の早見表</a>
+        をどうぞ。2026年（令和8年）の税制改正に対応。
       </p>
 
       <Calculator />
 
       <AdUnit position="below-tool" />
+
+      <h2 id="hayamihyo">控除上限額の早見表（2026年・令和8年分）</h2>
+      <p>
+        計算機に数字を入れる前に規模感を知りたいときは、こちらをご覧ください。年収（額面）と家族構成から、自己負担が2,000円で収まる寄付額の目安が分かります。
+        <strong>この表は上の計算機とまったく同じロジックから作っている</strong>
+        ので、表と計算結果が食い違うことはありません。令和8年分の基礎控除・給与所得控除の改正も織り込み済みです。
+      </p>
+      {/*
+        6桁の金額 × 5列は折り返しの典型なので、表を nowrap にして
+        外側の overflow-x で横スクロールさせる（waribiki-percent と同じ形）。
+      */}
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ whiteSpace: 'nowrap' }}>
+          <thead>
+            <tr>
+              <th>年収（額面）</th>
+              {HAYAMIHYO_FAMILIES.map((f) => (
+                <th key={f.id}>
+                  {f.label}
+                  <br />
+                  <span style={subLabel}>{f.note}</span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {hayamihyoRows.map((row) => (
+              <tr key={row.income}>
+                <th scope="row">{man(row.income)}</th>
+                {row.limits.map((limit, i) => (
+                  <td key={HAYAMIHYO_FAMILIES[i].id}>{formatYen(limit)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="note">
+        <strong>表の前提：</strong>
+        収入は額面の給与のみ（給与所得控除は令和8年分）。社会保険料は協会けんぽの全国平均・本人負担分（健康保険4.99%・厚生年金9.15%・雇用保険0.55%。厚生年金の標準報酬月額の上限を反映）で概算し、
+        <strong>介護保険料は含めていません（40歳未満の方に相当）</strong>
+        。生命保険料控除などその他の所得控除は0円、住宅ローン控除なし、
+        <strong>ワンストップ特例を使う前提</strong>
+        です。金額は安全側に千円未満を切り捨てています。
+      </p>
+      <ul>
+        <li>
+          <strong>15歳以下のお子さんは上限額に影響しないため、「夫婦」の列をご覧ください。</strong>
+          扶養控除の対象は16歳以上だからです（15歳以下は児童手当の対象で、扶養控除はありません）。表の「子1人」は16〜18歳、「子2人」は16〜18歳と19〜22歳（特定扶養親族）を指します
+        </li>
+        <li>
+          <strong>40〜64歳の方は、この表より数千円下がります。</strong>
+          介護保険料のぶん社会保険料が増え、課税所得と住民税所得割額が下がるためです。計算機の「40〜64歳」にチェックを入れると反映されます
+        </li>
+        <li>
+          生命保険料控除・iDeCo・医療費控除などの所得控除がある方、給与以外の所得がある方、70歳以上のご家族を扶養している方は、この表からずれます。<strong>正確な金額は上の計算機</strong>でご確認ください
+        </li>
+        <li>
+          年収が低く扶養家族が多い場合、住民税所得割額そのものが小さいため上限額も数千円まで下がります。上限額が自己負担の2,000円に近いときは、ふるさと納税による実質的な得はほとんどありません
+        </li>
+      </ul>
 
       <h2>控除は3つに分かれている</h2>
       <p>
