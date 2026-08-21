@@ -3430,6 +3430,171 @@ button.hf-card {
   font-size: 0.8rem;
 }
 
+/* ---- ヨット ----
+   仕様: docs/features/game-yacht.md
+
+   盤の代わりにサイコロ5個とスコア表がある。**スコア表は上段6＋ボーナス／
+   下段6＋合計の2列に折る**（縦13行のままだと幅390pxで縦に積みきれず、
+   ゲームの盤は早見表と違って横スクロールで逃がせない）。
+   行は押す先なので、詰めるときも44pxを割らない */
+
+.yc-dice {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+/* サイコロ1個。押す先なので48px（狭い画面でも44pxを割らない） */
+.yc-die {
+  width: 48px;
+  height: 48px;
+  padding: 6px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.yc-die:disabled {
+  cursor: default;
+}
+
+/* キープ中。**枠の太さは変えない**（変えると中の目の位置がずれて動いて見える） */
+.yc-die.held {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* まだ振っていないあいだ。目は出ているが意味は無いので薄くする */
+.yc-die.idle {
+  opacity: 0.35;
+}
+
+.yc-face {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+}
+
+.yc-pip {
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.yc-pip.off {
+  background: transparent;
+}
+
+.yc-roll {
+  display: flex;
+  justify-content: center;
+  margin: 6px 0;
+}
+
+/* 押す先。残り回数で文言が伸び縮みしても行の高さは変わらない */
+.yc-roll .btn {
+  min-width: 200px;
+  padding: 11px 18px;
+}
+
+.yc-hint {
+  text-align: center;
+}
+
+.yc-sheet {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.yc-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* 列の見出し（役・あなた・CPU）。行と同じ3分割で、幅がそろうようにする */
+/* 見出しと行は同じ3分割にする。**幅は rem で持つ**（`em` にすると、
+   字を小さくした見出しだけ列が細って「あなた」が切れる） */
+.yc-head,
+.yc-row {
+  display: grid;
+  grid-template-columns: 1fr 2.4rem 2.4rem;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  font-size: 0.82rem;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.yc-head {
+  height: 20px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.66rem;
+}
+
+/* 見出しは折り返さない（「自分」が2行になると、下の行に半分隠れる） */
+.yc-head span {
+  white-space: nowrap;
+}
+
+.yc-row {
+  height: 44px;
+  cursor: default;
+}
+
+/* いま記入できる役。押せることが分かるように地を変える */
+.yc-row.playable {
+  cursor: pointer;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.yc-row.filled {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+/* ボーナスと合計。押す先ではないので、行の見た目だけそろえる */
+.yc-row.total {
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
+/* 役名。**幅が足りないときは折り返す**（省略記号で切ると、狭い画面で
+   「S・ストレート」と「L・ストレート」が同じ字面になって区別できない）。
+   行の高さは44pxで固定なので、2行になっても表は動かない */
+.yc-name {
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.yc-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.yc-val.cpu {
+  color: var(--muted);
+}
+
+/* 「いま記入したら何点か」の下見。確定した数字と見分けが付くよう薄く出す */
+.yc-val.preview {
+  color: var(--accent);
+  font-weight: 400;
+}
+
 /* ---- 狭い画面では操作まわりを詰める ----
    スマホでは設定の切り替え（`.seg`）が2〜3行に折り返して、盤がそのぶん
    画面の外に出ていた（実測で設定だけで131〜184px）。1つずつを小さくすれば
@@ -3664,6 +3829,43 @@ button.hf-card {
   }
 
   .cs-pattern {
+    font-size: 0.78rem;
+  }
+
+  /* ---- ヨット ----
+     詰められるのは横だけ。**行の高さ（44px）とサイコロの大きさは変えない**
+     （どちらも押す先で、ここが下限）。役名が長い行（S・ストレート）は
+     字を詰めて1行に収め、点数の欄は数字2桁ぶんまで狭める */
+  .yc-sheet {
+    gap: 4px;
+  }
+
+  .yc-head,
+  .yc-row {
+    grid-template-columns: 1fr 2rem 2rem;
+    padding: 0 4px;
+    font-size: 0.73rem;
+  }
+
+  .yc-dice {
+    gap: 6px;
+    margin: 4px 0;
+  }
+
+  .yc-roll {
+    margin: 4px 0;
+  }
+
+  /* 「振り直す（残り2回）」が入る幅。押す先なので高さは詰めない */
+  .yc-roll .btn {
+    min-width: 0;
+    font-size: 0.88rem;
+  }
+
+  /* 直前の手の知らせは1行に収まる（2行ぶん確保すると表が下に押し出される） */
+  .yc-hint {
+    height: 1.6em;
+    margin: 2px 0 4px;
     font-size: 0.78rem;
   }
 }
