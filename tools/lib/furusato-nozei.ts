@@ -566,6 +566,146 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
   };
 }
 
+/* -------------------------------------------------------------------------
+ * 控除上限額の早見表（年収 × 家族構成）
+ * 仕様: docs/features/furusato-nozei-hayamihyo.md
+ *
+ * 表の数値は手書きせず、上の calcFurusato から生成する。世間の早見表の多くは
+ * 令和7年以前の前提のままなので、同じロジックから作ることでページ内の
+ * 計算機と食い違わず、令和8年分の改正もそのまま反映される。
+ * ---------------------------------------------------------------------- */
+
+/**
+ * 早見表の年収軸（給与収入・円）。
+ * 800万円までは50万円刻み、それ以降は100万円刻み。
+ */
+export const HAYAMIHYO_INCOMES: readonly number[] = [
+  // 300万〜800万（50万円刻み）
+  ...Array.from({ length: 11 }, (_, i) => 3_000_000 + i * 500_000),
+  // 900万〜1,500万（100万円刻み）
+  ...Array.from({ length: 7 }, (_, i) => 9_000_000 + i * 1_000_000),
+];
+
+/** 早見表の家族構成（列） */
+export interface HayamihyoFamily {
+  id: 'single' | 'couple' | 'child1' | 'child2';
+  /** 列見出し */
+  label: string;
+  /** 列見出しに添える年齢の注記。16歳未満は扶養控除の対象外なので明示する */
+  note?: string;
+  spouse: SpouseType;
+  dependentsGeneral: number;
+  dependentsSpecific: number;
+}
+
+/**
+ * 早見表の家族構成の4列。
+ * ポータル各社の早見表と同じ軸に揃えてある（比較検索に応えるため）。
+ * 「独身・共働き」は配偶者控除を受けない場合、「夫婦」は配偶者控除ありを指す。
+ */
+export const HAYAMIHYO_FAMILIES: readonly HayamihyoFamily[] = [
+  {
+    id: 'single',
+    label: '独身・共働き',
+    note: '配偶者控除なし',
+    spouse: 'none',
+    dependentsGeneral: 0,
+    dependentsSpecific: 0,
+  },
+  {
+    id: 'couple',
+    label: '夫婦',
+    note: '配偶者控除あり',
+    spouse: 'general',
+    dependentsGeneral: 0,
+    dependentsSpecific: 0,
+  },
+  {
+    id: 'child1',
+    label: '夫婦＋子1人',
+    note: '子は16〜18歳',
+    spouse: 'general',
+    dependentsGeneral: 1,
+    dependentsSpecific: 0,
+  },
+  {
+    id: 'child2',
+    label: '夫婦＋子2人',
+    note: '16〜18歳と19〜22歳',
+    spouse: 'general',
+    dependentsGeneral: 1,
+    dependentsSpecific: 1,
+  },
+];
+
+/**
+ * 早見表の表示単位（円）。
+ *
+ * 丸めは必ず切り捨てにする。早見表はスクリーンショットで持ち帰られるため、
+ * 計算機の上限額を1円でも超える数字を載せると、その差がそのまま
+ * ユーザーの自己負担増になる。
+ */
+export const HAYAMIHYO_UNIT = 1_000;
+
+/**
+ * 早見表の1セルを計算するときの入力。
+ *
+ * 【この前提は仕様で確定している】給与収入のみ・社会保険料は概算
+ * （介護保険料なし＝40歳未満相当）・その他の所得控除は0・住宅ローン控除なし・
+ * ワンストップ特例あり。表の直下に同じ内容を注記として出すこと。
+ */
+export function hayamihyoInput(income: number, family: HayamihyoFamily): FurusatoInput {
+  return {
+    income,
+    socialInsurance: null,
+    kaigo: false,
+    spouse: family.spouse,
+    dependentsGeneral: family.dependentsGeneral,
+    dependentsSpecific: family.dependentsSpecific,
+    dependentsElderly: 0,
+    otherDeductionsIncomeTax: 0,
+    otherDeductionsResidentTax: 0,
+    donation: 0,
+    onestop: true,
+    housingLoanCredit: 0,
+    housingLoanTier: 'rate5',
+  };
+}
+
+/** 早見表に載せる控除上限額（HAYAMIHYO_UNIT 単位に切り捨て） */
+export function hayamihyoLimit(income: number, family: HayamihyoFamily): number {
+  const { limit } = calcFurusato(hayamihyoInput(income, family));
+  return Math.floor(limit / HAYAMIHYO_UNIT) * HAYAMIHYO_UNIT;
+}
+
+/**
+ * そのセルの上限額では、ふるさと納税をしても実質的な恩恵がほとんど残らないか。
+ *
+ * 控除されるのは寄付額から自己負担の2,000円を引いた額なので、上限額そのものが
+ * 2,000円まで下がると戻ってくる額がほぼ残らない（年収が低く扶養が多い場合に起きる）。
+ * 表示上は「2,000円まで寄付できる」と読めてしまい、しかも早見表は注記から切り離されて
+ * スクリーンショットで持ち帰られるため、セル自身に添える文言の判定に使う。
+ */
+export function hayamihyoNoBenefit(limit: number): boolean {
+  return limit <= SELF_PAY;
+}
+
+/** 早見表の1行（1つの年収に対する家族構成別の上限額） */
+export interface HayamihyoRow {
+  /** 給与収入（額面・年間・円） */
+  income: number;
+  /** HAYAMIHYO_FAMILIES と同じ順に並んだ控除上限額（円） */
+  limits: number[];
+}
+
+/** 年収 × 家族構成の控除上限額 早見表。ビルド時に静的HTMLへ焼き込む */
+export function hayamihyo(): HayamihyoRow[] {
+  return HAYAMIHYO_INCOMES.map((income) => ({
+    income,
+    limits: HAYAMIHYO_FAMILIES.map((family) => hayamihyoLimit(income, family)),
+  }));
+}
+
 /**
  * 寄付額に対する控除の内訳を計算する。
  *
