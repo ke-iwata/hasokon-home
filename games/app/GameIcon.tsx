@@ -4,6 +4,7 @@ import {
   CardsIcon,
   ClubIcon,
   CrownIcon,
+  DiceFiveIcon,
   GridFourIcon,
   GridNineIcon,
   RacquetIcon,
@@ -487,6 +488,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   TriPeaks: TriPeaksIcon,
   Snake: SnakeIcon,
   Tubes: TubesIcon,
+  DiceFive: DiceFiveIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

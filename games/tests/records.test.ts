@@ -6,7 +6,9 @@ import { games } from '@/lib/registry';
 import {
   applyResult,
   applyStart,
+  averageScore,
   browserStorage,
+  decidedGames,
   DEFAULT_VARIANT,
   entryOf,
   formatTime,
@@ -219,7 +221,8 @@ describe('保存と読み出し', () => {
     const storage = fakeStorage({ [storageKey('2048')]: 'not json' });
     expect(loadRecords('2048', storage)).toEqual({});
     const { entry } = recordResult('2048', { score: 12_345 }, DEFAULT_VARIANT, storage);
-    expect(entry).toEqual({ bestScore: 12_345 });
+    // スコアを渡すと、ベストと平均のもとになる合計の両方が入る
+    expect(entry).toEqual({ bestScore: 12_345, scoreSum: 12_345 });
   });
 });
 
@@ -318,6 +321,48 @@ describe('表示用のヘルパー', () => {
     expect(winRate({ wins: 3, losses: 1 })).toBe(75);
     expect(winRate({ wins: 1, losses: 1, draws: 2 })).toBe(25);
   });
+
+  it('決着した数は勝ち＋負け＋引き分け（始めただけの回は数えない）', () => {
+    expect(decidedGames({})).toBe(0);
+    expect(decidedGames({ plays: 9 })).toBe(0);
+    expect(decidedGames({ wins: 2, losses: 1, draws: 1 })).toBe(4);
+  });
+
+  it('平均スコアは合計を決着した数で割る。記録が無ければ null', () => {
+    expect(averageScore({})).toBeNull();
+    // 合計はあるが、まだ1ゲームも決着していない
+    expect(averageScore({ scoreSum: 100 })).toBeNull();
+    // スコアを持たないゲーム（勝敗だけ）は平均を出さない
+    expect(averageScore({ wins: 2, losses: 1 })).toBeNull();
+    expect(averageScore({ wins: 1, losses: 1, scoreSum: 300 })).toBe(150);
+    expect(averageScore({ wins: 1, losses: 2, scoreSum: 100 })).toBe(33);
+  });
+
+  it('スコアを渡すと合計が積み上がる（平均のもと）', () => {
+    const first = applyResult({}, { outcome: 'win', score: 180 });
+    expect(first.entry.scoreSum).toBe(180);
+    expect(first.entry.bestScore).toBe(180);
+
+    // ベストを更新しなくても合計には足す
+    const second = applyResult(first.entry, { outcome: 'loss', score: 120 });
+    expect(second.entry.scoreSum).toBe(300);
+    expect(second.entry.bestScore).toBe(180);
+    expect(averageScore(second.entry)).toBe(150);
+
+    // スコアを渡さないゲームでは増えない
+    expect(applyResult(second.entry, { outcome: 'win' }).entry.scoreSum).toBe(300);
+  });
+
+  it('記録を2つまとめるときは合計を足さない（同じゲームの二重計上を防ぐ）', () => {
+    expect(mergeEntry({ scoreSum: 300 }, { scoreSum: 180 }).scoreSum).toBe(300);
+    expect(mergeEntry({}, { scoreSum: 180 }).scoreSum).toBe(180);
+  });
+
+  it('壊れた合計は捨てる', () => {
+    expect(sanitizeEntry({ scoreSum: -5 }).scoreSum).toBeUndefined();
+    expect(sanitizeEntry({ scoreSum: 'あ' }).scoreSum).toBeUndefined();
+    expect(sanitizeEntry({ scoreSum: 240 }).scoreSum).toBe(240);
+  });
 });
 
 /**
@@ -353,8 +398,8 @@ describe('各ゲームの組み込み', () => {
   it('記録のために localStorage を直接さわらない（キーはモジュールが一元管理する）', () => {
     // リバーシ・五目並べの「強さ・手番」、大富豪の「強さ・ローカルルール」、
     // 七並べの「ローカルルール・CPUの速さ」、神経衰弱の「遊び方・枚数・強さ」、
-    // スピードの「強さ」、花札こいこいの「強さ・月数・役の設定・月数の併記」は、
-    // 遊んだ記録ではなく設定なので例外
+    // スピードの「強さ」、花札こいこいの「強さ・月数・役の設定・月数の併記」、
+    // ヨットの「強さ」は、遊んだ記録ではなく設定なので例外
     // （lib/records.ts の LEGACY_KEYS のコメントも参照）
     const allowed = new Set([
       'reversi',
@@ -364,6 +409,7 @@ describe('各ゲームの組み込み', () => {
       'shinkei-suijaku',
       'speed',
       'hanafuda-koikoi',
+      'yacht',
     ]);
     for (const g of gameFiles) {
       if (allowed.has(g.slug)) continue;

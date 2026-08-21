@@ -42,6 +42,14 @@ export interface RecordEntry {
   bestTimeMs?: number;
   /** スコアのベスト（大きいほうが良い） */
   bestScore?: number;
+  /**
+   * スコアの合計。**平均を出すためだけに持つ**（ヨット）。
+   *
+   * 平均そのものを持たないのは、記録を足すたびに丸め誤差が乗るため。
+   * 割る数は決着したゲームの数（`wins + losses + draws`）を使う
+   * （`plays` は始めただけで増えるので、途中でやめた回まで数に入ってしまう）。
+   */
+  scoreSum?: number;
   /** 最少手数（小さいほうが良い） */
   bestMoves?: number;
   /**
@@ -140,6 +148,7 @@ export function sanitizeEntry(value: unknown): RecordEntry {
     bestTimeMs: positive(v.bestTimeMs),
     bestScore: positive(v.bestScore),
     bestMoves: positive(v.bestMoves),
+    scoreSum: count(v.scoreSum),
     clearedIds: ids && ids.length > 0 ? ids : undefined,
   });
 }
@@ -194,6 +203,9 @@ export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
     bestTimeMs: best(base.bestTimeMs, extra.bestTimeMs, Math.min),
     bestScore: best(base.bestScore, extra.bestScore, Math.max),
     bestMoves: best(base.bestMoves, extra.bestMoves, Math.min),
+    // **足さずに大きいほうを残す。** ここが呼ばれるのは旧キーの取り込みと
+    // 同じ記録を2つ読んだときで、足すと同じゲームを二重に数えてしまう
+    scoreSum: best(base.scoreSum, extra.scoreSum, Math.max),
     clearedIds: ids,
   });
 }
@@ -229,6 +241,8 @@ export function applyResult(
       bestTimeMs: improved.time ? timeMs : entry.bestTimeMs,
       bestScore: improved.score ? score : entry.bestScore,
       bestMoves: improved.moves ? moves : entry.bestMoves,
+      // 平均を出すための合計。スコアを渡さないゲームでは増えない
+      scoreSum: score === undefined ? entry.scoreSum : (entry.scoreSum ?? 0) + score,
     }),
     improved,
   };
@@ -401,7 +415,30 @@ export const RECORDS_NOTE =
  * まだ1局も決着していなければ null（「勝率0%」と出さないため）。
  */
 export function winRate(entry: RecordEntry): number | null {
-  const decided = (entry.wins ?? 0) + (entry.losses ?? 0) + (entry.draws ?? 0);
+  const decided = decidedGames(entry);
   if (decided === 0) return null;
   return Math.round(((entry.wins ?? 0) / decided) * 100);
+}
+
+/** 決着したゲームの数（勝ち＋負け＋引き分け）。勝率と平均スコアの割る数になる */
+export function decidedGames(entry: RecordEntry): number {
+  return (entry.wins ?? 0) + (entry.losses ?? 0) + (entry.draws ?? 0);
+}
+
+/**
+ * 平均スコア。合計（`scoreSum`）を決着したゲームの数で割る。
+ * まだ1ゲームも終えていない、または合計が無ければ null（「平均0点」と出さないため）。
+ *
+ * **`scoreSum` を持ち始める前から遊ばれているゲームには使わないこと。**
+ * `scoreSum` はこの項目を足した2026-08-21以降のゲームぶんしか積まれていないのに、
+ * 割る数（`decidedGames`）にはそれ以前に遊んだ回も入っている。
+ * 2048やスネークのように以前からスコアを記録しているゲームでこれを出すと、
+ * 平均が実際よりはるかに低く見える（既に50回遊んだ人が10回足すと6分の1になる）。
+ * 古いゲームで平均を出したくなったら、`scoreSum` を積み始めた時点からの
+ * ゲーム数を別に持つ（`plays` も同じ理由で割る数には使えない）。
+ */
+export function averageScore(entry: RecordEntry): number | null {
+  const decided = decidedGames(entry);
+  if (decided === 0 || entry.scoreSum === undefined) return null;
+  return Math.round(entry.scoreSum / decided);
 }

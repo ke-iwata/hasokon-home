@@ -295,6 +295,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-18',
   },
   {
+    // 「ヨット（Yacht）」はパブリックドメインの伝統的なダイスゲームの名称で、
+    // ルールにも名称にも権利者はいない。同型のボードゲームの商品名（ヤッツィー）は
+    // 他社の登録商標なので、名前・slug・見出しには使わない
+    // （docs/features/game-yacht.md の「権利面」）。
+    // 実装・テストは済んでいるが、実機のモバイル表示を運営者が確認するまで preview。
+    // public に上げるPRで home/index.html のカードと home/llms.txt の行を同時に足すこと
+    slug: 'yacht',
+    icon: 'DiceFive',
+    name: 'ヨット',
+    description:
+      '5個のサイコロを3回まで振って役を作る定番のダイスゲーム。フルハウスやストレートなど12の役を埋めて、合計点の高さを競います。CPU対戦は強さ2段階。',
+    stage: 'preview',
+    updatedAt: '2026-08-21',
+  },
+  {
     slug: 'pinball',
     icon: 'Pinball',
     name: 'ピンボール',
