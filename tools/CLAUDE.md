@@ -203,6 +203,7 @@ npm run build    # out/ に静的出力
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
 | 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
+| インボイスの経過措置が改正されたとき | `lib/invoice-nozeigaku.ts` の `YEARS`（年ごとに使える特例）・`SPECIAL_RATES`（2割・3割）・`BUSINESS_TYPES`（みなし仕入率）・`PURCHASE_TRANSITION`（7・5・3割控除）。国税庁のインボイス特設サイトとインボイスQ&Aを正とする。**3割特例は2028年分で終わる**ので、それ以降の措置が決まるまで追加は不要 |
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
@@ -211,8 +212,8 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール34本（ほかに公開前が1本：`waribiki-percent`。`stage: 'preview'`）/ 用途別ルーレット10本 /
-  使い方の記事6本 / テスト1435件
+- ツール34本（ほかに公開前が2本：`waribiki-percent`・`invoice-nozeigaku`。`stage: 'preview'`）/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1497件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -293,6 +294,15 @@ npm run build    # out/ に静的出力
   **所定給付日数の表（category）・給付制限（reason）・受給資格の被保険者期間の要件は
   独立した3つの軸**で、どれか一つからは導けない（`insuredMonthsRequired()` のコメント参照）
   （[docs/features/shitsugyo-hoken-kihon-teate.md](../docs/features/shitsugyo-hoken-kihon-teate.md)）
+- **インボイスは「納税額」より「簡易課税の届出期限」のほうが間違えやすい。**
+  原則は「適用したい課税期間の初日の前日」＝個人なら前年12月31日だが、
+  2割特例・3割特例からの移行には特則があり、**翌課税期間に係る確定申告期限まで**
+  間に合う（平成28年法律第15号の附則51の2⑥・51の3⑤。国税庁 インボイスQ&A 問117）。
+  2027年分から簡易課税にするなら2026年12月31日ではなく**2028年3月31日**まで。
+  `kaniDeadline()` は原則と特則を必ず両方返す（片方だけ出すと1年損する人が出る）。
+  また**3割特例は個人事業者限定で令和9年・10年分の2年間だけ**、
+  **第3種（みなし仕入率70%）は3割特例と同率**で「安い」ではない
+  （[docs/features/invoice-2wari-tokurei-shuryo.md](../docs/features/invoice-2wari-tokurei-shuryo.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - 壁ちょうどの年収の扱いは壁ごとに違う（`WallDef.inclusive`）。
   社会保険は「130万円未満」が扶養条件なのでちょうどで該当、税金は超えた分に課税なので非該当
