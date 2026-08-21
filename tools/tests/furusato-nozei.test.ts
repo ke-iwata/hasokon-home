@@ -8,6 +8,7 @@ import {
   applyHousingLoan,
   hayamihyo,
   hayamihyoInput,
+  hayamihyoNoBenefit,
   HAYAMIHYO_FAMILIES,
   HAYAMIHYO_INCOMES,
   HAYAMIHYO_UNIT,
@@ -523,6 +524,19 @@ describe('控除上限額の早見表', () => {
         expect(rows[i].limits[f]).toBeGreaterThanOrEqual(rows[i - 1].limits[f]);
       }
     }
+  });
+
+  it('上限額が自己負担の2,000円まで下がったセルは「効果なし」と判定される', () => {
+    // 控除されるのは寄付額 − 2,000円なので、上限額が2,000円だと戻る額が残らない
+    expect(hayamihyoNoBenefit(2_000)).toBe(true);
+    expect(hayamihyoNoBenefit(3_000)).toBe(false);
+    // 現に年収300万円・夫婦＋子2人がこの状態（住民税所得割額が小さすぎる）
+    const low = rows.find((r) => r.income === 3_000_000)!.limits[3];
+    expect(low).toBe(2_000);
+    expect(hayamihyoNoBenefit(low)).toBe(true);
+    // 逆に、判定されるセルはこの1つだけ（他は寄付する意味がある）
+    const flagged = rows.flatMap((r) => r.limits).filter(hayamihyoNoBenefit);
+    expect(flagged).toHaveLength(1);
   });
 
   it('令和8年分の前提で生成されている（500万円・独身は約58,000円）', () => {

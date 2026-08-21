@@ -678,6 +678,18 @@ export function hayamihyoLimit(income: number, family: HayamihyoFamily): number 
   return Math.floor(limit / HAYAMIHYO_UNIT) * HAYAMIHYO_UNIT;
 }
 
+/**
+ * そのセルの上限額では、ふるさと納税をしても実質的な恩恵がほとんど残らないか。
+ *
+ * 控除されるのは寄付額から自己負担の2,000円を引いた額なので、上限額そのものが
+ * 2,000円まで下がると戻ってくる額がほぼ残らない（年収が低く扶養が多い場合に起きる）。
+ * 表示上は「2,000円まで寄付できる」と読めてしまい、しかも早見表は注記から切り離されて
+ * スクリーンショットで持ち帰られるため、セル自身に添える文言の判定に使う。
+ */
+export function hayamihyoNoBenefit(limit: number): boolean {
+  return limit <= SELF_PAY;
+}
+
 /** 早見表の1行（1つの年収に対する家族構成別の上限額） */
 export interface HayamihyoRow {
   /** 給与収入（額面・年間・円） */

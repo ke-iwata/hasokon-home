@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
-import { hayamihyo, HAYAMIHYO_FAMILIES } from '@/lib/furusato-nozei';
+import { hayamihyo, hayamihyoNoBenefit, HAYAMIHYO_FAMILIES } from '@/lib/furusato-nozei';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -166,7 +166,19 @@ export default function Page() {
               <tr key={row.income}>
                 <th scope="row">{man(row.income)}</th>
                 {row.limits.map((limit, i) => (
-                  <td key={HAYAMIHYO_FAMILIES[i].id}>{formatYen(limit)}</td>
+                  <td key={HAYAMIHYO_FAMILIES[i].id}>
+                    {formatYen(limit)}
+                    {/*
+                      上限額が自己負担の2,000円まで下がったセルは「2,000円まで寄付できる」と
+                      読めてしまう。表は注記から切り離して持ち帰られるので、セル自身に添える。
+                    */}
+                    {hayamihyoNoBenefit(limit) && (
+                      <>
+                        <br />
+                        <span style={subLabel}>（実質的な効果なし）</span>
+                      </>
+                    )}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -187,8 +199,8 @@ export default function Page() {
           扶養控除の対象は16歳以上だからです（15歳以下は児童手当の対象で、扶養控除はありません）。表の「子1人」は16〜18歳、「子2人」は16〜18歳と19〜22歳（特定扶養親族）を指します
         </li>
         <li>
-          <strong>40〜64歳の方は、この表より数千円下がります。</strong>
-          介護保険料のぶん社会保険料が増え、課税所得と住民税所得割額が下がるためです。計算機の「40〜64歳」にチェックを入れると反映されます
+          <strong>40〜64歳の方は、この表より数百円〜4,000円台下がります。</strong>
+          下がり幅は年収が高いほど大きく、年収300〜700万円なら数百円〜1,600円程度、1,000万円で約2,300円、1,500万円で約4,300円です。介護保険料のぶん社会保険料が増え、課税所得と住民税所得割額が下がるためです。計算機の「40〜64歳」にチェックを入れると反映されます
         </li>
         <li>
           生命保険料控除・iDeCo・医療費控除などの所得控除がある方、給与以外の所得がある方、70歳以上のご家族を扶養している方は、この表からずれます。<strong>正確な金額は上の計算機</strong>でご確認ください
