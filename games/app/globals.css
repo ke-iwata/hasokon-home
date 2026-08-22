@@ -3692,10 +3692,61 @@ button.hf-card {
 
 /* 役名。**幅が足りないときは折り返す**（省略記号で切ると、狭い画面で
    「S・ストレート」と「L・ストレート」が同じ字面になって区別できない）。
-   行の高さは44pxで固定なので、2行になっても表は動かない */
+   行の高さは44pxで固定なので、2行になっても表は動かない。
+   役の条件の絵（`.yc-pat`）は名前の下に敷く */
 .yc-name {
   overflow: hidden;
   line-height: 1.2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+/* 役の条件の絵（app/yacht/YakuMark.tsx）。
+   **高さは10pxまで。** 役名の欄は320px幅の端末で53pxしかなく、そこでは
+   役名がすでに2行に折り返す。44pxの行に、2行の名前（約31px）と一緒に入る
+   大きさがここまで。幅も欄からはみ出さないよう上限を置く */
+.yc-pat {
+  height: 9px;
+  width: auto;
+  max-width: 100%;
+  flex: none;
+}
+
+/* 上段の役（エース〜シックス）は名前が短く1行に収まるので、
+   サイコロの目が読める大きさまで上げられる */
+.yc-pat.upper {
+  height: 15px;
+}
+
+/* そろえる目 */
+.yc-pat .pat-same {
+  fill: var(--accent);
+}
+
+/* フルハウスの「別の同じ目2つ」。**同じ色にすると5つそろえる役に見える** */
+.yc-pat .pat-other {
+  fill: var(--accent);
+  opacity: 0.45;
+}
+
+/* 「なんでもよい」目。塗らずに枠線だけにする */
+.yc-pat .pat-any {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+
+/* 上段の役のサイコロ */
+.yc-pat .pat-die {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.2;
+}
+
+.yc-pat .pat-pip {
+  fill: var(--accent);
 }
 
 .yc-val {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Die3D, { useDiceLook } from './Die3D';
+import YakuMark from './YakuMark';
 import {
   canRoll,
   canScore,
@@ -235,7 +236,10 @@ export default function Game() {
               : '未記入'
         } CPU${state.sheets.cpu[category] === null ? '未記入' : `${state.sheets.cpu[category]}点`}`}
       >
-        <span className="yc-name">{CATEGORY_LABEL[category]}</span>
+        <span className="yc-name">
+          {CATEGORY_LABEL[category]}
+          <YakuMark category={category} />
+        </span>
         <span className={`yc-val${preview ? ' preview' : ''}${filled ? ' done' : ''}`}>
           {cellOf('human', category)}
         </span>
@@ -425,6 +429,14 @@ export default function Game() {
           「上段計」の行にはエース〜シックスの合計が出ていて、{UPPER_TARGET}点以上になると
           ボーナスで+{UPPER_BONUS}点が付きます（付いた行は「+{UPPER_BONUS}」に変わります）。
           全{CATEGORIES.length}役を埋めて、合計点の高いほうが勝ちです。
+        </p>
+        <p>
+          役名の下の小さな絵は、その役に必要な出目です。
+          <strong>色の付いた四角がそろえる目</strong>で、
+          <strong>枠だけの四角はどの目でもよい</strong>という意味です
+          （フォーダイスなら「同じ目4つ＋なんでも1つ」）。
+          フルハウスの薄いほうは「別の同じ目2つ」、階段はストレート（連続する目）、
+          エース〜シックスのサイコロは「その目を集める」ことを表します。
         </p>
       </details>
     </div>
