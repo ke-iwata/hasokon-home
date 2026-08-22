@@ -235,9 +235,11 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-13',
   },
   {
-    // 「二角取り」はジャンルの一般名称。仕様書の状態欄のとおり運営者が J-PlatPat で
-    // 商標確認を行うまで `preview` に置く。公開時に home/index.html・home/llms.txt を
-    // 同PRで足すこと（docs/features/game-nikakudori.md の状態行）。
+    // 「二角取り」はジャンルの一般名称。商標色の強い「四川省」は名前に使っていない。
+    // **J-PlatPat での商標確認が済むまで `preview`**（運営者の判断・2026-08-22）。
+    // 色水ソートと違い **slug 自体が未確認の語**で、公開するとURLが動かせなくなる。
+    // 確認で問題なければ `public` に上げ、登録があれば slug ごと `pair-tiles` にする
+    // （docs/features/game-nikakudori.md の状態行）。
     // 麻雀ソリティアと客層が重なるので、一覧では隣に置く
     slug: 'nikakudori',
     icon: 'TilesPath',
@@ -299,14 +301,12 @@ export const games: GameDef[] = [
     // ルールにも名称にも権利者はいない。同型のボードゲームの商品名（ヤッツィー）は
     // 他社の登録商標なので、名前・slug・見出しには使わない
     // （docs/features/game-yacht.md の「権利面」）。
-    // 実装・テストは済んでいるが、実機のモバイル表示を運営者が確認するまで preview。
-    // public に上げるPRで home/index.html のカードと home/llms.txt の行を同時に足すこと
     slug: 'yacht',
     icon: 'DiceFive',
     name: 'ヨット',
     description:
       '5個のサイコロを3回まで振って役を作る定番のダイスゲーム。フルハウスやストレートなど12の役を埋めて、合計点の高さを競います。CPU対戦は強さ2段階。',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-08-21',
   },
   {
