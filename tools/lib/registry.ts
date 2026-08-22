@@ -213,7 +213,7 @@ export const tools: ToolDef[] = [
     description:
       '2割特例が終わったあと、3割特例・簡易課税・本則課税のどれが一番安いかを1画面で比較。簡易課税の届出期限（原則と、2割特例からの移行の特則）と業種別みなし仕入率の早見表つき。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-08-21',
   },
   {
@@ -330,7 +330,7 @@ export const tools: ToolDef[] = [
     description:
       '「30%オフはいくら？」「割引率は何%？」を、税込／税抜と端数の丸め方（切り捨て・四捨五入・切り上げ）を選んで計算。二重割引（30%オフからさらに20%オフ）や、〇%オフ早見表つき。',
     category: '計算・変換',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-08-20',
   },
   {
