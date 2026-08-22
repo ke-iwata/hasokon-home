@@ -3445,11 +3445,17 @@ button.hf-card {
   margin: 6px 0;
 }
 
-/* サイコロ1個。押す先なので48px（狭い画面でも44pxを割らない） */
+/* サイコロ1個。押す先なので48px（狭い画面でも44pxを割らない）。
+   内側の余白は、**立方体を斜めから見た影絵が枠に届かない**大きさで決めている
+   （48 - 枠2×2 - 余白7×2 = 30px。傾けると横幅は約1.26倍＝38pxに見えるので、
+   枠まで5pxほど残る）。詰めすぎると立方体が枠を覆い、キープ中の色が見えなくなる。
+   **`--half` は内寸の半分**で、立方体の6面を手前・奥へ動かす距離になる
+   （`translateZ` に % は使えないので px で持つしかない） */
 .yc-die {
   width: 48px;
   height: 48px;
-  padding: 6px;
+  padding: 7px;
+  --half: 15px;
   border: 2px solid var(--border);
   border-radius: 10px;
   background: var(--surface-2);
@@ -3460,10 +3466,14 @@ button.hf-card {
   cursor: default;
 }
 
-/* キープ中。**枠の太さは変えない**（変えると中の目の位置がずれて動いて見える） */
+/* キープ中。**枠の太さは変えない**（変えると中の目の位置がずれて動いて見える）。
+   立体のサイコロは枠の内側いっぱいに見えるので、枠の色だけだと細い線しか
+   残らない。**枠の外側にもう1本の輪**を足して、離れていても分かるようにする
+   （`box-shadow` なので場所は取らず、隣の駒ともぶつからない） */
 .yc-die.held {
   border-color: var(--accent);
   background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* まだ振っていないあいだ。目は出ているが意味は無いので薄くする */
@@ -3471,22 +3481,112 @@ button.hf-card {
   opacity: 0.35;
 }
 
+/* 立体が使えない端末での平面表示。**立体と同じ大きさ・同じ目の位置**にして、
+   切り替わったときに駒が動いて見えないようにする */
 .yc-face {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 2px;
+  display: block;
   width: 100%;
   height: 100%;
 }
 
-.yc-pip {
-  border-radius: 50%;
-  background: var(--text);
+.yc-face svg {
+  width: 100%;
+  height: 100%;
+  fill: var(--text);
 }
 
-.yc-pip.off {
-  background: transparent;
+/* ---- 立体のサイコロ（app/yacht/Die3D.tsx）
+   同じ作りを tools 側（サイコロツール）でも使っている。片方を直したら
+   もう片方も見ること。踏んだ罠はどちらも同じ。
+   **3Dの階層は .yc-cube だけにする。** 入れ子の preserve-3d は iOS Safari で
+   平面に潰れることがあるので、見る角度・向き・回転を1つの transform にまとめている */
+.yc-cube-wrap {
+  display: block;
+  width: 100%;
+  height: 100%;
+  perspective: 420px;
+}
+
+.yc-cube {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y))
+    rotate3d(var(--ax), var(--ay), var(--az), 0deg) rotateX(var(--rx)) rotateY(var(--ry));
+}
+
+.yc-cube.rolling {
+  /* **fill-mode は付けない。** 付けると、アニメーションが走らない状況
+     （タブが裏、強い省電力）でサイコロが途中の姿勢で止まる。
+     付けなければ、この要素本来の transform ＝ 止まった状態が常に効く */
+  animation: yc-roll 0.72s cubic-bezier(0.12, 0.66, 0.26, 1);
+  /* 転がっている間だけ合成のヒントを出す。常時付けるとメモリを無駄に使う */
+  will-change: transform;
+}
+
+/* 跳ねる高さは駒の大きさに対する割合で書く。px で書くと、
+   狭い画面で駒を小さくしたときだけ跳ねすぎる */
+@keyframes yc-roll {
+  0% {
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-42%)
+      rotate3d(var(--ax), var(--ay), var(--az), var(--spin)) rotateX(var(--rx)) rotateY(var(--ry));
+  }
+  56% {
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0)
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.12)) rotateX(var(--rx))
+      rotateY(var(--ry));
+  }
+  76% {
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-14%)
+      rotate3d(var(--ax), var(--ay), var(--az), calc(var(--spin) * 0.03)) rotateX(var(--rx))
+      rotateY(var(--ry));
+  }
+  100% {
+    transform: rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(0)
+      rotate3d(var(--ax), var(--ay), var(--az), 0deg) rotateX(var(--rx)) rotateY(var(--ry));
+  }
+}
+
+.yc-cube-face {
+  position: absolute;
+  inset: 0;
+  /* 角を丸めすぎると、面と面が接する辺が欠けて立方体が分解して見える */
+  border-radius: 4px;
+  background: var(--surface);
+  /* 稜線をはっきり出さないと、白い面が並ぶだけで紙のように見える */
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  display: grid;
+  place-items: center;
+  backface-visibility: hidden;
+}
+
+.yc-cube-face svg {
+  width: 78%;
+  height: 78%;
+  fill: var(--text);
+}
+
+/* 6面の配置。奥行きは駒の半分（.yc-die の内寸の半分）
+   ＝ 50% だけ手前・奥へ動かす */
+.yc-cube-face.front {
+  transform: translateZ(var(--half));
+}
+.yc-cube-face.back {
+  transform: rotateY(180deg) translateZ(var(--half));
+}
+.yc-cube-face.right {
+  transform: rotateY(90deg) translateZ(var(--half));
+}
+.yc-cube-face.left {
+  transform: rotateY(-90deg) translateZ(var(--half));
+}
+.yc-cube-face.top {
+  transform: rotateX(90deg) translateZ(var(--half));
+}
+.yc-cube-face.bottom {
+  transform: rotateX(-90deg) translateZ(var(--half));
 }
 
 .yc-roll {
