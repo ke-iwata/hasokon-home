@@ -293,13 +293,22 @@ export default function Game() {
         />
       </div>
 
+      {/* **終局の知らせもこの行に出す。** 別に1行取ると、遊んでいるあいだ
+          ずっと空のまま43px（＋余白12px）を使う。手番の案内は終局後には
+          用が無いので、同じ場所を使えば足りる。
+          高さは固定なので、切り替わっても下は動かない */}
       <div className="status-bar">
         <span>
           {state.round} / {ROUNDS} 巡目
         </span>
-        <span>
+        <span
+          aria-live="polite"
+          style={state.finished && outcome === 'win' ? { color: 'var(--ok)' } : undefined}
+        >
           {state.finished
-            ? 'ゲーム終了'
+            ? `${outcome === 'win' ? '🎉 あなたの勝ち' : outcome === 'draw' ? '引き分け' : 'あなたの負け'} ${totalScore(
+                state.sheets.human,
+              )}対${totalScore(state.sheets.cpu)}`
             : !begun
               ? 'スタート待ち'
               : myTurn
@@ -322,19 +331,6 @@ export default function Game() {
           { label: '回数', value: `${decidedGames(entry)}回` },
         ]}
       />
-
-      {/* 終局の知らせ。**出ても消えても下が動かないよう常に置く** */}
-      <p
-        className="result-row"
-        style={{ color: outcome === 'win' ? 'var(--ok)' : 'var(--text)' }}
-        aria-live="polite"
-      >
-        {outcome === null
-          ? ''
-          : `${totalScore(state.sheets.human)}点 対 ${totalScore(state.sheets.cpu)}点 — ${
-              outcome === 'win' ? '🎉 あなたの勝ちです' : outcome === 'draw' ? '引き分けです' : 'あなたの負けです'
-            }`}
-      </p>
 
       <StartGate show={!begun && !state.finished} onStart={() => setBegun(true)}>
         <div className="yc-play">
