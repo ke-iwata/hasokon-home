@@ -206,11 +206,13 @@ interface Props {
   face: number;
   /** 振るたびに増える番号。変わると転がる動きをやり直す（キープ中は増えない） */
   spinKey: number;
+  /** 左から何番目か。**止まる順番**に使う（左から1つずつ止まる） */
+  index: number;
   can3D: boolean;
   animate: boolean;
 }
 
-export default function Die3D({ face, spinKey, can3D, animate }: Props) {
+export default function Die3D({ face, spinKey, index, can3D, animate }: Props) {
   if (!can3D) return <FlatDie face={face} />;
 
   const [rx, ry] = FACE_ROTATION[face] ?? FACE_ROTATION[1];
@@ -236,6 +238,11 @@ export default function Die3D({ face, spinKey, can3D, animate }: Props) {
     '--spin': `${spin}deg`,
     '--tilt-x': `${TILT_X}deg`,
     '--tilt-y': `${TILT_Y}deg`,
+    // **止まる時間をずらすのであって、始める時間はずらさない。**
+    // 遅れて始めると、待っているあいだ新しい目を見せたまま止まって見え、
+    // そのあとで転がり出すことになる（先に着地して振り直したように映る）。
+    // 5個いっせいに転がり出して、左から順に止まるのが自然
+    '--i': `${index}`,
   } as React.CSSProperties;
 
   return (
