@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Die3D, { useDiceLook } from './Die3D';
 import {
   canRoll,
   canScore,
@@ -71,27 +72,6 @@ function writeLevel(level: Level): void {
     倍率の3段階は app/_cpu/CpuSpeed.tsx が持つ */
 const THINK_DELAY = 520;
 
-/** サイコロの目の配置（3×3のどこに点を打つか） */
-const PIPS: Record<number, readonly number[]> = {
-  1: [4],
-  2: [0, 8],
-  3: [0, 4, 8],
-  4: [0, 2, 6, 8],
-  5: [0, 2, 4, 6, 8],
-  6: [0, 2, 3, 5, 6, 8],
-};
-
-function Die({ face }: { face: number }) {
-  const on = new Set(PIPS[face] ?? []);
-  return (
-    <span className="yc-face" aria-hidden="true">
-      {Array.from({ length: 9 }, (_, i) => (
-        <span key={i} className={on.has(i) ? 'yc-pip' : 'yc-pip off'} />
-      ))}
-    </span>
-  );
-}
-
 export default function Game() {
   const [level, setLevel] = useState<Level>('easy');
   const [state, setState] = useState<YachtState>(initialState);
@@ -115,6 +95,27 @@ export default function Game() {
   const myTurn = !state.finished && state.turn === 'human';
   const rolled = hasRolled(state);
   const outcome = outcomeOf(state);
+
+  // ---- サイコロの見た目（立体で描けるか・動かしてよいか）は1回だけ調べる
+  const look = useDiceLook();
+  /**
+   * サイコロごとの「何回目に振られたか」。**変わった駒だけが転がる。**
+   * キープした駒まで転がすと、キープが効いているのか分からなくなる。
+   * 出目が同じ値で止まることもあるので、出目の変化では判定できない
+   */
+  const [spins, setSpins] = useState<number[]>(() => state.dice.map(() => 0));
+  const rollMark = useRef({ rollsLeft: state.rollsLeft, held: state.held });
+
+  useEffect(() => {
+    const before = rollMark.current;
+    // 振ると残り回数が1つ減る。増えているのは手番が変わったとき（振っていない）
+    if (state.rollsLeft < before.rollsLeft) {
+      // 1投目は `rollDice` がキープを解除して全部振る
+      const first = before.rollsLeft === ROLLS_PER_TURN;
+      setSpins((prev) => prev.map((n, i) => (first || !before.held[i] ? n + 1 : n)));
+    }
+    rollMark.current = { rollsLeft: state.rollsLeft, held: state.held };
+  }, [state.rollsLeft, state.held]);
 
   const start = useCallback((nextLevel: Level) => {
     pendingHold.current = null;
@@ -346,7 +347,12 @@ export default function Game() {
                       : `${i + 1}個目 まだ振っていません`
                   }
                 >
-                  <Die face={face} />
+                  <Die3D
+                    face={face}
+                    spinKey={spins[i]}
+                    can3D={look.can3D}
+                    animate={look.animate}
+                  />
                 </button>
               );
             })}

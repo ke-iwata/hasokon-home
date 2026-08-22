@@ -240,6 +240,11 @@ interface Props {
  * WebGLは使わずCSSの3D変換で作っている。立方体なら見た目は十分で、
  * ライブラリを増やさずに済むため。
  * 立体が効かない端末では平面表示に切り替える（detect3D 参照）。
+ *
+ * **同じ作りを games 側（`games/app/yacht/Die3D.tsx`・ヨット）でも使っている。**
+ * 別アプリなのでコードは共有できない。踏んだ罠（陰影を面ごとに固定しない・
+ * filter を使わない・fill-mode を付けない・preserve-3d を実測で判定する）は
+ * どちらも同じなので、**片方を直したらもう片方も見ること**。
  */
 export default function Dice3D({ values, spin, rolling }: Props) {
   const [reduceMotion, setReduceMotion] = useState(false)
