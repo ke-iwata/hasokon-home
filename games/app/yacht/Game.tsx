@@ -236,8 +236,12 @@ export default function Game() {
         } CPU${state.sheets.cpu[category] === null ? '未記入' : `${state.sheets.cpu[category]}点`}`}
       >
         <span className="yc-name">{CATEGORY_LABEL[category]}</span>
-        <span className={`yc-val${preview ? ' preview' : ''}`}>{cellOf('human', category)}</span>
-        <span className="yc-val cpu">{cellOf('cpu', category)}</span>
+        <span className={`yc-val${preview ? ' preview' : ''}${filled ? ' done' : ''}`}>
+          {cellOf('human', category)}
+        </span>
+        <span className={`yc-val cpu${state.sheets.cpu[category] !== null ? ' done' : ''}`}>
+          {cellOf('cpu', category)}
+        </span>
       </button>
     );
   };
@@ -350,6 +354,7 @@ export default function Game() {
                   <Die3D
                     face={face}
                     spinKey={spins[i]}
+                    index={i}
                     can3D={look.can3D}
                     animate={look.animate}
                   />
