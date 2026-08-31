@@ -129,8 +129,16 @@ describe('medicalDeduction（控除額）', () => {
     expect(medicalDeduction(500_000, 200_000, 5_000_000)).toBe(200_000);
   });
 
+  /**
+   * 補填額の按分（その給付の目的になった医療費を限度に引く）は、合計額1本を受け取る
+   * この設計では表現できず、**入力欄の補足文と結果の注記で担保している**。
+   * ロジックで縛れるのはここまで＝「合計での引きすぎがマイナスにならないこと」
+   * （仕様書「テスト」節）。
+   */
   it('補填額が医療費を超えてもマイナスにならない', () => {
     expect(medicalDeduction(100_000, 300_000, 5_000_000)).toBe(0);
+    expect(calcIryohiKojo(input({ medicalExpenses: 100_000, compensation: 300_000 })).medical)
+      .toMatchObject({ netExpenses: 0, deduction: 0, total: 0 });
   });
 
   it('足切りに届かなければ0（マイナスにしない）', () => {

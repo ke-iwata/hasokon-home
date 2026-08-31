@@ -158,6 +158,10 @@ export default function Calculator() {
         />
         <p className="hint">
           生命保険の入院給付金、健康保険の高額療養費・出産育児一時金など。無ければ0のままで構いません。
+          <br />
+          <strong>その医療費に対して補填された分だけを入れてください。給付の対象になった医療費を超える分は入れません。</strong>
+          たとえば入院費10万円に対して高額療養費が18万円出たなら、ここに入れるのは
+          <strong>10万円</strong>です（18万円ではありません）。超える分を通院費など他の医療費から差し引くことはできません。
         </p>
       </div>
 
@@ -308,6 +312,15 @@ export default function Calculator() {
           控除が税率の境目をまたぐと、税率を掛けるだけの計算より小さくなります。
         </p>
       </div>
+
+      {r.medical.netExpenses < Math.max(0, Number(medicalExpenses) || 0) && (
+        <div className="note">
+          <strong>補填額は合計から引いています。</strong>
+          本来は<strong>その給付の目的になった医療費を限度に</strong>差し引き、引ききれない分を他の医療費から引くことはできません。この計算機は合計額どうしで引く簡易計算なので、
+          <strong>高額療養費・出産育児一時金</strong>のように特定の医療費に対して大きな給付が出た場合、上の欄に給付額をそのまま入れると控除額が実際より小さく出ます。上の入力ガイドのとおり、
+          <strong>対象になった医療費の額を上限にした値</strong>を入れてください。
+        </div>
+      )}
 
       <div className="note">
         <strong>この結果は概算です。</strong>
