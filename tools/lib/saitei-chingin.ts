@@ -26,7 +26,7 @@
  * **出典を確認せずにエントリを足さないこと**。tests/saitei-chingin.test.ts が
  * 出典の欠落を落とす。
  *
- * ■ 一次情報（2026-08-19 取得）
+ * ■ 一次情報（2026-08-31 取得）
  * - 厚生労働省「地域別最低賃金の全国一覧」
  *   https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/
  *   → PDF「令和７年度地域別最低賃金全国一覧」の表を47件そのまま写したものが
@@ -46,7 +46,7 @@
 import { evaluateKabe, nextWall, type KabeResult } from './nenshu-kabe';
 
 /** データ全体の最終確認日 'YYYY-MM-DD'。ページに「データ最終更新日」として表示する */
-export const DATA_CHECKED_AT = '2026-08-19';
+export const DATA_CHECKED_AT = '2026-08-31';
 
 /** 現行（改定前）の年度。表の見出しに使う */
 export const CURRENT_FY_LABEL = '令和7年度';
@@ -133,11 +133,12 @@ export interface Prefecture {
  * `currentYen` / `currentEffectiveOn` は厚労省「令和７年度地域別最低賃金全国一覧」、
  * `rank` は厚労省「令和８年度地域別最低賃金額改定の目安について」から。
  * `answered` は都道府県労働局の報道発表で確認できたものだけを入れている
- * （2026-08-19 時点で30都道府県。残りは目安ベースの見込み表示になる）。
+ * （2026-08-31 時点で43都道府県。残る岩手・佐賀・熊本・沖縄の4県は未答申で、
+ * 目安ベースの見込み表示になる）。
  *
  * `effectiveOn` は労働局が日付を示しているものだけに入れる。答申文が
  * 「効力発生の日 法定どおり」とだけ書く県（群馬・岡山の答申文など）や、
- * 「最短で」「早ければ」10月◯日と条件付きで書く県（岐阜・富山・新潟）は
+ * 「最短で」「早ければ」10月◯日と条件付きで書く県（岐阜・富山・新潟・宮崎）は
  * **持たせない**。持たせないと発効日が来ても status は '答申' のままになるが、
  * 決め打ちして実際とずれるより安全側に倒す（Answered.effectiveOn のコメント参照）。
  */
@@ -159,7 +160,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 2, name: '青森', rank: 'C', currentYen: 1029, currentEffectiveOn: '2025-11-21', source: SOURCE_MHLW_LIST },
+  {
+    code: 2,
+    name: '青森',
+    rank: 'C',
+    currentYen: 1029,
+    currentEffectiveOn: '2025-11-21',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1090,
+      answeredOn: '2026-08-26',
+      effectiveOn: '2026-10-29',
+      source: {
+        label: '青森労働局「青森県最低賃金を時間額１，０９０円に」',
+        url: 'https://jsite.mhlw.go.jp/aomori-roudoukyoku/content/contents/002788111.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   { code: 3, name: '岩手', rank: 'C', currentYen: 1031, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
   {
     code: 4,
@@ -197,9 +215,60 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 6, name: '山形', rank: 'C', currentYen: 1032, currentEffectiveOn: '2025-12-23', source: SOURCE_MHLW_LIST },
-  { code: 7, name: '福島', rank: 'B', currentYen: 1033, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
-  { code: 8, name: '茨城', rank: 'B', currentYen: 1074, currentEffectiveOn: '2025-10-12', source: SOURCE_MHLW_LIST },
+  {
+    code: 6,
+    name: '山形',
+    rank: 'C',
+    currentYen: 1032,
+    currentEffectiveOn: '2025-12-23',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1092,
+      answeredOn: '2026-08-27',
+      effectiveOn: '2026-10-30',
+      source: {
+        label: '山形労働局「山形県最低賃金を60円引上げ、時間額1,092円に」',
+        url: 'https://jsite.mhlw.go.jp/yamagata-roudoukyoku/toushinn-20260827.html',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
+  {
+    code: 7,
+    name: '福島',
+    rank: 'B',
+    currentYen: 1033,
+    currentEffectiveOn: '2026-01-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1094,
+      answeredOn: '2026-08-20',
+      effectiveOn: '2026-10-16',
+      source: {
+        label: '福島労働局「福島県最低賃金（時間額）を1,094円（＋61円）に引上げ」',
+        url: 'https://jsite.mhlw.go.jp/fukushima-roudoukyoku/content/contents/002783612.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
+  {
+    code: 8,
+    name: '茨城',
+    rank: 'B',
+    currentYen: 1074,
+    currentEffectiveOn: '2025-10-12',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1136,
+      answeredOn: '2026-08-24',
+      effectiveOn: '2026-10-18',
+      source: {
+        label: '茨城労働局「令和8年度茨城県最低賃金の改正答申について」',
+        url: 'https://jsite.mhlw.go.jp/ibaraki-roudoukyoku/content/contents/chingin_press_R080824_toushin1136yen.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 9,
     name: '栃木',
@@ -378,7 +447,25 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 19, name: '山梨', rank: 'B', currentYen: 1052, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 19,
+    name: '山梨',
+    rank: 'B',
+    currentYen: 1052,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1113,
+      answeredOn: '2026-08-28',
+      effectiveOn: '2026-11-01',
+      source: {
+        // 広島と同じく、報道発表ではなく異議申出のための公示に額と効力発生の日が載っている
+        label: '山梨労働局一般公示第3号「山梨地方最低賃金審議会の意見に関する公示」',
+        url: 'https://jsite.mhlw.go.jp/yamanashi-roudoukyoku/content/contents/002362423.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 20,
     name: '長野',
@@ -487,7 +574,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 26, name: '京都', rank: 'B', currentYen: 1122, currentEffectiveOn: '2025-11-21', source: SOURCE_MHLW_LIST },
+  {
+    code: 26,
+    name: '京都',
+    rank: 'B',
+    currentYen: 1122,
+    currentEffectiveOn: '2025-11-21',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1180,
+      answeredOn: '2026-08-20',
+      effectiveOn: '2026-11-16',
+      source: {
+        label: '京都労働局「京都府最低賃金が時間額1,180円（58円引上げ）へ」',
+        url: 'https://jsite.mhlw.go.jp/kyoto-roudoukyoku/news_topics/houdou/_00279.html',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 27,
     name: '大阪',
@@ -651,7 +755,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 36, name: '徳島', rank: 'B', currentYen: 1046, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 36,
+    name: '徳島',
+    rank: 'B',
+    currentYen: 1046,
+    currentEffectiveOn: '2026-01-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1103,
+      answeredOn: '2026-08-24',
+      effectiveOn: '2026-11-01',
+      source: {
+        label: '徳島労働局一般公示第5号「徳島地方最低賃金審議会の意見に関する公示」',
+        url: 'https://jsite.mhlw.go.jp/tokushima-roudoukyoku/content/contents/002787799.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 37,
     name: '香川',
@@ -670,8 +791,42 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 38, name: '愛媛', rank: 'B', currentYen: 1033, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
-  { code: 39, name: '高知', rank: 'C', currentYen: 1023, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 38,
+    name: '愛媛',
+    rank: 'B',
+    currentYen: 1033,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1093,
+      answeredOn: '2026-08-21',
+      effectiveOn: '2026-11-01',
+      source: {
+        label: '愛媛労働局「愛媛県最低賃金 時間額１，０９３円を答申」',
+        url: 'https://jsite.mhlw.go.jp/ehime-roudoukyoku/content/contents/002785788.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
+  {
+    code: 39,
+    name: '高知',
+    rank: 'C',
+    currentYen: 1023,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1086,
+      answeredOn: '2026-08-28',
+      effectiveOn: '2026-10-29',
+      source: {
+        label: '高知労働局「令和8年度高知県最低賃金の改正答申について」',
+        url: 'https://jsite.mhlw.go.jp/kochi-roudoukyoku/content/contents/002796924.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 40,
     name: '福岡',
@@ -691,11 +846,79 @@ export const PREFECTURES: Prefecture[] = [
     },
   },
   { code: 41, name: '佐賀', rank: 'C', currentYen: 1030, currentEffectiveOn: '2025-11-21', source: SOURCE_MHLW_LIST },
-  { code: 42, name: '長崎', rank: 'C', currentYen: 1031, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 42,
+    name: '長崎',
+    rank: 'C',
+    currentYen: 1031,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1087,
+      answeredOn: '2026-08-28',
+      effectiveOn: '2026-11-02',
+      source: {
+        label: '長崎労働局「「長崎県最低賃金」の改正決定の答申について」',
+        url: 'https://jsite.mhlw.go.jp/nagasaki-roudoukyoku/content/contents/press-26082803.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   { code: 43, name: '熊本', rank: 'C', currentYen: 1034, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
-  { code: 44, name: '大分', rank: 'C', currentYen: 1035, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
-  { code: 45, name: '宮崎', rank: 'C', currentYen: 1023, currentEffectiveOn: '2025-11-16', source: SOURCE_MHLW_LIST },
-  { code: 46, name: '鹿児島', rank: 'C', currentYen: 1026, currentEffectiveOn: '2025-11-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 44,
+    name: '大分',
+    rank: 'C',
+    currentYen: 1035,
+    currentEffectiveOn: '2026-01-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1096,
+      answeredOn: '2026-08-28',
+      effectiveOn: '2026-11-01',
+      source: {
+        label: '大分労働局「大分県最低賃金改正を「時間額1,096円」で答申」',
+        url: 'https://jsite.mhlw.go.jp/oita-roudoukyoku/content/contents/002798644.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
+  {
+    code: 45,
+    name: '宮崎',
+    rank: 'C',
+    currentYen: 1023,
+    currentEffectiveOn: '2025-11-16',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1085,
+      answeredOn: '2026-08-25',
+      // 報道発表が「10月下旬（最短で10月24日）に発効される見込み」と条件付きなので持たせない
+      source: {
+        label: '宮崎労働局「令和8年度宮崎県最低賃金の改正答申について」',
+        url: 'https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/content/contents/002795889.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
+  {
+    code: 46,
+    name: '鹿児島',
+    rank: 'C',
+    currentYen: 1026,
+    currentEffectiveOn: '2025-11-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1090,
+      answeredOn: '2026-08-26',
+      // 労働局の発表（フォトレポート）に発効日の記載が無く、公示PDFは画像で読めないため持たせない
+      source: {
+        label: '鹿児島労働局「令和8年度第3回鹿児島地方最低賃金審議会が開催されました」',
+        url: 'https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/home/photoreport_2026-0827-4.html',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   { code: 47, name: '沖縄', rank: 'C', currentYen: 1023, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
 ];
 
