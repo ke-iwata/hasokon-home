@@ -200,6 +200,7 @@ npm run build    # out/ に静的出力
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
+| 毎年12月（税制改正大綱が出たら） | セルフメディケーション税制の適用期限を `lib/iryohi-kojo.ts` の `SELF_MED_EXPIRES_AT` / `SELF_MED_CHECKED_AT` に反映（現行の期限は2026年12月31日。延長は令和9年度税制改正待ち）。**画面では「今年で終わり」と断定せず「現時点の期限は〜」と書く**（延長された瞬間に嘘になる文言を置かない）。足切り・上限が変わったら `MEDICAL_THRESHOLD_FIXED` / `MEDICAL_CAP` / `SELF_MED_THRESHOLD` / `SELF_MED_CAP` |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
 | 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
@@ -213,8 +214,8 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール34本（ほかに公開前が2本：`waribiki-percent`・`invoice-nozeigaku`。`stage: 'preview'`）/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1504件
+- ツール36本（ほかに公開前が1本：`iryohi-kojo`。`stage: 'wip'`）/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1550件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
