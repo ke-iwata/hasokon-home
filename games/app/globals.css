@@ -1680,6 +1680,152 @@ ol {
   color: var(--muted);
 }
 
+/* ---- ゴルフソリティア ---- */
+
+/* 場は7列なので、クロンダイクと同じ `.tableau.cols7` のグリッドに載せる
+   （山型のトライピークスと違って絶対配置は要らない）。ここで足すのは
+   「盤を画面の高さからも決める」ぶんと、列の高さの固定だけ。
+
+   **`.tableau` の後ろに置くこと。** 同じ詳細度なので、前に置くと
+   `width: 100%` に負けずとも max-width が上書きされる余地が残る
+   （games/CLAUDE.md「画面の約束」の2）。
+
+   盤の高さ ＝ 列の高さ ＝ 列幅 × 3.16（下の .gf-col の aspect-ratio）で、
+   列幅 ＝ (盤幅 - 間隔5px × 6) ÷ 7。間隔があるぶん比は盤幅で少し動き、
+   幅268〜480pxで 0.40〜0.41 になる（実測）。高さの上限は安全側の 0.41 で割る */
+.gf-board {
+  /* 盤以外の実測＝364px（幅360〜390pxの端末。
+     状態26・記録34・ルール33・案内43・山札の行96・ボタン36＋余白）。
+     幅320pxでは状態と記録が2行に折り返して424pxになるが、そこは盤の幅のほうが
+     先に効くので、広いほうの実測に合わせてある */
+  --chrome: 364px;
+  --board-max: 480px;
+  max-width: min(var(--board-max), max(238px, calc((100dvh - var(--chrome)) / 0.41)));
+  margin-inline: auto;
+}
+
+/* 1列ぶんの箱。**枚数が減っても高さを変えない**（変えると下の山札の行ごと
+   せり上がる。games/CLAUDE.md「画面の約束」の1）。
+   5枚ぶんの高さ ＝ 札1枚（幅の140%）＋ 4枚ぶんの見える帯（幅の44%）＝ 幅の316% */
+.gf-col {
+  aspect-ratio: 100 / 316;
+}
+
+/* 重ねかた。**クロンダイクの `stackMargin`（-106%）より浅く重ねる。**
+   ゴルフは35枚が最初から全部表向きで、奥の札まで読めることが手の組み立てそのもの
+   （「この列は6・5・4だから3手つながる」）。-106% だと見える帯が幅の34%になり、
+   角の数字と絵柄のうち絵柄が切れる（角の表示は札の高さの約26%＝幅の36%を使う）。
+   -96% にすると帯が幅の44%になって角の表示が丸ごと入る。
+   縦は余っている（幅360pxの端末で画面640pxに対し盤は126px）ので、
+   浅く重ねても1画面に収まる（実測） */
+.gf-col .playing-card + .playing-card {
+  margin-top: -96%;
+}
+
+/* 取り切った列。枠だけ残して「ここは終わった」と分かるようにする */
+.gf-done {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* 奥の札（取れない札）。明るさで手前の1枚と見分ける。
+   **押せなくはしない** — 列のどこを押しても手前の札を取りにいく
+   （.tp-board .covered と同じ考え方） */
+.gf-board .playing-card.covered {
+  filter: brightness(0.82);
+}
+
+/* ヒントの枠と揺れは手前の札に出る。下の列の札に隠されないよう前面へ */
+.gf-board .playing-card.hinted {
+  z-index: 2;
+}
+
+/* A↔K の切り替え。畳まずに常に見せる（記録の区分もこれで分かれる） */
+.gf-rule {
+  margin: 6px 0;
+}
+
+/* 山札・捨て札と、その横の案内。つくりは .tp-piles と同じで、
+   **つながり方の説明も「同じ配りをもう一度」も、この1行の中に収める**
+   （別の行として下に積むと、スマホで盤が画面から押し出される） */
+.gf-piles {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.gf-pile {
+  width: clamp(44px, 13vw, 58px);
+  flex: 0 0 auto;
+}
+
+.gf-side {
+  flex: 1 1 auto;
+  max-width: 240px;
+}
+
+/* 幅320pxの端末では、この列に使える幅が156pxしかないので、
+   ボタンの文字だけ一段小さくして1行に収める */
+.gf-side .btn {
+  width: 100%;
+  font-size: 0.78rem;
+  padding-inline: 8px;
+}
+
+.gf-seed {
+  height: 1.4em;
+  line-height: 1.4;
+  overflow: hidden;
+  margin: 0 0 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* 山札・捨て札の名前。**height で1行ぶんを確保する**（文言が伸び縮みしても
+   下が動かない。games/CLAUDE.md「画面の約束」の1） */
+.gf-pile-label {
+  display: block;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* 山札は絵柄を持たない（裏面の地の色だけ）ので、枚数を縦にも中央へ寄せる */
+.gf-pile .playing-card.back {
+  justify-content: center;
+}
+
+/* 山札の裏面に重ねる残り枚数 */
+.gf-count {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #e2e8f0;
+  align-self: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* つながり方の案内（初見でも迷わせないため常時出す）。
+   ルールで文言が変わるので、**折り返しの段数ぶんの高さを固定しておく** */
+.gf-legend {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 0 0 6px;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
 /* ---- リバーシ ---- */
 
 .rv-board {

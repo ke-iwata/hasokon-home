@@ -388,6 +388,41 @@ function TriPeaksIcon({ size = 26 }: IconProps) {
 }
 
 /**
+ * ゴルフソリティア。旗（ピン）とボール。
+ *
+ * ソリティア群の他の5本（Cards / Spade / Club / Pyramid / TriPeaks）は
+ * どれもトランプ・三角の系統なので、ここだけ**名前の由来のほう**を描く。
+ * 三角の旗はピラミッド・トライピークスの三角と紛れそうだが、
+ * 旗竿と地面の線が付くことで22pxでも「旗」として読める。
+ * home/index.html にも同じ形を置くこと（座標を見比べられるように数値で持つ）
+ */
+function GolfIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 旗竿。地面まで下ろす */}
+      <path d="M148 44 V204" />
+      {/* 旗。小さいと輪郭だけでは潰れるので塗る */}
+      <path d="M148 44 L224 78 L148 112 Z" fill="currentColor" />
+      {/* 地面 */}
+      <path d="M28 204 H228" />
+      {/* ボール */}
+      <circle cx="68" cy="186" r="18" />
+    </svg>
+  );
+}
+
+/**
  * スネーク。うねる体と、目のある頭。
  *
  * **直角の折り返しで描かないこと。** 盤の上の軌跡として
@@ -486,6 +521,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
   TriPeaks: TriPeaksIcon,
+  Golf: GolfIcon,
   Snake: SnakeIcon,
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,
