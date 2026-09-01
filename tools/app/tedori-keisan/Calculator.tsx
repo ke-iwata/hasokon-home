@@ -4,7 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import {
   HEALTH_CAP_INCOME,
+  HEALTH_STANDARD_MIN,
   PENSION_CAP_INCOME,
+  PENSION_STANDARD_MIN,
   calcTedori,
   type TedoriResult,
 } from '@/lib/tedori-keisan';
@@ -61,19 +63,53 @@ export default function Calculator() {
 
       {income <= 0 ? (
         <div className="note" style={{ marginTop: 18 }}>年収を入力すると手取りが出ます。</div>
+      ) : r.netNegative ? (
+        <BelowFloor r={r} />
       ) : (
-        <Results r={r} />
+        <Results r={r} kaigo={ageBand === '40to64'} />
       )}
     </div>
   );
 }
 
-function Results({ r }: { r: TedoriResult }) {
+/**
+ * 保険料が年収を上回る年収帯（およそ13万円以下）。
+ *
+ * 手取りの金額は出さない。マイナスの金額をそのまま出すのは論外だが、
+ * 0円に丸めるのも「年収10万円の手取りは0円」という別の嘘になる。
+ * 出すべきは金額ではなく理由（下限等級への張り付き）と、
+ * そもそも加入するかどうかを判定できるツールへの導線。
+ */
+function BelowFloor({ r }: { r: TedoriResult }) {
+  return (
+    <div className="note" style={{ marginTop: 18, lineHeight: 1.7 }}>
+      <strong>この年収では手取りの金額を出せません。</strong>
+      標準報酬月額には下限があり（健康保険1等級 {yen(HEALTH_STANDARD_MIN)}・厚生年金{' '}
+      {yen(PENSION_STANDARD_MIN)}）、報酬がこれを下回っても保険料は下限の額で計算されます。
+      そのため社会保険料が年 {yen(r.current.premiums.total)} かかり、年収{' '}
+      {man(r.current.gross)} を上回ってしまいます。
+      <div style={{ marginTop: 6 }}>
+        実際には、この働き方では勤務先の社会保険の加入対象にならないことがほとんどです。加入するかどうかは{' '}
+        <Link href="/nenshu-kabe/">年収の壁 計算機</Link>、加入した場合の手取りの変化は{' '}
+        <Link href="/hatarakizon/">社会保険 損得計算機</Link> で確認できます。
+      </div>
+    </div>
+  );
+}
+
+function Results({ r, kaigo }: { r: TedoriResult; kaigo: boolean }) {
   const t = r.current;
 
   const rows: [string, number][] = [
     ['年収（額面）', t.gross],
-    ['− 健康保険料（子ども・子育て支援金を含む）', t.premiums.health],
+    [
+      // 介護保険料は健康保険料に含めて天引きされる。年齢が主要な入力なので、
+      // 40〜64歳を選んだときだけラベルにも出す
+      kaigo
+        ? '− 健康保険料（介護保険料・子ども・子育て支援金を含む）'
+        : '− 健康保険料（子ども・子育て支援金を含む）',
+      t.premiums.health,
+    ],
     ['− 厚生年金保険料', t.premiums.pension],
     ['− 雇用保険料', t.premiums.employment],
     ['− 所得税（復興特別所得税込み）', t.incomeTax],
@@ -97,16 +133,25 @@ function Results({ r }: { r: TedoriResult }) {
       </div>
 
       <div className="panel quiet" style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
-          2026年（令和8年分）の基礎控除・給与所得控除の引上げにより、改正前の控除額で計算した場合と比べて
-        </div>
-        <div className="metric" style={{ marginTop: 4 }}>
-          <span className="value">
-            {r.reformGain > 0 ? '＋' : ''}
-            {yen(r.reformGain)}
-          </span>
-          <span className="label">／年 手取りが増えます</span>
-        </div>
+        {r.reformGain > 0 ? (
+          <>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>
+              2026年（令和8年分）の基礎控除・給与所得控除の引上げにより、改正前の控除額で計算した場合と比べて
+            </div>
+            <div className="metric" style={{ marginTop: 4 }}>
+              <span className="value">＋{yen(r.reformGain)}</span>
+              <span className="label">／年 手取りが増えます</span>
+            </div>
+          </>
+        ) : (
+          // 改正前の控除額で計算しても税額が変わらない年収帯。
+          // 「所得税・住民税がかからないため」とは書けない（年収120万円あたりでは
+          // 住民税の均等割はかかるのに、増分は0になる）
+          <div style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
+            この年収では、改正前（令和7年分）の控除額で計算しても税額が変わらないため、
+            <strong>2026年の改正による手取りの増減はありません</strong>。
+          </div>
+        )}
       </div>
 
       <h3 style={{ marginTop: 22 }}>引かれるものの内訳（年額）</h3>

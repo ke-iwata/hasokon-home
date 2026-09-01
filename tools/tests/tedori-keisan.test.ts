@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   HEALTH_CAP_INCOME,
+  HEALTH_STANDARD_MIN,
   PENSION_CAP_INCOME,
+  PENSION_STANDARD_MIN,
   REFORM_EFFECTIVE_ON,
   TABLE_INCOMES,
   TAX_RULES_R7,
@@ -52,7 +54,9 @@ const bare = (income: number): NenmatsuInput => ({
   earthquakeInsurance: 0,
   smallEnterpriseMutualAid: 0,
   housingLoanCredit: 0,
-  housingLoanTier: 'general',
+  // 'rate5' = 令和4年1月〜令和12年12月入居。housingLoanCredit が0なので結果には効かないが、
+  // HousingLoanTier に無い値を書くと tsc が落ちる
+  housingLoanTier: 'rate5',
 });
 
 /** 年調年税額は100円未満切捨て。所得税額そのものと比べるときに揃える */
@@ -218,6 +222,22 @@ describe('calcTedori — 令和8年改正との比較', () => {
     expect(above.reformGain).toBeLessThan(below.reformGain);
   });
 
+  /**
+   * 低い年収では改正の効果が0になる。画面の文言を出し分けるための条件なので固定しておく。
+   *
+   * **「所得税・住民税がかからないから0」ではない。** 年収120万円では住民税の
+   * 均等割5,000円がかかっているのに増分は0になる（所得割が改正前後とも0のため）。
+   * 文言を「税金がかからないため」と書くと、この年収帯で嘘になる。
+   */
+  it('改正の効果が0になる年収がある（増分が負になることはない）', () => {
+    const r = calcTedori({ income: 1_200_000, kaigo: false });
+    expect(r.reformGain).toBe(0);
+    expect(r.current.residentTax).toBeGreaterThan(0); // 均等割はかかっている
+    for (const income of [0, 500_000, 1_000_000, 1_200_000, ...SAMPLES, 20_000_000]) {
+      expect(calcTedori({ income, kaigo: false }).reformGain).toBeGreaterThanOrEqual(0);
+    }
+  });
+
   it('施行日と源泉徴収税額表の改正日は別の日（月々に効くのは2027年1月から）', () => {
     expect(REFORM_EFFECTIVE_ON).toBe('2026-12-01');
     expect(WITHHOLDING_TABLE_EFFECTIVE_ON).toBe('2027-01-01');
@@ -260,6 +280,41 @@ describe('calcTedori — 異常値', () => {
     expect(r.monthlyNet).toBe(0);
     expect(r.netRate).toBe(0);
     expect(r.reformGain).toBe(0);
+    expect(r.netNegative).toBe(false);
+  });
+
+  /**
+   * **0円と正常値のあいだ**。標準報酬月額の下限（健康保険1等級58,000円・
+   * 厚生年金88,000円）により保険料の固定部分は年13万円ほどあり、
+   * 年収がそれを下回ると手取りが負になる。
+   *
+   * ここで見張るのは「マイナスの手取りを画面に出さない」ための `netNegative` で、
+   * **0に丸めていないこと**も一緒に固定する（丸めると
+   * 「年収10万円の手取りは0円」という別の嘘になる）。
+   */
+  it('保険料の下限を下回る年収では netNegative が立つ（0には丸めない）', () => {
+    const r = calcTedori({ income: 100_000, kaigo: false });
+    expect(r.netNegative).toBe(true);
+    expect(r.current.net).toBeLessThan(0);
+    // 健康保険1等級58,000円・厚生年金88,000円で計算されている
+    expect(r.current.premiums.standardMonthly).toBe(HEALTH_STANDARD_MIN);
+    expect(r.current.premiums.pensionStandardMonthly).toBe(PENSION_STANDARD_MIN);
+    // 年収を変えても保険料の大部分は動かない（固定部分）
+    expect(calcTedori({ income: 10_000, kaigo: false }).netNegative).toBe(true);
+  });
+
+  it('保険料の下限を上回る年収では netNegative が立たない', () => {
+    for (const income of [150_000, 1_000_000, ...SAMPLES]) {
+      const r = calcTedori({ income, kaigo: false });
+      expect(r.netNegative).toBe(false);
+      expect(r.current.net).toBeGreaterThan(0);
+    }
+  });
+
+  it('早見表に載る年収は1行もマイナスにならない', () => {
+    for (const row of takeHomeTable(true)) {
+      expect(row.net).toBeGreaterThan(0);
+    }
   });
 
   it('マイナスの年収は0円として扱う', () => {

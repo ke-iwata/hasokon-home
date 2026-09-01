@@ -178,8 +178,10 @@ export default function Page() {
             </tr>
           </thead>
           <tbody>
+            {/* 5列あるので、狭い画面では金額が桁の途中で折り返す。
+                折り返さずに親の overflow-x でスクロールさせる */}
             {table.map((row) => (
-              <tr key={row.gross}>
+              <tr key={row.gross} style={{ whiteSpace: 'nowrap' }}>
                 <th scope="row">{manInt(row.gross)}</th>
                 <td>{yen(row.net)}</td>
                 <td>{yen(row.monthlyNet)}</td>

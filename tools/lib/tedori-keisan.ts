@@ -59,7 +59,7 @@ import {
   type TaxYearRules,
 } from '@/lib/hatarakizon';
 import { basicDeductionIncomeTaxR7, salaryDeductionR7 } from '@/lib/nenmatsu-chosei';
-import { GRADES, PENSION_STANDARD_MAX } from '@/lib/shaho-grades';
+import { GRADES, PENSION_STANDARD_MAX, PENSION_STANDARD_MIN } from '@/lib/shaho-grades';
 
 /** 令和7年分の給与所得（給与収入 − 給与所得控除。最低保障65万円） */
 function salaryIncomeR7(income: number): number {
@@ -105,6 +105,17 @@ export const PENSION_CAP_INCOME =
 /** 健康保険の標準報酬月額が上限（50等級・139万円）に張り付く年収 */
 export const HEALTH_CAP_INCOME = GRADES[GRADES.length - 1][2] * 12;
 
+/**
+ * 標準報酬月額の下限。**上限と対になる、低年収側の張り付き。**
+ *
+ * 報酬がいくら少なくても保険料は下限の等級で計算されるので、
+ * 健康保険（1等級58,000円）と厚生年金（88,000円）の固定部分だけで
+ * 年13万円ほどの保険料がかかる。年収がそれを下回ると手取りが負になる
+ * （`netNegative`）。
+ */
+export const HEALTH_STANDARD_MIN = GRADES[0][1];
+export { PENSION_STANDARD_MIN };
+
 export interface TedoriInput {
   /** 年収（額面。賞与込みの年間総額・円） */
   income: number;
@@ -129,14 +140,32 @@ export interface TedoriResult {
   pensionCapped: boolean;
   /** 健康保険の標準報酬月額が上限（50等級）に張り付いているか */
   healthCapped: boolean;
+  /**
+   * 社会保険料が年収を上回り、手取りがマイナスになるか（年収13万円あたり以下）。
+   *
+   * 標準報酬月額には**下限**があるため（HEALTH_STANDARD_MIN / PENSION_STANDARD_MIN）、
+   * 年収がどれだけ少なくても保険料の固定部分はかかる。
+   *
+   * true のとき、**画面に手取りの金額を出さないこと**。
+   * 0円に丸めて隠すのは「年収10万円の手取りは0円」という別の嘘になるので、
+   * 金額ではなく理由（下限等級への張り付き）を出し、加入するかどうかを判定できる
+   * 年収の壁 計算機・社会保険 損得計算機へ誘導する。
+   * 働き損計算機が `not-applicable` で金額を出さないのと同じ考え方で、
+   * 共有しているのは計算部分だけなので「出してよいかの判定」はこちら側で持つ。
+   */
+  netNegative: boolean;
 }
 
 /**
  * 年収から手取りを計算する。
  *
- * 社会保険に加入している会社員が対象なので enrolled は常に true。
- * 年収0のときだけ false にしているのは、等級表の下限（1等級・標準報酬月額58,000円）に
- * 当たって「年収0円なのに保険料が引かれる」結果になるのを避けるため。
+ * 社会保険に加入している会社員が対象なので enrolled は常に true（年収0のときだけ false）。
+ *
+ * **等級表の下限は年収0円だけの話ではない。** 標準報酬月額の下限
+ * （健康保険58,000円・厚生年金88,000円）により保険料の固定部分は年13万円ほどあり、
+ * 年収13万円あたりまでは保険料が年収を上回って手取りが負になる。
+ * ここで0に丸めたりはせず、`netNegative` で画面側に「金額を出さない」と伝える
+ * （丸めると「年収10万円の手取りは0円」という別の嘘になるため）。
  */
 export function calcTedori(input: TedoriInput): TedoriResult {
   const income = Math.max(0, input.income);
@@ -154,6 +183,7 @@ export function calcTedori(input: TedoriInput): TedoriResult {
     totalDeducted: income - current.net,
     pensionCapped: current.premiums.pensionStandardMonthly >= PENSION_STANDARD_MAX,
     healthCapped: current.premiums.grade === GRADES.length,
+    netNegative: current.net < 0,
   };
 }
 
