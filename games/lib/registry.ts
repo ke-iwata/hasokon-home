@@ -110,7 +110,7 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-18',
   },
   {
-    // 「ゴルフ（Golf Solitaire）」は19世紀から遊ばれている伝統的なソリティアの
+    // 「ゴルフ（Golf Solitaire）」は古くから遊ばれてきた伝統的なソリティアの
     // 一般名称で、ルールにも名称にも権利者はいない（クロンダイク・スパイダー・
     // ピラミッド・トライピークスと同じ扱い。
     // docs/features/game-golf-solitaire.md の「権利関係」）。

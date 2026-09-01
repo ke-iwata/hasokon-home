@@ -16,6 +16,15 @@ import {
   type GolfState,
 } from '@/lib/golf-solitaire';
 import { trackToolUse } from '@/lib/analytics';
+import {
+  clearMessage,
+  GUIDE_FIRST_DRAW,
+  GUIDE_PICK,
+  NOTE_DEAD_END,
+  NOTE_DRAW_NEEDED,
+  NOTE_NOT_FRONT,
+  stuckMessage,
+} from './messages';
 import { CardView, EmptySlot } from '@/app/_cards/CardView';
 import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
 import { DEFAULT_VARIANT, type Improved } from '@/lib/records';
@@ -159,7 +168,7 @@ export default function Game() {
     if (won || stuck) return;
     if (!front) {
       setShaken(cardKey(col, index));
-      setNote('取れるのは各列のいちばん手前（下）の1枚だけです。');
+      setNote(NOTE_NOT_FRONT);
       return;
     }
     const next = pick(state, col);
@@ -204,11 +213,7 @@ export default function Game() {
       setNote(null);
     } else {
       // **自動ではめくらない**（トライピークス・ピラミッドと同じく、テンポは本人に委ねる）
-      setNote(
-        canDraw(state)
-          ? '取れる札がありません。山札を1枚めくってください。'
-          : '取れる札がなく、山札も残っていません。',
-      );
+      setNote(canDraw(state) ? NOTE_DRAW_NEEDED : NOTE_DEAD_END);
     }
     trackToolUse('golf-solitaire', 'hint');
   };
@@ -312,29 +317,27 @@ export default function Game() {
         ]}
       />
 
-      {/* 文言が切り替わっても盤面が動かないよう、常に2行ぶんの高さ */}
+      {/* 文言が切り替わっても盤面が動かないよう、常に2行ぶんの高さ。
+          **文言そのものは `./messages.ts` にある**——2行に収まらないと
+          overflow: hidden で黙って切れるので、長さをテストで見張っている。
+          ここに直書きすると、その網から外れる */}
       <p className="hint-row">
         {won ? (
           <span style={{ color: 'var(--ok)', fontWeight: 700 }}>
-            🎉 残り0枚でクリア！この配りの最長 {result?.chain ?? state.maxChain}連鎖
+            {clearMessage(result?.chain ?? state.maxChain)}
             <BestBadge improved={result?.improved ?? null} />
           </span>
         ) : stuck ? (
-          // **「負け」とは書かない。**残り枚数がこのゲームの結果そのもの。
-          // やり直し方は真下のボタンが示しているので書かない。文言は2行
-          // （幅320pxで約41文字）に収める——あふれると overflow: hidden で黙って切れる
           <span style={{ color: 'var(--brand)', fontWeight: 700 }}>
-            今回は残り {result?.left ?? left} 枚。この配りの最長 {result?.chain ?? state.maxChain}
-            連鎖
+            {stuckMessage(result?.left ?? left, result?.chain ?? state.maxChain)}
             <BestBadge improved={result?.improved ?? null} />
           </span>
         ) : note ? (
           <span style={{ color: 'var(--danger)' }}>{note}</span>
         ) : state.waste.length === 0 ? (
-          // 配りはじめは捨て札が無いので、最初の1手は山札めくりしかない
-          '山札をタップして1枚めくるところから始めます（捨て札は最初は空です）。'
+          GUIDE_FIRST_DRAW
         ) : (
-          '捨て札と1つ違いの札を、各列の手前からタップして取ります。'
+          GUIDE_PICK
         )}
       </p>
 

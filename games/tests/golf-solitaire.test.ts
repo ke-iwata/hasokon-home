@@ -25,6 +25,12 @@ import {
   wasteTop,
   type GolfState,
 } from '@/lib/golf-solitaire';
+import {
+  allHintRowMessages,
+  HINT_ROW_MAX_WIDTH,
+  stuckMessage,
+  textWidth,
+} from '@/app/golf-solitaire/messages';
 
 /**
  * ゴルフソリティアのテスト（仕様: docs/features/game-golf-solitaire.md）。
@@ -496,5 +502,52 @@ describe('盤の寸法（Game.tsx と globals.css の突き合わせ）', () => 
     expect(step).toBeGreaterThanOrEqual(0.3);
     // 深くしすぎると5枚ぶんで盤が縦に伸びて、スマホで盤が画面から出る
     expect(step).toBeLessThanOrEqual(0.6);
+  });
+});
+
+/**
+ * 盤の上の案内（`.hint-row`）の文言の長さ。
+ *
+ * `.hint-row` は `height: 3em` ＋ `overflow: hidden` なので、2行に収まらない文言は
+ * **画面上で黙って切れる**。切れても誰も気づかないので、目視ではなくテストで守る
+ * （2026-09-01 のレビューの指摘。上限まで余裕が1.5文字しかない状態だった）。
+ *
+ * 上限の36は Playwright での実測値。幅320pxで37文字目からあふれ、360pxでは40、
+ * 390pxでは44まで入るので、**いちばん狭い320pxが効く**。
+ */
+describe('盤の上の案内（.hint-row）の文言', () => {
+  it('全角換算の幅を数える（ASCIIは半角なので0.5）', () => {
+    expect(textWidth('あいう')).toBe(3);
+    expect(textWidth('abc')).toBe(1.5);
+    expect(textWidth('残り 35 枚')).toBe(5);
+  });
+
+  it('いちばん長い値を入れても、どの文言も上限に収まる', () => {
+    for (const message of allHintRowMessages()) {
+      expect(textWidth(message), `長すぎて2行に収まらない: ${message}`).toBeLessThanOrEqual(
+        HINT_ROW_MAX_WIDTH,
+      );
+    }
+  });
+
+  it('連鎖・残り枚数は場札の35枚を超えないので、2桁でいちばん長くなる', () => {
+    // 上の網が「いちばん長い値」を見ていることの裏取り。
+    // 3桁になることはない（場札は35枚しかない）
+    expect(TABLEAU_SIZE).toBe(35);
+    expect(textWidth(stuckMessage(35, 35))).toBeGreaterThan(textWidth(stuckMessage(1, 1)));
+  });
+
+  /**
+   * **文言は `messages.ts` に集める。** `Game.tsx` に直書きすると、
+   * 上の長さの網から外れて黙って切れる側に落ちる。
+   */
+  it('Game.tsx は案内文を直書きせず、messages.ts から取る', () => {
+    const game = readFileSync(
+      fileURLToPath(new URL('../app/golf-solitaire/Game.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(game).toContain("from './messages'");
+    // setNote に文字列リテラルを渡していない（定数か null だけ）
+    expect(game).not.toMatch(/setNote\(\s*['"`]./);
   });
 });
