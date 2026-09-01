@@ -30,7 +30,8 @@
  * ■ 還付額は「控除額 × 限界税率」で出さない
  *
  * 控除額が税率ブラケットをまたぐと過大になる。たとえば課税所得335万円（税率20%）の人が
- * 40万円の控除を受けると、下の10%帯に落ちる20万円分は10%でしか減らない。
+ * 40万円の控除を受けると、控除後の課税所得は295万円。20%で減るのは境界の330万円までの
+ * **5万円**だけで、残る**35万円**は下の10%帯に落ちて10%でしか減らない。
  * そこで `lib/nenmatsu-chosei.ts` の `calcYearTax()` を**控除を入れる前と後で2回呼び、
  * 年税額（復興特別所得税1.021込み・100円未満切捨て）の差**を還付額としている。
  * 限界税率は「あなたの税率は20%」という説明の表示にだけ使う。
@@ -40,9 +41,16 @@
  * 保険金等は**その給付の目的となった医療費を限度**として差し引き、引ききれない分を
  * 他の医療費から差し引かない（国税庁 No.1120）。合計額1本を受け取るこの設計では
  * 按分ができず、総額どうしで引くと**引きすぎて控除額を低く出す**。
- * 例：医療費が「入院10万円＋通院15万円＝25万円」、入院分に高額療養費18万円が出たケース。
+ * 例：医療費が「入院10万円＋通院15万円＝25万円」、入院分に民間の医療保険の
+ * 入院給付金18万円（日額1万円×18日）が出たケース。
  * 正しくは入院分から引けるのは10万円までで控除の元は15万円だが、総額どうしでは 25−18＝7万円。
  * 8万円ずれ、足切り10万円をまたぐので「控除できる」が「できない」に反転する。
+ *
+ * **例に高額療養費を使わないこと。** 高額療養費は「自己負担額 − 自己負担限度額」の
+ * 払い戻しなので、支給額が支払医療費を超えることが定義上ありえない。
+ * つまり按分（引ききれない分が出る状況）自体が起きない給付で、この説明の例にならない。
+ * 按分が起きるのは、実際にかかった額と無関係に定額・日額で出る給付
+ * （出産育児一時金・入院給付金など）に限られる。
  *
  * そこで**入力欄の補足文と結果の注記で正しい値を入れてもらう**取り方にしている
  * （`app/iryohi-kojo/Calculator.tsx` の補填額の hint と、補填額を入れたときに出る note）。
@@ -150,6 +158,12 @@ export interface DeductionPlan {
   label: string;
   /** 制度を使えるか（セルフメディケーション税制は「一定の取組」が要件） */
   available: boolean;
+  /**
+   * 入力された支出（医療費なら補填額を引く**前**）。
+   * `netExpenses` が0のとき、**そもそも入力が無いのか、補填で相殺されたのか**を
+   * 画面が言い分けるために持っている（「医療費を入れたのに『入力されていません』」を防ぐ）
+   */
+  grossExpenses: number;
   /** 控除の対象になる支出（医療費なら補填額を引いたあと。0円未満にはしない） */
   netExpenses: number;
   /** 足切り額 */
@@ -290,6 +304,7 @@ function buildPlan(args: {
   kind: PlanKind;
   label: string;
   available: boolean;
+  grossExpenses: number;
   netExpenses: number;
   threshold: number;
   thresholdBasis: ThresholdBasis;
@@ -319,6 +334,7 @@ function buildPlan(args: {
     kind: args.kind,
     label: args.label,
     available: args.available,
+    grossExpenses: args.grossExpenses,
     netExpenses: args.netExpenses,
     threshold: args.threshold,
     thresholdBasis: args.thresholdBasis,
@@ -358,6 +374,7 @@ export function calcIryohiKojo(input: IryohiInput): IryohiResult {
     kind: 'medical',
     label: '医療費控除',
     available: true,
+    grossExpenses: Math.max(0, input.medicalExpenses),
     netExpenses: Math.max(0, Math.max(0, input.medicalExpenses) - Math.max(0, input.compensation)),
     threshold,
     thresholdBasis: basis,
@@ -373,6 +390,8 @@ export function calcIryohiKojo(input: IryohiInput): IryohiResult {
     label: 'セルフメディケーション税制',
     // 健康診断・予防接種等の「一定の取組」を受けていない年は使えない
     available: input.healthCheck,
+    // OTCの購入額には補填を当てないので、引く前と後が同じ
+    grossExpenses: Math.max(0, input.otcExpenses),
     netExpenses: Math.max(0, input.otcExpenses),
     threshold: SELF_MED_THRESHOLD,
     thresholdBasis: 'fixed',

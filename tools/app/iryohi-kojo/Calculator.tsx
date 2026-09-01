@@ -43,9 +43,11 @@ function PlanCard({ plan, best }: { plan: DeductionPlan; best: boolean }) {
         </p>
       ) : plan.deduction === 0 ? (
         <p className="hint" style={{ marginBottom: 0 }}>
-          {plan.netExpenses === 0
+          {plan.grossExpenses === 0
             ? '支出が入力されていません。'
-            : `控除は0円です。足切りの${yen(plan.threshold)}まであと${yen(plan.shortfall)}。`}
+            : plan.netExpenses === 0
+              ? '補填される金額が医療費を上回っているため、控除の対象になる額が0円です。'
+              : `控除は0円です。足切りの${yen(plan.threshold)}まであと${yen(plan.shortfall)}。`}
         </p>
       ) : (
         <>
@@ -160,7 +162,7 @@ export default function Calculator() {
           生命保険の入院給付金、健康保険の高額療養費・出産育児一時金など。無ければ0のままで構いません。
           <br />
           <strong>その医療費に対して補填された分だけを入れてください。給付の対象になった医療費を超える分は入れません。</strong>
-          たとえば入院費10万円に対して高額療養費が18万円出たなら、ここに入れるのは
+          たとえば入院費10万円に対して医療保険の入院給付金が18万円（日額1万円×18日）出たなら、ここに入れるのは
           <strong>10万円</strong>です（18万円ではありません）。超える分を通院費など他の医療費から差し引くことはできません。
         </p>
       </div>
@@ -242,15 +244,21 @@ export default function Calculator() {
             </>
           ) : (
             <>
-              医療費は足切りの{yen(r.medical.threshold)}まであと{yen(r.medical.shortfall)}、
-              セルフメディケーション税制は{yen(SELF_MED_THRESHOLD)}まであと
-              {yen(r.selfMedication.shortfall)}です。
+              医療費は足切りの{yen(r.medical.threshold)}まであと{yen(r.medical.shortfall)}です。
+              {/* 使えない制度の「あといくら」は出さない（取組チェックが無ければ足切りに届いても使えない） */}
+              {r.selfMedication.available && (
+                <>
+                  セルフメディケーション税制は{yen(SELF_MED_THRESHOLD)}まであと
+                  {yen(r.selfMedication.shortfall)}です。
+                </>
+              )}
             </>
           )}
         </p>
       </div>
 
-      <PlanCard plan={r.medical} best={r.better === 'medical' || r.better === 'tie'} />
+      {/* 同額のときはどちらにもチップを出さない（下の注記の「戻る額が同じです」と食い違うため） */}
+      <PlanCard plan={r.medical} best={r.better === 'medical'} />
       <PlanCard plan={r.selfMedication} best={r.better === 'selfMedication'} />
 
       <div className="panel quiet">
@@ -258,14 +266,25 @@ export default function Calculator() {
           {r.better === 'none' ? (
             <>
               どちらの制度も足切りに届いていません。医療費控除は
-              <strong>（医療費 − 補填額）が{yen(r.medical.threshold)}を超えた分</strong>、
-              セルフメディケーション税制は
-              <strong>対象OTC医薬品の購入額が{yen(SELF_MED_THRESHOLD)}を超えた分</strong>が控除になります。
+              <strong>（医療費 − 補填額）が{yen(r.medical.threshold)}を超えた分</strong>
+              {r.selfMedication.available && (
+                <>
+                  、セルフメディケーション税制は
+                  <strong>対象OTC医薬品の購入額が{yen(SELF_MED_THRESHOLD)}を超えた分</strong>
+                </>
+              )}
+              が控除になります。
             </>
           ) : r.better === 'tie' ? (
             <>
               2つの制度は<strong>どちらか一方しか使えません</strong>（選択適用）。
               いまの入力では戻る額が同じです。
+            </>
+          ) : /* 比べる相手が使えないときは「◯円多く戻ります」を出さない */
+          !r.selfMedication.available ? (
+            <>
+              セルフメディケーション税制は「一定の取組」を受けた年でないと使えないため、
+              <strong>医療費控除</strong>で計算しています。
             </>
           ) : (
             <>
@@ -317,7 +336,7 @@ export default function Calculator() {
         <div className="note">
           <strong>補填額は合計から引いています。</strong>
           本来は<strong>その給付の目的になった医療費を限度に</strong>差し引き、引ききれない分を他の医療費から引くことはできません。この計算機は合計額どうしで引く簡易計算なので、
-          <strong>高額療養費・出産育児一時金</strong>のように特定の医療費に対して大きな給付が出た場合、上の欄に給付額をそのまま入れると控除額が実際より小さく出ます。上の入力ガイドのとおり、
+          <strong>出産育児一時金・入院給付金</strong>のように実際にかかった額と関係なく定額・日額で出る給付が、対象の医療費を超えた場合、上の欄に給付額をそのまま入れると控除額が実際より小さく出ます。上の入力ガイドのとおり、
           <strong>対象になった医療費の額を上限にした値</strong>を入れてください。
         </div>
       )}

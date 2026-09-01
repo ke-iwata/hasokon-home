@@ -141,6 +141,29 @@ describe('medicalDeduction（控除額）', () => {
       .toMatchObject({ netExpenses: 0, deduction: 0, total: 0 });
   });
 
+  /**
+   * 支出が0のときと、補填で相殺されて0になったときは**画面で言い分ける**必要がある
+   * （医療費を入れているのに「支出が入力されていません」と出ると、利用者は
+   * 自分の入力ミスを疑って手が止まる）。その材料が `grossExpenses`。
+   */
+  it('補填で相殺されたときと、そもそも入力が無いときを区別できる', () => {
+    const offset = calcIryohiKojo(input({ medicalExpenses: 100_000, compensation: 300_000 }));
+    expect(offset.medical.grossExpenses).toBe(100_000);
+    expect(offset.medical.netExpenses).toBe(0);
+
+    const empty = calcIryohiKojo(input({ medicalExpenses: 0, compensation: 0 }));
+    expect(empty.medical.grossExpenses).toBe(0);
+    expect(empty.medical.netExpenses).toBe(0);
+  });
+
+  it('OTCの購入額には補填を当てないので、引く前と後が同じ', () => {
+    const r = calcIryohiKojo(
+      input({ otcExpenses: 50_000, compensation: 300_000, healthCheck: true }),
+    );
+    expect(r.selfMedication.grossExpenses).toBe(50_000);
+    expect(r.selfMedication.netExpenses).toBe(50_000);
+  });
+
   it('足切りに届かなければ0（マイナスにしない）', () => {
     expect(medicalDeduction(80_000, 0, 5_000_000)).toBe(0);
   });
