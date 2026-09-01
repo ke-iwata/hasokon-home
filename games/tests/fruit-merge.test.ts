@@ -24,6 +24,7 @@ import {
   restart,
   step,
   type Fruit,
+  type FruitDef,
   type FruitMergeState,
 } from '@/lib/fruit-merge';
 
@@ -38,6 +39,33 @@ import {
  */
 
 const FRAME = 1 / 60;
+
+/** `#rrggbb` を数値3つに */
+function rgb(hex: string): [number, number, number] {
+  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as [number, number, number];
+}
+
+/**
+ * 2つの果物の色の隔たり。**実の色（`light`）と陰の色（`dark`）の
+ * RGB距離を足したもの。** 片方だけ離れていても見分けは付くので和で見る
+ */
+function colorGap(a: FruitDef, b: FruitDef): number {
+  const d = (x: string, y: string) => Math.hypot(...rgb(x).map((v, i) => v - rgb(y)[i]));
+  return d(a.light, b.light) + d(a.dark, b.dark);
+}
+
+/**
+ * 色の隔たりの下限。
+ *
+ * いま**いちばん近い組は `いちご`/`りんご` の 49.5**（実の色は50離れているが、
+ * 陰の色が `#be123c` で同一）。この2つは大きさが2倍違うので通している。
+ * 下限はそこから少し余裕を取った45にしてある——ちょうど49.5に合わせると、
+ * 次に誰かが色をわずかに触っただけで落ちる**紙一重の網**になるため。
+ *
+ * 引っかかったら色を離すのが先。**下限のほうを下げて通すなら、
+ * 「どの組を、なぜ許すのか」を決めてから下げること**
+ */
+const COLOR_FLOOR = 45;
 
 /** n フレーム進める */
 function run(state: FruitMergeState, frames: number, substeps?: number): FruitMergeState {
@@ -101,6 +129,28 @@ describe('果物の定義', () => {
    */
   it('段ごとに違う色を使っている', () => {
     expect(new Set(FRUITS.map((f) => f.light)).size).toBe(FRUITS.length);
+  });
+
+  /**
+   * **どの2段の組も、色が近すぎないこと。**
+   *
+   * 以前は「隣り合う段」だけを「文字列が同じか」で見ていた。それだと
+   * `#fde68a`（なし）と `#fef08a`（グレープフルーツ）が「違う色」として
+   * 通ってしまい、**暗い側が完全に同一・明るい側の差も10しかない組**が
+   * 残っていた（大きさの比は1.4倍しかなく、実質見分けが付かなかった）。
+   * 段が離れていても箱の中では隣に転がってくるので、**全55組**を見る。
+   */
+  it('どの2段の組も色が近すぎない（離れた段の組も見る）', () => {
+    const close: string[] = [];
+    for (let i = 0; i < FRUITS.length; i += 1) {
+      for (let j = i + 1; j < FRUITS.length; j += 1) {
+        const gap = colorGap(FRUITS[i], FRUITS[j]);
+        if (gap < COLOR_FLOOR) {
+          close.push(`${FRUITS[i].name}/${FRUITS[j].name}=${Math.round(gap)}`);
+        }
+      }
+    }
+    expect(close).toEqual([]);
   });
 
   it('隣り合う段は色と飾りの両方が同じにならない', () => {

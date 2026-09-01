@@ -48,6 +48,13 @@ export default function Game() {
   const reducedRef = useRef(false);
   /** サブステップ。重い端末では減らす（仕様書「パフォーマンス」） */
   const substepsRef = useRef(SUBSTEPS);
+  const stageRef = useRef<HTMLDivElement>(null);
+  /**
+   * 箱が画面に入っているか。**キーを受けてよいかの判断に使う。**
+   * 初期値は false で、`IntersectionObserver` が最初に呼ばれるまでは受けない
+   * （見えていないのに奪うより、一瞬受け損ねるほうが害が小さい）
+   */
+  const onScreen = useRef(false);
   const [status, setStatus] = useState<FruitMergeState['status']>('playing');
   const [hud, setHud] = useState({ score: 0, next: stateRef.current.next });
   const [debug, setDebug] = useState(false);
@@ -93,8 +100,36 @@ export default function Game() {
     resize();
     window.addEventListener('resize', resize);
 
+    /**
+     * **箱が画面に入っているあいだだけキーを受ける。**
+     *
+     * ヘビ（`app/snake/Game.tsx`）と同じ罠だが、あちらの「遊んでいる最中だけ」
+     * という絞り方はここでは効かない。**このゲームは既定が `playing`** で、
+     * ゲームオーバーまでずっと遊んでいる最中だからだ。
+     *
+     * 無条件に受けていたときは、解説やFAQを読みながらスペースで送ろうとすると
+     * **ページが動かないうえ、画面外の箱に果物が落ちて「プレイ1回」が
+     * 記録され、GA4 にも `start` が飛んでいた**（実測：箱から約4700px下で
+     * スペースを押してもスクロールせず、記録の帯が1回に増えた）。
+     * 計測の観点でも、箱を見ていない人の1打鍵をプレイと数えたくない
+     * （docs/features/measurement-hygiene.md）
+     */
+    const stage = stageRef.current;
+    const io = stage
+      ? new IntersectionObserver(
+          ([entry]) => {
+            onScreen.current = entry.isIntersecting;
+          },
+          // 少しでも見えていれば受ける（端に半分だけ出ている状態でも遊べるように）
+          { threshold: 0 },
+        )
+      : null;
+    if (io && stage) io.observe(stage);
+
     // キーボード: ← → で狙いを動かし、スペース／↓ で落とす
     const onKey = (e: KeyboardEvent) => {
+      // 見えていないときは `preventDefault` もしない（スクロールを奪わない）
+      if (!onScreen.current) return;
       const k = e.key.toLowerCase();
       const s = stateRef.current;
       if (k === 'arrowleft' || k === 'a') stateRef.current = aimAt(s, s.aim - 0.04);
@@ -133,6 +168,7 @@ export default function Game() {
 
     return () => {
       cancelAnimationFrame(raf);
+      io?.disconnect();
       window.removeEventListener('resize', resize);
       window.removeEventListener('keydown', onKey);
     };
@@ -202,7 +238,7 @@ export default function Game() {
         ]}
       />
 
-      <div className="fm-stage">
+      <div className="fm-stage" ref={stageRef}>
         {/* **指の受け口は canvas 自身に付ける。**
             外側の枠に付けると、枠が `setPointerCapture` で指をつかんだまま
             になり、上に重ねた「もう一度」のボタンが押せなくなる
