@@ -1603,8 +1603,13 @@ ol {
 
 /* 山札・捨て札と、その横の案内。つくりは .py-piles と同じで、
    **つながり方の説明も「同じ配りをもう一度」も、この1行の中に収める**
-   （別の行として下に積むと、スマホで盤が画面から押し出される） */
-.tp-piles {
+   （別の行として下に積むと、スマホで盤が画面から押し出される）。
+
+   **この行はトライピークス（.tp-）とゴルフ（.gf-）で共有する。**
+   markupが同じなので、片方だけ直して見た目がずれるのを防ぐため
+   セレクタを並べて1か所で持つ */
+.tp-piles,
+.gf-piles {
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -1612,25 +1617,29 @@ ol {
   margin-top: 10px;
 }
 
-.tp-pile {
+.tp-pile,
+.gf-pile {
   width: clamp(44px, 13vw, 58px);
   flex: 0 0 auto;
 }
 
-.tp-side {
+.tp-side,
+.gf-side {
   flex: 1 1 auto;
   max-width: 240px;
 }
 
 /* 幅320pxの端末では、この列に使える幅が156pxしかないので、
    ボタンの文字だけ一段小さくして1行に収める */
-.tp-side .btn {
+.tp-side .btn,
+.gf-side .btn {
   width: 100%;
   font-size: 0.78rem;
   padding-inline: 8px;
 }
 
-.tp-seed {
+.tp-seed,
+.gf-seed {
   height: 1.4em;
   line-height: 1.4;
   overflow: hidden;
@@ -1641,7 +1650,8 @@ ol {
 
 /* 山札・捨て札の名前。**height で1行ぶんを確保する**（文言が伸び縮みしても
    下が動かない。games/CLAUDE.md「画面の約束」の1） */
-.tp-pile-label {
+.tp-pile-label,
+.gf-pile-label {
   display: block;
   height: 1.5em;
   line-height: 1.5;
@@ -1653,12 +1663,14 @@ ol {
 }
 
 /* 山札は絵柄を持たない（裏面の地の色だけ）ので、枚数を縦にも中央へ寄せる */
-.tp-pile .playing-card.back {
+.tp-pile .playing-card.back,
+.gf-pile .playing-card.back {
   justify-content: center;
 }
 
 /* 山札の裏面に重ねる残り枚数 */
-.tp-count {
+.tp-count,
+.gf-count {
   display: block;
   width: 100%;
   text-align: center;
@@ -1670,14 +1682,64 @@ ol {
 }
 
 /* つながり方の案内（初見でも迷わせないため常時出す）。
-   文言は変わらないが、折り返しの段数ぶんの高さは固定しておく */
-.tp-legend {
+   文言は変わらないが、折り返しの段数ぶんの高さは固定しておく。
+   ゴルフはルールの区分で文言が入れ替わるので、なおさら高さを固定する */
+.tp-legend,
+.gf-legend {
   height: 3em;
   line-height: 1.5;
   overflow: hidden;
   margin: 0 0 6px;
   font-size: 0.72rem;
   color: var(--muted);
+}
+
+/* ---- ゴルフソリティア ---- */
+
+/* 7列×5枚を**絶対配置で組む**（列の中で重なるのでグリッドでは表せない）。
+   位置は Game.tsx の cardStyle から来ていて、7列で盤幅を使い切る
+   ＝ **札1枚 ＝ 盤幅の 1/7**。
+
+   盤の高さ ＝ 札の高さ × (1 + 4 × 縦の送り)
+           ＝ 盤幅/7 × 1.4 × 2.44
+           ＝ 盤幅 × 0.488
+   なので aspect-ratio と max-width の割り算はどちらもこの 0.488 から来ている。
+   共通の「盤を画面の高さに合わせる」節は正方形の盤が前提なので、
+   .tp-board と同じように自分で割る。
+   **縦の送り 0.36 は Game.tsx の STEP と同じ値**（片方だけ直さないこと）。
+
+   横に7列なので札は幅390pxの端末で約48px（高さ68px）、幅360pxで44px、
+   幅320pxで38pxになる（実測）。トライピークスの10列（約34px）よりは広く、
+   360px以上なら「押す先は44px」（games/CLAUDE.md）を満たす。
+   押せるのは各列の手前の1枚だけで、その札は縦に重なっていないので、
+   320pxの端末でも押す先の高さ（54px）は十分にある */
+.gf-board {
+  /* 盤以外（ルール33・状態62・記録59・案内43・山札の行96・ボタン36・余白）
+     ＝ 幅320pxでの実測410px。カード全体は541pxで、ピラミッド（537px）と同程度 */
+  --chrome: 410px;
+  --board-max: 460px;
+  position: relative;
+  width: 100%;
+  max-width: min(var(--board-max), max(224px, calc((100dvh - var(--chrome)) / 0.488)));
+  margin-inline: auto;
+  aspect-ratio: 1000 / 488;
+}
+
+/* 位置と幅は Game.tsx が %で渡す。高さは .playing-card の aspect-ratio から出る */
+.gf-board .playing-card {
+  position: absolute;
+}
+
+/* 列の奥の札。取れないことを明るさで見せる。
+   **押せなくはしない** — 押したときに揺れで「まだ取れない」と伝えるほうが、
+   何も起きないより初見に親切（.tp-board / .py-board と同じ考え方） */
+.gf-board .playing-card.covered {
+  filter: brightness(0.82);
+}
+
+/* ヒントの枠は、手前の札に隠されないよう前面へ出す */
+.gf-board .playing-card.hinted {
+  z-index: 2;
 }
 
 /* ---- リバーシ ---- */

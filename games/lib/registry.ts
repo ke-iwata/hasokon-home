@@ -110,6 +110,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-18',
   },
   {
+    // 「ゴルフ」（Golf Solitaire）は19世紀から遊ばれている伝統的な
+    // トランプの一人遊びの一般名称で、ルールにも名称にも権利者はいない
+    // （docs/features/game-golf-solitaire.md の「権利関係」）。
+    // ソリティア群の6本目なので、一覧ではトライピークスの直後に置く
+    slug: 'golf-solitaire',
+    icon: 'GolfFlag',
+    name: 'ゴルフソリティア',
+    description:
+      '捨て札と1つ違いの札を手前から取り除いて7列を崩すソリティア。全部の札が見えていて、先読みするほど連鎖が伸びます。',
+    // 仕様書の「実装したら wip → preview で操作感を確認 → public」に従う。
+    // public にするPRで home/index.html のカードと home/llms.txt の行も足す
+    stage: 'preview',
+    updatedAt: '2026-09-01',
+  },
+  {
     slug: 'minesweeper',
     icon: 'Bomb',
     name: 'マインスイーパー',
