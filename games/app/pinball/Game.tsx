@@ -182,19 +182,28 @@ export default function Game() {
         ]}
       />
 
-      <div
-        className="pb-stage"
-        onPointerDown={(e) => {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          press(e.clientX, true);
-        }}
-        onPointerUp={(e) => {
-          press(e.clientX, false);
-        }}
-        onPointerCancel={release}
-        onPointerLeave={release}
-      >
-        <canvas ref={canvasRef} aria-label="ピンボールの台" />
+      <div className="pb-stage">
+        {/* **指の受け口は canvas 自身に付ける。**
+            外側の枠に付けていたときは、枠が `setPointerCapture` で指をつかんだまま
+            になり、**ゲームオーバーの「もう一度」が押せなかった**
+            （押しても click が枠の側に飛んで、ボタンの onClick が呼ばれない。
+            つまり球を3つ落としたら、再読み込みしないと遊び直せなかった）。
+            canvas は覆い（`.pb-overlay`）の下に隠れるので、この付け方なら
+            覆いが出ているあいだは台に触れないという意味にもなる。
+            打ち出し前の案内（`.pb-hint`）は `pointer-events: none` なので素通りする */}
+        <canvas
+          ref={canvasRef}
+          aria-label="ピンボールの台"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            press(e.clientX, true);
+          }}
+          onPointerUp={(e) => {
+            press(e.clientX, false);
+          }}
+          onPointerCancel={release}
+          onPointerLeave={release}
+        />
 
         {status === 'ready' && (
           <div className="pb-hint">

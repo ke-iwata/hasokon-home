@@ -727,7 +727,6 @@ ol {
   max-width: min(var(--board-max), max(150px, calc((100dvh - var(--chrome)) / 1.5)));
   margin-inline: auto;
   aspect-ratio: 1 / 1.5;
-  touch-action: none; /* フリッパーの連打をスクロールに取られない */
 }
 
 .pb-stage canvas {
@@ -737,6 +736,10 @@ ol {
   border-radius: 10px;
   background: #111c33; /* ゲーム画面なので明暗どちらでも暗いまま */
   display: block;
+  /* 指を受けるのは canvas なので、スクロールを止めるのもここ
+     （枠に付けても、実際に触られている canvas には効かない）。
+     フリッパーの連打をスクロールに取られない */
+  touch-action: none;
 }
 
 /* 打ち出し前の操作の案内。**台の上に重ねる**（行として置くと、
