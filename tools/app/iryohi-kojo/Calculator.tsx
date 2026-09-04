@@ -46,7 +46,7 @@ function PlanCard({ plan, best }: { plan: DeductionPlan; best: boolean }) {
           {plan.grossExpenses === 0
             ? '支出が入力されていません。'
             : plan.netExpenses === 0
-              ? '補填される金額が医療費を上回っているため、控除の対象になる額が0円です。'
+              ? '補填される金額が医療費と同額以上のため、控除の対象になる額が0円です。'
               : `控除は0円です。足切りの${yen(plan.threshold)}まであと${yen(plan.shortfall)}。`}
         </p>
       ) : (

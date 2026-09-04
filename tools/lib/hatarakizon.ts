@@ -124,6 +124,36 @@ export const DEPENDENT_LIMIT_STUDENT = 1_500_000;
 /** 課税所得は1,000円未満を切り捨てる */
 const floorTo1000 = (v: number) => Math.max(0, Math.floor(v / 1000) * 1000);
 
+/**
+ * 年分によって変わる控除だけをまとめたもの。
+ *
+ * 手取り計算機（lib/tedori-keisan.ts）が「令和7年分の控除額だったらいくらだったか」を
+ * **同じ計算式で**出せるようにするための差し込み口。年分の違いをここに閉じ込めることで、
+ * 所得税・住民税の式そのものは1実装のままにしている
+ * （2実装が並ぶと料率改定のたびに片方だけ更新されて、同じ年収に対して
+ * サイト内に違う数字が2つ出る）。
+ *
+ * 既定は TAX_RULES_R8（このサイトの現行）なので、既存の呼び出しは何も変わらない。
+ */
+export interface TaxYearRules {
+  /** 表示用の年分（'令和8年分'） */
+  label: string;
+  /** 給与収入 → 給与所得（＝給与のみの人の合計所得金額） */
+  salaryIncome: (income: number) => number;
+  /** 所得税の基礎控除 */
+  basicDeductionIncomeTax: (totalIncome: number) => number;
+  /** 住民税の基礎控除 */
+  basicDeductionResidentTax: (totalIncome: number) => number;
+}
+
+/** 令和8年分（このサイトの現行。lib/furusato-nozei.ts の表をそのまま使う） */
+export const TAX_RULES_R8: TaxYearRules = {
+  label: '令和8年分',
+  salaryIncome,
+  basicDeductionIncomeTax,
+  basicDeductionResidentTax,
+};
+
 /** 社会保険料の内訳（本人負担・年額） */
 export interface Premiums {
   /** 算定に使った標準報酬月額（健康保険） */
@@ -187,11 +217,19 @@ export function calcPremiums(gross: number, kaigo = false): Premiums {
   };
 }
 
-/** 年収に対する所得税額（復興特別所得税込み・円） */
-export function calcIncomeTax(gross: number, socialInsurance: number): number {
-  const totalIncome = salaryIncome(gross);
+/**
+ * 年収に対する所得税額（復興特別所得税込み・円）
+ *
+ * @param rules 年分ごとの控除。既定は令和8年分
+ */
+export function calcIncomeTax(
+  gross: number,
+  socialInsurance: number,
+  rules: TaxYearRules = TAX_RULES_R8,
+): number {
+  const totalIncome = rules.salaryIncome(gross);
   const taxable = floorTo1000(
-    totalIncome - socialInsurance - basicDeductionIncomeTax(totalIncome),
+    totalIncome - socialInsurance - rules.basicDeductionIncomeTax(totalIncome),
   );
   return Math.floor(incomeTaxAmount(taxable) * RECONSTRUCTION_RATE);
 }
@@ -203,12 +241,16 @@ export function calcIncomeTax(gross: number, socialInsurance: number): number {
  * 非課税限度額は所得控除を引く前の合計所得金額で判定するため、社会保険料が
  * 増えても非課税になるわけではない（所得割だけが減る）。
  */
-export function calcResidentTax(gross: number, socialInsurance: number): number {
-  const totalIncome = salaryIncome(gross);
+export function calcResidentTax(
+  gross: number,
+  socialInsurance: number,
+  rules: TaxYearRules = TAX_RULES_R8,
+): number {
+  const totalIncome = rules.salaryIncome(gross);
   if (totalIncome <= RESIDENT_TAX_FREE_INCOME) return 0;
 
   const taxable = floorTo1000(
-    totalIncome - socialInsurance - basicDeductionResidentTax(totalIncome),
+    totalIncome - socialInsurance - rules.basicDeductionResidentTax(totalIncome),
   );
   const levy = Math.max(
     0,
@@ -238,12 +280,18 @@ export interface TakeHome {
  * @param gross 年収（額面・円）
  * @param enrolled 勤務先の社会保険に加入しているか
  * @param kaigo 40〜64歳（介護保険料がかかる）
+ * @param rules 年分ごとの控除。既定は令和8年分（手取り計算機だけが令和7年分を渡す）
  */
-export function calcTakeHome(gross: number, enrolled: boolean, kaigo = false): TakeHome {
+export function calcTakeHome(
+  gross: number,
+  enrolled: boolean,
+  kaigo = false,
+  rules: TaxYearRules = TAX_RULES_R8,
+): TakeHome {
   const income = Math.max(0, gross);
   const premiums = enrolled ? calcPremiums(income, kaigo) : NO_PREMIUMS;
-  const incomeTax = calcIncomeTax(income, premiums.total);
-  const residentTax = calcResidentTax(income, premiums.total);
+  const incomeTax = calcIncomeTax(income, premiums.total, rules);
+  const residentTax = calcResidentTax(income, premiums.total, rules);
   return {
     gross: income,
     enrolled,
