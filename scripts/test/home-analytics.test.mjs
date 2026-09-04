@@ -278,8 +278,8 @@ describe('home/ のHTML', () => {
     const { portalDestination } = loadAnalytics();
     const appstore = hrefsOf(INDEX_HTML).filter((href) => href.includes('apps.apple.com'));
 
-    // アプリを増やしたらここも増える（ボードゲーム + Sift）
-    assert.equal(appstore.length, 2);
+    // アプリを増やしたらここも増える（ボードゲーム + Sift + Block POP!）
+    assert.equal(appstore.length, 3);
     for (const href of appstore) {
       assert.equal(portalDestination(href), 'appstore', `${href} が appstore にならない`);
     }
