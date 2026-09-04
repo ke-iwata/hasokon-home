@@ -1683,6 +1683,77 @@ ol {
   color: var(--muted);
 }
 
+/* ---- ゴルフソリティア ----
+
+   仕様: docs/features/game-golf-solitaire.md
+
+   場は7列×5枚で全部表向き。取れるのは各列のいちばん手前（下端）の1枚だけなので、
+   **手前の札の高さがそのままタップ領域**になる（重なりに隠れないので札1枚ぶん）。
+
+   1列の幅 ＝ (盤幅 − 隙間6つ) ÷ 7。隙間を**%で置く**ことで、盤幅が変わっても
+   列幅の比が変わらない（＝盤の縦横比が一定になり、aspect-ratio で高さを固定できる）。
+     隙間 1.2% × 6 = 7.2%  →  列幅 = 盤幅 × 0.928 / 7 = 盤幅 × 0.1326
+     札の高さ = 列幅 × 1.4 = 盤幅 × 0.1857
+     盤の高さ = 札の高さ ＋ 重なり4枚ぶん（Game.tsx の STEP = 0.5）
+              = 札の高さ × 3 = 盤幅 × 0.557
+   なので aspect-ratio と max-width の割り算はどちらもこの 0.557 から来ている。
+
+   下限を 240px にしてあるのは**タップ領域のため**。240px なら札の高さが
+   240 × 0.1857 ≒ 44.6px になり、「押す先は44pxを割らない」（games/CLAUDE.md）を
+   ぎりぎり満たす。幅だけを詰めると先頭札が44pxを割るので、ここは下げない */
+.gf-board {
+  /* 盤以外（ルール33・状態26・記録34・案内43・山札の行96・ボタン36・
+     余白と内側の余白82）の実測＝350px（幅390px・表示高さ720pxで計測） */
+  --chrome: 350px;
+  --board-max: 460px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1.2%;
+  align-content: start;
+  width: 100%;
+  max-width: min(var(--board-max), max(240px, calc((100dvh - var(--chrome)) / 0.557)));
+  margin-inline: auto;
+  /* 取り切った列があっても盤の高さを変えない（盤面は動かさない） */
+  aspect-ratio: 1000 / 557;
+}
+
+/* 列は上から下へ積む。重なりの負のマージンは Game.tsx が %で渡す
+   （%は列の幅が基準なので、画面幅が変わっても重なり方が変わらない） */
+.gf-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* 手前ではない札。取れないことを明るさで見せる。
+   **押せなくはしない** — 押したときに揺れで「手前だけ取れる」と伝えるほうが、
+   何も起きないより初見に親切（.tp-board / .py-board と同じ考え方） */
+.gf-board .playing-card.behind {
+  filter: brightness(0.82);
+}
+
+/* ヒントの枠は、下に重なる札に隠されないよう前面へ出す */
+.gf-board .playing-card.hinted {
+  z-index: 2;
+}
+
+/* 取り切った列の跡。**枠だけ残す**（列が消えて盤の中身が横に詰まると、
+   どの列がどこにあったのか分からなくなる） */
+.gf-gone {
+  width: 100%;
+  aspect-ratio: 5 / 7;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ルールの切り替え（A↔K）。**畳まない**（games/CLAUDE.md「設定は隠さない」）。
+   高さは中身で変わらないので、盤を動かすことはない */
+.gf-rules {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
 /* ---- リバーシ ---- */
 
 .rv-board {
