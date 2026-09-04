@@ -388,6 +388,40 @@ function TriPeaksIcon({ size = 26 }: IconProps) {
 }
 
 /**
+ * ゴルフソリティア。カップに立てた旗と、寄せた球。
+ *
+ * トランプの形（CardsIcon）にすると一覧にある他5本のソリティアと見分けが付かず、
+ * 三角の系統（PyramidIcon / TriPeaksIcon）も既に2本ある。
+ * 「残り札の少なさを競う＝ゴルフ」という名前の由来がそのまま絵になるので、
+ * ここだけジャンルではなく名前のほうを描いている。
+ * home/index.html にも同じ形を置く（座標を見比べられるように数値で持つ）
+ */
+function GolfIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 地面 */}
+      <path d="M24 208 H232" />
+      {/* 旗竿と旗 */}
+      <path d="M148 208 V40" />
+      <path d="M148 48 L212 76 L148 104 Z" />
+      {/* 球 */}
+      <circle cx="68" cy="188" r="20" />
+    </svg>
+  );
+}
+
+/**
  * スネーク。うねる体と、目のある頭。
  *
  * **直角の折り返しで描かないこと。** 盤の上の軌跡として
@@ -486,6 +520,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
   TriPeaks: TriPeaksIcon,
+  Golf: GolfIcon,
   Snake: SnakeIcon,
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,

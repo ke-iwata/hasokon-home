@@ -34,6 +34,7 @@ import {
   TranslateIcon,
   UsersThreeIcon,
   WallIcon,
+  WalletIcon,
 } from '@phosphor-icons/react/dist/ssr';
 
 /**
@@ -90,6 +91,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Translate: TranslateIcon,
   UsersThree: UsersThreeIcon,
   Wall: WallIcon,
+  Wallet: WalletIcon,
 };
 
 export default function ToolIcon({ name, size = 22 }: { name: string; size?: number }) {
