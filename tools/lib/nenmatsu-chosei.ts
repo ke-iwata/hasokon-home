@@ -309,6 +309,11 @@ export interface YearTax {
   specialRelativeDeduction: number;
   /** 生命保険料控除 + 地震保険料控除 + 小規模企業共済等掛金控除 */
   insuranceDeduction: number;
+  /**
+   * 年末調整では扱えない所得控除（医療費控除など）。
+   * 呼び出し側が options.extraDeduction を渡したときだけ0より大きくなる
+   */
+  extraDeduction: number;
   /** 所得控除の合計 */
   deductionTotal: number;
   /** 課税給与所得金額（1,000円未満切捨て） */
@@ -414,14 +419,20 @@ export function specialRelativeDeductionFor(income: number, rules: YearRules): n
  * @param options.skipYearEndDeductions
  *   生命保険料控除・地震保険料控除・小規模企業共済等掛金控除・住宅ローン控除を
  *   無いものとして計算する。毎月の源泉徴収額の推計に使う
+ * @param options.extraDeduction
+ *   年末調整では扱えない所得控除（医療費控除・セルフメディケーション税制など）を
+ *   所得控除の合計に足す。**この関数を控除の前後で2回呼び、年税額の差を取る**ための入口で、
+ *   「控除額 × 限界税率」で概算すると税率ブラケットをまたぐ控除で過大になるのを避ける
+ *   （lib/iryohi-kojo.ts が使っている）
  */
 export function calcYearTax(
   input: NenmatsuInput,
   rules: YearRules,
   socialInsurance: number,
-  options: { skipYearEndDeductions?: boolean } = {},
+  options: { skipYearEndDeductions?: boolean; extraDeduction?: number } = {},
 ): YearTax {
   const skip = options.skipYearEndDeductions === true;
+  const extraDeduction = Math.max(0, options.extraDeduction ?? 0);
   const income = Math.max(0, input.income);
   const deduction = rules.salaryDeduction(income);
   const totalIncome = incomeToTotal(income, rules);
@@ -458,7 +469,8 @@ export function calcYearTax(
     spouse.amount +
     dependentDeduction +
     specialRelativeDeduction +
-    insuranceDeduction;
+    insuranceDeduction +
+    extraDeduction;
 
   const taxableIncome = floorTo1000(totalIncome - deductionTotal);
   const calculatedTax = incomeTaxAmount(taxableIncome);
@@ -489,6 +501,7 @@ export function calcYearTax(
     dependentDeduction,
     specialRelativeDeduction,
     insuranceDeduction,
+    extraDeduction,
     deductionTotal: Math.floor(deductionTotal),
     taxableIncome,
     calculatedTax,

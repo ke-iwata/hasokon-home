@@ -165,7 +165,7 @@ describe('PREFECTURES（47都道府県のデータ）', () => {
 });
 
 /**
- * 令和8年度の答申データの追補（8都道府県 → 28都道府県 → 30都道府県）。
+ * 令和8年度の答申データの追補（8都道府県 → 28都道府県 → 30都道府県 → 43都道府県）。
  *
  * 仕様: docs/features/saitei-chingin-r8-toshin-tsuiho.md
  *
@@ -177,14 +177,19 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   /** 答申を確認できた県。追補したらここに足す */
   const ANSWERED: ReadonlyArray<readonly [string, number]> = [
     ['北海道', 1131],
+    ['青森', 1090],
     ['宮城', 1098],
     ['秋田', 1090],
+    ['山形', 1092],
+    ['福島', 1094],
+    ['茨城', 1136],
     ['栃木', 1125],
     ['群馬', 1120],
     ['埼玉', 1196],
     ['千葉', 1195],
     ['東京', 1280],
     ['神奈川', 1279],
+    ['山梨', 1113],
     ['新潟', 1108],
     ['富山', 1119],
     ['石川', 1113],
@@ -195,6 +200,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     ['愛知', 1195],
     ['三重', 1143],
     ['滋賀', 1136],
+    ['京都', 1180],
     ['大阪', 1231],
     ['兵庫', 1172],
     ['奈良', 1107],
@@ -204,18 +210,25 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     ['岡山', 1104],
     ['広島', 1141],
     ['山口', 1101],
+    ['徳島', 1103],
     ['香川', 1092],
+    ['愛媛', 1093],
+    ['高知', 1086],
     ['福岡', 1114],
+    ['長崎', 1087],
+    ['大分', 1096],
+    ['宮崎', 1085],
+    ['鹿児島', 1090],
   ];
 
   it.each(ANSWERED)('%s の答申額は %i 円（労働局の報道発表どおり）', (name, yen) => {
     expect(byName(name).answered?.yen).toBe(yen);
   });
 
-  it('答申済みは30都道府県で、それ以外は答申を持たない', () => {
+  it('答申済みは43都道府県で、それ以外は答申を持たない', () => {
     const withAnswer = PREFECTURES.filter((p) => p.answered).map((p) => p.name);
     expect(withAnswer.sort()).toEqual(ANSWERED.map(([n]) => n).sort());
-    expect(withAnswer).toHaveLength(30);
+    expect(withAnswer).toHaveLength(43);
   });
 
   /**
@@ -238,11 +251,24 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['静岡', 57],
       ['岡山', 57],
       ['福岡', 57],
+      // 第3次追補（2026-08-31）で入れた県。高知+63・鹿児島+64 は今年の最大級の上振れ
+      ['鹿児島', 64],
+      ['高知', 63],
+      ['茨城', 62],
+      ['宮崎', 62],
+      ['青森', 61],
+      ['福島', 61],
+      ['山梨', 61],
+      ['大分', 61],
+      ['山形', 60],
+      ['愛媛', 60],
+      ['京都', 58],
+      ['徳島', 57],
     ] as const;
     for (const [name, raise] of overMeyasu) {
       const pref = byName(name);
       const meyasuYen = pref.currentYen + MEYASU_BY_RANK[pref.rank];
-      const r = revisionOf(pref, new Date('2026-08-18'));
+      const r = revisionOf(pref, new Date('2026-08-31'));
       expect(r.raise, `${name}: 引上げ額`).toBe(raise);
       expect(r.yen, `${name}: 答申額が見込みを上回っていない`).toBeGreaterThan(meyasuYen);
       expect(r.status, `${name}`).toBe('答申');
@@ -273,6 +299,18 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['広島', '2026-10-11'],
       ['秋田', '2026-10-14'],
       ['静岡', '2026-10-15'],
+      // 第3次追補（2026-08-31）。10月中旬〜11月中旬に散らばっていて、10月1日ではない
+      ['福島', '2026-10-16'],
+      ['茨城', '2026-10-18'],
+      ['青森', '2026-10-29'],
+      ['高知', '2026-10-29'],
+      ['山形', '2026-10-30'],
+      ['山梨', '2026-11-01'],
+      ['徳島', '2026-11-01'],
+      ['愛媛', '2026-11-01'],
+      ['大分', '2026-11-01'],
+      ['長崎', '2026-11-02'],
+      ['京都', '2026-11-16'],
     ] as const;
     for (const [name, on] of dated) {
       const pref = byName(name);
@@ -288,11 +326,12 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
 
   /**
    * 答申文が「効力発生の日 法定どおり」とだけ書く県、報道発表が「最短で」「早ければ」
-   * 10月◯日と条件付きで書く県は、発効日を持たせない（決め打ちしない）。
+   * 10月◯日と条件付きで書く県（宮崎の「10月下旬（最短で10月24日）」を含む）、
+   * 労働局の発表に発効日が載っていない県（鹿児島）は、発効日を持たせない（決め打ちしない）。
    * この県は日付が過ぎても「答申」のままになる。
    */
   it('発効日が示されていない県は日付を持たず、日が過ぎても「答申」のまま', () => {
-    for (const name of ['群馬', '新潟', '富山', '岐阜', '和歌山', '香川']) {
+    for (const name of ['群馬', '新潟', '富山', '岐阜', '和歌山', '香川', '宮崎', '鹿児島']) {
       const pref = byName(name);
       expect(pref.answered, `${name}: 答申が無い`).toBeDefined();
       expect(pref.answered?.effectiveOn, `${name}: 発効日を決め打ちしている`).toBeUndefined();
@@ -320,18 +359,46 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   /**
-   * まだ答申が出ていない17県。二次情報（集計サイト）だけで答申額を書かない約束を
+   * 第3次追補（2026-08-31）で入れた13県。
+   * 発効日が10月中旬〜11月中旬に散らばっていて、10月1日で決め打ちできないことと、
+   * 労働局が発効日を示していない2県（宮崎・鹿児島）を持たせていないことを固定する。
+   */
+  it('第3次追補の13県は一次情報どおりの額・答申日・発効日を持つ', () => {
+    const third = [
+      ['青森', 1090, '2026-08-26', '2026-10-29'],
+      ['山形', 1092, '2026-08-27', '2026-10-30'],
+      ['福島', 1094, '2026-08-20', '2026-10-16'],
+      ['茨城', 1136, '2026-08-24', '2026-10-18'],
+      ['山梨', 1113, '2026-08-28', '2026-11-01'],
+      ['京都', 1180, '2026-08-20', '2026-11-16'],
+      ['徳島', 1103, '2026-08-24', '2026-11-01'],
+      ['愛媛', 1093, '2026-08-21', '2026-11-01'],
+      ['高知', 1086, '2026-08-28', '2026-10-29'],
+      ['長崎', 1087, '2026-08-28', '2026-11-02'],
+      ['大分', 1096, '2026-08-28', '2026-11-01'],
+      // 労働局が発効日を条件付き・未記載でしか示していない2県
+      ['宮崎', 1085, '2026-08-25', undefined],
+      ['鹿児島', 1090, '2026-08-26', undefined],
+    ] as const;
+    for (const [name, yen, answeredOn, effectiveOn] of third) {
+      const pref = byName(name);
+      expect(pref.answered?.yen, `${name}: 答申額`).toBe(yen);
+      expect(pref.answered?.answeredOn, `${name}: 答申日`).toBe(answeredOn);
+      expect(pref.answered?.effectiveOn, `${name}: 発効予定日`).toBe(effectiveOn);
+      expect(revisionOf(pref, new Date('2026-08-31')).status, `${name}`).toBe('答申');
+    }
+  });
+
+  /**
+   * まだ答申が出ていない4県。二次情報（集計サイト）だけで答申額を書かない約束を
    * テストでも見張る。答申が出て労働局の発表を確認できた県は、ここから ANSWERED へ移す。
    */
-  it('未答申の17県は「目安」のまま（二次情報で足さない）', () => {
-    const notAnswered = [
-      '青森', '岩手', '山形', '福島', '茨城', '山梨', '京都', '徳島', '愛媛',
-      '高知', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄',
-    ];
+  it('未答申の4県は「目安」のまま（二次情報で足さない）', () => {
+    const notAnswered = ['岩手', '佐賀', '熊本', '沖縄'];
     for (const name of notAnswered) {
       const pref = byName(name);
       expect(pref.answered, `${name}: 一次情報を確認せずに答申を足していないか`).toBeUndefined();
-      expect(revisionOf(pref, new Date('2026-08-19')).status, `${name}`).toBe('目安');
+      expect(revisionOf(pref, new Date('2026-08-31')).status, `${name}`).toBe('目安');
     }
     expect(PREFECTURES.filter((p) => !p.answered)).toHaveLength(notAnswered.length);
   });
@@ -367,10 +434,10 @@ describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
 
 describe('revisionOf', () => {
   it('答申が無い県はランク別の目安を足した「目安」として返す', () => {
-    const aomori = byName('青森'); // Cランク・答申前
-    const r = revisionOf(aomori, new Date('2026-08-14'));
+    const iwate = byName('岩手'); // Cランク・答申前（2026-08-31 時点で未答申の4県のひとつ）
+    const r = revisionOf(iwate, new Date('2026-08-14'));
     expect(r.status).toBe('目安');
-    expect(r.yen).toBe(aomori.currentYen + 56);
+    expect(r.yen).toBe(iwate.currentYen + 56);
     expect(r.raise).toBe(56);
     // 目安の出どころは厚労省の目安の答申
     expect(r.source.url).toContain('mhlw.go.jp');
@@ -463,10 +530,10 @@ describe('checkWage', () => {
   });
 
   it('目安の県でも改定後の見込みで判定できる（状態は目安のまま返る）', () => {
-    const aomori = byName('青森'); // 1,029円・Cランク → 見込み 1,085円
-    const r = checkWage(aomori, 1050, asOf);
+    const iwate = byName('岩手'); // 1,031円・Cランク → 見込み 1,087円
+    const r = checkWage(iwate, 1050, asOf);
     expect(r.current.meets).toBe(true);
-    expect(r.revised.minimumYen).toBe(1085);
+    expect(r.revised.minimumYen).toBe(1087);
     expect(r.revised.meets).toBe(false);
     expect(r.revision.status).toBe('目安');
   });
