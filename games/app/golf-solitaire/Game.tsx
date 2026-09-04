@@ -82,11 +82,22 @@ export default function Game() {
   const records = useRecords('golf-solitaire');
   const entry = records.entry(variant);
 
+  /**
+   * この配りで最長連鎖のベストを更新したか。
+   *
+   * **`records.finish` の `improved.score` は当てにできない。** 最長連鎖は
+   * クリアを待たずに `records.update` で先に保存しているので、終わったときには
+   * すでにベストと同じ値になっていて、`score > bestScore` が必ず false になる
+   * （つまり🎉のバッジが一度も出ない）。更新した瞬間をここで覚えておく
+   */
+  const beatChain = useRef(false);
+
   const start = useCallback((seed: number, nextWrap: boolean, action: string) => {
     history.current = [];
     cleared.current = false;
     ended.current = false;
     counted.current = false;
+    beatChain.current = false;
     setHinted(null);
     setShaken(null);
     setNote(null);
@@ -128,7 +139,12 @@ export default function Game() {
     ended.current = true;
     trackToolUse('golf-solitaire', 'win');
     const { improved } = records.finish({ outcome: 'win', score: maxChain }, variant);
-    setResult({ cleared: true, left: 0, chain: maxChain, improved });
+    setResult({
+      cleared: true,
+      left: 0,
+      chain: maxChain,
+      improved: { ...improved, score: improved.score || beatChain.current },
+    });
   }, [won, maxChain, records, variant]);
 
   /**
@@ -144,7 +160,12 @@ export default function Game() {
     ended.current = true;
     trackToolUse('golf-solitaire', 'stuck');
     const { improved } = records.finish({ moves: left }, variant);
-    setResult({ cleared: false, left, chain: maxChain, improved });
+    setResult({
+      cleared: false,
+      left,
+      chain: maxChain,
+      improved: { ...improved, score: improved.score || beatChain.current },
+    });
   }, [stuck, left, maxChain, records, variant]);
 
   if (!state) return <div className="card cardgame">配っています…</div>;
@@ -180,6 +201,7 @@ export default function Game() {
     // **最長連鎖はクリアを待たずに残す。** クリアが珍しいゲームなので、
     // 詰んだ配りで出した連鎖を捨てると記録がほとんど育たない
     if (next.maxChain > best) {
+      beatChain.current = true;
       records.update(variant, (e) => ({ ...e, bestScore: next.maxChain }));
     }
   };
