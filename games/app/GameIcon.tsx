@@ -498,6 +498,44 @@ function TubesIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * フルーツ合体パズル。**箱に落ちた大小の実**を、実のへた付きで描く。
+ *
+ * Phosphor に「箱の中で大きさが増えていく丸」に当たるアイコンが無い
+ * （果物系は Orange/Cherries しか無く、どれも「合体して育つ」が伝わらない）。
+ * 大中小の丸を箱に入れることで、一覧に並んでいるほかの丸系
+ * （リバーシの石・2048の格子）と見分けが付く。
+ *
+ * **顔つきの果物にはしない**（同系ゲームの商品の意匠を避ける。
+ * docs/features/game-fruit-merge.md の「名称・権利の注意」）。
+ * 線の太さは Phosphor の regular（viewBox 256 に対して 16）に合わせる
+ */
+function FruitMergeIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 箱。上は開いている（落とし口） */}
+      <path d="M40 40 V216 H216 V40" />
+      {/* 大（下に沈む）・中・小。同じ大きさの丸を並べないことで「育つ」を出す */}
+      <circle cx="98" cy="158" r="42" />
+      <circle cx="176" cy="172" r="28" />
+      <circle cx="164" cy="106" r="18" />
+      {/* いちばん大きい実のへた */}
+      <path d="M98 116 V96" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -524,6 +562,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Snake: SnakeIcon,
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,
+  FruitMerge: FruitMergeIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
