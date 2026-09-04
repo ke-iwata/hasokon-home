@@ -266,6 +266,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'iryohi-kojo',
+    icon: 'Receipt',
+    name: '医療費控除・セルフメディケーション税制 計算機',
+    description:
+      '1年間に払った医療費から、控除額と実際に戻る額（所得税の還付＋翌年の住民税の軽減）を計算。セルフメディケーション税制と並べて、どちらが得かも判定します。医療費が10万円以下でも控除できる場合に対応。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-08-31',
+  },
+  {
     slug: 'saitei-chingin',
     icon: 'CurrencyJpy',
     name: '最低賃金 早見表・チェッカー',
