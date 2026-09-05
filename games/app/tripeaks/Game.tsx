@@ -72,6 +72,15 @@ export default function Game() {
   // もどす用の履歴。取り・めくりのすべてを積む
   const history = useRef<TriPeaksState[]>([]);
   const finished = useRef(false);
+  /**
+   * この配りで最長連鎖のベストを更新したか。
+   *
+   * **`records.finish` の `improved.score` は当てにできない。** 最長連鎖は
+   * クリアを待たずに `records.update` で先に保存しているので、終わったときには
+   * すでにベストと同じ値になっていて、`score > bestScore` が必ず false になる
+   * （つまり🎉のバッジが一度も出ない）。更新した瞬間をここで覚えておく
+   */
+  const beatChain = useRef(false);
   const notified = useRef(false);
   // この配りをプレイ数に数えたか（最初の1手で数える）
   const counted = useRef(false);
@@ -83,6 +92,7 @@ export default function Game() {
   const start = useCallback((seed: number, action: string) => {
     history.current = [];
     finished.current = false;
+    beatChain.current = false;
     notified.current = false;
     counted.current = false;
     setHinted(null);
@@ -122,7 +132,10 @@ export default function Game() {
     finished.current = true;
     trackToolUse('tripeaks', 'win');
     const { improved } = records.finish({ outcome: 'win', score: maxChain });
-    setResult({ chain: maxChain, improved });
+    setResult({
+      chain: maxChain,
+      improved: { ...improved, score: improved.score || beatChain.current },
+    });
   }, [won, maxChain, records]);
 
   // 詰みは記録に残さない（「もどす」で戻ってやり直せるので、行き止まりに何度でも
@@ -161,6 +174,7 @@ export default function Game() {
     // **最長連鎖はクリアを待たずに残す。** 連鎖はこのゲームの手応えそのもので、
     // 詰んだ配りで出した記録を捨てると「さっきの7連鎖」がどこにも残らない
     if (next.maxChain > best) {
+      beatChain.current = true;
       records.update(DEFAULT_VARIANT, (e) => ({ ...e, bestScore: next.maxChain }));
     }
   };

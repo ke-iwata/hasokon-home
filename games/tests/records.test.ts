@@ -140,6 +140,28 @@ describe('applyStart / applyResult', () => {
     expect(worse.improved).toEqual({ time: false, score: false, moves: false });
   });
 
+  /**
+   * **途中でベストを保存したゲームは、終わったときに `improved.score` が false になる。**
+   *
+   * トライピークスとゴルフソリティアは、最長連鎖をクリアを待たずに
+   * `records.update` で保存している（クリアが珍しいゲームなので、詰んだ配りで
+   * 出した連鎖を捨てると記録が育たない）。その結果、終局時には
+   * `score === bestScore` になっていて、`score > bestScore` が成り立たない。
+   *
+   * これは `applyResult` の不具合ではなく**仕様**。この性質を知らずに
+   * `improved.score` だけで🎉のバッジを出すと一度も光らないので、
+   * ここに固定して次に触る人へ伝える（画面側は「更新した瞬間」を自分で覚えておく）。
+   */
+  it('先にベストを保存してあると、同じ値で終えても「更新」にならない', () => {
+    // 遊んでいる途中で 7連鎖 を保存した状態
+    const midPlay = { plays: 1, bestScore: 7 };
+    const { improved } = applyResult(midPlay, { outcome: 'win', score: 7 });
+    expect(improved.score).toBe(false);
+
+    // 先に保存していなければ、同じ入力でも「更新」になる
+    expect(applyResult({ plays: 1 }, { outcome: 'win', score: 7 }).improved.score).toBe(true);
+  });
+
   it('勝ち・負け・引き分けを数え分ける', () => {
     let entry = applyResult({}, { outcome: 'win' }).entry;
     entry = applyResult(entry, { outcome: 'loss' }).entry;
