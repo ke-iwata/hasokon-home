@@ -223,8 +223,8 @@ export const tools: ToolDef[] = [
     description:
       '年収（額面）から手取りを計算。月あたりの手取りと、健康保険・厚生年金・雇用保険・所得税・住民税の内訳が出ます。2026年（令和8年分）の基礎控除引上げで手取りがいくら増えるかを併記し、年収100万〜1,000万円の早見表つき。',
     category: 'お金・社会保険',
-    stage: 'preview',
-    updatedAt: '2026-09-01',
+    stage: 'public',
+    updatedAt: '2026-09-05',
   },
   {
     slug: 'hatarakizon',

@@ -8,6 +8,15 @@
 
 ---
 
+## 2026-09-05：ゴルフソリティアを公開した（`preview` → `public`）
+
+仕様は [features/game-golf-solitaire.md](../../docs/features/game-golf-solitaire.md)。
+山札をめくる・手前の1枚違いの札を取る動作を実機幅（390px）で確認したうえで
+`public` に上げた。`home/index.html` のカード（トライピークスの直後）と
+`home/llms.txt` の行も同じPRで足した。ピンボール・二角取り・フルーツ合体パズルは
+`preview` / `wip` のまま据え置き（二角取りは商標確認待ち、ピンボールは係数調整待ち、
+フルーツ合体パズルは運営者確認待ち）。
+
 ## 2026-09-01：ゴルフソリティアを実装した（ソリティア6本目・`preview`）
 
 仕様は [../../docs/features/game-golf-solitaire.md](../../docs/features/game-golf-solitaire.md)。
