@@ -8,6 +8,15 @@
 
 ---
 
+## 2026-09-05：手取り計算機を公開した（`preview` → `public`）
+
+仕様は [features/tedori-keisan.md](../../docs/features/tedori-keisan.md)。
+年収300万・500万・800万の3点を国税庁の源泉徴収税額表・協会けんぽの料額表と突合し
+（`tests/tedori-keisan.test.ts` に固定済み）、実機幅（390px）で年収500万円を入力して
+表示（手取り3,938,796円／年・328,233円／月）がテストの期待値と一致することを
+確認したうえで `public` に上げた。`home/index.html` のカード（お金・社会保険の末尾）と
+`home/llms.txt` の行も同じPRで足した。年金収入の簡易対応（次の一手）は別PRのまま。
+
 ## 2026-08-31：医療費控除・セルフメディケーション税制の計算機を作った（`wip`）
 
 仕様は [features/iryohi-kojo-keisan.md](../../docs/features/iryohi-kojo-keisan.md)。

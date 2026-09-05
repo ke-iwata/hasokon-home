@@ -115,15 +115,13 @@ export const games: GameDef[] = [
     // ピラミッド・トライピークスと同じ扱い。
     // docs/features/game-golf-solitaire.md の「権利関係」）。
     // ソリティア群をまとめて見せたいので、一覧ではトライピークスの直後に置く。
-    // **操作感を実機で確かめてから公開する**（仕様書の状態行。公開するPRで
-    // home/index.html のカードと home/llms.txt の行も同時に足す）
     slug: 'golf-solitaire',
     icon: 'Golf',
     name: 'ゴルフソリティア',
     description:
       '捨て札と1つ違いの札を手前から取り除くソリティア。取り切れなくても「残り何枚か」が成績になります。KとAをつなぐルールにも切り替え可能。',
-    stage: 'preview',
-    updatedAt: '2026-09-01',
+    stage: 'public',
+    updatedAt: '2026-09-05',
   },
   {
     slug: 'minesweeper',
