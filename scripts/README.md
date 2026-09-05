@@ -1,7 +1,11 @@
-# scripts — 運用の計測スクリプト
+# scripts — 運用の計測スクリプトとデプロイ時の生成
 
-サイトには配信されません（`.github/workflows/deploy.yml` の同期対象から外してあります）。
+サイトには配信されません（`.github/workflows/deploy.yml` が同期するのは `home/` の中身だけ）。
 依存パッケージはゼロで、Node.js 22 以降があれば動きます。
+
+registry（`tools` / `games` の `lib/registry.ts`）の読み取りは
+`lib/registry.mjs` に集約してあります。TypeScript をそのまま import できないので
+字面から拾っていますが、**同じ読み取りを2か所に書かない**ためのものです。
 
 ## gsc-canonical-audit.mjs
 
@@ -78,6 +82,29 @@ node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json
 URL検査APIには **1日2000件 / 1分600件** の上限があります。
 86URLなら余裕がありますが、何度も回すときは日をまたいでください。
 `--concurrency` の既定値（4）は上限に当てないための値です。
+
+## build-test-home.mjs
+
+**テスト環境に配るときだけ**、トップ（`home/index.html`）の一覧に
+公開前（`stage` が `public` 以外）のツール・ゲームを足すスクリプトです。
+
+仕様: [docs/features/test-home-unreleased.md](../docs/features/test-home-unreleased.md)
+
+`home/` にはビルド工程が無く `stage` が効かないため、公開前のものを見るには
+URLを直接打つしかありませんでした。デプロイ時に差し込むことで、
+テスト環境のトップからも辿れるようにしています。
+
+```bash
+# 手元で結果を見る（コピーに対してかける。home/index.html を直接書き換えない）
+cp home/index.html /tmp/index.html && node scripts/build-test-home.mjs --file /tmp/index.html
+```
+
+- 未公開のカードは**破線の枠・フラスコのアイコン・「本番未公開」の印**が付きます
+- `.quicknav` の件数は差し込み後の枚数で数え直します
+- 同じファイルに2回かけても増えません
+
+**生成結果を `home/index.html` にcommitしないでください。** 本番のトップから
+`noindex` のページへリンクすることになります（`test/build-test-home.test.mjs` が落とします）。
 
 ## テスト
 

@@ -152,6 +152,14 @@ jobs:
             --delete --exclude "_next/static/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
+      # テスト環境にだけ、公開前（stage が public 以外）のツール・ゲームを
+      # トップの一覧に足す。home/ にはビルド工程が無く stage が効かないので、
+      # ここで差し込む（docs/features/test-home-unreleased.md）。
+      # **タグ（本番）のときは通らない**ので、本番のHTMLは無改変のまま
+      - name: テスト環境向けにトップの一覧を作る
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        run: node scripts/build-test-home.mjs
+
       # バケット直下は home/ の中身だけ。tools/ games/ は上の同期が管理
       # しているので削除対象から除外する
       - name: S3へ同期（home）
