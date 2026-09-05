@@ -66,6 +66,11 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   （書き忘れは `{games,tools}/tests/stage.test.ts` が落とす）
 - **`home/index.html` のカードと `home/llms.txt` の行は、`public` にするPRで足す。**
   `home/` にはビルド工程が無いので `stage` が効かない。ここだけは運用で守る
+- **テスト環境のトップにだけは、公開前のものも「本番未公開」の印つきで並ぶ**
+  （`scripts/build-test-home.mjs` がデプロイ時に差し込む。本番のデプロイは通らない）。
+  仕様は [docs/features/test-home-unreleased.md](./docs/features/test-home-unreleased.md)。
+  **生成結果を `home/index.html` にcommitしないこと**（本番のトップから
+  `noindex` のページへリンクすることになる。`scripts/test/build-test-home.test.mjs` が落とす）
 - **フラグは「まだ公開していない」ためのもの。** 一度公開したものを引っ込めるのは
   別の作業（URLがインデックスされているので、消すと404になる）
 - **フラグは腐る。** 仕様書の `**状態**：` 行に「いつ `public` にするか」を書き、

@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { parseRegistry, readRepoFile } from '../lib/registry.mjs';
+
 /**
  * llms.txt（AIアシスタント向けのサイト案内）のテスト。
  *
@@ -15,7 +17,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 const repoRoot = new URL('../../', import.meta.url);
-const read = (path) => readFileSync(fileURLToPath(new URL(path, repoRoot)), 'utf8');
+const read = readRepoFile;
 const exists = (path) => existsSync(fileURLToPath(new URL(path, repoRoot)));
 
 const LLMS_TXT = read('home/llms.txt');
@@ -24,33 +26,9 @@ const ORIGIN = 'https://hasokon.com';
 // ---------------------------------------------------------------- registry
 
 /**
- * registry.ts の配列（tools / games）から slug・name・stage を読み取る。
- *
- * TypeScript をそのまま import できないので字面から拾っている。
- * 書き方を変えて読めなくなったら「エントリが少なすぎる」で落ちるようにしてある
- * （黙って0件になり、テストが何も見張らなくなるのを防ぐため）。
+ * registry の読み取りは `scripts/lib/registry.mjs` に集約してある
+ * （`scripts/build-test-home.mjs` も同じものを使う）。
  */
-function parseRegistry(source, arrayName) {
-  const open = source.indexOf(`export const ${arrayName}`);
-  assert.ok(open >= 0, `${arrayName} の定義が見つからない`);
-  const body = source.slice(open, source.indexOf('\n];', open));
-
-  return body
-    .split(/\n  \{\n/)
-    .slice(1)
-    .map((chunk) => {
-      const block = chunk.split(/\n  \},?/)[0];
-      const pick = (re) => (block.match(re) ?? [])[1];
-      return {
-        slug: pick(/slug:\s*'([^']+)'/),
-        name: pick(/name:\s*'([^']+)'/),
-        // 公開の段階（docs/features/feature-flags.md）。
-        // `public` 以外は llms.txt に載せない
-        stage: (block.match(/stage:\s*'([^']+)'/) ?? [])[1],
-      };
-    });
-}
-
 const TOOLS = parseRegistry(read('tools/lib/registry.ts'), 'tools');
 const GAMES = parseRegistry(read('games/lib/registry.ts'), 'games');
 
