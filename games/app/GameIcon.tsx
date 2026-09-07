@@ -499,7 +499,7 @@ function TubesIcon({ size = 26 }: IconProps) {
 }
 
 /**
- * フルーツ合体パズル。**箱に落ちた大小の実**を、実のへた付きで描く。
+ * ボルダリング合体パズル。**箱に落ちた大小のホールド**を多角形で描く。
  *
  * Phosphor に「箱の中で大きさが増えていく丸」に当たるアイコンが無い
  * （果物系は Orange/Cherries しか無く、どれも「合体して育つ」が伝わらない）。
@@ -507,10 +507,10 @@ function TubesIcon({ size = 26 }: IconProps) {
  * （リバーシの石・2048の格子）と見分けが付く。
  *
  * **顔つきの果物にはしない**（同系ゲームの商品の意匠を避ける。
- * docs/features/game-fruit-merge.md の「名称・権利の注意」）。
+ * docs/features/game-bouldering-merge.md の「名称・権利の注意」）。
  * 線の太さは Phosphor の regular（viewBox 256 に対して 16）に合わせる
  */
-function FruitMergeIcon({ size = 26 }: IconProps) {
+function BoulderingMergeIcon({ size = 26 }: IconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -526,12 +526,11 @@ function FruitMergeIcon({ size = 26 }: IconProps) {
     >
       {/* 箱。上は開いている（落とし口） */}
       <path d="M40 40 V216 H216 V40" />
-      {/* 大（下に沈む）・中・小。同じ大きさの丸を並べないことで「育つ」を出す */}
-      <circle cx="98" cy="158" r="42" />
-      <circle cx="176" cy="172" r="28" />
-      <circle cx="164" cy="106" r="18" />
-      {/* いちばん大きい実のへた */}
-      <path d="M98 116 V96" />
+      {/* 大中小の多角形。**丸ではなく角のある形**にして、
+          当たり判定が形に沿っていること（このゲームの肝）を絵でも出す */}
+      <path d="M74 200 L64 148 L104 126 L142 152 L128 200 Z" />
+      <path d="M150 200 L146 160 L188 152 L196 200 Z" />
+      <path d="M112 106 L92 78 L124 62 L146 86 Z" />
     </svg>
   );
 }
@@ -562,7 +561,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Snake: SnakeIcon,
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,
-  FruitMerge: FruitMergeIcon,
+  BoulderingMerge: BoulderingMergeIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

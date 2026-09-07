@@ -11,23 +11,24 @@ import {
   drop,
   DROP_Y,
   dropPreviewY,
-  FRUITS,
+  HOLDS,
   initialState,
   LINE_Y,
   OVER_LIMIT,
-  radiusOf,
+  boundOf,
+  shapeOf,
   restart,
   step,
   SUBSTEPS,
-  type FruitDef,
-  type FruitMergeState,
-} from '@/lib/fruit-merge';
+  type HoldDef,
+  type BoulderingMergeState,
+} from '@/lib/bouldering-merge';
 import { trackToolUse } from '@/lib/analytics';
 import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
 import { type Improved } from '@/lib/records';
 
 /**
- * フルーツ合体パズルの画面。物理は `lib/fruit-merge.ts`（純関数）にあり、
+ * ボルダリング合体パズルの画面。物理は `lib/bouldering-merge.ts`（純関数）にあり、
  * ここは入力と描画だけ。
  *
  * ピンボールと同じく、**ゲーム本体は ref で回して React の状態にしない**。
@@ -43,7 +44,7 @@ function freshSeed(): number {
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // 種はマウント後に入れ替える。初回描画（空の箱）はサーバー側と同じ
-  const stateRef = useRef<FruitMergeState>(initialState(1));
+  const stateRef = useRef<BoulderingMergeState>(initialState(1));
   const fxRef = useRef<Fx>(newFx());
   const reducedRef = useRef(false);
   /** サブステップ。重い端末では減らす（仕様書「パフォーマンス」） */
@@ -55,13 +56,13 @@ export default function Game() {
    * （見えていないのに奪うより、一瞬受け損ねるほうが害が小さい）
    */
   const onScreen = useRef(false);
-  const [status, setStatus] = useState<FruitMergeState['status']>('playing');
+  const [status, setStatus] = useState<BoulderingMergeState['status']>('playing');
   const [hud, setHud] = useState({ score: 0, next: stateRef.current.next });
   const [debug, setDebug] = useState(false);
 
   // 記録（ベストスコア。docs/features/game-records.md）。
   // スコア型のゲームなのでタイムは残さない
-  const records = useRecords('fruit-merge');
+  const records = useRecords('bouldering-merge');
   const entry = records.entry();
   const best = entry.bestScore ?? 0;
   const recorded = useRef(false);
@@ -74,7 +75,7 @@ export default function Game() {
     const score = stateRef.current.score;
     const { improved } = records.finish({ score });
     setResult({ score, improved });
-    trackToolUse('fruit-merge', 'gameover');
+    trackToolUse('bouldering-merge', 'gameover');
   }, [status, records]);
 
   useEffect(() => {
@@ -181,7 +182,7 @@ export default function Game() {
     if (counted.current) return;
     counted.current = true;
     records.start();
-    trackToolUse('fruit-merge', 'start');
+    trackToolUse('bouldering-merge', 'start');
   };
 
   const doDrop = () => {
@@ -207,10 +208,10 @@ export default function Game() {
     setResult(null);
     recorded.current = false;
     counted.current = false;
-    trackToolUse('fruit-merge', 'retry');
+    trackToolUse('bouldering-merge', 'retry');
   };
 
-  const nextFruit = FRUITS[hud.next];
+  const nextHold = HOLDS[hud.next];
 
   return (
     <div className="card">
@@ -218,14 +219,14 @@ export default function Game() {
           320×568 で箱が画面から出る（実測：2行になると card が 574px、
           1行なら 538px）。連鎖の知らせはここに置かず、合体した場所に
           浮かぶ得点（`drawPops`）で見せている */}
-      <div className="status-bar fm-bar">
+      <div className="status-bar bm-bar">
         <span>
           スコア: <strong style={{ color: 'var(--text)' }}>{hud.score}</strong>
         </span>
-        <span className="fm-next">
+        <span className="bm-next">
           つぎ
-          <FruitChip fruit={nextFruit} />
-          <span className="fm-next-name">{nextFruit.name}</span>
+          <HoldChip hold={nextHold} />
+          <span className="bm-next-name">{nextHold.name}</span>
         </span>
       </div>
 
@@ -238,7 +239,7 @@ export default function Game() {
         ]}
       />
 
-      <div className="fm-stage" ref={stageRef}>
+      <div className="bm-stage" ref={stageRef}>
         {/* **指の受け口は canvas 自身に付ける。**
             外側の枠に付けると、枠が `setPointerCapture` で指をつかんだまま
             になり、上に重ねた「もう一度」のボタンが押せなくなる
@@ -248,7 +249,7 @@ export default function Game() {
             覆いが出ているあいだは箱に触れないという意味にもなる */}
         <canvas
           ref={canvasRef}
-          aria-label="フルーツ合体パズルの箱"
+          aria-label="ボルダリング合体パズルの箱"
           onPointerDown={(e) => {
             e.currentTarget.setPointerCapture(e.pointerId);
             aimFrom(e.clientX);
@@ -264,7 +265,7 @@ export default function Game() {
         />
 
         {status === 'gameover' && (
-          <div className="fm-overlay">
+          <div className="bm-overlay">
             <p style={{ fontSize: '1.2rem', fontWeight: 700 }}>ゲームオーバー</p>
             <p>
               スコア: {hud.score}
@@ -279,7 +280,7 @@ export default function Game() {
       </div>
 
       {debug && (
-        <div className="btn-row fm-debug">
+        <div className="btn-row bm-debug">
           <button
             type="button"
             className="btn"
@@ -312,7 +313,7 @@ export default function Game() {
           <strong>1段大きい果物</strong>になり、続けて合体すると
           <strong>連鎖</strong>で点が伸びます。上の<strong>赤い線</strong>を果物が
           {OVER_LIMIT}秒こえたままだと終わりで、こえているあいだは線が点滅します。
-          いちばん大きい{FRUITS[FRUITS.length - 1].name}どうしは、合体すると消えてボーナスです。
+          いちばん大きい{HOLDS[HOLDS.length - 1].name}どうしは、合体すると消えてボーナスです。
         </p>
       </details>
     </div>
@@ -320,12 +321,12 @@ export default function Game() {
 }
 
 /** 次に落ちる果物の丸。**大きさは段によらず一定**（行の高さを変えないため） */
-function FruitChip({ fruit }: { fruit: FruitDef }) {
+function HoldChip({ hold }: { hold: HoldDef }) {
   return (
     <span
-      className="fm-chip"
+      className="bm-chip"
       aria-hidden="true"
-      style={{ background: `radial-gradient(circle at 35% 30%, ${fruit.light}, ${fruit.dark})` }}
+      style={{ background: hold.light, borderColor: hold.dark }}
     />
   );
 }
@@ -335,7 +336,7 @@ function FruitChip({ fruit }: { fruit: FruitDef }) {
  * ------------------------------------------------------------------ */
 
 /**
- * 合体の余韻。**`FruitMergeState` には持たせない**
+ * 合体の余韻。**`BoulderingMergeState` には持たせない**
  * （物理の状態に演出を混ぜると、テストがUIの都合で壊れるようになる。
  * games/CLAUDE.md「画面の約束」の9）。
  */
@@ -355,10 +356,10 @@ function newFx(): Fx {
 }
 
 /** 位置がいちばん近い果物。合体イベントは id を持たないので位置から当てる */
-function nearestId(state: FruitMergeState, tier: number, x: number, y: number): number | null {
+function nearestId(state: BoulderingMergeState, tier: number, x: number, y: number): number | null {
   let id: number | null = null;
   let bestD = Infinity;
-  for (const f of state.fruits) {
+  for (const f of state.holds) {
     if (f.tier !== tier) continue;
     const d = (f.x - x) ** 2 + (f.y - y) ** 2;
     if (d < bestD) {
@@ -369,7 +370,7 @@ function nearestId(state: FruitMergeState, tier: number, x: number, y: number): 
   return id;
 }
 
-function updateFx(fx: Fx, s: FruitMergeState, dt: number, reduced: boolean): void {
+function updateFx(fx: Fx, s: BoulderingMergeState, dt: number, reduced: boolean): void {
   fx.clock += dt;
 
   for (const [id, v] of fx.born) {
@@ -394,7 +395,7 @@ function updateFx(fx: Fx, s: FruitMergeState, dt: number, reduced: boolean): voi
         const id = nearestId(s, e.tier, e.x, e.y);
         if (id !== null) fx.born.set(id, 1);
       }
-      fx.rings.push({ x: e.x, y: e.y, r: e.tier >= 0 ? radiusOf(e.tier) : radiusOf(10), life: 1 });
+      fx.rings.push({ x: e.x, y: e.y, r: e.tier >= 0 ? boundOf(e.tier) : boundOf(10), life: 1 });
       if (fx.rings.length > 8) fx.rings.shift();
     }
     if (fx.pops.length > 6) fx.pops.shift();
@@ -415,12 +416,12 @@ function updateFx(fx: Fx, s: FruitMergeState, dt: number, reduced: boolean): voi
  * 正規化座標（幅1×高さ1.5）の状態をcanvasのピクセルへ拡大して描く。
  *
  * **拡大率は幅だけから出す**（canvas の縦横比を 1:1.5 に固定してあるので、
- * 幅を掛ければ縦もそろう）。座標の意味は `lib/fruit-merge.ts` を見ること。
+ * 幅を掛ければ縦もそろう）。座標の意味は `lib/bouldering-merge.ts` を見ること。
  */
 function draw(
   ctx: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
-  s: FruitMergeState,
+  s: BoulderingMergeState,
   fx: Fx,
   reduced: boolean,
 ): void {
@@ -432,11 +433,11 @@ function draw(
   drawBox(ctx, w, h, k);
   drawLine(ctx, s, fx, k);
   if (s.status === 'playing') drawGuide(ctx, s, k);
-  for (const f of s.fruits) {
-    drawFruit(ctx, k, f.tier, f.x, f.y, 1 + (fx.born.get(f.id) ?? 0) * 0.22, f.angle);
+  for (const f of s.holds) {
+    drawHold(ctx, k, f.tier, f.x, f.y, 1 + (fx.born.get(f.id) ?? 0) * 0.22, f.angle);
   }
   // 持っている果物は回さない（まだ転がっていないので）
-  if (s.status === 'playing') drawFruit(ctx, k, s.hold, s.aim, DROP_Y, 1, 0);
+  if (s.status === 'playing') drawHold(ctx, k, s.hold, s.aim, DROP_Y, 1, 0);
   if (!reduced) drawRings(ctx, fx, k);
   drawPops(ctx, fx, k);
 }
@@ -474,7 +475,7 @@ function drawBox(ctx: CanvasRenderingContext2D, w: number, h: number, k: number)
  * ゲームオーバーライン。**常時出しておき、超えているあいだは点滅させる**
  * （突然死の理不尽感を消す。仕様書「遊びやすさ」）
  */
-function drawLine(ctx: CanvasRenderingContext2D, s: FruitMergeState, fx: Fx, k: number): void {
+function drawLine(ctx: CanvasRenderingContext2D, s: BoulderingMergeState, fx: Fx, k: number): void {
   const warn = s.status === 'playing' && s.overSec > 0;
   const y = LINE_Y * k;
 
@@ -501,8 +502,8 @@ function drawLine(ctx: CanvasRenderingContext2D, s: FruitMergeState, fx: Fx, k: 
  * 落下予測線。縦の点線と、着地するところの薄い輪。
  * **タップ操作でも狙いがつけられるようにするための線**（仕様書「遊びやすさ」）
  */
-function drawGuide(ctx: CanvasRenderingContext2D, s: FruitMergeState, k: number): void {
-  const r = radiusOf(s.hold);
+function drawGuide(ctx: CanvasRenderingContext2D, s: BoulderingMergeState, k: number): void {
+  const r = boundOf(s.hold);
   const x = s.aim * k;
   const landing = dropPreviewY(s);
 
@@ -536,9 +537,19 @@ function drawGuide(ctx: CanvasRenderingContext2D, s: FruitMergeState, k: number)
  * - まわりに**濃い輪郭線**。これがいちばん「描いた絵」に見せる
  *
  * 顔つきのデフォルメは同系の商品の意匠なので真似ない
- * （docs/features/game-fruit-merge.md の「名称・権利の注意」）
+ * （docs/features/game-bouldering-merge.md の「名称・権利の注意」）
  */
-function drawFruit(
+/**
+ * ホールド1つ。**当たり判定と同じ多角形をそのまま描く**（`shapeOf`）。
+ *
+ * 絵と当たり判定がずれていると「当たっていないのに止まった」に見えるので、
+ * 丸めたり膨らませたりしない。フルーツ版から引き継ぐ絵の作法は3つ:
+ *
+ * - **平塗り＋輪郭線**（球の陰影と白い光沢は使わない。てかって見える）
+ * - **影は本体と一緒に回さない**（光は場面に対して固定）
+ * - 模様は本体と一緒に回す（回っていることが分かる手がかりになる）
+ */
+function drawHold(
   ctx: CanvasRenderingContext2D,
   k: number,
   tier: number,
@@ -547,187 +558,154 @@ function drawFruit(
   scale: number,
   angle: number,
 ): void {
-  const def = FRUITS[Math.max(0, Math.min(FRUITS.length - 1, tier))];
-  const r = radiusOf(tier) * k * scale;
+  const def = HOLDS[Math.max(0, Math.min(HOLDS.length - 1, tier))];
+  const shape = shapeOf(tier);
+  const r = shape.bound * k * scale;
   const cx = fx * k;
   const cy = fy * k;
 
-  // 接地の影。**これは実ではなく地面側の影**なので回さない
+  /** 多角形の輪郭を、いまの向き・大きさで引く */
+  const path = () => {
+    ctx.beginPath();
+    shape.points.forEach(([px, py], i) => {
+      const x = px * k * scale;
+      const y = py * k * scale;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.closePath();
+  };
+
+  // 接地の影。**地面側の影なので回さない**
   ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
   ctx.beginPath();
-  ctx.ellipse(cx + r * 0.08, cy + r * 0.18, r * 0.96, r * 0.88, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.08, cy + r * 0.2, r * 0.9, r * 0.8, 0, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.save();
   ctx.translate(cx, cy);
+  ctx.rotate(angle);
 
-  // 実（平塗り）
+  // 本体（平塗り）
   ctx.fillStyle = def.light;
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  path();
   ctx.fill();
 
-  // **模様だけを回す。** 転がりは物理側の `angle` にあり、絵はそれに従う。
-  // へた・種・網目が回れば「転がっている」と分かる
+  // 中の模様。多角形で切り抜く
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  path();
   ctx.clip();
-  ctx.rotate(angle);
   drawDeco(ctx, def, 0, 0, r);
   ctx.restore();
 
   /**
-   * 下側の影。**回さない。**
-   *
-   * 光は場面に対して固定なので、実が転がっても影の向きは変わらない。
-   * 果物と一緒に回していたときは、同じみかんでも影が左だったり右だったりして、
-   * 一覧に並ぶと光源がばらばらに見えた。
-   * 境目はぼかさず、円で切り抜いて平らな面として置く（グラデーションにしない）
+   * 陰。**向きは本体の回転を打ち消して、いつも右下から差すようにする。**
+   * 一緒に回すと、同じ段のホールドでも影が左だったり右だったりして、
+   * 並べたときに光源がばらばらに見える（フルーツ版で踏んだ罠）
    */
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  path();
   ctx.clip();
+  ctx.rotate(-angle);
   ctx.fillStyle = def.dark;
-  ctx.globalAlpha = 0.4;
+  ctx.globalAlpha = 0.38;
   ctx.beginPath();
-  ctx.ellipse(r * 0.42, r * 0.5, r * 0.98, r * 0.9, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.45, r * 0.55, r * 1.1, r * 1, -0.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // へた・葉は実の外に飛び出すので、切り抜きの外でもう一度描く
-  if (def.deco === 'stem' || def.deco === 'leaf' || def.deco === 'crown') {
-    ctx.save();
-    ctx.rotate(angle);
-    drawDeco(ctx, def, 0, 0, r, true);
-    ctx.restore();
-  }
-
   // 輪郭線。**イラストに見せているのはこの線**
   ctx.strokeStyle = def.dark;
-  ctx.lineWidth = Math.max(1.2, r * 0.09);
-  ctx.beginPath();
-  ctx.arc(0, 0, r - ctx.lineWidth * 0.5, 0, Math.PI * 2);
+  ctx.lineWidth = Math.max(1.2, r * 0.1);
+  ctx.lineJoin = 'round';
+  path();
   ctx.stroke();
 
   ctx.restore();
 }
 
 /**
- * 果物ごとの飾り。段の見分けを色だけに頼らないための描き分け。
+ * ホールドごとの飾り。**段の見分けを色と形だけに頼らない**ための描き分け。
  *
- * @param outside へた・葉など**実の外に飛び出す部分だけ**を描く。
- *   実の中の模様（種・網目）は円で切り抜いた中に描くので、呼び分けている
+ * 呼ぶ側で多角形に切り抜いてあるので、はみ出しは気にしなくてよい。
+ * 指穴（ポケット）・えぐれ（ガバ）は**絵だけ**で、当たり判定には入っていない
+ * （仕様書「凹みは当たり判定に入れない」）
  */
 function drawDeco(
   ctx: CanvasRenderingContext2D,
-  def: FruitDef,
+  def: HoldDef,
   cx: number,
   cy: number,
   r: number,
-  outside = false,
 ): void {
   ctx.save();
-  ctx.strokeStyle = def.stem;
-  ctx.lineWidth = Math.max(1, r * 0.11);
-  ctx.lineCap = 'round';
+  ctx.fillStyle = def.dark;
+  ctx.strokeStyle = def.dark;
 
-  // へた・葉は実からはみ出すので、切り抜きの外で描くときだけ
-  if (outside && (def.deco === 'stem' || def.deco === 'leaf')) {
+  if (def.deco === 'hole') {
+    // 指をかける穴・えぐれ。**濃い平塗りの窪み**として描く
+    ctx.globalAlpha = 0.55;
     ctx.beginPath();
-    ctx.moveTo(cx, cy - r * 0.86);
-    ctx.quadraticCurveTo(cx + r * 0.14, cy - r * 1.15, cx + r * 0.05, cy - r * 1.3);
-    ctx.stroke();
-  }
-  if (outside && def.deco === 'leaf') {
-    ctx.fillStyle = def.stem;
+    ctx.ellipse(cx, cy - r * 0.12, r * 0.42, r * 0.26, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.25;
     ctx.beginPath();
-    ctx.ellipse(cx + r * 0.42, cy - r * 1.02, r * 0.34, r * 0.16, -0.45, 0, Math.PI * 2);
+    ctx.ellipse(cx, cy - r * 0.2, r * 0.42, r * 0.2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (def.deco === 'dots' && !outside) {
-    // **半透明の白にしない**（下の色が透けて「濡れた艶」に見える）。
-    // 種・粒として読ませたいので、不透明のクリーム色で平らに置く
-    ctx.fillStyle = '#fffbeb';
-    for (const [dx, dy] of [
-      [-0.3, 0.1],
-      [0.24, -0.12],
-      [0.02, 0.42],
-    ]) {
+  if (def.deco === 'ridge') {
+    // つまむ稜線。2本の筋で「持つ向き」を出す
+    ctx.globalAlpha = 0.4;
+    ctx.lineWidth = Math.max(1, r * 0.09);
+    ctx.lineCap = 'round';
+    for (const off of [-0.3, 0.16]) {
       ctx.beginPath();
-      ctx.ellipse(cx + dx * r, cy + dy * r, r * 0.09, r * 0.13, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  if (def.deco === 'net' && !outside) {
-    /**
-     * メロンの網目。**左右対称にしないのが肝。**
-     *
-     * 中心をそろえた楕円を重ねる描き方（縦の筋・斜めの輪）はどちらも
-     * 原子模型の記号に見えてしまった。実物の網は不規則な筋なので、
-     * 端点をばらした短い線をつないで描く。円からはみ出さないよう切り抜く
-     */
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * 0.94, 0, Math.PI * 2);
-    ctx.clip();
-    // 網目も不透明の線で。艶ではなく「描いた筋」に見せる
-    ctx.strokeStyle = '#f0fdf4';
-    ctx.lineWidth = Math.max(1, r * 0.07);
-    for (const [x1, y1, x2, y2] of [
-      [-1, -0.35, 0.1, -0.62],
-      [0.1, -0.62, 1, -0.2],
-      [-1, 0.12, -0.15, -0.05],
-      [-0.15, -0.05, 0.7, 0.3],
-      [-0.55, -0.9, -0.3, 0.1],
-      [-0.3, 0.1, -0.45, 1],
-      [0.42, -0.9, 0.28, -0.1],
-      [0.28, -0.1, 0.5, 0.95],
-      [-0.85, 0.55, 0.05, 0.42],
-      [0.05, 0.42, 0.95, 0.7],
-    ]) {
-      ctx.beginPath();
-      ctx.moveTo(cx + x1 * r, cy + y1 * r);
-      ctx.lineTo(cx + x2 * r, cy + y2 * r);
+      ctx.moveTo(cx - r * 0.5, cy + off * r);
+      ctx.lineTo(cx + r * 0.5, cy + off * r * 0.6);
       ctx.stroke();
     }
-    ctx.restore();
   }
-  if (outside && def.deco === 'crown') {
-    // パイナップルの冠。上に3枚の葉を立てる
-    ctx.fillStyle = def.stem;
-    for (const a of [-0.5, 0, 0.5]) {
-      ctx.save();
-      ctx.translate(cx, cy - r * 0.88);
-      ctx.rotate(a);
+  if (def.deco === 'grain') {
+    // ざらつき（スローパーは摩擦で持つ）。点を散らす
+    ctx.globalAlpha = 0.35;
+    for (const [dx, dy] of [
+      [-0.4, -0.3],
+      [0.1, -0.45],
+      [0.45, -0.05],
+      [-0.15, 0.15],
+      [0.3, 0.4],
+      [-0.5, 0.35],
+    ]) {
       ctx.beginPath();
-      ctx.ellipse(0, -r * 0.26, r * 0.11, r * 0.32, 0, 0, Math.PI * 2);
+      ctx.arc(cx + dx * r, cy + dy * r, r * 0.07, 0, Math.PI * 2);
       ctx.fill();
-      ctx.restore();
     }
   }
-  if (!outside && def.deco === 'crown') {
-    // 実の表面の格子
-    ctx.strokeStyle = 'rgba(120, 53, 15, 0.4)';
+  if (def.deco === 'bolt') {
+    // ボルト穴。壁に留めるネジ穴が見えるのが大きい造形の特徴
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 0.3;
     ctx.lineWidth = Math.max(1, r * 0.05);
-    for (const a of [-0.7, 0.7]) {
-      for (const off of [-0.45, 0, 0.45]) {
-        ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(a);
-        ctx.beginPath();
-        ctx.moveTo(-r * 0.8, off * r);
-        ctx.lineTo(r * 0.8, off * r);
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if (def.deco === 'flat') {
+    // かかりの縁。上面に1本だけ線を引く
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = Math.max(1, r * 0.08);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx - r * 0.55, cy - r * 0.05);
+    ctx.lineTo(cx + r * 0.55, cy - r * 0.05);
+    ctx.stroke();
   }
   ctx.restore();
 }
 
-/** 合体した場所に広がる輪。**軽い演出にとどめる**（エフェクト過多にしない） */
 function drawRings(ctx: CanvasRenderingContext2D, fx: Fx, k: number): void {
   for (const ring of fx.rings) {
     ctx.save();
