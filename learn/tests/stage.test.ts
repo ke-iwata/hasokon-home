@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { chapters, writtenChapters } from '@/lib/curriculum';
+import { chapters, publicChapters, sectionIsPublic, writtenChapters } from '@/lib/curriculum';
 
 const appDir = fileURLToPath(new URL('../app/', import.meta.url));
 
@@ -65,5 +65,25 @@ describe('章ページの約束', () => {
     for (const { slug, src } of pages) {
       expect(src, slug).not.toMatch(/<Disclaimer\b/);
     }
+  });
+});
+
+describe('目次と sitemap の合図が食い違わない', () => {
+  it('sectionIsPublic は public な章が1つでもあれば true', () => {
+    expect(sectionIsPublic()).toBe(publicChapters.length > 0);
+  });
+
+  it('目次の robots と sitemap は同じ判断を見ている', () => {
+    // 別々に書くと「sitemap には出ているのに noindex」という矛盾が起きる。
+    // どちらも sectionIsPublic() を通していることを字面で確かめる
+    const toc = readFileSync(`${appDir}page.tsx`, 'utf8');
+    const sitemap = readFileSync(`${appDir}sitemap.ts`, 'utf8');
+    expect(toc).toMatch(/robots:\s*sectionIsPublic\(\)\s*\?/);
+    expect(sitemap).toMatch(/if\s*\(!sectionIsPublic\(\)\)\s*return\s*\[\]/);
+  });
+
+  it('公開前のいまは sitemap が空（noindex のページを出さない）', async () => {
+    const { default: sitemap } = await import('@/app/sitemap');
+    expect(sitemap()).toEqual([]);
   });
 });
