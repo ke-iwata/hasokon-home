@@ -433,9 +433,10 @@ function draw(
   drawLine(ctx, s, fx, k);
   if (s.status === 'playing') drawGuide(ctx, s, k);
   for (const f of s.fruits) {
-    drawFruit(ctx, k, f.tier, f.x, f.y, 1 + (fx.born.get(f.id) ?? 0) * 0.22);
+    drawFruit(ctx, k, f.tier, f.x, f.y, 1 + (fx.born.get(f.id) ?? 0) * 0.22, f.angle);
   }
-  if (s.status === 'playing') drawFruit(ctx, k, s.hold, s.aim, DROP_Y, 1);
+  // 持っている果物は回さない（まだ転がっていないので）
+  if (s.status === 'playing') drawFruit(ctx, k, s.hold, s.aim, DROP_Y, 1, 0);
   if (!reduced) drawRings(ctx, fx, k);
   drawPops(ctx, fx, k);
 }
@@ -523,7 +524,17 @@ function drawGuide(ctx: CanvasRenderingContext2D, s: FruitMergeState, k: number)
 }
 
 /**
- * 果物1つ。**丸い実＋へた・葉だけのフラットな絵**にしてある。
+ * 果物1つ。**平塗り＋輪郭線の「イラスト」**として描く。
+ *
+ * **球の陰影（放射グラデーション）と白い光沢は使わない。** 以前は中心を
+ * ずらした放射グラデーションに白い楕円のハイライトを重ねていて、
+ * プラスチックの球のように「てかてか」して見えた（運営者の指摘・2026-09-07）。
+ * イラストらしさは、なめらかな陰影ではなく**平らな面と輪郭線**から出る。
+ *
+ * - 実は**単色の平塗り**（`light`）
+ * - 下側に**境目のはっきりした影**を1枚だけ（`dark`）。グラデーションにしない
+ * - まわりに**濃い輪郭線**。これがいちばん「描いた絵」に見せる
+ *
  * 顔つきのデフォルメは同系の商品の意匠なので真似ない
  * （docs/features/game-fruit-merge.md の「名称・権利の注意」）
  */
@@ -534,62 +545,111 @@ function drawFruit(
   fx: number,
   fy: number,
   scale: number,
+  angle: number,
 ): void {
   const def = FRUITS[Math.max(0, Math.min(FRUITS.length - 1, tier))];
   const r = radiusOf(tier) * k * scale;
   const cx = fx * k;
   const cy = fy * k;
 
-  // 接地の影
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+  // 接地の影。**これは実ではなく地面側の影**なので回さない
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
   ctx.beginPath();
-  ctx.ellipse(cx + r * 0.1, cy + r * 0.16, r * 0.98, r * 0.9, 0, 0, Math.PI * 2);
+  ctx.ellipse(cx + r * 0.08, cy + r * 0.18, r * 0.96, r * 0.88, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.4, r * 0.12, cx, cy, r);
-  g.addColorStop(0, def.light);
-  g.addColorStop(1, def.dark);
-  ctx.fillStyle = g;
+  ctx.save();
+  ctx.translate(cx, cy);
+
+  // 実（平塗り）
+  ctx.fillStyle = def.light;
   ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fill();
 
-  drawDeco(ctx, def, cx, cy, r);
-
-  // 光沢。1つ入れるだけで「平らな丸」から抜ける
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  // **模様だけを回す。** 転がりは物理側の `angle` にあり、絵はそれに従う。
+  // へた・種・網目が回れば「転がっている」と分かる
+  ctx.save();
   ctx.beginPath();
-  ctx.ellipse(cx - r * 0.36, cy - r * 0.42, r * 0.2, r * 0.14, -0.6, 0, Math.PI * 2);
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.rotate(angle);
+  drawDeco(ctx, def, 0, 0, r);
+  ctx.restore();
+
+  /**
+   * 下側の影。**回さない。**
+   *
+   * 光は場面に対して固定なので、実が転がっても影の向きは変わらない。
+   * 果物と一緒に回していたときは、同じみかんでも影が左だったり右だったりして、
+   * 一覧に並ぶと光源がばらばらに見えた。
+   * 境目はぼかさず、円で切り抜いて平らな面として置く（グラデーションにしない）
+   */
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.clip();
+  ctx.fillStyle = def.dark;
+  ctx.globalAlpha = 0.4;
+  ctx.beginPath();
+  ctx.ellipse(r * 0.42, r * 0.5, r * 0.98, r * 0.9, -0.4, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+
+  // へた・葉は実の外に飛び出すので、切り抜きの外でもう一度描く
+  if (def.deco === 'stem' || def.deco === 'leaf' || def.deco === 'crown') {
+    ctx.save();
+    ctx.rotate(angle);
+    drawDeco(ctx, def, 0, 0, r, true);
+    ctx.restore();
+  }
+
+  // 輪郭線。**イラストに見せているのはこの線**
+  ctx.strokeStyle = def.dark;
+  ctx.lineWidth = Math.max(1.2, r * 0.09);
+  ctx.beginPath();
+  ctx.arc(0, 0, r - ctx.lineWidth * 0.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
 }
 
-/** 果物ごとの飾り。段の見分けを色だけに頼らないための描き分け */
+/**
+ * 果物ごとの飾り。段の見分けを色だけに頼らないための描き分け。
+ *
+ * @param outside へた・葉など**実の外に飛び出す部分だけ**を描く。
+ *   実の中の模様（種・網目）は円で切り抜いた中に描くので、呼び分けている
+ */
 function drawDeco(
   ctx: CanvasRenderingContext2D,
   def: FruitDef,
   cx: number,
   cy: number,
   r: number,
+  outside = false,
 ): void {
   ctx.save();
   ctx.strokeStyle = def.stem;
   ctx.lineWidth = Math.max(1, r * 0.11);
   ctx.lineCap = 'round';
 
-  if (def.deco === 'stem' || def.deco === 'leaf') {
+  // へた・葉は実からはみ出すので、切り抜きの外で描くときだけ
+  if (outside && (def.deco === 'stem' || def.deco === 'leaf')) {
     ctx.beginPath();
     ctx.moveTo(cx, cy - r * 0.86);
     ctx.quadraticCurveTo(cx + r * 0.14, cy - r * 1.15, cx + r * 0.05, cy - r * 1.3);
     ctx.stroke();
   }
-  if (def.deco === 'leaf') {
+  if (outside && def.deco === 'leaf') {
     ctx.fillStyle = def.stem;
     ctx.beginPath();
     ctx.ellipse(cx + r * 0.42, cy - r * 1.02, r * 0.34, r * 0.16, -0.45, 0, Math.PI * 2);
     ctx.fill();
   }
-  if (def.deco === 'dots') {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+  if (def.deco === 'dots' && !outside) {
+    // **半透明の白にしない**（下の色が透けて「濡れた艶」に見える）。
+    // 種・粒として読ませたいので、不透明のクリーム色で平らに置く
+    ctx.fillStyle = '#fffbeb';
     for (const [dx, dy] of [
       [-0.3, 0.1],
       [0.24, -0.12],
@@ -600,7 +660,7 @@ function drawDeco(
       ctx.fill();
     }
   }
-  if (def.deco === 'net') {
+  if (def.deco === 'net' && !outside) {
     /**
      * メロンの網目。**左右対称にしないのが肝。**
      *
@@ -612,8 +672,9 @@ function drawDeco(
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.94, 0, Math.PI * 2);
     ctx.clip();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = Math.max(1, r * 0.05);
+    // 網目も不透明の線で。艶ではなく「描いた筋」に見せる
+    ctx.strokeStyle = '#f0fdf4';
+    ctx.lineWidth = Math.max(1, r * 0.07);
     for (const [x1, y1, x2, y2] of [
       [-1, -0.35, 0.1, -0.62],
       [0.1, -0.62, 1, -0.2],
@@ -633,7 +694,7 @@ function drawDeco(
     }
     ctx.restore();
   }
-  if (def.deco === 'crown') {
+  if (outside && def.deco === 'crown') {
     // パイナップルの冠。上に3枚の葉を立てる
     ctx.fillStyle = def.stem;
     for (const a of [-0.5, 0, 0.5]) {
@@ -645,6 +706,8 @@ function drawDeco(
       ctx.fill();
       ctx.restore();
     }
+  }
+  if (!outside && def.deco === 'crown') {
     // 実の表面の格子
     ctx.strokeStyle = 'rgba(120, 53, 15, 0.4)';
     ctx.lineWidth = Math.max(1, r * 0.05);
