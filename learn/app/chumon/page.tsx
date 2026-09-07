@@ -1,8 +1,23 @@
 import type { Metadata } from 'next';
 import Chapter from '../_chapter/Chapter';
+import Figure from '../_chapter/Figure';
+import { Flow, OrderBook } from '../_chapter/Diagram';
 import { chapterBySlug, robotsFor, SITE_URL } from '@/lib/curriculum';
+import { sweepBook } from '@/lib/calc';
 
 const chapter = chapterBySlug('chumon');
+
+/**
+ * 成行が滑る例の板と数量。**本文の数字も図もここから出す。**
+ * 手で書くと、板の絵と本文の平均取得単価がずれる
+ */
+const BOOK = [
+  { price: 1000, qty: 100 },
+  { price: 1050, qty: 200 },
+  { price: 1200, qty: 500 },
+];
+const WANT = 800;
+const SWEEP = sweepBook(BOOK, WANT);
 
 export const metadata: Metadata = {
   title: `${chapter.title}｜投資の教科書`,
@@ -64,12 +79,31 @@ export default function Page() {
         板が薄い銘柄で成行を出すと、想定よりずっと高い値段まで買い上がることがあります。
       </p>
 
+      <Figure
+        title={`1,000円に100株、1,050円に200株、1,200円に500株の売り注文が並んだ板に800株の成行買いを出すと、3つの値段すべてを食って平均取得単価は${SWEEP.average.toLocaleString('ja-JP')}円になる`}
+        caption={`緑で囲った3段すべてを食って、はじめて${WANT}株が埋まります。板のいちばん上に見えていた1,000円で買えるのは最初の100株だけです。`}
+      >
+        <OrderBook
+          rows={[
+            { price: 1200, sell: 500 },
+            { price: 1050, sell: 200 },
+            { price: 1000, sell: 100 },
+            { price: 980, buy: 300 },
+            { price: 950, buy: 400 },
+          ]}
+          swept={SWEEP.fills}
+        />
+      </Figure>
+
       <div className="example">
         <strong>成行が滑る例</strong>
-        1,000円の売り注文が100株、1,050円に200株、1,200円に500株出ている板で、
-        800株の成行買いを出したとします。約定は
-        1,000円×100株 + 1,050円×200株 + 1,200円×500株 で、
-        平均取得単価は1,137.5円。<strong>板に見えていた1,000円では買えません</strong>。
+        上の板で800株の成行買いを出すと、約定は{' '}
+        {SWEEP.fills
+          .map((f) => `${f.price.toLocaleString('ja-JP')}円×${f.qty}株`)
+          .join(' ＋ ')}
+        。支払いは合計{SWEEP.cost.toLocaleString('ja-JP')}円で、平均取得単価は
+        <strong>{SWEEP.average.toLocaleString('ja-JP')}円</strong>です。
+        <strong>板に見えていた1,000円では買えません</strong>。
         これは異常ではなく、成行の定義どおりの動作です。
       </div>
 
@@ -99,6 +133,19 @@ export default function Page() {
           ——同じ値段なら、先に出した注文が先
         </li>
       </ol>
+
+      <Figure
+        title="約定の優先順位は、まず成行が指値より先、次に値段が有利な注文が先、最後に同じ値段なら先に出した注文が先"
+        caption="この3段は上から順に効きます。値段が同じところまで来て、はじめて「先に出したかどうか」が効きます。"
+      >
+        <Flow
+          steps={[
+            { label: '成行優先', sub: '指値より先' },
+            { label: '価格優先', sub: '有利な値段が先' },
+            { label: '時間優先', sub: '早い注文が先' },
+          ]}
+        />
+      </Figure>
 
       <p>
         だから「同じ1,000円の買い指値」でも、先に並んでいた人から順に約定します。

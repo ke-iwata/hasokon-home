@@ -422,6 +422,141 @@ a.chapter-title:hover {
   white-space: nowrap;
 }
 
+/* ---- 図解（app/_chapter/Figure.tsx・Diagram.tsx） ----
+   図はすべてインラインSVG。色はここのCSS変数を見ているので、
+   明暗テーマの切り替えに自動で追随する（PNGを置くとこれができない） */
+
+.figure {
+  margin: 20px 0;
+}
+
+.figure-body {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 12px 10px;
+}
+
+.figure figcaption {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  margin-top: 8px;
+}
+
+/* SVGは viewBox で組んであるので、幅を渡せば高さは比率で決まる */
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* 軸の目盛りと補足。本文より小さいが、10px を下回らせない */
+.chart-tick {
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+/* 線の終端に出す値。ここがいちばん読ませたい数字なので本文寄りの太さにする */
+.chart-endlabel {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.diagram-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+/* 板の値段と株数。桁を比べるので等幅の数字にする */
+.book-price,
+.book-qty {
+  font-size: 13px;
+  fill: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.book-price {
+  font-weight: 700;
+}
+
+/* ---- 凡例 ----
+   SVGの外にHTMLで置く。SVG内のテキストは本文の文字サイズ設定に追随しないため */
+
+.legend {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+}
+
+/* 凡例の印は図の印を写す。**折れ線には線、棒グラフには塗り**を出す
+   （食い違うと、凡例がどの要素を指しているか分からなくなる） */
+.legend-key {
+  display: inline-block;
+  flex: none;
+}
+
+.legend-key-line {
+  width: 22px;
+  height: 0;
+  border-top-width: 3px;
+  border-top-style: solid;
+}
+
+.legend-key-swatch {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  border-width: 1px;
+  border-style: solid;
+}
+
+/* 線の印。アクセントが1色なので、色ではなく線種でも見分けられるようにする */
+.legend-key-line.legend-accent {
+  border-top-color: var(--accent);
+}
+
+.legend-key-line.legend-muted {
+  border-top-color: var(--muted);
+  border-top-style: dashed;
+}
+
+.legend-key-line.legend-soft {
+  border-top-color: var(--accent-strong);
+  border-top-style: dotted;
+}
+
+/* 塗りの印。棒グラフの矩形と同じ塗り・枠にする */
+.legend-key-swatch.legend-accent {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.legend-key-swatch.legend-muted {
+  background: var(--surface-2);
+  border-color: var(--muted);
+}
+
+.legend-key-swatch.legend-soft {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
 /* ---- 参考文献 ---- */
 
 .refs {
@@ -547,6 +682,10 @@ a.chapter-title:hover {
   /* 章一覧の番号列を詰める。3桁にはならないので2emで足りる */
   .chapter-list li {
     grid-template-columns: 1.9em 1fr;
+  }
+
+  .figure-body {
+    padding: 10px 8px 8px;
   }
 
   /* 表は詰めて、横スクロールの量そのものを減らす（無くはならない） */

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Chapter from '../_chapter/Chapter';
+import Figure, { Bars, Legend } from '../_chapter/Figure';
+import { NestedBox, Timeline } from '../_chapter/Diagram';
 import { chapterBySlug, robotsFor, SITE_URL } from '@/lib/curriculum';
 
 const chapter = chapterBySlug('nisa');
@@ -58,6 +60,40 @@ export default function Page() {
         </table>
       </div>
 
+      <Figure
+        title="年間の投資枠は、つみたて投資枠120万円と成長投資枠240万円を合わせて360万円。以前のつみたてNISA40万円・一般NISA120万円はどちらか一方しか選べなかった"
+        caption="いまの制度は2つの枠を併用できます。以前はどちらか一方しか選べませんでした。"
+      >
+        <Bars
+          max={360}
+          rows={[
+            {
+              label: '現行NISA',
+              parts: [
+                { name: 'つみたて投資枠', value: 120, tone: 'accent' },
+                { name: '成長投資枠', value: 240, tone: 'soft' },
+              ],
+            },
+            {
+              label: '旧つみたて',
+              parts: [{ name: 'つみたてNISA（旧）', value: 40, tone: 'muted' }],
+            },
+            {
+              label: '旧一般',
+              parts: [{ name: '一般NISA（旧）', value: 120, tone: 'muted' }],
+            },
+          ]}
+        />
+        <Legend
+          variant="swatch"
+          items={[
+            { name: 'つみたて投資枠', tone: 'accent' },
+            { name: '成長投資枠', tone: 'soft' },
+            { name: '旧制度（どちらか一方のみ）', tone: 'muted' },
+          ]}
+        />
+      </Figure>
+
       <p>
         <strong>2つの枠は併用できます。</strong>両方を使い切れば年間360万円です。
         以前の制度（つみたてNISA・一般NISA）はどちらか一方しか選べなかったので、
@@ -77,6 +113,18 @@ export default function Page() {
         <li>1,800万円すべてを成長投資枠で埋めることはできない（上限1,200万円）</li>
       </ul>
 
+      <Figure
+        title="生涯の非課税保有限度額1,800万円のうち、成長投資枠として使えるのは1,200万円まで。残りの600万円はつみたて投資枠でしか埋められない"
+        caption="全部をつみたて投資枠で埋めることはできますが、全部を成長投資枠で埋めることはできません。"
+      >
+        <NestedBox
+          outer={{ label: '生涯の非課税保有限度額 1,800万円', value: 1800 }}
+          inner={{ label: '成長投資枠 1,200万円まで', value: 1200 }}
+          innerNote="成長投資枠で使える上限"
+          outerNote="残り600万円はつみたて投資枠のみ"
+        />
+      </Figure>
+
       <p>
         この限度額は<strong>買ったときの値段（簿価）で数えます</strong>。
         100万円で買ったものが150万円に値上がりしても、使った枠は100万円のままです。
@@ -93,6 +141,19 @@ export default function Page() {
         このとき復活するのは<strong>買ったときの100万円ぶん</strong>で、150万円ではありません。
         そして<strong>復活するのは翌年</strong>です。売った年のうちに同じ枠を使い直すことはできません。
       </div>
+
+      <Figure
+        title="100万円で買ったものが150万円になって売った場合、復活する枠は買ったときの100万円ぶんで、復活するのは翌年。売った年のうちには使い直せない"
+        caption="復活するのは値上がり後の150万円ではなく、買ったときの100万円です。そして翌年まで待ちます。"
+      >
+        <Timeline
+          items={[
+            { date: '1年目', label: '100万円で買う', sub: '枠を100万円使う', mark: 'plain' },
+            { date: '2年目', label: '150万円で売る', sub: 'この年は復活しない', mark: 'ng' },
+            { date: '3年目', label: '100万円ぶん復活', sub: '簿価ぶんだけ戻る', mark: 'ok' },
+          ]}
+        />
+      </Figure>
 
       <p>
         したがって「年内に売って年内に買い直す」ことはできません。
