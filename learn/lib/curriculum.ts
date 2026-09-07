@@ -130,8 +130,9 @@ export const chapters: ChapterDef[] = [
     title: '投資とは何か',
     description: '貯蓄との違い、インフレがなぜ「何もしないリスク」になるのか。',
     part: 'basics',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'stable',
+    updatedAt: '2026-09-07',
     shikaku: ['fp3'],
   },
   {
@@ -139,8 +140,9 @@ export const chapters: ChapterDef[] = [
     title: 'リスクとリターン',
     description: '投資の「リスク」は損失ではなく振れ幅。標準偏差で測るとはどういうことか。',
     part: 'basics',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'stable',
+    updatedAt: '2026-09-07',
     shikaku: ['gaimuin2', 'fp3', 'fp2'],
   },
   {
@@ -159,8 +161,9 @@ export const chapters: ChapterDef[] = [
     title: '分散投資',
     description: '相関とは何か。GPIFの基本ポートフォリオを例に、分散が効く仕組みを見る。',
     part: 'basics',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'stable',
+    updatedAt: '2026-09-07',
     shikaku: ['gaimuin2', 'fp2'],
   },
   {
@@ -168,16 +171,18 @@ export const chapters: ChapterDef[] = [
     title: 'コスト',
     description: '信託報酬・売買手数料・スプレッド。リターンは不確実だが、コストは確実なマイナス。',
     part: 'basics',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'slow',
+    updatedAt: '2026-09-07',
   },
   {
     slug: 'index-active',
     title: '効率的市場仮説とインデックス／アクティブ',
     description: '「市場に勝つ」が難しいとされる理由と、その主張がどこまで成り立つのか。',
     part: 'basics',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'stable',
+    updatedAt: '2026-09-07',
   },
 
   // ---- 第2部 資産クラス別 ----

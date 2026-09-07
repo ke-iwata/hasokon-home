@@ -115,9 +115,6 @@ describe('章と参考文献のつながり', () => {
       'nta-1476', // 20章 特定口座
       'mof-jgb', // 8章 債券
       'jsda-gaimuin', // 35章 資格
-      'toushin-basic', // 9章 投資信託
-      'gpif-portfolio', // 4章 分散投資
-      'markowitz-1952', // 4章 分散投資
       'barber-odean-2000', // 29章 短期売買
       'barber-2014-daytrade', // 29章 短期売買
       'bengen-1994', // 33章 出口戦略

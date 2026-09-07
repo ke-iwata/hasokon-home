@@ -60,6 +60,27 @@ export function netRate(grossRate: number, feeRate: number): number {
   return grossRate - feeRate;
 }
 
+/**
+ * インフレが続いたときに、いまの1円が将来いくらの価値になるか（購買力）。
+ *
+ * 物価が上がると同じ金額で買えるものが減る。年2%のインフレが10年続けば、
+ * いまの100万円は約82万円ぶんの買い物しかできない。
+ * 「何もしない」ことがリスクだと言われるのはこの意味。
+ */
+export function purchasingPower(amount: number, inflation: number, years: number): number {
+  return amount / (1 + inflation) ** years;
+}
+
+/**
+ * 元本と、そのうち何割が値動きする資産かから、
+ * 値動きする側が指定の割合だけ下がったときの全体の下落率を出す。
+ *
+ * 「株を何割持つか」がそのまま「いくら減りうるか」を決めることを示すために使う。
+ */
+export function drawdownOf(riskyRatio: number, riskyFall: number): number {
+  return riskyRatio * riskyFall;
+}
+
 /** 図の1点。年と金額 */
 export interface Point {
   year: number;

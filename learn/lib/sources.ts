@@ -124,6 +124,22 @@ export const sources: Source[] = [
     checkedAt: '2026-09-07',
   },
   {
+    id: 'stat-cpi',
+    title: '消費者物価指数（CPI）',
+    publisher: '総務省統計局',
+    kind: 'gov',
+    url: 'https://www.stat.go.jp/data/cpi/',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'boj-price',
+    title: '「物価安定の目標」と「量的・質的金融緩和」',
+    publisher: '日本銀行',
+    kind: 'gov',
+    url: 'https://www.boj.or.jp/mopo/outline/qqe.htm',
+    checkedAt: '2026-09-07',
+  },
+  {
     id: 'mof-jgb',
     title: '個人向け国債',
     publisher: '財務省',
@@ -183,6 +199,15 @@ export const sources: Source[] = [
   },
 
   // ---- 論文 ----
+  {
+    id: 'sharpe-1991',
+    title: 'The Arithmetic of Active Management, Financial Analysts Journal, 47(1), 7-9',
+    publisher: 'Financial Analysts Journal',
+    author: 'Sharpe, W. F.',
+    year: 1991,
+    kind: 'paper',
+    checkedAt: '2026-09-07',
+  },
   {
     id: 'markowitz-1952',
     title: 'Portfolio Selection, The Journal of Finance, 7(1), 77-91',
