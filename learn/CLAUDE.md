@@ -12,9 +12,11 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 - basePath は `/learn`。dev は 3002番（tools=3000・games=3001 と同時に立てられる）
 - 仕様は [docs/features/learn-toshi.md](../docs/features/learn-toshi.md)
 
-**現状：全35章の本文があり、セクションごと公開前。**
-全章 `stage: 'preview'` で `noindex`、sitemap にも出ません。
-**ホームからのリンクも張っていません**（運営者の指示）。
+**現状：2026-09-07に全35章を公開しました。**
+全章 `stage: 'public'` で、sitemap にも llms.txt にも載り、ホームからリンクしています。
+
+**一度公開したものを引っ込めるのは別の作業です**（URLがインデックスされるので、
+消すと404になる。ルートの CLAUDE.md「フラグは『まだ公開していない』ためのもの」）。
 
 ## この章立ての前提を壊さないこと
 
@@ -162,6 +164,8 @@ tools / games と同じ設定（`lib/adsense.ts` / `lib/analytics.ts`）。
 
 ルートの CLAUDE.md を参照。**本番タグは運営者の承認必須**（mainへのpushまでが自律範囲）。
 
-公開するときは、`stage` を上げるPRで
-`home/index.html`・`home/llms.txt`・`home/sitemap.xml` にも足すこと
-（`home/` にはビルド工程が無く `stage` が効かない）。
+**章を増やしたときは、`home/` 側も手で直すこと**（ビルド工程が無く `stage` が効かない）:
+
+- `home/llms.txt` に1行足す（`scripts/test/llms-txt.test.mjs` が落とす）
+- `home/index.html` と `home/404.html` の「全◯章」を直す
+  （`scripts/test/home-nav.test.mjs` が落とす）

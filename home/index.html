@@ -522,6 +522,7 @@
         <div class="hero-actions">
           <a class="btn btn-primary" href="/tools/">ツールを見る</a>
           <a class="btn btn-primary" href="/games/">ゲームで遊ぶ</a>
+          <a class="btn btn-primary" href="/learn/">投資を学ぶ</a>
         </div>
       </div>
 
@@ -753,6 +754,32 @@
             <span class="card-name">サイコロ</span>
             <span class="card-desc">1〜10個まで同時に振れて、合計も出ます</span>
           </a>
+        </div>
+      </section>
+
+      <!--
+        読み物（投資の教科書）。ツール・ゲームと違って1ページ1機能の一覧ではないので、
+        カードの並びにせず、入口を1つ置く形にしている。
+        `.quicknav` はカード一覧への近道なので、ここは載せない
+        （scripts/test/home-nav.test.mjs はカードを持つ節だけを対象にしている）。
+        章数は手書き。learn/lib/curriculum.ts とずれたら
+        scripts/test/home-nav.test.mjs が落とす
+      -->
+      <section id="learn">
+        <div class="section-head">
+          <h2>読み物：投資の教科書</h2>
+          <p class="section-desc">株式・債券から暗号資産・デイトレードまで、投資を体系的に学べる全35章。記述の根拠は各章の末尾に、一次資料へのリンクつきで並べています。</p>
+        </div>
+        <div class="about">
+          <p>
+            「どの商品を買うか」より前に効く原理から始めて、商品ごとの性質、制度と税金、そして実際の手（口座開設・注文・積立・リバランス・出口戦略）まで、この順に並べています。
+          </p>
+          <p>
+            特定の銘柄や商品の推奨、売買時期の助言はしません。一般的・客観的な情報提供に徹しています。
+          </p>
+          <p>
+            <a href="/learn/">全35章の目次を見る</a>
+          </p>
         </div>
       </section>
 

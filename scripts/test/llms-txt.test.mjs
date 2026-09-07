@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { parseRegistry, readRepoFile } from '../lib/registry.mjs';
+import { loadChapters, parseRegistry, readRepoFile } from '../lib/registry.mjs';
 
 /**
  * llms.txt（AIアシスタント向けのサイト案内）のテスト。
@@ -13,7 +13,8 @@ import { parseRegistry, readRepoFile } from '../lib/registry.mjs';
  * 見張っているのは**リンク切れと載せ忘れ**。llms.txt は手書きの静的ファイルで、
  * ビルド工程もリンクチェックも通らないため、ツールを増やしたときの追記漏れや
  * slug変更による死んだリンクを機械で拾える場所がここしかない。
- * 判定の基準は tools / games の registry（一覧・sitemap と同じ単一の情報源）。
+ * 判定の基準は tools / games の registry と learn の curriculum
+ * （どれも一覧・sitemap と同じ単一の情報源）。
  */
 
 const repoRoot = new URL('../../', import.meta.url);
@@ -31,11 +32,17 @@ const ORIGIN = 'https://hasokon.com';
  */
 const TOOLS = parseRegistry(read('tools/lib/registry.ts'), 'tools');
 const GAMES = parseRegistry(read('games/lib/registry.ts'), 'games');
+/** learn（投資の教科書）の章。表示名は title を name に読み替えて返ってくる */
+const CHAPTERS = loadChapters();
 
 /** 公開中のページ（URL → 表示名）。llms.txt に載っていなければならないもの */
 const PUBLISHED = new Map([
   ...TOOLS.filter((t) => t.stage === 'public').map((t) => [`${ORIGIN}/tools/${t.slug}/`, t.name]),
   ...GAMES.filter((g) => g.stage === 'public').map((g) => [`${ORIGIN}/games/${g.slug}/`, g.name]),
+  ...CHAPTERS.filter((c) => c.stage === 'public').map((c) => [
+    `${ORIGIN}/learn/${c.slug}/`,
+    c.name,
+  ]),
 ]);
 
 // ---------------------------------------------------------------- llms.txt
@@ -63,7 +70,7 @@ function sourceOf(url) {
   if (path === '/') return 'home/index.html';
   if (/^\/[\w.-]+\.html$/.test(path)) return `home${path}`;
 
-  const m = /^\/(tools|games)\/(.*)$/.exec(path);
+  const m = /^\/(tools|games|learn)\/(.*)$/.exec(path);
   if (!m) return null;
   return `${m[1]}/app/${m[2]}page.tsx`;
 }
@@ -79,8 +86,8 @@ describe('llms.txt の形式', () => {
       'H1の直後にサイトの要約（引用ブロック）が要る',
     );
     assert.ok(
-      LLMS_TXT.split('\n').filter((l) => l.startsWith('## ')).length >= 2,
-      'ツールとゲームのセクションが要る',
+      LLMS_TXT.split('\n').filter((l) => l.startsWith('## ')).length >= 3,
+      'ツール・ゲーム・投資の教科書のセクションが要る',
     );
     assert.ok(LLMS_TXT.endsWith('\n'), '末尾は改行で終わる');
   });
@@ -131,10 +138,10 @@ describe('llms.txt のリンク先', () => {
 
   it('公開前・削除済みのツールやゲームを載せていない', () => {
     const published = new Set(
-      [...TOOLS, ...GAMES].filter((e) => e.stage === 'public').map((e) => e.slug),
+      [...TOOLS, ...GAMES, ...CHAPTERS].filter((e) => e.stage === 'public').map((e) => e.slug),
     );
     for (const { url } of LINKS) {
-      const m = /\/(?:tools|games)\/([^/]+)\/$/.exec(url);
+      const m = /\/(?:tools|games|learn)\/([^/]+)\/$/.exec(url);
       if (!m) continue;
       if (['about', 'privacy', 'contact'].includes(m[1])) continue; // 固定ページ
       assert.ok(published.has(m[1]), `registry に公開中のエントリが無い: ${url}`);
@@ -146,12 +153,13 @@ describe('llms.txt と registry の同期', () => {
   it('レジストリを読めている（書式を変えたら parseRegistry も直す）', () => {
     assert.ok(TOOLS.length >= 15, `ツールの読み取り件数が不自然: ${TOOLS.length}`);
     assert.ok(GAMES.length >= 8, `ゲームの読み取り件数が不自然: ${GAMES.length}`);
-    for (const e of [...TOOLS, ...GAMES]) {
+    assert.ok(CHAPTERS.length >= 30, `章の読み取り件数が不自然: ${CHAPTERS.length}`);
+    for (const e of [...TOOLS, ...GAMES, ...CHAPTERS]) {
       assert.ok(e.slug && e.name, `slug/name を読めていないエントリがある: ${JSON.stringify(e)}`);
     }
   });
 
-  it('公開中のツール・ゲームがすべて載っている', () => {
+  it('公開中のツール・ゲーム・章がすべて載っている', () => {
     const listed = new Set(LINKS.map((l) => l.url));
     for (const [url, name] of PUBLISHED) {
       assert.ok(listed.has(url), `「${name}」が llms.txt に無い（増やしたら1行足すこと）: ${url}`);
