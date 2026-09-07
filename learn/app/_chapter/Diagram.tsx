@@ -8,6 +8,10 @@
 /**
  * 上下の順位を示す積み木。
  * 倒産したときの弁済順位のように「先に払われる／後ろに回される」を出す。
+ *
+ * **`note` は短くすること。** 矢印に沿って縦に置くので、使える長さは段数で決まる。
+ * 目安は「段数 × 52px ÷ 2 ÷ 11px」文字（4段なら片側9文字ほど）。
+ * 超えると上下のラベルどうしが重なる（Playwrightの実測で見つかる）。
  */
 export function Ladder({
   steps,
@@ -298,9 +302,21 @@ export function OrderBook({
  */
 export function Flow({ steps }: { steps: { label: string; sub?: string }[] }) {
   const W = 360;
-  const H = 74;
   const gap = 14;
   const boxW = (W - gap * (steps.length - 1)) / steps.length;
+  // 説明は箱の幅を超えるので折り返す。日本語はほぼ全角なので
+  // 文字数 × フォントサイズで幅を見積もれる（Timeline と同じ）
+  const SUB_FONT = 11;
+  const maxChars = Math.max(4, Math.floor((boxW - 8) / SUB_FONT));
+  const wrap = (t: string) => {
+    const lines: string[] = [];
+    for (let i = 0; i < t.length; i += maxChars) lines.push(t.slice(i, i + maxChars));
+    return lines;
+  };
+  const subLines = steps.map((s) => (s.sub ? wrap(s.sub) : []));
+  const maxLines = Math.max(0, ...subLines.map((l) => l.length));
+  const boxH = 30 + maxLines * 14;
+  const H = boxH + 16;
 
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
@@ -314,21 +330,29 @@ export function Flow({ steps }: { steps: { label: string; sub?: string }[] }) {
         return (
           <g key={s.label}>
             <rect
-              x={x} y={8} width={boxW} height={52} rx="6"
+              x={x} y={8} width={boxW} height={boxH} rx="6"
               fill="var(--surface-2)" stroke="var(--border)" strokeWidth="1"
             />
-            <text x={x + boxW / 2} y={s.sub ? 30 : 39} className="diagram-label"
-              textAnchor="middle">
+            <text
+              x={x + boxW / 2} y={subLines[i].length ? 27 : 8 + boxH / 2 + 5}
+              className="diagram-label" textAnchor="middle"
+            >
               {s.label}
             </text>
-            {s.sub && (
-              <text x={x + boxW / 2} y={46} className="chart-tick" textAnchor="middle">
-                {s.sub}
+            {subLines[i].map((line, li) => (
+              <text
+                key={line + li}
+                x={x + boxW / 2}
+                y={43 + li * 14}
+                className="chart-tick"
+                textAnchor="middle"
+              >
+                {line}
               </text>
-            )}
+            ))}
             {i < steps.length - 1 && (
               <line
-                x1={x + boxW + 2} x2={x + boxW + gap - 4} y1={34} y2={34}
+                x1={x + boxW + 2} x2={x + boxW + gap - 4} y1={8 + boxH / 2} y2={8 + boxH / 2}
                 stroke="var(--muted)" strokeWidth="1.5" markerEnd="url(#flow-arrow)"
               />
             )}

@@ -120,10 +120,17 @@ describe('前後ナビ', () => {
     }
   });
 
-  it('未執筆の章から引くと空になる（ページが無いので当然）', () => {
-    const todo = chapters.find((c) => c.stage === 'wip');
-    expect(todo).toBeDefined();
-    expect(neighborsOf(todo!.slug)).toEqual({});
+  it('登録されていない slug から引くと空になる', () => {
+    // かつては未執筆（wip）の章で確かめていたが、全章を書いたので対象が無くなった。
+    // 見張りたいのは「一覧に無いものを渡しても前後が作られない」ことなので、
+    // 未登録の slug で確かめる
+    expect(neighborsOf('sonzai-shinai')).toEqual({});
+  });
+
+  it('いまは全章の本文がある（未執筆の章が残っていない）', () => {
+    // 章を足したら、この前提は変わる。そのときはこのテストを書き換えること
+    expect(chapters.filter((c) => c.stage === 'wip')).toHaveLength(0);
+    expect(writtenChapters).toHaveLength(chapters.length);
   });
 });
 
