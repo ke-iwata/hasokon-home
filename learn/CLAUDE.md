@@ -12,8 +12,9 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 - basePath は `/learn`。dev は 3002番（tools=3000・games=3001 と同時に立てられる）
 - 仕様は [docs/features/learn-toshi.md](../docs/features/learn-toshi.md)
 
-**現状：セクションごと公開前。** 全章 `stage` は `wip` / `preview` で `noindex`、
-sitemap にも出ません。**ホームからのリンクも張っていません**（運営者の指示）。
+**現状：全35章の本文があり、セクションごと公開前。**
+全章 `stage: 'preview'` で `noindex`、sitemap にも出ません。
+**ホームからのリンクも張っていません**（運営者の指示）。
 
 ## この章立ての前提を壊さないこと
 
@@ -105,6 +106,7 @@ sitemap にも出ません。**ホームからのリンクも張っていませ�
 ## 章の追加手順
 
 1. `lib/curriculum.ts` の該当の章の `stage` を `wip` → `preview` にし、`updatedAt` を入れる
+   （**いまは未執筆の章が無いので、章を足すところから始まる**）
 2. `app/{slug}/page.tsx` を作る。**中身は `<Chapter slug="..." sources={[...]}>` で包む**
    （免責・参考文献・前後ナビ・JSON-LD・パンくずはこれが出す）
 3. `metadata` に `title` / `description` / `alternates.canonical` /
