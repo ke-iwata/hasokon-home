@@ -9,11 +9,11 @@ import { COPYRIGHT_HOLDER, OGP_IMAGE, SITE_NAME, SITE_URL } from '@/lib/curricul
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME}｜体系的に学ぶ投資の基礎から実践まで`,
+    default: `${SITE_NAME}｜hasokon.com`,
     template: '%s',
   },
   description:
-    '株式・債券・投資信託から暗号資産・デイトレードまで、投資を体系的に学べる無料の教科書。出典はすべて一次資料へのリンクつきで明示しています。',
+    'hasokon.com の学習ページ。仕組みそのものを理解するための読み物を分野ごとに置いています。記述の根拠は一次資料へのリンクつきで明示しています。',
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,

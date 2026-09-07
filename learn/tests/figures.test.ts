@@ -14,7 +14,7 @@ import { writtenChapters } from '@/lib/curriculum';
 const appDir = fileURLToPath(new URL('../app/', import.meta.url));
 const chapterSrc = writtenChapters.map((c) => ({
   slug: c.slug,
-  src: readFileSync(`${appDir}${c.slug}/page.tsx`, 'utf8'),
+  src: readFileSync(`${appDir}${c.subject}/${c.slug}/page.tsx`, 'utf8'),
 }));
 
 /** `<Figure ...>` の開始タグを取り出す */
@@ -47,7 +47,7 @@ describe('図解の約束', () => {
   it('Figure は共通部品を import している（生の svg を章に直書きしない）', () => {
     for (const { slug, src } of chapterSrc) {
       if (!src.includes('<Figure')) continue;
-      expect(src, `${slug}`).toMatch(/from '\.\.\/_chapter\/Figure'/);
+      expect(src, `${slug}`).toMatch(/from '\.\.\/\.\.\/_chapter\/Figure'/);
     }
   });
 

@@ -6,16 +6,16 @@ import { writtenChapters } from '@/lib/curriculum';
 
 const appDir = fileURLToPath(new URL('../app/', import.meta.url));
 
-/** 章ページ（app/{slug}/page.tsx）の中身を読む */
-function pageSource(slug: string): string {
-  return readFileSync(`${appDir}${slug}/page.tsx`, 'utf8');
+/** 章ページ（app/{subject}/{slug}/page.tsx）の中身を読む */
+function pageSource(chapter: { subject: string; slug: string }): string {
+  return readFileSync(`${appDir}${chapter.subject}/${chapter.slug}/page.tsx`, 'utf8');
 }
 
 /** ページが Chapter に渡している sources の配列からIDを取り出す */
-function referencedIds(slug: string): string[] {
-  const src = pageSource(slug);
+function referencedIds(chapter: { subject: string; slug: string }): string[] {
+  const src = pageSource(chapter);
   const m = src.match(/sources=\{\[([^\]]*)\]\}/s);
-  if (!m) throw new Error(`${slug}: Chapter に sources を渡していない`);
+  if (!m) throw new Error(`${chapter.slug}: Chapter に sources を渡していない`);
   return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]);
 }
 
@@ -83,13 +83,13 @@ describe('参考文献のマスター', () => {
 describe('章と参考文献のつながり', () => {
   it('本文のある章はすべて参考文献を挙げている（出典なしの章を作らない）', () => {
     for (const c of writtenChapters) {
-      expect(referencedIds(c.slug).length, `${c.slug} に参考文献が無い`).toBeGreaterThan(0);
+      expect(referencedIds(c).length, `${c.slug} に参考文献が無い`).toBeGreaterThan(0);
     }
   });
 
   it('章が参照しているIDはすべてマスターに登録されている', () => {
     for (const c of writtenChapters) {
-      for (const id of referencedIds(c.slug)) {
+      for (const id of referencedIds(c)) {
         expect(() => sourceById(id), `${c.slug} → ${id}`).not.toThrow();
       }
     }
@@ -98,7 +98,7 @@ describe('章と参考文献のつながり', () => {
   it('制度に触れる章は官公庁の資料を挙げている', () => {
     // NISA・税金のように改正で変わる話は、解説ではなく一次資料を根拠にする
     for (const c of writtenChapters.filter((c) => c.volatility === 'annual')) {
-      const kinds = resolveSources(referencedIds(c.slug)).map((s) => s.kind);
+      const kinds = resolveSources(referencedIds(c)).map((s) => s.kind);
       expect(kinds, `${c.slug} に官公庁の出典が無い`).toContain('gov');
     }
   });
@@ -106,7 +106,7 @@ describe('章と参考文献のつながり', () => {
   it('マスターに登録した文献は、どこかの章から参照されている（死蔵しない）', () => {
     // 参照されていない文献は、書きかけの章のために先に足したものか、
     // 章から参照を消したときの取り残し。前者なら章を書くまで足さない
-    const used = new Set(writtenChapters.flatMap((c) => referencedIds(c.slug)));
+    const used = new Set(writtenChapters.flatMap((c) => referencedIds(c)));
     const unused = sources.filter((s) => !used.has(s.id)).map((s) => s.id);
     // 【許容リスト】これから書く章のために置いてある文献はここに書く。
     // 章を書いたらこのリストから外すこと

@@ -2,7 +2,14 @@ import Link from 'next/link';
 import Breadcrumb from '../Breadcrumb';
 import AdUnit from '../AdUnit';
 import { articleFor, breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
-import { chapterBySlug, neighborsOf, parts } from '@/lib/curriculum';
+import {
+  chapterBySlug,
+  chapterPath,
+  neighborsOf,
+  partsOfSubject,
+  subjectBySlug,
+  subjectPath,
+} from '@/lib/curriculum';
 import { resolveSources, SOURCE_KIND_LABEL } from '@/lib/sources';
 
 /**
@@ -28,7 +35,8 @@ export default function Chapter({
   children: React.ReactNode;
 }) {
   const chapter = chapterBySlug(slug);
-  const part = parts.find((p) => p.id === chapter.part);
+  const subject = subjectBySlug(chapter.subject);
+  const part = partsOfSubject(chapter.subject).find((p) => p.id === chapter.part);
   const trail = breadcrumbFor(slug);
   const { prev, next } = neighborsOf(slug);
   const refs = resolveSources(sources);
@@ -87,7 +95,7 @@ export default function Chapter({
 
       <nav className="chapter-nav" aria-label="章の移動">
         {prev ? (
-          <Link className="chapter-nav-prev" href={`/${prev.slug}/`}>
+          <Link className="chapter-nav-prev" href={chapterPath(prev)}>
             <span>前の章</span>
             {prev.title}
           </Link>
@@ -95,7 +103,7 @@ export default function Chapter({
           <span />
         )}
         {next ? (
-          <Link className="chapter-nav-next" href={`/${next.slug}/`}>
+          <Link className="chapter-nav-next" href={chapterPath(next)}>
             <span>次の章</span>
             {next.title}
           </Link>
@@ -105,7 +113,7 @@ export default function Chapter({
       </nav>
 
       <p className="chapter-toc-back">
-        <Link href="/">目次にもどる</Link>
+        <Link href={subjectPath(subject.slug)}>{subject.name}の目次にもどる</Link>
       </p>
     </div>
   );
@@ -122,7 +130,7 @@ export function Disclaimer() {
   return (
     <aside className="disclaimer" aria-label="免責事項">
       <p>
-        <strong>この教科書について。</strong>
+        <strong>この学習ページについて。</strong>
         一般的・客観的な情報の提供を目的とした教育コンテンツです。
         特定の銘柄・商品の推奨や、売買時期の助言は行いません
         （投資助言・代理業の登録をしていないため）。

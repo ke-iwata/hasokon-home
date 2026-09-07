@@ -81,8 +81,9 @@ export const VARIANTS = [
   {
     name: 'learn',
     out: 'learn/public/ogp.png',
-    title: '投資の教科書',
-    subtitle: '基礎から実践まで体系的に。出典つきで無料',
+    // セクションの名前（分野名ではない）。/learn/ の下に分野が並ぶ
+    title: '学ぶ',
+    subtitle: '仕組みそのものを理解するための読み物。出典つきで無料',
     theme: 'light',
   },
 ];
