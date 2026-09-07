@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { publicGames, robotsFor, SITE_URL } from '@/lib/registry';
 import { breadcrumbFor, breadcrumbList } from '@/lib/jsonld';
-import { CHAIN_MAX, FRUITS, MAX_TIER, OVER_LIMIT } from '@/lib/fruit-merge';
+import { CHAIN_MAX, HOLDS, MAX_TIER, OVER_LIMIT } from '@/lib/bouldering-merge';
 import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
@@ -11,47 +11,47 @@ import GameIcon from '@/app/GameIcon';
 /**
  * **名前に他社の商品名を使わないこと。**「スイカゲーム」は Aladdin X 社の
  * 商標なので、title・description・h1・slug のどこにも入れない
- * （docs/features/game-fruit-merge.md の「名称・権利の注意」）。
+ * （docs/features/game-bouldering-merge.md の「名称・権利の注意」）。
  * 検索の受け皿は「落とす」「合体」「物理パズル」といった一般語で作る
  */
-const title = 'フルーツ合体パズル 無料｜落として合体させる物理パズル';
+const title = 'ボルダリング合体パズル 無料｜落として合体させる物理パズル';
 const description =
-  '無料のフルーツ合体パズル。箱に果物を落として、同じ果物どうしをぶつけると1段大きい果物になります。さくらんぼからパイナップルまで11段階。連鎖を狙って高得点を目指す物理パズルです。インストール不要でブラウザからすぐ遊べます。';
+  '無料のボルダリング合体パズル。箱にホールドを落として、同じホールドどうしをぶつけると1段大きいホールドになります。カチからトップホールドまで11段階。連鎖を狙って高得点を目指す物理パズルです。インストール不要でブラウザからすぐ遊べます。';
 
 export const metadata: Metadata = {
   title,
   description,
-  alternates: { canonical: `${SITE_URL}/fruit-merge/` },
-  robots: robotsFor('fruit-merge'),
+  alternates: { canonical: `${SITE_URL}/bouldering-merge/` },
+  robots: robotsFor('bouldering-merge'),
 };
 
-const biggest = FRUITS[MAX_TIER].name;
-const order = FRUITS.map((f) => f.name).join(' → ');
+const biggest = HOLDS[MAX_TIER].name;
+const order = HOLDS.map((f) => f.name).join(' → ');
 
 const faq = [
   {
     q: 'スマホでも遊べますか？',
-    a: '遊べます。箱の上を指でなぞって落とす場所を決め、指を離すと果物が落ちます。押している位置に縦の点線（落下予測線）が出るので、狙いをつけてから離してください。箱・スコア・次の果物の予告は、小さめの画面でも1画面に収まるようにしてあります。',
+    a: '遊べます。箱の上を指でなぞって落とす場所を決め、指を離すとホールドが落ちます。押している位置に縦の点線（落下予測線）が出るので、狙いをつけてから離してください。箱・スコア・次のホールドの予告は、小さめの画面でも1画面に収まるようにしてあります。',
   },
   {
     q: 'キーボードでも操作できますか？',
     a: 'できます。← → で落とす場所を動かし、スペースキー（または Enter、↓）で落とします。',
   },
   {
-    q: '果物は何種類ありますか？',
-    a: `11種類です。小さい順に ${order} で、同じ果物どうしが触れると1つ上の果物になります。落ちてくるのは小さい方の5種類だけなので、大きい果物は合体でしか作れません。`,
+    q: 'ホールドは何種類ありますか？',
+    a: `11種類です。小さい順に ${order} で、同じホールドどうしが触れると1つ上のホールドになります。落ちてくるのは小さい方の5種類だけなので、大きいホールドは合体でしか作れません。`,
   },
   {
     q: '得点の仕組みは？',
-    a: `合体してできた果物が大きいほど高得点です（1つ上がるごとに1点、3点、6点…と増えていき、いちばん大きい${biggest}を作ると55点）。さらに、1回の合体が次の合体を呼ぶ「連鎖」が起きると、その回数ぶん点が倍になります（最大${CHAIN_MAX}倍）。`,
+    a: `合体してできたホールドが大きいほど高得点です（1つ上がるごとに1点、3点、6点…と増えていき、いちばん大きい${biggest}を作ると55点）。さらに、1回の合体が次の合体を呼ぶ「連鎖」が起きると、その回数ぶん点が倍になります（最大${CHAIN_MAX}倍）。`,
   },
   {
-    q: 'いちばん大きい果物を作ったらどうなりますか？',
-    a: `${biggest}どうしをぶつけると、2つとも消えてボーナスが入ります。箱の中が詰まってきたときに空きを作る唯一の手なので、大きい果物は隅ではなく取り回しやすい場所に置いておくと有利です。`,
+    q: 'いちばん大きいホールドを作ったらどうなりますか？',
+    a: `${biggest}どうしをぶつけると、2つとも消えてボーナスが入ります。箱の中が詰まってきたときに空きを作る唯一の手なので、大きいホールドは隅ではなく取り回しやすい場所に置いておくと有利です。`,
   },
   {
     q: 'ゲームオーバーの条件は？',
-    a: `箱の上のほうに引いてある線を、積み上がった果物が${OVER_LIMIT}秒こえたままだと終わりです。こえているあいだは線が点滅して警告するので、その間に合体させて山を下げられれば続けられます。落とした直後のまだ落ちている果物は数えません。`,
+    a: `箱の上のほうに引いてある線を、積み上がったホールドが${OVER_LIMIT}秒こえたままだと終わりです。こえているあいだは線が点滅して警告するので、その間に合体させて山を下げられれば続けられます。落とした直後のまだ落ちているホールドは数えません。`,
   },
   {
     q: '1プレイはどれくらいかかりますか？',
@@ -67,15 +67,15 @@ const faq = [
   },
 ];
 
-const trail = breadcrumbFor('fruit-merge');
+const trail = breadcrumbFor('bouldering-merge');
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'VideoGame',
-      name: 'フルーツ合体パズル',
-      url: `${SITE_URL}/fruit-merge/`,
+      name: 'ボルダリング合体パズル',
+      url: `${SITE_URL}/bouldering-merge/`,
       gamePlatform: 'Web Browser',
       applicationCategory: 'Game',
       operatingSystem: 'Web',
@@ -107,9 +107,9 @@ export default function Page() {
 
       <Breadcrumb trail={trail} />
 
-      <h1>フルーツ合体パズル</h1>
+      <h1>ボルダリング合体パズル</h1>
       <p className="lead">
-        箱に果物を落として、<strong>同じ果物どうしをぶつけると1段大きい果物になります</strong>。
+        箱にホールドを落として、<strong>同じホールドどうしをぶつけると1段大きいホールドになります</strong>。
         さくらんぼから{biggest}まで11段階。連鎖をつなげて高得点を狙いましょう。
       </p>
 
@@ -119,9 +119,9 @@ export default function Page() {
 
       <h2>遊び方</h2>
       <ol>
-        <li>箱の上を左右になぞって落とす場所を決め、指（マウス）を離すと果物が落ちます</li>
+        <li>箱の上を左右になぞって落とす場所を決め、指（マウス）を離すとホールドが落ちます</li>
         <li>
-          <strong>同じ果物どうしが触れると、1段大きい果物になります</strong>
+          <strong>同じホールドどうしが触れると、1段大きいホールドになります</strong>
           （小さい順に {order}）
         </li>
         <li>合体が次の合体を呼ぶと<strong>連鎖</strong>になり、点が最大{CHAIN_MAX}倍まで伸びます</li>
@@ -129,7 +129,7 @@ export default function Page() {
           いちばん大きい{biggest}どうしは、合体すると<strong>2つとも消えてボーナス</strong>です
         </li>
         <li>
-          箱の上の線を果物が<strong>{OVER_LIMIT}秒こえたまま</strong>だとゲームオーバー。
+          箱の上の線をホールドが<strong>{OVER_LIMIT}秒こえたまま</strong>だとゲームオーバー。
           こえているあいだは線が点滅して知らせます
         </li>
       </ol>
@@ -141,16 +141,16 @@ export default function Page() {
       <h2>コツ</h2>
       <ul>
         <li>
-          <strong>大きい果物は箱の下、小さい果物は上。</strong>大きいものを上に乗せると、
-          その下の小さい果物にさわれなくなって合体させられません。落とす前に、
-          いま持っている果物と同じものがどこにあるかを見ましょう
+          <strong>大きいホールドは箱の下、小さいホールドは上。</strong>大きいものを上に乗せると、
+          その下の小さいホールドにさわれなくなって合体させられません。落とす前に、
+          いま持っているホールドと同じものがどこにあるかを見ましょう
         </li>
         <li>
-          <strong>同じ果物は端に寄せてから合体させます。</strong>まんなかで合体させると
+          <strong>同じホールドは端に寄せてから合体させます。</strong>まんなかで合体させると
           左右どちらにも山ができてしまい、次に落とす場所が無くなります
         </li>
         <li>
-          <strong>連鎖は「1段上の果物の隣」に落とすと起きます。</strong>
+          <strong>連鎖は「1段上のホールドの隣」に落とすと起きます。</strong>
           たとえば さくらんぼ 2つの隣に いちご があると、さくらんぼが合体して
           いちごになった瞬間にもう1回合体します
         </li>
@@ -168,7 +168,7 @@ export default function Page() {
         </li>
       </ul>
 
-      <h2>フルーツ合体パズルについて</h2>
+      <h2>ボルダリング合体パズルについて</h2>
       <p>
         「同じものを落として合体させる」タイプの物理パズルは、2023年に流行してから
         定番のジャンルになりました（このジャンルが広く知られるきっかけになった
@@ -177,8 +177,8 @@ export default function Page() {
         短い時間に何度も遊びたくなるのが特徴です。
       </p>
       <p>
-        このページのフルーツ合体パズルは、果物の絵柄も物理も自前で作ったものです。
-        果物は円として扱い、重力・反発・摩擦・重なりの押し戻しを
+        このページのボルダリング合体パズルは、ホールドの形も物理も自前で作ったものです。ホールドの種類名（ガバ・カチ・ピンチなど）はクライミングの一般的な用語で、特定メーカーの商品ホールドの形はなぞっていません。
+        ホールドは円として扱い、重力・反発・摩擦・重なりの押し戻しを
         ブラウザの中だけで計算しています。サーバーとのやりとりはありません。
       </p>
 
@@ -195,7 +195,7 @@ export default function Page() {
       <h2>他のゲーム</h2>
       <div className="game-grid">
         {publicGames
-          .filter((g) => g.slug !== 'fruit-merge')
+          .filter((g) => g.slug !== 'bouldering-merge')
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">

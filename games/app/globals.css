@@ -795,11 +795,11 @@ ol {
   touch-action: none;
 }
 
-/* ---- フルーツ合体パズル（docs/features/game-fruit-merge.md） ----
-   箱は幅1×高さ1.5の座標（lib/fruit-merge.ts）。canvas も同じ比で置く。
+/* ---- ボルダリング合体パズル（docs/features/game-bouldering-merge.md） ----
+   箱は幅1×高さ1.5の座標（lib/bouldering-merge.ts）。canvas も同じ比で置く。
    ピンボールと同じ形の指定だが、こちらは操作が箱の上のなぞりだけなので
    下のボタンの行が無く、そのぶん --chrome が小さい */
-.fm-stage {
+.bm-stage {
   position: relative;
   width: 100%;
   /* 箱以外（状態36・記録34・補足23・余白と内側の余白）の実測 */
@@ -812,7 +812,7 @@ ol {
   aspect-ratio: 1 / 1.5;
 }
 
-.fm-stage canvas {
+.bm-stage canvas {
   width: 100%;
   height: 100%;
   border: 1px solid var(--border);
@@ -827,7 +827,7 @@ ol {
 /* ゲームオーバーの覆い。**文字の色を明示する。**
    箱は明暗どちらのテーマでも暗いままなので、`--text` を継ぐと
    明るいテーマのとき暗い文字が暗い覆いに乗って読めなくなる（実測） */
-.fm-overlay {
+.bm-overlay {
   position: absolute;
   inset: 0;
   display: flex;
@@ -843,20 +843,20 @@ ol {
 
 /* スコアと予告の行。**折り返させない。** 2行になると 320×568 で
    card が 574px になり、箱が画面から出る（実測。1行なら 538px） */
-.fm-bar {
+.bm-bar {
   flex-wrap: nowrap;
 }
 
-/* 次に落ちる果物の予告。**丸の大きさは段によらず一定**にする
+/* 次に落ちるホールドの予告。**丸の大きさは段によらず一定**にする
    （段ごとに変えると行の高さが変わって箱が上下する） */
-.fm-next {
+.bm-next {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   white-space: nowrap;
 }
 
-.fm-chip {
+.bm-chip {
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -864,9 +864,9 @@ ol {
   box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.25);
 }
 
-/* 果物の名前。**幅を決め打つ**（2文字の「かき」と5文字の「さくらんぼ」で
+/* ホールドの名前。**幅を決め打つ**（2文字の「かき」と5文字の「さくらんぼ」で
    行の幅が変わると、そのたびに箱が動いて見える） */
-.fm-next-name {
+.bm-next-name {
   display: inline-block;
   min-width: 5em;
   color: var(--text);
@@ -875,7 +875,7 @@ ol {
 
 /* 確認用の操作（?debug 付きでURLを開いたときだけ出る）。
    仕様書「公開の条件」の2を運営者が再現するための入口 */
-.fm-debug {
+.bm-debug {
   justify-content: center;
   margin: 8px 0;
 }
