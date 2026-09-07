@@ -454,6 +454,18 @@ export const chapters: ChapterDef[] = [
  */
 export const publicChapters = chapters.filter((c) => c.stage === 'public');
 
+/**
+ * セクションそのものを公開しているか。
+ *
+ * **目次の `robots` と sitemap は、必ずこれを見て揃えること。**
+ * 別々に書くと「sitemap には出ているのに noindex」という食い違いが起きる
+ * （`tests/stage.test.ts` が2つの一致を見張っている）。
+ * 章を1つでも `public` にした時点で、目次も公開されるべき入口になる。
+ */
+export function sectionIsPublic(): boolean {
+  return publicChapters.length > 0;
+}
+
 /** 本文が書かれていて、URLを開けば読める章（`wip` 以外） */
 export const writtenChapters = chapters.filter((c) => c.stage !== 'wip');
 

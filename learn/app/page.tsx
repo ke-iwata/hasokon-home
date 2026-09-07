@@ -3,15 +3,23 @@ import Link from 'next/link';
 import Breadcrumb from './Breadcrumb';
 import { Disclaimer } from './_chapter/Chapter';
 import { breadcrumbList, breadcrumbTrail, HOME_URL } from '@/lib/jsonld';
-import { chapters, chaptersOfPart, parts, SITE_NAME, SITE_URL } from '@/lib/curriculum';
+import {
+  chapters,
+  chaptersOfPart,
+  parts,
+  sectionIsPublic,
+  SITE_NAME,
+  SITE_URL,
+} from '@/lib/curriculum';
 
 export const metadata: Metadata = {
   title: `${SITE_NAME}｜体系的に学ぶ投資の基礎から実践まで`,
   description:
     '株式・債券・投資信託から暗号資産・デイトレードまで、投資を体系的に学べる無料の教科書。全35章。出典はすべて一次資料へのリンクつきで明示しています。',
   alternates: { canonical: `${SITE_URL}/` },
-  // セクション全体がまだ公開前（docs/features/learn-toshi.md）
-  robots: { index: false, follow: false },
+  // 公開したかどうかは章の `stage` から決める。sitemap と同じ判断を見るので、
+  // 「sitemap には出ているのに noindex」という食い違いが起きない
+  robots: sectionIsPublic() ? undefined : { index: false, follow: false },
 };
 
 const written = chapters.filter((c) => c.stage !== 'wip').length;
