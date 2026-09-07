@@ -91,7 +91,9 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   断定的判断（金商法38条2号）は書かない。民間の個別商品名・証券会社名も出さない。
   **`learn/tests/compliance.test.ts` が本文を検査して落とす**
 - **出典のない章を作らない。** `learn/tests/sources.test.ts` が落とす
-- いまはセクションごと公開前。**ホームからリンクしていない**（運営者の指示）
+- **2026-09-07に全35章を公開した。** ホームからのリンク（`index.html` のヒーローと
+  読み物の節・`404.html` のカード）、`llms.txt` の36行、`sitemap.xml` の4本目が入っている。
+  章を増やしたら**ホームの「全◯章」も直す**（`scripts/test/home-nav.test.mjs` が落とす）
 
 ## リリースの約束
 
@@ -114,14 +116,15 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   測定IDと送信先ホスト（`hasokon.com`）は tools/games の `lib/analytics.ts` と揃えること
   （`scripts/test/home-analytics.test.mjs` がずれを検知する）。
   仕様は [docs/features/measurement-hygiene.md](./docs/features/measurement-hygiene.md)
-- `index.html` / `404.html` のサイト一覧は、ツールやゲームを増やしたら両方更新する
+- `index.html` / `404.html` のサイト一覧は、ツールやゲームを増やしたら両方更新する。
+  **読み物（learn）は1ページ1機能の一覧ではないので、カードの並びにせず入口を1つ置いている。**
+  `.quicknav` はカード一覧への近道なので載せていない（`scripts/test/home-nav.test.mjs` 参照）
 - `llms.txt` は AIアシスタント向けのサイト案内（[llmstxt.org](https://llmstxt.org/) 形式）。
   ツールやゲームを増やしたら、`index.html` / sitemap と同じように1行足す
   （`scripts/test/llms-txt.test.mjs` が registry との食い違いを検知する）。
   仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
-- `sitemap.xml` はインデックス形式で home / tools / games の3本を指す。
-  home のページを増やしたら `sitemap-home.xml` を更新する。
-  **learn はまだ足していない**（セクションごと公開前のため。公開するPRで4本目を足す）
+- `sitemap.xml` はインデックス形式で home / tools / games / learn の4本を指す。
+  home のページを増やしたら `sitemap-home.xml` を更新する
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
 - SNS共有時のサムネイル（`ogp.png`）は home / tools / games / learn に1枚ずつあり、

@@ -28,6 +28,8 @@ function entryOf(block) {
   return {
     slug: pick(/slug:\s*'([^']+)'/),
     name: pick(/name:\s*'([^']+)'/),
+    // learn（投資の教科書）の章は name ではなく title で持っている
+    title: pick(/title:\s*'([^']+)'/),
     description: pick(/description:\s*'([^']*)'/),
     // ツールだけが持つ分類。ゲームには無い
     category: pick(/category:\s*'([^']+)'/),
@@ -60,7 +62,8 @@ export function parseRegistry(source, arrayName, minEntries = 10) {
     );
   }
   for (const e of entries) {
-    if (!e.slug || !e.name || !e.stage) {
+    // 表示名は tools / games が `name`、learn の章が `title`。どちらか一方があればよい
+    if (!e.slug || !(e.name || e.title) || !e.stage) {
       throw new Error(`${arrayName} のエントリを読み切れない: ${JSON.stringify(e)}`);
     }
   }
@@ -79,6 +82,24 @@ export function loadRegistries() {
       kind: 'games',
     })),
   ];
+}
+
+/**
+ * learn（投資の教科書）の章を読む。
+ *
+ * **`loadRegistries()` には混ぜない。** あちらは
+ * `scripts/build-test-home.mjs` がテスト環境の一覧を作るのに使っていて、
+ * ツール・ゲームの `category` を前提にしている。章には category が無いので、
+ * 混ぜるとその組み立てが壊れる。読みたい側（llms.txt のテスト）から直接呼ぶ。
+ *
+ * 表示名は `title`。`name` に読み替えて、ツール・ゲームと同じ形で返す。
+ */
+export function loadChapters() {
+  return parseRegistry(readRepoFile('learn/lib/curriculum.ts'), 'chapters', 30).map((e) => ({
+    ...e,
+    name: e.title,
+    kind: 'learn',
+  }));
 }
 
 /** 本番に出していないもの（`stage` が `public` 以外）。テスト環境の一覧に足す対象 */

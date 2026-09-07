@@ -82,8 +82,23 @@ describe('目次と sitemap の合図が食い違わない', () => {
     expect(sitemap).toMatch(/if\s*\(!sectionIsPublic\(\)\)\s*return\s*\[\]/);
   });
 
-  it('公開前のいまは sitemap が空（noindex のページを出さない）', async () => {
+  it('公開後の sitemap には目次と全章が載る', async () => {
     const { default: sitemap } = await import('@/app/sitemap');
-    expect(sitemap()).toEqual([]);
+    const urls = sitemap().map((e) => e.url);
+    // 目次 + 公開中の章
+    expect(urls).toHaveLength(publicChapters.length + 1);
+    expect(urls).toContain('https://hasokon.com/learn/');
+    for (const c of publicChapters) {
+      expect(urls, `${c.slug} が sitemap に無い`).toContain(
+        `https://hasokon.com/learn/${c.slug}/`,
+      );
+    }
+  });
+
+  it('sitemap の lastmod は章の updatedAt を使う（ビルド日にしない）', async () => {
+    const { default: sitemap } = await import('@/app/sitemap');
+    for (const e of sitemap()) {
+      expect(String(e.lastModified)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
   });
 });

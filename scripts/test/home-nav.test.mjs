@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { loadChapters } from '../lib/registry.mjs';
+
 /**
  * トップの回遊導線（分類への近道と絞り込み）のテスト。
  *
@@ -92,5 +94,38 @@ describe('トップの絞り込み', () => {
       const names = (block.match(/class="card-name"|class="app-name"/g) || []).length;
       assert.equal(names, cards, `#${id} に名前を持たないカードがある`);
     }
+  });
+});
+
+describe('トップの読み物（投資の教科書）', () => {
+  const PAGES = { 'home/index.html': INDEX_HTML, 'home/404.html': read('home/404.html') };
+  const published = loadChapters().filter((c) => c.stage === 'public').length;
+
+  it('index.html と 404.html の両方から /learn/ に行ける', () => {
+    // 「index.html / 404.html のサイト一覧は両方更新する」（ルートのCLAUDE.md）
+    for (const [name, html] of Object.entries(PAGES)) {
+      assert.match(html, /href="\/learn\/"/, `${name} に /learn/ への導線が無い`);
+    }
+  });
+
+  it('書いてある章数が curriculum.ts の公開章数と一致する', () => {
+    // home/ にはビルド工程が無く、章数は手書きになる。
+    // 章を増やしたら両方のHTMLの数字も直すこと
+    assert.ok(published >= 30, `章の読み取り件数が不自然: ${published}`);
+    for (const [name, html] of Object.entries(PAGES)) {
+      const found = [...html.matchAll(/全(\d+)章/g)].map((m) => Number(m[1]));
+      assert.ok(found.length > 0, `${name} に「全◯章」の表記が無い`);
+      for (const n of found) {
+        assert.equal(n, published, `${name} の章数が curriculum.ts とずれている`);
+      }
+    }
+  });
+
+  it('読み物の節はカードを持たない（近道の件数と食い違わせない）', () => {
+    // 1ページ1機能の一覧ではないので、カードの並びにはしていない。
+    // カードを足すなら .quicknav にも件数つきで足すこと（上のテストが見張る）
+    const learn = SECTIONS.get('learn');
+    assert.ok(learn, '<section id="learn"> が無い');
+    assert.equal(countCards(learn), 0, '読み物の節にカードがある');
   });
 });

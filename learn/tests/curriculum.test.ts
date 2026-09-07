@@ -77,9 +77,17 @@ describe('公開の段階（feature flags）', () => {
     for (const c of publicChapters) expect(c.stage).toBe('public');
   });
 
-  it('いまは全章が公開前（セクションごと preview の段階）', () => {
-    // 公開するPRでこの前提は変わる。そのときはこのテストを書き換えること
-    expect(publicChapters).toHaveLength(0);
+  it('全35章が公開されている', () => {
+    // 2026-09-07 に公開した。章を足したら、その章も public にするか決めること
+    expect(publicChapters).toHaveLength(chapters.length);
+  });
+
+  it('公開したものを preview / wip に戻していない', () => {
+    // 一度公開したURLは検索エンジンに拾われる。引っ込めると404になるので、
+    // 取り下げは「公開前に戻す」ではなく別の作業（ルートのCLAUDE.md）
+    for (const c of chapters) {
+      expect(c.stage, `${c.slug} が公開から外れている`).toBe('public');
+    }
   });
 
   it('robotsFor は public 以外に noindex を返す', () => {
