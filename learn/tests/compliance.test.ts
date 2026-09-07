@@ -24,13 +24,21 @@ const pages = [
   { name: '目次', src: readFileSync(`${appDir}page.tsx`, 'utf8') },
 ];
 
-/** JSXのタグと属性を落として、読者が読む地の文だけにする */
+/**
+ * JSXのタグと属性を落として、読者が読む地の文だけにする。
+ *
+ * **鉤括弧の中は落とす。** 詐欺の手口を説明する章では
+ * 「必ず儲かる」「元本保証」といった**勧誘文句を引用する必要がある**。
+ * 引用と主張を区別しないと、注意喚起の章が書けなくなる。
+ * 自分の主張としてこれらを書くときは鉤括弧に入れないので、この線引きで足りる。
+ */
 function proseOf(src: string): string {
   const body = src.replace(/^[\s\S]*?export default function/, '');
   return body
     .replace(/className="[^"]*"/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, ' ')
+    .replace(/「[^」]*」/g, ' ')
     .replace(/\s+/g, ' ');
 }
 

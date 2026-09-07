@@ -200,10 +200,16 @@ export function Bars({
   rows,
   max,
   unit = '万円',
+  decimals = 1,
 }: {
   rows: { label: string; parts: { value: number; tone: Tone; name: string }[] }[];
   max: number;
   unit?: string;
+  /**
+   * 値の小数桁。金額の表は桁を揃えたいので既定は1だが、
+   * 比率や個数の図では0にする（「100.0%」は読みにくいだけ）
+   */
+  decimals?: number;
 }) {
   const W = 360;
   const rowH = 40;
@@ -241,9 +247,14 @@ export function Bars({
               return rect;
             })}
             <text x={labelW + offset + 5} y={20} className="chart-endlabel">
-              {/* 表と同じ書式（小数第1位＋3桁区切り）で出す。
+              {/* 金額は表と同じ書式（小数第1位＋3桁区切り）で出す。
                   図と表で桁の見え方が違うと、同じ数字だと気づけない */}
-              {manText(total)}
+              {decimals === 1
+                ? manText(total)
+                : total.toLocaleString('ja-JP', {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals,
+                  })}
               {unit}
             </text>
           </g>

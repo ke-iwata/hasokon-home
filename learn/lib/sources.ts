@@ -148,6 +148,31 @@ export const sources: Source[] = [
     checkedAt: '2026-09-07',
   },
 
+  {
+    id: 'nta-1524',
+    title: 'No.1524 暗号資産を売却または使用した場合の課税関係',
+    publisher: '国税庁 タックスアンサー',
+    kind: 'gov',
+    url: 'https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1524.htm',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'fsa-crypto',
+    title: '暗号資産（仮想通貨）に関する注意喚起',
+    publisher: '金融庁',
+    kind: 'gov',
+    url: 'https://www.fsa.go.jp/policy/virtual_currency/index.html',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'mlit-fudosan',
+    title: '不動産価格指数・土地総合情報システム',
+    publisher: '国土交通省',
+    kind: 'gov',
+    url: 'https://www.mlit.go.jp/totikensangyo/totikensangyo_tk5_000085.html',
+    checkedAt: '2026-09-07',
+  },
+
   // ---- 業界団体・取引所 ----
   {
     id: 'jsda-study',
@@ -187,6 +212,38 @@ export const sources: Source[] = [
     publisher: '株式会社日本取引所グループ（JPX）',
     kind: 'org',
     url: 'https://www.jpx.co.jp/equities/trading/domestic/07.html',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'jpx-derivative',
+    title: 'デリバティブ（先物・オプション）市場の商品概要',
+    publisher: '株式会社日本取引所グループ（JPX）',
+    kind: 'org',
+    url: 'https://www.jpx.co.jp/derivatives/products/index.html',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'toushin-reit',
+    title: 'J-REITの仕組み',
+    publisher: '一般社団法人 投資信託協会',
+    kind: 'org',
+    url: 'https://www.toushin.or.jp/reit/',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'seiho-guide',
+    title: '生命保険の種類と仕組み',
+    publisher: '公益財団法人 生命保険文化センター',
+    kind: 'org',
+    url: 'https://www.jili.or.jp/lifeplan/lifesecurity/',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'ffaj-fx',
+    title: '店頭FX取引の仕組みとリスク',
+    publisher: '一般社団法人 金融先物取引業協会',
+    kind: 'org',
+    url: 'https://www.ffaj.or.jp/',
     checkedAt: '2026-09-07',
   },
   {

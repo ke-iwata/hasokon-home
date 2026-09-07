@@ -149,6 +149,7 @@ export default function Page() {
       >
         <Bars
           unit="%"
+          decimals={0}
           max={100}
           rows={GPIF.map((a) => ({
             label: a.name,

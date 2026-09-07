@@ -65,7 +65,8 @@ export default function Page() {
         caption="同じ「3割下落」でも、持っている比率で痛みがまったく違います。商品を選ぶ前に、この比率を決めるのが順番です。"
       >
         <Bars
-          unit="万円の下落"
+          unit="万円"
+          decimals={0}
           max={320}
           rows={RATIOS.map((r) => ({
             label: `${r * 100}%`,
