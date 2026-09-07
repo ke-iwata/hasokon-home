@@ -313,8 +313,9 @@ export const chapters: ChapterDef[] = [
     title: 'iDeCo',
     description: '掛金が全額所得控除になる仕組みと、2026年12月施行の合算ルール。',
     part: 'system',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'annual',
+    updatedAt: '2026-09-07',
     shikaku: ['fp3', 'fp2'],
     tools: ['ideco'],
   },
@@ -323,8 +324,9 @@ export const chapters: ChapterDef[] = [
     title: '特定口座・一般口座',
     description: '源泉徴収ありとなしで何が変わるか。確定申告が要る場合・したほうがいい場合。',
     part: 'system',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'annual',
+    updatedAt: '2026-09-07',
     shikaku: ['fp3'],
   },
   {
@@ -332,8 +334,9 @@ export const chapters: ChapterDef[] = [
     title: '税金（20.315%・損益通算・繰越控除）',
     description: '譲渡益と配当にかかる税、損を出した年にやっておくこと、3年間の繰越控除。',
     part: 'system',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'annual',
+    updatedAt: '2026-09-07',
     shikaku: ['gaimuin2', 'fp3', 'fp2'],
   },
   {
@@ -341,8 +344,9 @@ export const chapters: ChapterDef[] = [
     title: '暗号資産の税金',
     description: '雑所得・総合課税で、株式とはまったく違う扱いになる。損益通算も繰越もできない。',
     part: 'system',
-    stage: 'wip',
+    stage: 'preview',
     volatility: 'annual',
+    updatedAt: '2026-09-07',
   },
 
   // ---- 第4部 実践（主軸） ----

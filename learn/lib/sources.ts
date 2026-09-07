@@ -149,6 +149,38 @@ export const sources: Source[] = [
   },
 
   {
+    id: 'ideco-official',
+    title: 'iDeCo（個人型確定拠出年金）の概要',
+    publisher: '国民年金基金連合会 iDeCo公式サイト',
+    kind: 'org',
+    url: 'https://www.ideco-koushiki.jp/guide/',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'nta-1474',
+    title: 'No.1474 上場株式等に係る譲渡損失の損益通算及び繰越控除',
+    publisher: '国税庁 タックスアンサー',
+    kind: 'gov',
+    url: 'https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1474.htm',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'nta-1330',
+    title: 'No.1330 配当金を受け取ったとき（配当所得）',
+    publisher: '国税庁 タックスアンサー',
+    kind: 'gov',
+    url: 'https://www.nta.go.jp/taxes/shiraberu/taxanswer/shotoku/1330.htm',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'mof-boei',
+    title: '防衛力強化に係る財源確保のための税制措置',
+    publisher: '財務省',
+    kind: 'gov',
+    url: 'https://www.mof.go.jp/tax_policy/summary/other/index.html',
+    checkedAt: '2026-09-07',
+  },
+  {
     id: 'nta-1524',
     title: 'No.1524 暗号資産を売却または使用した場合の課税関係',
     publisher: '国税庁 タックスアンサー',
