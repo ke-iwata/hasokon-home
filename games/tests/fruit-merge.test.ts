@@ -75,7 +75,11 @@ function run(state: FruitMergeState, frames: number, substeps?: number): FruitMe
 }
 
 /** 置く果物の指定。`landed`（ラインをくぐったか）は省くと位置から決める */
-type Placed = Omit<Fruit, 'id' | 'landed'> & { landed?: boolean };
+// 向き・回り方・静止時間は置くときに指定しない（既定は「止まっている」）
+type Placed = Omit<Fruit, 'id' | 'landed' | 'angle' | 'spin' | 'restSec'> & {
+  landed?: boolean;
+  spin?: number;
+};
 
 /** 果物を直接置く（落とすのを待たずに局面を作るため） */
 function place(state: FruitMergeState, put: Placed[]): FruitMergeState {
@@ -85,6 +89,9 @@ function place(state: FruitMergeState, put: Placed[]): FruitMergeState {
       ...f,
       id: state.nextId + i,
       landed: f.landed ?? f.y - radiusOf(f.tier) > LINE_Y,
+      angle: 0,
+      spin: f.spin ?? 0,
+      restSec: 0,
     })),
     nextId: state.nextId + put.length,
   };
@@ -509,6 +516,67 @@ describe('積み上がりの安定（公開の条件2）', () => {
     // **落ち着いた山はぴたりと止まる。** 1秒で動いてよいのは
     // いちばん小さい果物の半径の1%まで（実測では完全に0になる）
     expect(Math.max(...moved)).toBeLessThan(radiusOf(0) * 0.01);
+  });
+
+  /**
+   * **他の果物の上に落ちたら、転がって落ちること。**
+   *
+   * 運営者からの指摘（2026-09-07）：「他のフルーツの上に落ちた時に
+   * かなりゆっくりと落ちていく感じかつ、転がらないので不自然」。
+   *
+   * 原因は2つ重なっていた。摩擦を**中心の速度**で当てていたので効きが
+   * 「転がり」ではなく「接着」になっていたことと、遅いというだけで
+   * 毎フレーム速度を0にしていたため、斜面の果物が加速する前に止められて
+   * 位置補正のぶんだけジリジリ動いていたこと。
+   * 直す前の実測は「4秒かけて 0.013 沈むだけで、横にも 0.016 しか動かない」
+   */
+  it('他の果物の上に載ると、転がって落ちる（居座らない）', () => {
+    const rb = radiusOf(3);
+    const rt = radiusOf(2);
+    // 下の果物の真上から少しずらして、斜面に乗った状態を作る
+    const start = place(initialState(1), [
+      { tier: 3, x: 0.5, y: BOX_H - rb, vx: 0, vy: 0 },
+      { tier: 2, x: 0.5 + (rb + rt) * 0.35, y: BOX_H - rb * 2 - rt - 0.15, vx: 0, vy: 0 },
+    ]);
+    const after = run(start, 120); // 2秒
+    const top = after.fruits.find((f) => f.tier === 2);
+    expect(top).toBeDefined();
+
+    // 床まで落ちている（上に載ったままではない）
+    expect(top!.y).toBeGreaterThan(BOX_H - rt - radiusOf(0));
+    // 転がった証拠として、向きが変わっている
+    expect(Math.abs(top!.angle)).toBeGreaterThan(1);
+  });
+
+  it('真上に載せたものは転がり落ちない（積み上げが壊れない）', () => {
+    const rb = radiusOf(3);
+    const rt = radiusOf(2);
+    const start = place(initialState(1), [
+      { tier: 3, x: 0.5, y: BOX_H - rb, vx: 0, vy: 0 },
+      { tier: 2, x: 0.5, y: BOX_H - rb * 2 - rt, vx: 0, vy: 0 },
+    ]);
+    const after = run(start, 120);
+    const top = after.fruits.find((f) => f.tier === 2)!;
+    // 下の果物の上に載ったまま
+    expect(top.y).toBeLessThan(BOX_H - rb - rt);
+  });
+
+  it('合体してできた果物も箱の中に収まる（親より大きくなるので）', () => {
+    const r = radiusOf(0);
+    // 床の上でぴったり接した同じ段どうし。合体すると半径が増える
+    const start = place(initialState(1), [
+      { tier: 0, x: 0.5 - r * 0.9, y: BOX_H - r, vx: 0, vy: 0 },
+      { tier: 0, x: 0.5 + r * 0.9, y: BOX_H - r, vx: 0, vy: 0 },
+    ]);
+    // **生まれた最初のフレームで見る**（次のフレームには押し戻されるため）
+    const after = step(start, FRAME);
+    expect(after.events.length).toBe(1);
+    for (const f of after.fruits) {
+      const fr = radiusOf(f.tier);
+      expect(f.y).toBeLessThanOrEqual(BOX_H - fr + 1e-6);
+      expect(f.x).toBeGreaterThanOrEqual(fr - 1e-6);
+      expect(f.x).toBeLessThanOrEqual(BOX_W - fr + 1e-6);
+    }
   });
 
   /**

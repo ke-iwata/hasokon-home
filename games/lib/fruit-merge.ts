@@ -130,6 +130,17 @@ export interface Fruit {
    * 判定がぶれる。「線をくぐったか」で見れば落ち方に依存しない
    */
   landed: boolean;
+  /** 向き（ラジアン）。描画が回すためだけの値で、判定には使わない */
+  angle: number;
+  /** 角速度（ラジアン毎秒）。接触の摩擦がここを回す */
+  spin: number;
+  /**
+   * 「接していて、ほとんど動いていない」状態が続いている秒数。
+   *
+   * **速さを見た瞬間に止めてはいけない**（詳しくは `REST_TIME`）。
+   * ここに時間をためて、続いたときだけ止める
+   */
+  restSec: number;
 }
 
 /** このフレームで起きた合体。**UIの演出用で、状態の判断には使わない** */
@@ -242,6 +253,21 @@ const ITERATIONS = 5;
  * 動き続けていて、目で見て分かる震えになっていた
  */
 const REST_SPEED = 0.006;
+/** 止まったとみなす角速度。転がりが止まりきらずに回り続けるのを防ぐ */
+const REST_SPIN = 0.25;
+/**
+ * 「遅い」が何秒続いたら止めるか。**その場で止めてはいけない。**
+ *
+ * 速さを見た瞬間に0にしていたときは、山の斜面に乗った果物が
+ * 「毎フレーム重力で少し加速 → 接触で速度を消される」を繰り返し、
+ * **速度0のまま位置補正のぶんだけジリジリ動く**状態になっていた
+ * （実測：他の果物の上に載せると3秒かけて 0.013 だけ沈む。転がり落ちない）。
+ * 時間をためてから止めれば、斜面の果物は加速しきって転がり落ち、
+ * 本当に支えられている果物だけが止まる
+ */
+const REST_TIME = 0.14;
+/** 角速度の上限。速く落ちた果物が独楽のように見えるのを防ぐ */
+const MAX_SPIN = 26;
 /** 反発を効かせる下限の相対速度。触れているだけの接触で跳ねさせない */
 const BOUNCE_THRESHOLD = 0.3;
 
@@ -313,7 +339,18 @@ export function drop(state: FruitMergeState): FruitMergeState {
     ...state,
     fruits: [
       ...state.fruits,
-      { id: state.nextId, tier: state.hold, x, y: DROP_Y, vx: 0, vy: 0, landed: false },
+      {
+        id: state.nextId,
+        tier: state.hold,
+        x,
+        y: DROP_Y,
+        vx: 0,
+        vy: 0,
+        landed: false,
+        angle: 0,
+        spin: 0,
+        restSec: 0,
+      },
     ],
     nextId: state.nextId + 1,
     hold: state.next,
@@ -334,6 +371,63 @@ function invMass(f: Fruit): number {
   return 1 / (r * r);
 }
 
+/**
+ * 回転の「動かしにくさ」の逆数。**果物は一様な円板**として扱う。
+ *
+ * 質量を `r²`（`invMass` の裏返し）とすると、円板の慣性モーメントは
+ * `I = ½ m r² = ½ r⁴` なので、その逆数は `2 / r⁴`。
+ * 接線の摩擦をここに通すと、滑りではなく**転がり**になる
+ */
+function invInertia(f: Fruit): number {
+  const r = radiusOf(f.tier);
+  return 2 / (r * r * r * r);
+}
+
+/**
+ * 接線方向の摩擦を1接触ぶん当てる。**中心ではなく接触点の速度を見る。**
+ *
+ * ここがこのゲームの「転がる／転がらない」を決めている。中心の速度だけで
+ * 摩擦をかけると、接している果物どうしの横のずれが消えるだけになり、
+ * **接着したように止まって転がらない**（斜面に乗っても落ちてこない）。
+ * 接触点の速度（`v ± ω r`）を0に近づければ、同じ摩擦が
+ * 「滑らずに転がる」条件そのものになる。
+ *
+ * @param n 接触の法線（a から b へ向かう単位ベクトル）。壁は a を省く
+ */
+function applyFriction(
+  a: Fruit | null,
+  b: Fruit,
+  nx: number,
+  ny: number,
+  friction: number,
+): void {
+  const tx = -ny;
+  const ty = nx;
+  const rb = radiusOf(b.tier);
+  const imb = invMass(b);
+  const ra = a ? radiusOf(a.tier) : 0;
+  const ima = a ? invMass(a) : 0;
+
+  // 接触点の速度の接線成分。接触点は a の中心から +ra·n、b の中心から −rb·n
+  const va = a ? a.vx * tx + a.vy * ty + a.spin * ra : 0;
+  const vb = b.vx * tx + b.vy * ty - b.spin * rb;
+  const vt = vb - va;
+  if (vt === 0) return;
+
+  // 回転を含めた接線の実効質量。円板だと回転のぶんで3倍になる
+  const kt = 3 * (ima + imb);
+  const jt = (-vt / kt) * friction;
+
+  b.vx += tx * jt * imb;
+  b.vy += ty * jt * imb;
+  b.spin -= jt * rb * invInertia(b);
+  if (a) {
+    a.vx -= tx * jt * ima;
+    a.vy -= ty * jt * ima;
+    a.spin -= jt * ra * invInertia(a);
+  }
+}
+
 function clampSpeed(f: Fruit): void {
   const s = Math.hypot(f.vx, f.vy);
   if (s > MAX_SPEED) {
@@ -352,18 +446,20 @@ function solveWalls(f: Fruit): boolean {
   if (f.x - r < 0) {
     f.x = r;
     if (f.vx < 0) f.vx = -f.vx * WALL_RESTITUTION;
-    f.vy *= 1 - FRICTION * 0.25;
+    // 左の壁。法線は壁から果物へ向かう向き（+x）
+    applyFriction(null, f, 1, 0, FRICTION * 0.5);
     touched = true;
   } else if (f.x + r > BOX_W) {
     f.x = BOX_W - r;
     if (f.vx > 0) f.vx = -f.vx * WALL_RESTITUTION;
-    f.vy *= 1 - FRICTION * 0.25;
+    applyFriction(null, f, -1, 0, FRICTION * 0.5);
     touched = true;
   }
   if (f.y + r > BOX_H) {
     f.y = BOX_H - r;
     if (f.vy > 0) f.vy = -f.vy * WALL_RESTITUTION;
-    f.vx *= 1 - FRICTION * 0.5;
+    // 床。法線は上向き（yは下が正なので −1）。ここで転がりが生まれる
+    applyFriction(null, f, 0, -1, FRICTION);
     touched = true;
   }
   return touched;
@@ -419,15 +515,9 @@ function solvePair(a: Fruit, b: Fruit): boolean {
     b.vx += dx * j * imb;
     b.vy += dy * j * imb;
 
-    // 接線方向（摩擦）。これが無いと山の上を滑り続けて積み上がらない
-    const tx = -dy;
-    const ty = dx;
-    const vt = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
-    const jt = (-vt * FRICTION) / inv;
-    a.vx -= tx * jt * ima;
-    a.vy -= ty * jt * ima;
-    b.vx += tx * jt * imb;
-    b.vy += ty * jt * imb;
+    // 接線方向（摩擦）。これが無いと山の上を滑り続けて積み上がらない。
+    // **接触点で見るので、効きは「接着」ではなく「転がり」になる**
+    applyFriction(a, b, dx, dy, FRICTION);
   }
   return true;
 }
@@ -442,13 +532,17 @@ function integrate(fruits: Fruit[], dt: number): void {
     f.vy += GRAVITY * dt;
     f.vx *= damp;
     f.vy *= damp;
+    f.spin *= damp;
     clampSpeed(f);
+    if (f.spin > MAX_SPIN) f.spin = MAX_SPIN;
+    else if (f.spin < -MAX_SPIN) f.spin = -MAX_SPIN;
     f.x += f.vx * dt;
     f.y += f.vy * dt;
+    f.angle += f.spin * dt;
   }
 }
 
-function solveContacts(fruits: Fruit[]): void {
+function solveContacts(fruits: Fruit[], dt: number): void {
   const touched = new Array<boolean>(fruits.length).fill(false);
   for (let it = 0; it < ITERATIONS; it += 1) {
     for (let i = 0; i < fruits.length; i += 1) {
@@ -466,13 +560,23 @@ function solveContacts(fruits: Fruit[]): void {
     }
   }
   // **震え（ジッター）を止める。** 何かに接していて、ほとんど動いていない
-  // ものは速度を0にする。空中では止めない（浮いたまま固まってしまう）
+  // ものは速度を0にする。空中では止めない（浮いたまま固まってしまう）。
+  //
+  // **その場では止めず、続いた時間で判断する**（`REST_TIME`）。
+  // 遅いという理由だけで毎フレーム0にすると、斜面に乗った果物が
+  // 加速する前に速度を消され、位置補正のぶんだけジリジリ動く
   for (let i = 0; i < fruits.length; i += 1) {
-    if (!touched[i]) continue;
     const f = fruits[i];
-    if (Math.hypot(f.vx, f.vy) < REST_SPEED) {
+    const slow = Math.hypot(f.vx, f.vy) < REST_SPEED && Math.abs(f.spin) < REST_SPIN;
+    if (!touched[i] || !slow) {
+      f.restSec = 0;
+      continue;
+    }
+    f.restSec += dt;
+    if (f.restSec >= REST_TIME) {
       f.vx = 0;
       f.vy = 0;
+      f.spin = 0;
     }
   }
 }
@@ -560,12 +664,26 @@ function resolveMerges(
           vy: (a.vy + b.vy) / 2,
           // 生まれた場所がラインより下なら、そのまま判定の対象にする
           landed: a.landed || b.landed || y - radiusOf(tier) > LINE_Y,
+          // 向きは受け継がず、回り方だけ引き継ぐ（合体は新しい果物なので）
+          angle: 0,
+          spin: (a.spin + b.spin) / 2,
+          restSec: 0,
         });
         nextId += 1;
         events.push({ x, y, tier, gain, chain });
       }
       break;
     }
+  }
+
+  // **生まれた果物を箱の中に収める。** 合体してできるものは親より大きいので、
+  // 親の中点に置くと、壁ぎわ・床ぎわでは半径が増えたぶんだけ箱から飛び出す
+  // （実測：床の上で合体すると 0.007 はみ出したまま1フレーム描かれる）。
+  // 次のフレームの接触解決で戻るが、その1フレームは箱を突き抜けて見える
+  for (const f of born) {
+    const r = radiusOf(f.tier);
+    f.x = Math.min(Math.max(f.x, r), BOX_W - r);
+    if (f.y + r > BOX_H) f.y = BOX_H - r;
   }
 
   const kept = used.size === 0 ? fruits : fruits.filter((f) => !used.has(f.id));
@@ -603,7 +721,7 @@ export function step(state: FruitMergeState, dt: number, substeps = SUBSTEPS): F
   const sub = clamped / steps;
   for (let s = 0; s < steps; s += 1) {
     integrate(fruits, sub);
-    solveContacts(fruits);
+    solveContacts(fruits, sub);
   }
 
   const merged = resolveMerges(fruits, state, clamped);
@@ -697,7 +815,18 @@ export function debugLadder(state: FruitMergeState): FruitMergeState {
       rowMax = Math.max(rowMax, r);
     }
     prevR = r;
-    fruits.push({ id, tier, x, y, vx: 0, vy: 0, landed: y - r > LINE_Y });
+    fruits.push({
+      id,
+      tier,
+      x,
+      y,
+      vx: 0,
+      vy: 0,
+      landed: y - r > LINE_Y,
+      angle: 0,
+      spin: 0,
+      restSec: 0,
+    });
     id += 1;
   }
   return { ...state, fruits, nextId: id, events: [] };
@@ -747,7 +876,18 @@ export function debugFill(state: FruitMergeState, count: number, seed = 7): Frui
     // 実際の遊びでは起きない「崩れない山」になってしまう
     const jitter = (rnd.value - 0.5) * 0.004;
     const px = Math.max(r, Math.min(BOX_W - r, x + jitter));
-    fruits.push({ id, tier, x: px, y, vx: 0, vy: 0, landed: y - r > LINE_Y });
+    fruits.push({
+      id,
+      tier,
+      x: px,
+      y,
+      vx: 0,
+      vy: 0,
+      landed: y - r > LINE_Y,
+      angle: 0,
+      spin: 0,
+      restSec: 0,
+    });
     id += 1;
     index += 1;
   }
