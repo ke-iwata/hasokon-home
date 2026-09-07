@@ -48,11 +48,13 @@ const T = {
 };
 
 /**
- * 書き出す3枚。
+ * 書き出す4枚。
  *
  * tools と games で地の色を反転させているのは、仕様書の
  * 「games/ は配色を変えて、ツールとゲームが見分けられるようにする」に対応するため。
  * アクセントは1色のままなので、サイト全体の配色からは外れない。
+ * learn は読み物なので tools と同じ明るい地にしている（games の反転は
+ * 「遊ぶもの」の目印として使う）。
  */
 export const VARIANTS = [
   {
@@ -75,6 +77,13 @@ export const VARIANTS = [
     title: '無料ミニゲーム集',
     subtitle: 'ナンプレ・ソリティア・ブロック崩しをブラウザで',
     theme: 'dark',
+  },
+  {
+    name: 'learn',
+    out: 'learn/public/ogp.png',
+    title: '投資の教科書',
+    subtitle: '基礎から実践まで体系的に。出典つきで無料',
+    theme: 'light',
   },
 ];
 

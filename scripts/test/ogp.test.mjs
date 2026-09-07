@@ -48,12 +48,27 @@ function pngSize(buffer) {
 /**
  * 配信先ごとの1枚。パスと公開URLの対応は
  * `design/ogp/gen-ogp.mjs` の VARIANTS と揃えること。
- * tools / games は basePath 配下に置かれるので public/ の下になる。
+ * tools / games / learn は basePath 配下に置かれるので public/ の下になる。
  */
 const IMAGES = [
   { file: 'home/ogp.png', url: 'https://hasokon.com/ogp.png' },
-  { file: 'tools/public/ogp.png', url: 'https://hasokon.com/tools/ogp.png' },
-  { file: 'games/public/ogp.png', url: 'https://hasokon.com/games/ogp.png' },
+  // `defs` は SITE_URL と OGP_IMAGE を持つファイル。tools / games は registry.ts、
+  // learn は読み物なので curriculum.ts という名前になっている
+  {
+    file: 'tools/public/ogp.png',
+    url: 'https://hasokon.com/tools/ogp.png',
+    defs: 'tools/lib/registry.ts',
+  },
+  {
+    file: 'games/public/ogp.png',
+    url: 'https://hasokon.com/games/ogp.png',
+    defs: 'games/lib/registry.ts',
+  },
+  {
+    file: 'learn/public/ogp.png',
+    url: 'https://hasokon.com/learn/ogp.png',
+    defs: 'learn/lib/curriculum.ts',
+  },
 ];
 
 describe('OGP画像の実ファイル', () => {
@@ -63,7 +78,7 @@ describe('OGP画像の実ファイル', () => {
     });
   }
 
-  it('3枚がそれぞれ違う絵である（同じファイルを使い回していない）', () => {
+  it('それぞれ違う絵である（同じファイルを使い回していない）', () => {
     // tools と games は地の色を反転させて見分けられるようにしている。
     // コピーで済ませるとその区別が消えるので、中身が違うことを確かめる
     const digests = IMAGES.map(({ file }) => readBytes(file).toString('base64'));
@@ -71,17 +86,15 @@ describe('OGP画像の実ファイル', () => {
   });
 });
 
-describe('tools / games のOGP画像の参照先', () => {
-  for (const { file, url } of IMAGES.slice(1)) {
-    const registry = file.startsWith('tools/') ? 'tools/lib/registry.ts' : 'games/lib/registry.ts';
-
-    it(`${registry} の OGP_IMAGE が ${url} になる`, () => {
-      // registry は `${SITE_URL}/ogp.png` というテンプレート文字列で持っている。
+describe('basePath配下（tools / games / learn）のOGP画像の参照先', () => {
+  for (const { url, defs } of IMAGES.slice(1)) {
+    it(`${defs} の OGP_IMAGE が ${url} になる`, () => {
+      // 定義は `${SITE_URL}/ogp.png` というテンプレート文字列で持っている。
       // 値の組み立てそのものは各ディレクトリの vitest が見ているので、
       // ここでは「実ファイルの置き場所と食い違っていないか」だけを見る
-      const source = readText(registry);
+      const source = readText(defs);
       const siteUrl = source.match(/export const SITE_URL = '([^']+)'/)?.[1];
-      assert.ok(siteUrl, `${registry} から SITE_URL を読めない`);
+      assert.ok(siteUrl, `${defs} から SITE_URL を読めない`);
       assert.match(source, /OGP_IMAGE = \{\s*url: `\$\{SITE_URL\}\/ogp\.png`/);
       assert.equal(`${siteUrl}/ogp.png`, url);
     });
@@ -143,7 +156,7 @@ describe('design/ogp/gen-ogp.mjs', () => {
     assert.equal(GEN_HEIGHT, HEIGHT);
   });
 
-  it('3枚とも見出しと説明文が入る', () => {
+  it('どれも見出しと説明文が入る', () => {
     for (const variant of VARIANTS) {
       const html = renderHtml(variant);
       assert.ok(html.includes(variant.title), `${variant.name}: 見出しが無い`);
