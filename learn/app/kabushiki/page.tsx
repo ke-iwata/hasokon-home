@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import Chapter from '../_chapter/Chapter';
+import Figure from '../_chapter/Figure';
+import { Ladder, Timeline } from '../_chapter/Diagram';
 import { chapterBySlug, robotsFor, SITE_URL } from '@/lib/curriculum';
 
 const chapter = chapterBySlug('kabushiki');
@@ -60,6 +62,21 @@ export default function Page() {
         同じ会社にお金を出していても、社債（債権者）と株式（株主）でリスクの位置が違うのはこのためです。
       </p>
 
+      <Figure
+        title="会社が解散したときに財産が配られる順番。上から、税金や従業員の給料、銀行からの借入金や社債の債権者、優先株主、そして最後に普通株主。株主はいちばん下"
+        caption="株式を買うということは、この列のいちばん後ろに並ぶということです。前の人に配り終えて何も残らなければ、株主の取り分はゼロになります。"
+      >
+        <Ladder
+          note={{ top: '先に払われる', bottom: '最後に回される' }}
+          steps={[
+            { label: '税金・従業員の給料など', sub: '法律で優先される' },
+            { label: '債権者', sub: '銀行からの借入金・社債' },
+            { label: '優先株主', sub: '普通株より先だが債権者より後' },
+            { label: '普通株主', sub: 'ここに残ったものだけを受け取る', strong: true },
+          ]}
+        />
+      </Figure>
+
       <p className="note">
         <strong>株式の損失は、投資した額が上限です。</strong>
         会社が倒産して株式の価値がゼロになっても、
@@ -108,6 +125,19 @@ export default function Page() {
         配当を受け取る権利がなくなるぶん株価は下がりやすくなります。
         あいだに休日が挟まればさらに前倒しになるので、営業日で数えること。
       </div>
+
+      <Figure
+        title="権利確定日が3月31日金曜のときの、権利付最終日3月29日水曜・権利落ち日3月30日木曜の並び。3月29日までに買えば配当を受け取れ、3月30日以降に買うと受け取れない"
+        caption="受け渡しに2営業日かかるので、権利確定日に名簿へ載るには2営業日前までに買う必要があります。休日が挟まればさらに前倒しです。"
+      >
+        <Timeline
+          items={[
+            { date: '3/29（水）', label: '権利付最終日', sub: '買えば配当が貰える', mark: 'ok' },
+            { date: '3/30（木）', label: '権利落ち日', sub: '買っても貰えない', mark: 'ng' },
+            { date: '3/31（金）', label: '権利確定日', sub: '名簿が確定する', mark: 'plain' },
+          ]}
+        />
+      </Figure>
 
       <p>
         <strong>配当利回りの高さだけで選ぶのは危険です。</strong>
