@@ -10,7 +10,7 @@ hasokon.com のモノレポで作業するAIエージェント・開発者向け
 home/    hasokon.com のポータル（素の静的HTML。ビルドなし）
 tools/   hasokon.com/tools/  無料計算ツール集（Next.js静的エクスポート）→ tools/CLAUDE.md
 games/   hasokon.com/games/  無料ミニゲーム集（Next.js静的エクスポート）→ games/CLAUDE.md
-learn/   hasokon.com/learn/  投資の教科書（Next.js静的エクスポート）→ learn/CLAUDE.md
+learn/   hasokon.com/learn/  学ぶ（分野ごとの読み物。Next.js静的エクスポート）→ learn/CLAUDE.md
 docs/    サイト横断のドキュメント（各アプリ固有の docs は各ディレクトリ配下）
 infra/   ポインタのみ。AWSは hasokon-infra リポジトリ（Terraform）で管理
 ```
@@ -61,8 +61,8 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 | `wip` / `preview` | 出さない | `noindex` | **見える**（秘密にはできない） |
 | `public` | 出す | 既定 | 見える |
 
-- **一覧を出すときは `publicGames` / `publicTools` / `publicChapters` を通す。**
-  `games` / `tools` / `chapters` を直に `filter` しない（書き忘れが公開事故になる）
+- **一覧を出すときは `publicGames` / `publicTools` / `publicSubjects` / `publicChapters` を通す。**
+  `games` / `tools` / `subjects` / `chapters` を直に `filter` しない（書き忘れが公開事故になる）
 - **ページの `metadata` に `robots: robotsFor('<slug>')` を書く**
   （書き忘れは `{games,tools,learn}/tests/stage.test.ts` が落とす）
 - **`home/index.html` のカードと `home/llms.txt` の行は、`public` にするPRで足す。**
@@ -79,9 +79,15 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 
 ## 学習セクション（learn/）
 
-`hasokon.com/learn/` の「投資の教科書」。tools / games と違い**読み物**なので、
+`hasokon.com/learn/` の「学ぶ」。tools / games と違い**読み物**なので、
 別の約束がいくつかある。詳細は [learn/CLAUDE.md](./learn/CLAUDE.md) と
 [docs/features/learn-toshi.md](./docs/features/learn-toshi.md)。
+
+- **URLは分野を1段挟む。** `/learn/`（分野の一覧）→ `/learn/{subject}/`（その分野の目次）
+  → `/learn/{subject}/{slug}/`（章）。**学習セクションを投資に限定しないため。**
+  URLの組み立ては `chapterPath()` / `subjectPath()` を通すこと（各ページで継ぎ足さない）
+- **`SITE_NAME` はセクション名（「学ぶ」）で、分野名ではない。**
+  ここを分野名にすると、パンくずが「投資の教科書 ＞ 投資の教科書」になる
 
 - **`tools/docs/CONCEPT.md` はブログ型を除外している**（「記事を書き続けられない」）。
   学習セクションはそこに真っ向からぶつかるので、**コンテンツをデータとして持つ**
@@ -91,8 +97,9 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   断定的判断（金商法38条2号）は書かない。民間の個別商品名・証券会社名も出さない。
   **`learn/tests/compliance.test.ts` が本文を検査して落とす**
 - **出典のない章を作らない。** `learn/tests/sources.test.ts` が落とす
-- **2026-09-07に全35章を公開した。** ホームからのリンク（`index.html` のヒーローと
-  読み物の節・`404.html` のカード）、`llms.txt` の36行、`sitemap.xml` の4本目が入っている。
+- **2026-09-07に「投資の教科書」（全35章）を公開した。** ホームからのリンク
+  （`index.html` のヒーローと学ぶの節・`404.html` のカード）、`llms.txt` の37行、
+  `sitemap.xml` の4本目が入っている。
   章を増やしたら**ホームの「全◯章」も直す**（`scripts/test/home-nav.test.mjs` が落とす）
 
 ## リリースの約束

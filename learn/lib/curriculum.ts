@@ -1,18 +1,64 @@
 /**
- * カリキュラム（章の定義）
+ * カリキュラム（分野と章の定義）
  *
- * **この学習セクションの単一の情報源**。目次・sitemap・前後ナビ・パンくずは
+ * **この学習セクションの単一の情報源**。一覧・目次・sitemap・前後ナビ・パンくずは
  * すべてここから作られる。仕様は
  * [docs/features/learn-toshi.md](../../docs/features/learn-toshi.md)。
  *
  * tools / games の `lib/registry.ts` と同じ役割で、`stage` の意味も同じ
  * （[docs/features/feature-flags.md](../../docs/features/feature-flags.md)）。
+ *
+ * ## URLの形
+ *
+ * ```
+ * /learn/                  分野の一覧（学ぶ）
+ * /learn/{subject}/        その分野の目次        例: /learn/toshi/
+ * /learn/{subject}/{slug}/ 章                    例: /learn/toshi/fukuri/
+ * ```
+ *
+ * **1段目に分野を挟んであるのは、学習セクションを投資に限定しないため。**
+ * 分野を足すときは `subjects` に1件足し、その分野の `parts` と `chapters` を書く。
+ * **URLの組み立ては `chapterPath()` / `subjectPath()` を通すこと**（各ページで
+ * 文字列を継ぎ足さない。パスの形を変えるときに追い切れなくなる）。
  */
 
 /** 公開の段階。tools / games の registry と同じ意味 */
 export type Stage = 'wip' | 'preview' | 'public';
 
-/** 部（第1部〜第5部） */
+/** 分野。いまは投資だけだが、増やせる形にしてある */
+export interface SubjectDef {
+  /** URLパス（`/learn/{slug}/`）。先頭・末尾スラッシュなし */
+  slug: string;
+  /** 分野名（一覧・パンくず・タイトルに使う） */
+  name: string;
+  /** 一覧カードと meta description に使う短い説明 */
+  description: string;
+  /** 一覧に添える1〜2文。何がどの順で並ぶか */
+  lead: string;
+  stage: Stage;
+  updatedAt?: string;
+}
+
+/**
+ * 分野の一覧。
+ *
+ * **一覧を出すときは `publicSubjects` を通すこと。**
+ * `subjects` を直に `filter` しない（書き忘れが公開事故になる。
+ * tools / games の `publicTools` / `publicGames` と同じ約束）。
+ */
+export const subjects: SubjectDef[] = [
+  {
+    slug: 'toshi',
+    name: '投資の教科書',
+    description:
+      '株式・債券から暗号資産・デイトレードまで、投資を体系的に学べる全35章。出典つき。',
+    lead: '原理 → 資産クラス別 → 制度と税金 → 実践 → 資格の順に、全35章。記述の根拠は各章の末尾に一次資料へのリンクつきで並べています。',
+    stage: 'public',
+    updatedAt: '2026-09-07',
+  },
+];
+
+/** 部（第1部〜第5部）。分野ごとに持つ */
 export type PartId = 'basics' | 'assets' | 'system' | 'practice' | 'shikaku';
 
 /**
@@ -30,7 +76,9 @@ export type Volatility =
   | 'slow';
 
 export interface ChapterDef {
-  /** URLパス（先頭・末尾スラッシュなし） */
+  /** 属する分野の slug（`subjects` のもの） */
+  subject: string;
+  /** URLパス（先頭・末尾スラッシュなし）。分野の中で一意 */
   slug: string;
   /** 章タイトル（目次・パンくず・前後ナビに使う） */
   title: string;
@@ -61,6 +109,8 @@ export interface ChapterDef {
 }
 
 export interface PartDef {
+  /** 属する分野の slug */
+  subject: string;
   id: PartId;
   /** 「第1部」などの番号ラベル */
   label: string;
@@ -70,7 +120,15 @@ export interface PartDef {
 }
 
 export const SITE_URL = 'https://hasokon.com/learn';
-export const SITE_NAME = '投資の教科書';
+/**
+ * セクションの名前。**分野の名前ではない。**
+ *
+ * `/learn/` は分野の入口なので、ここは「学ぶ」。
+ * 「投資の教科書」は分野（`subjects`）の名前で、1段下にある。
+ * ここを分野名にすると、パンくずが「学ぶ ＞ 投資の教科書」ではなく
+ * 「投資の教科書 ＞ 投資の教科書」になる（実際に一度そうなった）。
+ */
+export const SITE_NAME = '学ぶ';
 export const COPYRIGHT_HOLDER = 'hasokon';
 /** 固定ページ（トップ）の最終更新日 */
 export const SITE_UPDATED_AT = '2026-09-07';
@@ -84,30 +142,35 @@ export const OGP_IMAGE = {
 
 export const parts: PartDef[] = [
   {
+    subject: 'toshi',
     id: 'basics',
     label: '第1部',
     title: '基礎（原理）',
     lead: 'どの商品を選ぶかの前に効く、古びない原理から始めます。ここを飛ばすと、あとの章がぜんぶ暗記になります。',
   },
   {
+    subject: 'toshi',
     id: 'assets',
     label: '第2部',
     title: '資産クラス別',
     lead: '株式・債券から暗号資産・デリバティブまで、何がリターンの源泉で、どこにリスクがあるのかを商品ごとに見ます。',
   },
   {
+    subject: 'toshi',
     id: 'system',
     label: '第3部',
     title: '制度と税金',
     lead: 'NISA・iDeCo・特定口座・20.315%。同じ商品でも、どの器で持つかで手取りが変わります。',
   },
   {
+    subject: 'toshi',
     id: 'practice',
     label: '第4部',
     title: '実践',
     lead: '口座を開くところから、注文の出し方、積立、デイトレード、リバランス、取り崩しまで。このセクションの主軸です。',
   },
   {
+    subject: 'toshi',
     id: 'shikaku',
     label: '第5部',
     title: '資格につなげる',
@@ -126,6 +189,7 @@ export const parts: PartDef[] = [
 export const chapters: ChapterDef[] = [
   // ---- 第1部 基礎（原理・古びない） ----
   {
+    subject: 'toshi',
     slug: 'toshi-towa',
     title: '投資とは何か',
     description: '貯蓄との違い、インフレがなぜ「何もしないリスク」になるのか。',
@@ -136,6 +200,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp3'],
   },
   {
+    subject: 'toshi',
     slug: 'risk-return',
     title: 'リスクとリターン',
     description: '投資の「リスク」は損失ではなく振れ幅。標準偏差で測るとはどういうことか。',
@@ -146,6 +211,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp3', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'fukuri',
     title: '複利と時間',
     description:
@@ -157,6 +223,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp3'],
   },
   {
+    subject: 'toshi',
     slug: 'bunsan',
     title: '分散投資',
     description: '相関とは何か。GPIFの基本ポートフォリオを例に、分散が効く仕組みを見る。',
@@ -167,6 +234,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'cost',
     title: 'コスト',
     description: '信託報酬・売買手数料・スプレッド。リターンは不確実だが、コストは確実なマイナス。',
@@ -176,6 +244,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'index-active',
     title: '効率的市場仮説とインデックス／アクティブ',
     description: '「市場に勝つ」が難しいとされる理由と、その主張がどこまで成り立つのか。',
@@ -187,6 +256,7 @@ export const chapters: ChapterDef[] = [
 
   // ---- 第2部 資産クラス別 ----
   {
+    subject: 'toshi',
     slug: 'kabushiki',
     title: '株式',
     description:
@@ -198,6 +268,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp3'],
   },
   {
+    subject: 'toshi',
     slug: 'saiken',
     title: '債券',
     description: '金利が上がると債券価格が下がる理由、デュレーション、信用リスク、個人向け国債。',
@@ -208,6 +279,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp3', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'toshin',
     title: '投資信託',
     description: '基準価額の仕組みと、分配金が「儲け」とは限らない話（元本払戻金）。',
@@ -218,6 +290,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp3'],
   },
   {
+    subject: 'toshi',
     slug: 'etf',
     title: 'ETF',
     description: '上場している投資信託。投資信託との違いと、基準価額からの乖離。',
@@ -228,6 +301,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2'],
   },
   {
+    subject: 'toshi',
     slug: 'reit',
     title: 'REIT（不動産投信）',
     description: '不動産を小口で持つ仕組み。分配金の源泉と、金利との関係。',
@@ -238,6 +312,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2'],
   },
   {
+    subject: 'toshi',
     slug: 'gold',
     title: '金・コモディティ',
     description: '利息を生まない資産をなぜ持つのか。インフレヘッジという言葉の中身。',
@@ -247,6 +322,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'gaika-fx',
     title: '外貨・FX',
     description: '為替リスクとは何か。レバレッジがなぜ「損失が入金額を超える」ことになるのか。',
@@ -256,6 +332,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'ango-shisan',
     title: '暗号資産',
     description:
@@ -266,6 +343,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'fudosan',
     title: '不動産（現物）',
     description: '実物の不動産投資。レバレッジ・流動性・空室リスクと、REITとの違い。',
@@ -276,6 +354,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'hoken-nenkin',
     title: '保険・年金商品',
     description: '変額保険・個人年金保険。保障と運用を1つにまとめることの損得。',
@@ -286,6 +365,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp3', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'derivative',
     title: 'デリバティブ（先物・オプション）',
     description: '先物とオプションの仕組み。ヘッジの道具が投機の道具にもなる理由。',
@@ -298,6 +378,7 @@ export const chapters: ChapterDef[] = [
 
   // ---- 第3部 制度と税金（年1回の点検対象） ----
   {
+    subject: 'toshi',
     slug: 'nisa',
     title: 'NISA',
     description:
@@ -309,6 +390,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp3', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'ideco',
     title: 'iDeCo',
     description: '掛金が全額所得控除になる仕組みと、2026年12月施行の合算ルール。',
@@ -320,6 +402,7 @@ export const chapters: ChapterDef[] = [
     tools: ['ideco'],
   },
   {
+    subject: 'toshi',
     slug: 'tokutei-koza',
     title: '特定口座・一般口座',
     description: '源泉徴収ありとなしで何が変わるか。確定申告が要る場合・したほうがいい場合。',
@@ -330,6 +413,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp3'],
   },
   {
+    subject: 'toshi',
     slug: 'zeikin',
     title: '税金（20.315%・損益通算・繰越控除）',
     description: '譲渡益と配当にかかる税、損を出した年にやっておくこと、3年間の繰越控除。',
@@ -340,6 +424,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2', 'fp3', 'fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'ango-zeikin',
     title: '暗号資産の税金',
     description: '雑所得・総合課税で、株式とはまったく違う扱いになる。損益通算も繰越もできない。',
@@ -351,6 +436,7 @@ export const chapters: ChapterDef[] = [
 
   // ---- 第4部 実践（主軸） ----
   {
+    subject: 'toshi',
     slug: 'koza-kaisetsu',
     title: '証券会社の選び方・口座開設',
     description: '何を基準に選ぶか、口座開設で聞かれること、開設までの流れ。',
@@ -360,6 +446,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'chumon',
     title: '注文の出し方',
     description:
@@ -371,6 +458,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2'],
   },
   {
+    subject: 'toshi',
     slug: 'ita',
     title: '板・歩み値の読み方',
     description: '板から何が分かり、何が分からないか。見せ板という言葉の意味。',
@@ -381,6 +469,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2'],
   },
   {
+    subject: 'toshi',
     slug: 'tsumitate',
     title: '積立とドルコスト平均法',
     description: 'ドルコスト平均法が効く場面と、効かない場面。一括投資との比較。',
@@ -390,6 +479,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'asset-allocation',
     title: 'アセットアロケーション',
     description: 'リターンの大半を決めるのは商品選びではなく配分。自分の配分をどう決めるか。',
@@ -400,6 +490,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['fp2'],
   },
   {
+    subject: 'toshi',
     slug: 'rebalance',
     title: 'リバランス',
     description: '崩れた配分を戻す作業。いつ、どうやるか。税とコストをどう抑えるか。',
@@ -409,6 +500,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'day-trade',
     title: '短期売買（デイトレード・スイング）',
     description:
@@ -419,6 +511,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'technical',
     title: 'テクニカル分析',
     description: '移動平均・出来高・オシレーター。何を見ているのか、どこに限界があるのか。',
@@ -428,6 +521,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'shinyo',
     title: '信用取引とレバレッジ',
     description: '委託保証金、追証、逆日歩。損失が元本を超えるとはどういうことか。',
@@ -438,6 +532,7 @@ export const chapters: ChapterDef[] = [
     shikaku: ['gaimuin2'],
   },
   {
+    subject: 'toshi',
     slug: 'risk-kanri',
     title: 'リスク管理と損切り',
     description: '1回の取引でいくらまで失ってよいかから、持つ量を決める（ポジションサイジング）。',
@@ -447,6 +542,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'deguchi',
     title: '出口戦略（取り崩し）',
     description: '貯めたあとどう使うか。4%ルールの出どころと、そのまま当てはめられない理由。',
@@ -456,6 +552,7 @@ export const chapters: ChapterDef[] = [
     updatedAt: '2026-09-07',
   },
   {
+    subject: 'toshi',
     slug: 'sagi',
     title: 'やってはいけないこと・詐欺の見分け方',
     description: '無登録業者の見分け方、SNS型投資詐欺の型、金融庁の警告リストの引き方。',
@@ -467,6 +564,7 @@ export const chapters: ChapterDef[] = [
 
   // ---- 第5部 資格 ----
   {
+    subject: 'toshi',
     slug: 'shikaku',
     title: '資格で体系化する',
     description: '証券外務員二種・FP3級／2級の出題範囲と、この教科書の章の対応表。',
@@ -478,24 +576,62 @@ export const chapters: ChapterDef[] = [
 ];
 
 /**
+ * 一覧・sitemap に出してよい分野。
+ * **一覧を出すときは必ずこれを通すこと**（`subjects` を直に `filter` しない）。
+ */
+export const publicSubjects = subjects.filter((s) => s.stage === 'public');
+
+/** slug から分野を引く。未登録は投げる（静的書き出しなのでビルドで落ちる） */
+export function subjectBySlug(slug: string): SubjectDef {
+  const found = subjects.find((s) => s.slug === slug);
+  if (!found) {
+    throw new Error(`分野が見つかりません: ${slug}（lib/curriculum.ts に未登録）`);
+  }
+  return found;
+}
+
+/**
+ * URLの組み立て。**パスを文字列で継ぎ足さず、必ずここを通すこと。**
+ * 分野を1段挟む形にしたときに、各ページで組み立てていると追い切れなくなる。
+ */
+
+/** 分野の目次への `<Link href>`（例: `/toshi/`） */
+export function subjectPath(subject: string): string {
+  return `/${subject}/`;
+}
+
+/** 分野の目次の絶対URL（canonical・sitemap 用） */
+export function subjectUrl(subject: string): string {
+  return `${SITE_URL}/${subject}/`;
+}
+
+/** 章への `<Link href>`（例: `/toshi/fukuri/`） */
+export function chapterPath(chapter: Pick<ChapterDef, 'subject' | 'slug'>): string {
+  return `/${chapter.subject}/${chapter.slug}/`;
+}
+
+/** 章の絶対URL（canonical・sitemap 用） */
+export function chapterUrl(chapter: Pick<ChapterDef, 'subject' | 'slug'>): string {
+  return `${SITE_URL}/${chapter.subject}/${chapter.slug}/`;
+}
+
+/** その分野の章（カリキュラムの順番のまま） */
+export function chaptersOfSubject(subject: string): ChapterDef[] {
+  return chapters.filter((c) => c.subject === subject);
+}
+
+/** その分野の部（カリキュラムの順番のまま） */
+export function partsOfSubject(subject: string): PartDef[] {
+  return parts.filter((p) => p.subject === subject);
+}
+
+/**
  * 目次・sitemap に出してよい章。
  *
  * **一覧を出すときは必ずこれを通すこと。**`chapters` を直に `filter` しない
  * （書き忘れが公開事故になる。tools / games の `publicTools` / `publicGames` と同じ約束）。
  */
 export const publicChapters = chapters.filter((c) => c.stage === 'public');
-
-/**
- * セクションそのものを公開しているか。
- *
- * **目次の `robots` と sitemap は、必ずこれを見て揃えること。**
- * 別々に書くと「sitemap には出ているのに noindex」という食い違いが起きる
- * （`tests/stage.test.ts` が2つの一致を見張っている）。
- * 章を1つでも `public` にした時点で、目次も公開されるべき入口になる。
- */
-export function sectionIsPublic(): boolean {
-  return publicChapters.length > 0;
-}
 
 /** 本文が書かれていて、URLを開けば読める章（`wip` 以外） */
 export const writtenChapters = chapters.filter((c) => c.stage !== 'wip');
@@ -509,9 +645,12 @@ export function chapterBySlug(slug: string): ChapterDef {
   return found;
 }
 
-/** 部に属する章を、カリキュラムの順番のまま返す */
-export function chaptersOfPart(part: PartId): ChapterDef[] {
-  return chapters.filter((c) => c.part === part);
+/**
+ * 部に属する章を、カリキュラムの順番のまま返す。
+ * 部のIDは分野をまたいで同じ値を使えるので、分野も指定する。
+ */
+export function chaptersOfPart(part: PartId, subject = 'toshi'): ChapterDef[] {
+  return chapters.filter((c) => c.part === part && c.subject === subject);
 }
 
 /**
@@ -519,7 +658,10 @@ export function chaptersOfPart(part: PartId): ChapterDef[] {
  * 目次でリンクしない章へ、前後ナビからだけ入れてしまうのを防ぐため。
  */
 export function neighborsOf(slug: string): { prev?: ChapterDef; next?: ChapterDef } {
-  const list = writtenChapters;
+  const here = chapters.find((c) => c.slug === slug);
+  if (!here) return {};
+  // **前後は同じ分野の中で閉じる。** 分野をまたいで「次の章」へ送らない
+  const list = writtenChapters.filter((c) => c.subject === here.subject);
   const i = list.findIndex((c) => c.slug === slug);
   if (i < 0) return {};
   return { prev: list[i - 1], next: list[i + 1] };

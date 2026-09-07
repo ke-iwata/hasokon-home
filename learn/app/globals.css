@@ -317,6 +317,58 @@ a.chapter-title:hover {
   vertical-align: 1px;
 }
 
+/* ---- 分野の一覧（app/page.tsx） ----
+   ここは「学ぶ」のトップ。分野が増えたら並ぶ */
+
+.subject-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+
+.subject-list li + li {
+  margin-top: 12px;
+}
+
+.subject-card {
+  display: grid;
+  /* 名前と章数を1行目に、説明を2行目に置く */
+  grid-template-columns: 1fr auto;
+  gap: 4px 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: inherit;
+  /* 押す先は44pxを割らない */
+  min-height: 44px;
+}
+
+.subject-card:hover {
+  border-color: var(--accent);
+}
+
+.subject-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+
+.subject-count {
+  color: var(--muted);
+  font-size: 0.82rem;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.subject-desc {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.7;
+}
+
 /* ---- 章ページ（app/_chapter/Chapter.tsx） ---- */
 
 .chapter-part {

@@ -30,6 +30,8 @@ function entryOf(block) {
     name: pick(/name:\s*'([^']+)'/),
     // learn（投資の教科書）の章は name ではなく title で持っている
     title: pick(/title:\s*'([^']+)'/),
+    // learn の章だけが持つ、属する分野の slug
+    subject: pick(/subject:\s*'([^']+)'/),
     description: pick(/description:\s*'([^']*)'/),
     // ツールだけが持つ分類。ゲームには無い
     category: pick(/category:\s*'([^']+)'/),
@@ -93,12 +95,25 @@ export function loadRegistries() {
  * 混ぜるとその組み立てが壊れる。読みたい側（llms.txt のテスト）から直接呼ぶ。
  *
  * 表示名は `title`。`name` に読み替えて、ツール・ゲームと同じ形で返す。
+ *
+ * **URLは `/learn/{subject}/{slug}/` の3階層**（分野を1段挟んである）。
+ * `path` にその相対パスを入れて返すので、呼ぶ側で組み立てない。
  */
 export function loadChapters() {
   return parseRegistry(readRepoFile('learn/lib/curriculum.ts'), 'chapters', 30).map((e) => ({
     ...e,
     name: e.title,
     kind: 'learn',
+    path: `learn/${e.subject}/${e.slug}/`,
+  }));
+}
+
+/** learn の分野（`/learn/{slug}/`）。章とは別に一覧・sitemap に出る */
+export function loadSubjects() {
+  return parseRegistry(readRepoFile('learn/lib/curriculum.ts'), 'subjects', 1).map((e) => ({
+    ...e,
+    kind: 'learn-subject',
+    path: `learn/${e.slug}/`,
   }));
 }
 

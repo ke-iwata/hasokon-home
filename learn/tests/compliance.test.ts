@@ -19,9 +19,10 @@ const appDir = fileURLToPath(new URL('../app/', import.meta.url));
 const pages = [
   ...writtenChapters.map((c) => ({
     name: c.slug,
-    src: readFileSync(`${appDir}${c.slug}/page.tsx`, 'utf8'),
+    src: readFileSync(`${appDir}${c.subject}/${c.slug}/page.tsx`, 'utf8'),
   })),
-  { name: '目次', src: readFileSync(`${appDir}page.tsx`, 'utf8') },
+  { name: '学ぶトップ', src: readFileSync(`${appDir}page.tsx`, 'utf8') },
+  { name: '投資の目次', src: readFileSync(`${appDir}toshi/page.tsx`, 'utf8') },
 ];
 
 /**
@@ -104,7 +105,7 @@ describe('制度の数字には確かめる導線を添える', () => {
   it('制度の章には一次資料を見るよう促す但し書きがある', () => {
     // 改正で古びる章は、書いてある数字をそのまま信じさせない
     for (const c of writtenChapters.filter((c) => c.volatility === 'annual')) {
-      const prose = proseOf(readFileSync(`${appDir}${c.slug}/page.tsx`, 'utf8'));
+      const prose = proseOf(readFileSync(`${appDir}${c.subject}/${c.slug}/page.tsx`, 'utf8'));
       const hasCaveat =
         prose.includes('改正で変わ') || prose.includes('最新の数字') || prose.includes('確かめて');
       expect(hasCaveat, `${c.slug} に確認を促す記述が無い`).toBe(true);
@@ -132,7 +133,7 @@ describe('免責が全ページに出る', () => {
   });
 
   it('目次ページにも免責が出る（章を開かずに離脱する人がいる）', () => {
-    const src = readFileSync(`${appDir}page.tsx`, 'utf8');
+    const src = readFileSync(`${appDir}toshi/page.tsx`, 'utf8');
     expect(src).toMatch(/<Disclaimer\s*\/>/);
   });
 });

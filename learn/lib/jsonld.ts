@@ -4,7 +4,14 @@
  * 構成は tools/lib/jsonld.ts・games/lib/jsonld.ts と揃えてある。
  * 学習セクションは記事なので、ページ側の主役は WebApplication ではなく `Article`。
  */
-import { SITE_NAME, SITE_URL, chapterBySlug } from './curriculum';
+import {
+  SITE_NAME,
+  SITE_URL,
+  chapterBySlug,
+  subjectBySlug,
+  subjectPath,
+  subjectUrl,
+} from './curriculum';
 
 /** ドメイン直下のポータル（hasokon.com）。basePath の外なので絶対URLで持つ */
 export const HOME_URL = 'https://hasokon.com/';
@@ -18,11 +25,28 @@ export interface Crumb {
   path?: string;
 }
 
-/** パンくずの段。引数を省くと目次ページ自身の2段になる */
-export function breadcrumbTrail(current?: string): Crumb[] {
-  const home: Crumb = { name: 'ホーム', url: HOME_URL };
-  if (current === undefined) return [home, { name: SITE_NAME }];
-  return [home, { name: SITE_NAME, url: `${SITE_URL}/`, path: '/' }, { name: current }];
+/**
+ * パンくずの段。
+ *
+ * 学習セクションは分野を1段挟むので、章まで行くと4段になる。
+ *
+ * ```
+ * ホーム ＞ 学ぶ                                （/learn/ 自身）
+ * ホーム ＞ 学ぶ ＞ 投資の教科書                 （/learn/toshi/）
+ * ホーム ＞ 学ぶ ＞ 投資の教科書 ＞ 複利と時間   （章）
+ * ```
+ */
+export function breadcrumbTrail(): Crumb[] {
+  return [{ name: 'ホーム', url: HOME_URL }, { name: SITE_NAME }];
+}
+
+/** 分野の目次（`/learn/{subject}/`）のパンくず */
+export function subjectTrail(subjectName: string): Crumb[] {
+  return [
+    { name: 'ホーム', url: HOME_URL },
+    { name: SITE_NAME, url: `${SITE_URL}/`, path: '/' },
+    { name: subjectName },
+  ];
 }
 
 /**
@@ -30,7 +54,14 @@ export function breadcrumbTrail(current?: string): Crumb[] {
  * 未登録の slug は投げる（ビルドで落ちる）。
  */
 export function breadcrumbFor(slug: string): Crumb[] {
-  return breadcrumbTrail(chapterBySlug(slug).title);
+  const chapter = chapterBySlug(slug);
+  const subject = subjectBySlug(chapter.subject);
+  return [
+    { name: 'ホーム', url: HOME_URL },
+    { name: SITE_NAME, url: `${SITE_URL}/`, path: '/' },
+    { name: subject.name, url: subjectUrl(subject.slug), path: subjectPath(subject.slug) },
+    { name: chapter.title },
+  ];
 }
 
 /** BreadcrumbList。各ページの @graph に1要素として足す */
@@ -55,11 +86,17 @@ export function breadcrumbList(trail: Crumb[]) {
  */
 export function articleFor(slug: string) {
   const chapter = chapterBySlug(slug);
+  const subject = subjectBySlug(chapter.subject);
   return {
     '@type': 'Article',
     headline: chapter.title,
     description: chapter.description,
-    url: `${SITE_URL}/${chapter.slug}/`,
+    url: `${SITE_URL}/${chapter.subject}/${chapter.slug}/`,
+    isPartOf: {
+      '@type': 'CreativeWorkSeries',
+      name: subject.name,
+      url: subjectUrl(subject.slug),
+    },
     inLanguage: 'ja',
     learningResourceType: '解説記事',
     isAccessibleForFree: true,

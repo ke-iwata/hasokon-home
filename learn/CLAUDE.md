@@ -5,14 +5,31 @@ npmコマンドはすべて `learn/` ディレクトリ内で実行します。
 
 ## プロジェクト概要
 
-`https://hasokon.com/learn/` で公開する「投資の教科書」。
+`https://hasokon.com/learn/` で公開する学習ページ「学ぶ」。
 tools / games と技術構成・運用方針は共通です。**迷ったら tools/CLAUDE.md に従う。**
 
 - 完全静的サイト（Next.js App Router + `output: 'export'`、TypeScriptは6系に固定）
 - basePath は `/learn`。dev は 3002番（tools=3000・games=3001 と同時に立てられる）
 - 仕様は [docs/features/learn-toshi.md](../docs/features/learn-toshi.md)
 
-**現状：2026-09-07に全35章を公開しました。**
+## URLの形（分野を1段挟む）
+
+```
+/learn/                  分野の一覧（学ぶ）        app/page.tsx
+/learn/{subject}/        その分野の目次            app/{subject}/page.tsx
+/learn/{subject}/{slug}/ 章                        app/{subject}/{slug}/page.tsx
+```
+
+**投資に限定しないために分野を挟んでいます**（運営者の指示、2026-09-07）。
+いまある分野は `toshi`（投資の教科書）だけです。
+
+- **URLは `chapterPath()` / `subjectPath()` / `chapterUrl()` / `subjectUrl()` を通す。**
+  各ページで文字列を継ぎ足さないこと（パスの形を変えるときに追い切れなくなる）
+- **`SITE_NAME` は「学ぶ」（セクション名）。分野名ではない。**
+  ここを分野名にすると、パンくずが「投資の教科書 ＞ 投資の教科書」になる（一度やった）
+- **前後ナビは分野の中で閉じる**（`neighborsOf`）。分野をまたいで「次の章」へ送らない
+
+**現状：2026-09-07に「投資の教科書」の全35章を公開しました。**
 全章 `stage: 'public'` で、sitemap にも llms.txt にも載り、ホームからリンクしています。
 
 **一度公開したものを引っ込めるのは別の作業です**（URLがインデックスされるので、
@@ -108,8 +125,9 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 ## 章の追加手順
 
 1. `lib/curriculum.ts` の該当の章の `stage` を `wip` → `preview` にし、`updatedAt` を入れる
-   （**いまは未執筆の章が無いので、章を足すところから始まる**）
-2. `app/{slug}/page.tsx` を作る。**中身は `<Chapter slug="..." sources={[...]}>` で包む**
+   （**いまは未執筆の章が無いので、章を足すところから始まる**）。
+   `subject` を必ず書く
+2. `app/{subject}/{slug}/page.tsx` を作る。**中身は `<Chapter slug="..." sources={[...]}>` で包む**
    （免責・参考文献・前後ナビ・JSON-LD・パンくずはこれが出す）
 3. `metadata` に `title` / `description` / `alternates.canonical` /
    **`robots: robotsFor('{slug}')`** を書く（書き忘れは `tests/stage.test.ts` が落とす）
@@ -120,6 +138,14 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 
 **新しい章を勝手に増やさない。** 全35章は `lib/curriculum.ts` に定義済みで、
 これが仕様書の章立てと対応しています。増やすなら仕様書も直すこと。
+
+## 分野の追加手順
+
+1. `lib/curriculum.ts` の `subjects` に1件足す（`stage` は決まるまで `'preview'`）
+2. その分野の `parts` と `chapters` を書く（`subject` に分野の slug を入れる）
+3. `app/{subject}/page.tsx`（目次）と `app/{subject}/{slug}/page.tsx`（章）を作る
+4. 公開するときは `home/llms.txt` に分野の行と章の行を足し、
+   `home/index.html` の学ぶの節の文言を直す
 
 ## 数字を書くときの約束
 

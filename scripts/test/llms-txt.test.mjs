@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { loadChapters, parseRegistry, readRepoFile } from '../lib/registry.mjs';
+import { loadChapters, loadSubjects, parseRegistry, readRepoFile } from '../lib/registry.mjs';
 
 /**
  * llms.txt（AIアシスタント向けのサイト案内）のテスト。
@@ -32,17 +32,17 @@ const ORIGIN = 'https://hasokon.com';
  */
 const TOOLS = parseRegistry(read('tools/lib/registry.ts'), 'tools');
 const GAMES = parseRegistry(read('games/lib/registry.ts'), 'games');
-/** learn（投資の教科書）の章。表示名は title を name に読み替えて返ってくる */
+/** learn の章。表示名は title を name に読み替えて返ってくる */
 const CHAPTERS = loadChapters();
+/** learn の分野（`/learn/{slug}/`）。章とは別に1行載せる */
+const SUBJECTS = loadSubjects();
 
 /** 公開中のページ（URL → 表示名）。llms.txt に載っていなければならないもの */
 const PUBLISHED = new Map([
   ...TOOLS.filter((t) => t.stage === 'public').map((t) => [`${ORIGIN}/tools/${t.slug}/`, t.name]),
   ...GAMES.filter((g) => g.stage === 'public').map((g) => [`${ORIGIN}/games/${g.slug}/`, g.name]),
-  ...CHAPTERS.filter((c) => c.stage === 'public').map((c) => [
-    `${ORIGIN}/learn/${c.slug}/`,
-    c.name,
-  ]),
+  ...SUBJECTS.filter((s) => s.stage === 'public').map((s) => [`${ORIGIN}/${s.path}`, s.name]),
+  ...CHAPTERS.filter((c) => c.stage === 'public').map((c) => [`${ORIGIN}/${c.path}`, c.name]),
 ]);
 
 // ---------------------------------------------------------------- llms.txt
@@ -63,7 +63,10 @@ const LINKS = linkLines();
 
 /**
  * URLに対応する実ファイル。存在しなければリンク切れ。
- * home/ は素のHTML、tools/games は Next.js の app ディレクトリ。
+ * home/ は素のHTML、tools / games / learn は Next.js の app ディレクトリ。
+ *
+ * learn は `/learn/{subject}/{slug}/` の3階層だが、
+ * app/ 側も同じ形（`learn/app/{subject}/{slug}/page.tsx`）なので同じ規則で解ける。
  */
 function sourceOf(url) {
   const path = url.slice(ORIGIN.length);
@@ -138,10 +141,13 @@ describe('llms.txt のリンク先', () => {
 
   it('公開前・削除済みのツールやゲームを載せていない', () => {
     const published = new Set(
-      [...TOOLS, ...GAMES, ...CHAPTERS].filter((e) => e.stage === 'public').map((e) => e.slug),
+      [...TOOLS, ...GAMES, ...CHAPTERS, ...SUBJECTS]
+        .filter((e) => e.stage === 'public')
+        .map((e) => e.slug),
     );
     for (const { url } of LINKS) {
-      const m = /\/(?:tools|games|learn)\/([^/]+)\/$/.exec(url);
+      // 末尾の1段（ツール・ゲームの slug、learn なら分野か章の slug）を見る
+      const m = /\/(?:tools|games|learn)\/(?:[^/]+\/)?([^/]+)\/$/.exec(url);
       if (!m) continue;
       if (['about', 'privacy', 'contact'].includes(m[1])) continue; // 固定ページ
       assert.ok(published.has(m[1]), `registry に公開中のエントリが無い: ${url}`);
@@ -154,7 +160,8 @@ describe('llms.txt と registry の同期', () => {
     assert.ok(TOOLS.length >= 15, `ツールの読み取り件数が不自然: ${TOOLS.length}`);
     assert.ok(GAMES.length >= 8, `ゲームの読み取り件数が不自然: ${GAMES.length}`);
     assert.ok(CHAPTERS.length >= 30, `章の読み取り件数が不自然: ${CHAPTERS.length}`);
-    for (const e of [...TOOLS, ...GAMES, ...CHAPTERS]) {
+    assert.ok(SUBJECTS.length >= 1, `分野の読み取り件数が不自然: ${SUBJECTS.length}`);
+    for (const e of [...TOOLS, ...GAMES, ...CHAPTERS, ...SUBJECTS]) {
       assert.ok(e.slug && e.name, `slug/name を読めていないエントリがある: ${JSON.stringify(e)}`);
     }
   });
