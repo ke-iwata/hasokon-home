@@ -2,7 +2,7 @@ name: Deploy
 
 # main へのマージ → テスト環境（Basic認証つき）
 # v* タグのpush → 本番
-# 1つのタグで home + tools + games をまとめてリリースする
+# 1つのタグで home + tools + games + learn をまとめてリリースする
 on:
   push:
     branches: [main]
@@ -80,9 +80,38 @@ jobs:
           path: games/out/
           retention-days: 3
 
+  build-learn:
+    name: learn テスト & ビルド
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: learn
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: learn/package-lock.json
+
+      - run: npm ci
+
+      - name: カリキュラム・参考文献・編集方針のテスト
+        run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: learn-site
+          path: learn/out/
+          retention-days: 3
+
   deploy:
     name: ${{ startsWith(github.ref, 'refs/tags/') && '本番へデプロイ' || 'テスト環境へデプロイ' }}
-    needs: [build-tools, build-games]
+    needs: [build-tools, build-games, build-learn]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -122,6 +151,11 @@ jobs:
           name: games-site
           path: games-out
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: learn-site
+          path: learn-out
+
       - name: AWS認証（OIDC・長期キー不要）
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -152,6 +186,15 @@ jobs:
             --delete --exclude "_next/static/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
+      - name: S3へ同期（learn）
+        run: |
+          aws s3 sync learn-out/ s3://${{ steps.target.outputs.bucket }}/learn/ \
+            --exclude "*" --include "_next/static/*" --size-only \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync learn-out/ s3://${{ steps.target.outputs.bucket }}/learn/ \
+            --delete --exclude "_next/static/*" \
+            --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
+
       # テスト環境にだけ、公開前（stage が public 以外）のツール・ゲームを
       # トップの一覧に足す。home/ にはビルド工程が無く stage が効かないので、
       # ここで差し込む（docs/features/test-home-unreleased.md）。
@@ -160,14 +203,15 @@ jobs:
         if: ${{ !startsWith(github.ref, 'refs/tags/') }}
         run: node scripts/build-test-home.mjs
 
-      # バケット直下は home/ の中身だけ。tools/ games/ は上の同期が管理
-      # しているので削除対象から除外する
+      # バケット直下は home/ の中身だけ。tools/ games/ learn/ は上の同期が
+      # 管理しているので削除対象から除外する
       - name: S3へ同期（home）
         run: |
           aws s3 sync home/ s3://${{ steps.target.outputs.bucket }}/ \
             --delete \
             --exclude "tools/*" \
             --exclude "games/*" \
+            --exclude "learn/*" \
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
       - name: CloudFrontのキャッシュを削除

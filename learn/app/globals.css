@@ -1,0 +1,571 @@
+/* hasokon-learn 全スタイル。ここ以外にCSSを増やさない */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ed;
+  --text: #1c1917;
+  --muted: #6f6a65;
+  --border: #e5e2dd;
+
+  --accent: #15803d;
+  --accent-strong: #14532d;
+  --accent-soft: #edf7f0;
+  --on-accent: #ffffff;
+
+  /* --brand は旧名。参照が残っているので --accent の別名として置く */
+  --brand: var(--accent);
+
+  --danger: #b91c1c;
+  --ok: #15803d;
+  --warn-bg: #fdf6e7;
+  --warn-border: #c98a13;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+
+
+
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1817;
+    --surface: #242120;
+    --surface-2: #2f2b29;
+    --text: #f2efec;
+    --muted: #a8a29c;
+    --border: #3d3835;
+
+    --accent: #4ade80;
+    --accent-strong: #86efac;
+    --accent-soft: #17251c;
+    --on-accent: #0c1a10;
+
+    --danger: #f87171;
+    --ok: #4ade80;
+    --warn-bg: #2a2213;
+    --warn-border: #b98a2a;
+
+
+
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  /* iOS（Safari / iPhone版Chromeはどちらも WebKit）と Android Chrome は、
+     指定が無いと本文の文字を勝手に拡大することがある（既定値は auto）。
+     長文が主役なので行長が崩れる。ユーザー自身のズームは従来どおり効く */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: 'Hiragino Sans', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.8;
+}
+
+main {
+  /* 長文なので tools / games の 760px より少し狭くして1行の字数を抑える */
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+}
+
+/* ---- パンくず ---- */
+/* h1 の直前に置く1行のナビ（app/Breadcrumb.tsx）。tools と同じ見た目にする */
+.breadcrumb {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.breadcrumb ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.breadcrumb a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* キーボードで辿れるように、リングは明示的に出す */
+.breadcrumb a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.breadcrumb [aria-current='page'] {
+  color: var(--text);
+}
+
+a {
+  color: var(--brand);
+}
+
+h1 {
+  font-size: 1.5rem;
+  margin: 8px 0 4px;
+}
+
+h2 {
+  font-size: 1.15rem;
+  margin: 28px 0 8px;
+  border-left: 4px solid var(--brand);
+  padding-left: 10px;
+}
+
+h3 {
+  font-size: 1rem;
+  margin: 18px 0 6px;
+}
+
+p {
+  margin: 8px 0;
+}
+
+ul,
+ol {
+  padding-left: 1.4em;
+  margin: 8px 0;
+}
+
+.lead {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+/* ---- ヘッダー・フッター ---- */
+
+.site-header {
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+}
+
+.site-header .inner,
+.site-footer .inner {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 14px 16px;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+/* グラデーション文字は使わない（home/tools と揃える） */
+.brand span {
+  color: var(--accent);
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 40px;
+}
+
+.site-footer a {
+  color: var(--muted);
+  margin-right: 14px;
+}
+
+
+/* ---- 共通UI（tools / games と揃える） ---- */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 16px 0;
+}
+
+.note {
+  background: var(--warn-bg);
+  border-left: 4px solid var(--warn-border);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin: 14px 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.adslot {
+  min-height: 90px;
+  margin: 24px 0;
+  text-align: center;
+}
+
+/* ---- 目次（app/page.tsx） ---- */
+
+.toc-progress {
+  margin-bottom: 24px;
+}
+
+.part {
+  margin-top: 32px;
+}
+
+/* 「第1部」の番号ラベル。見出しの文字色に埋もれないよう小さく淡くする */
+.part-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-right: 10px;
+  font-weight: 600;
+}
+
+.part-lead {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 12px;
+}
+
+/* 章の一覧。番号・タイトル・説明の3列を、狭い画面では2行に折る。
+   番号を独立した列にしているのは、タイトルの頭を縦に揃えるため */
+.chapter-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+
+.chapter-list li {
+  display: grid;
+  grid-template-columns: 2.2em 1fr;
+  gap: 2px 10px;
+  padding: 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chapter-no {
+  grid-row: span 2;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  padding-top: 2px;
+}
+
+.chapter-title {
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+a.chapter-title {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a.chapter-title:hover {
+  text-decoration: underline;
+}
+
+.chapter-desc {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+/* 未執筆の章。リンクしないので、押せないことが見て分かる必要がある */
+.chapter-list li.is-todo .chapter-title {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.chapter-todo {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+/* ---- 章ページ（app/_chapter/Chapter.tsx） ---- */
+
+.chapter-part {
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* 本文。読み物なので tools のフォームより行間を広く取る */
+.chapter-body {
+  margin-top: 20px;
+}
+
+.chapter-body p {
+  margin: 12px 0;
+}
+
+.chapter-body li {
+  margin: 6px 0;
+}
+
+/* 本文中の用語の初出。太字だと強調が多くなりすぎるので下線で示す */
+.term {
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent-soft);
+}
+
+/* 数値例のブロック。「一般化した数値例で実践性を担保する」ための枠
+   （docs/features/learn-toshi.md）。前提を必ず添えるので上に見出し行を持つ */
+.example {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+}
+
+.example > strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--accent-strong);
+}
+
+/* 表。長い表は横スクロールさせ、ページ本体を横に伸ばさない。
+   **表の見出し（前提の但し書き）は箱の外に出す**。<caption> だと表と一緒に
+   横へ流れて、いちばん読ませたい「税・手数料は考えない」が見えなくなる */
+.table-figure {
+  margin: 16px 0;
+}
+
+.table-figure figcaption {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin-bottom: 6px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 16px 0;
+  /* 端の影で「まだ右に続く」ことを示す。background-attachment の local と scroll を
+     混ぜると、スクロールしきった側の影だけが消える（JSなしで出せる合図） */
+  background:
+    linear-gradient(to right, var(--surface) 30%, transparent) 0 0,
+    linear-gradient(to left, var(--surface) 30%, transparent) 100% 0,
+    radial-gradient(farthest-side at 0 50%, rgba(0, 0, 0, 0.16), transparent) 0 0,
+    radial-gradient(farthest-side at 100% 50%, rgba(0, 0, 0, 0.16), transparent) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 36px 100%, 36px 100%, 12px 100%, 12px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+.table-figure .table-wrap {
+  margin: 0;
+}
+
+.chapter-body table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.86rem;
+  min-width: 380px;
+}
+
+.chapter-body th,
+.chapter-body td {
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.chapter-body th {
+  background: var(--surface-2);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.chapter-body td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---- 参考文献 ---- */
+
+.refs {
+  margin-top: 36px;
+  padding-top: 4px;
+  border-top: 2px solid var(--border);
+}
+
+.refs ol {
+  padding-left: 1.4em;
+  font-size: 0.84rem;
+  line-height: 1.75;
+}
+
+.refs li {
+  margin: 10px 0;
+}
+
+/* 著者。書名と地続きに見えないよう区切る（『著者 書名』が1つの題に読める） */
+.refs-author {
+  color: var(--muted);
+}
+
+.refs-author::after {
+  content: '／';
+  margin: 0 2px;
+}
+
+/* 種別（官公庁・論文など）。一次資料かどうかが一目で分かるようにする */
+.refs-kind {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.refs-pub,
+.refs-date {
+  display: inline-block;
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* ---- 免責 ---- */
+
+.disclaimer {
+  margin-top: 28px;
+  padding: 12px 14px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.7;
+}
+
+.disclaimer strong {
+  color: var(--text);
+}
+
+/* ---- 前後ナビ ---- */
+
+.chapter-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.chapter-nav a {
+  display: block;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+  /* 押す先は44pxを割らない */
+  min-height: 44px;
+}
+
+.chapter-nav a:hover {
+  border-color: var(--accent);
+}
+
+.chapter-nav a span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.chapter-nav-next {
+  text-align: right;
+}
+
+.chapter-toc-back {
+  margin-top: 16px;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+/* ---- 狭い画面向けの上書き ----
+   メディアクエリは詳細度を上げないので、**ファイルの末尾にまとめる**
+   （途中に置くと後ろの通常の規則に黙って負ける。games/CLAUDE.md の約束） */
+
+@media (max-width: 600px) {
+  main {
+    padding: 16px 12px 40px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  /* 章一覧の番号列を詰める。3桁にはならないので2emで足りる */
+  .chapter-list li {
+    grid-template-columns: 1.9em 1fr;
+  }
+
+  /* 表は詰めて、横スクロールの量そのものを減らす（無くはならない） */
+  .chapter-body table {
+    font-size: 0.8rem;
+    min-width: 320px;
+  }
+
+  .chapter-body th,
+  .chapter-body td {
+    padding: 6px 8px;
+  }
+
+  /* 前後ナビは横に並べると1つあたりが狭すぎて章名が読めない */
+  .chapter-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .chapter-nav-next {
+    text-align: left;
+  }
+}

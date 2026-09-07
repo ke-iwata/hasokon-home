@@ -180,11 +180,11 @@ export const metadata: Metadata = {
 
 | ファイル | 役割 |
 |---|---|
-| `design/ogp/gen-ogp.mjs` | 3枚のPNGを書き出す生成スクリプト（headless Chromium） |
+| `design/ogp/gen-ogp.mjs` | 配信先ごとのPNGを書き出す生成スクリプト（headless Chromium） |
 | `design/ogp/README.md` | 作り直しかたと、生成物をコミットする理由 |
-| `home/ogp.png` / `tools/public/ogp.png` / `games/public/ogp.png` | 1200×630 の生成物 |
-| `tools/lib/registry.ts` / `games/lib/registry.ts` | `OGP_IMAGE`（絶対URL・寸法・alt） |
-| `tools/app/layout.tsx` / `games/app/layout.tsx` | `openGraph.images` と `twitter` |
+| `home/ogp.png` / `tools/public/ogp.png` / `games/public/ogp.png` / `learn/public/ogp.png` | 1200×630 の生成物 |
+| `tools/lib/registry.ts` / `games/lib/registry.ts` / `learn/lib/curriculum.ts` | `OGP_IMAGE`（絶対URL・寸法・alt） |
+| `tools/app/layout.tsx` / `games/app/layout.tsx` / `learn/app/layout.tsx` | `openGraph.images` と `twitter` |
 | `home/index.html` / `home/404.html` | `og:image` 一式と `twitter:card` |
 | `scripts/test/ogp.test.mjs` / `{tools,games}/tests/ogp.test.ts` | テスト |
 
@@ -192,8 +192,8 @@ export const metadata: Metadata = {
 
 1. **生成物をコミットする。** 仕様書が `.gitignore` を求めていたのは
    「registry を直したのに画像が古いままになる事故」を防ぐためだが、
-   それは registry からページごとに作る案Aの話。案Bの3枚は registry を触っても
-   増えないので、ビルド工程（`prebuild`）にも入れていない。
+   それは registry からページごとに作る案Aの話。案Bは配信先ごとに1枚で、
+   registry を触っても増えないので、ビルド工程（`prebuild`）にも入れていない。
    スクリプトを手で回してPNGを一緒にコミットする形にした
 2. **アイコンは Phosphor のツールアイコンではなく「h」のマーク1種にした。**
    共通の1枚に個別ツールのアイコンを載せると、どのページを貼っても

@@ -10,24 +10,25 @@ hasokon.com のモノレポで作業するAIエージェント・開発者向け
 home/    hasokon.com のポータル（素の静的HTML。ビルドなし）
 tools/   hasokon.com/tools/  無料計算ツール集（Next.js静的エクスポート）→ tools/CLAUDE.md
 games/   hasokon.com/games/  無料ミニゲーム集（Next.js静的エクスポート）→ games/CLAUDE.md
-docs/    サイト横断のドキュメント（tools/games 固有の docs は各ディレクトリ配下）
+learn/   hasokon.com/learn/  投資の教科書（Next.js静的エクスポート）→ learn/CLAUDE.md
+docs/    サイト横断のドキュメント（各アプリ固有の docs は各ディレクトリ配下）
 infra/   ポインタのみ。AWSは hasokon-infra リポジトリ（Terraform）で管理
 ```
 
-- tools / games で作業するときは、それぞれの `CLAUDE.md` に従う。
+- tools / games / learn で作業するときは、それぞれの `CLAUDE.md` に従う。
   npmコマンドはすべて各ディレクトリ内で実行する（ルートに package.json はない）
 - **home/ はS3バケット直下にそのまま同期される。** サイトの成果物以外
   （開発用ドキュメント・設定ファイル）を home/ に置かないこと
 
 ## デプロイ
 
-`.github/workflows/deploy.yml` が home + tools + games をまとめて扱う:
+`.github/workflows/deploy.yml` が home + tools + games + learn をまとめて扱う:
 
 - main にマージ → **test.hasokon.com**（Basic認証つきテスト環境）
 - `v*` タグを push → **hasokon.com**（本番）。1つのタグでサイト全体がリリースされる
 
 同期先は S3 バケット（hasokon-com / hasokon-com-test）で、
-home/ → バケット直下、tools/out/ → tools/、games/out/ → games/。
+home/ → バケット直下、tools/out/ → tools/、games/out/ → games/、learn/out/ → learn/。
 CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-iwata/hasokon-infra)
 （Terraform）で一元管理。コンソールで直接いじらず、hasokon-infra にPRを出す。
 
@@ -51,8 +52,8 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 
 ## 公開の段階（フィーチャーフラグ）
 
-`games` / `tools` の `lib/registry.ts` の `stage` が、**そのツール・ゲームを
-公開するかどうかの唯一の切り替え**。仕様は
+`games` / `tools` の `lib/registry.ts`（`learn` は `lib/curriculum.ts`）の `stage` が、
+**そのツール・ゲーム・章を公開するかどうかの唯一の切り替え**。仕様は
 [docs/features/feature-flags.md](./docs/features/feature-flags.md)。
 
 | stage | 一覧・sitemap・llms.txt | `robots` | URLを直接叩くと |
@@ -60,10 +61,10 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 | `wip` / `preview` | 出さない | `noindex` | **見える**（秘密にはできない） |
 | `public` | 出す | 既定 | 見える |
 
-- **一覧を出すときは `publicGames` / `publicTools` を通す。**
-  `games` / `tools` を直に `filter` しない（書き忘れが公開事故になる）
+- **一覧を出すときは `publicGames` / `publicTools` / `publicChapters` を通す。**
+  `games` / `tools` / `chapters` を直に `filter` しない（書き忘れが公開事故になる）
 - **ページの `metadata` に `robots: robotsFor('<slug>')` を書く**
-  （書き忘れは `{games,tools}/tests/stage.test.ts` が落とす）
+  （書き忘れは `{games,tools,learn}/tests/stage.test.ts` が落とす）
 - **`home/index.html` のカードと `home/llms.txt` の行は、`public` にするPRで足す。**
   `home/` にはビルド工程が無いので `stage` が効かない。ここだけは運用で守る
 - **テスト環境のトップにだけは、公開前のものも「本番未公開」の印つきで並ぶ**
@@ -75,6 +76,22 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   別の作業（URLがインデックスされているので、消すと404になる）
 - **フラグは腐る。** 仕様書の `**状態**：` 行に「いつ `public` にするか」を書き、
   公開するPRで `stage` を上げる
+
+## 学習セクション（learn/）
+
+`hasokon.com/learn/` の「投資の教科書」。tools / games と違い**読み物**なので、
+別の約束がいくつかある。詳細は [learn/CLAUDE.md](./learn/CLAUDE.md) と
+[docs/features/learn-toshi.md](./docs/features/learn-toshi.md)。
+
+- **`tools/docs/CONCEPT.md` はブログ型を除外している**（「記事を書き続けられない」）。
+  学習セクションはそこに真っ向からぶつかるので、**コンテンツをデータとして持つ**
+  ことで両立させている。章は `lib/curriculum.ts`、参考文献は `lib/sources.ts`。
+  **この前提を崩す（本文を場当たりに増やす）なら、CONCEPT.md のほうを先に直すこと**
+- **投資助言・代理業の登録はしていない。** 個別銘柄の推奨・売買時期の助言・
+  断定的判断（金商法38条2号）は書かない。民間の個別商品名・証券会社名も出さない。
+  **`learn/tests/compliance.test.ts` が本文を検査して落とす**
+- **出典のない章を作らない。** `learn/tests/sources.test.ts` が落とす
+- いまはセクションごと公開前。**ホームからリンクしていない**（運営者の指示）
 
 ## リリースの約束
 
@@ -103,10 +120,11 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   （`scripts/test/llms-txt.test.mjs` が registry との食い違いを検知する）。
   仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
 - `sitemap.xml` はインデックス形式で home / tools / games の3本を指す。
-  home のページを増やしたら `sitemap-home.xml` を更新する
+  home のページを増やしたら `sitemap-home.xml` を更新する。
+  **learn はまだ足していない**（セクションごと公開前のため。公開するPRで4本目を足す）
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
-- SNS共有時のサムネイル（`ogp.png`）は home / tools / games に1枚ずつあり、
+- SNS共有時のサムネイル（`ogp.png`）は home / tools / games / learn に1枚ずつあり、
   原典は `design/ogp/gen-ogp.mjs`。**PNGを直接編集せず、スクリプトを回して差し替える**。
   `og:image` は必ず絶対URLで書くこと（相対パスを解決できないクローラーが多い）。
   仕様は [docs/features/ogp-image.md](./docs/features/ogp-image.md)
