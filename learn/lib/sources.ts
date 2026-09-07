@@ -197,6 +197,14 @@ export const sources: Source[] = [
     checkedAt: '2026-09-07',
   },
   {
+    id: 'nca-toshi',
+    title: '投資・もうけ話のトラブル（消費者トラブル情報）',
+    publisher: '独立行政法人 国民生活センター',
+    kind: 'gov',
+    url: 'https://www.kokusen.go.jp/',
+    checkedAt: '2026-09-07',
+  },
+  {
     id: 'mlit-fudosan',
     title: '不動産価格指数・土地総合情報システム',
     publisher: '国土交通省',
@@ -244,6 +252,14 @@ export const sources: Source[] = [
     publisher: '株式会社日本取引所グループ（JPX）',
     kind: 'org',
     url: 'https://www.jpx.co.jp/equities/trading/domestic/07.html',
+    checkedAt: '2026-09-07',
+  },
+  {
+    id: 'jpx-margin',
+    title: '信用取引の制度概要',
+    publisher: '株式会社日本取引所グループ（JPX）',
+    kind: 'org',
+    url: 'https://www.jpx.co.jp/equities/trading/margin/index.html',
     checkedAt: '2026-09-07',
   },
   {

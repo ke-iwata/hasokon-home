@@ -81,6 +81,46 @@ export function drawdownOf(riskyRatio: number, riskyFall: number): number {
   return riskyRatio * riskyFall;
 }
 
+/**
+ * ポジションサイジング。
+ *
+ * 「1回の取引で資産の何%まで失ってよいか」と「どこで損切りするか」から、
+ * **いくら分まで持てるか**を出す。順番が逆（先に金額を決めてから損切りを考える）だと、
+ * 1回の損失が想定を超える。
+ *
+ * @param capital 資産の総額
+ * @param riskRatio 1回の取引で失ってよい割合（0.01 なら1%）
+ * @param stopRatio 損切りまでの下落率（0.1 なら10%下で切る）
+ */
+export function positionSize(
+  capital: number,
+  riskRatio: number,
+  stopRatio: number,
+): number {
+  if (stopRatio <= 0) return 0;
+  return (capital * riskRatio) / stopRatio;
+}
+
+/**
+ * 一定の割合で取り崩したときに資産がどう推移するか。
+ * 運用しながら毎年 withdrawRatio を引き出す。
+ */
+export function withdrawSeries(
+  start: number,
+  annualReturn: number,
+  withdrawRatio: number,
+  years: number,
+): number[] {
+  const out: number[] = [start];
+  let v = start;
+  const yearly = start * withdrawRatio;
+  for (let y = 1; y <= years; y += 1) {
+    v = Math.max(0, (v - yearly) * (1 + annualReturn));
+    out.push(v);
+  }
+  return out;
+}
+
 /** 図の1点。年と金額 */
 export interface Point {
   year: number;
@@ -99,6 +139,32 @@ export function series(
     points.push({ year: years, value: valueAt(years) });
   }
   return points;
+}
+
+/**
+ * 毎回同じ金額を投じたときの平均取得単価（ドルコスト平均法）。
+ *
+ * 価格が安いときに多く、高いときに少なく買うことになるので、
+ * **単純な価格の平均より必ず低くなる**（調和平均になる）。
+ * 価格がすべて同じときだけ一致する。
+ */
+export function averageCostPerUnit(prices: readonly number[], amountEach: number): number {
+  const units = prices.reduce((s, p) => s + amountEach / p, 0);
+  return (amountEach * prices.length) / units;
+}
+
+/** 単純な価格の平均。ドルコスト平均法との比較に使う */
+export function mean(values: readonly number[]): number {
+  return values.reduce((s, v) => s + v, 0) / values.length;
+}
+
+/**
+ * 目標の配分から、いまの評価額がどれだけずれているか。
+ * リバランスの判断に使う「乖離」を出す。
+ */
+export function driftOf(current: readonly number[], target: readonly number[]): number[] {
+  const total = current.reduce((s, v) => s + v, 0);
+  return current.map((v, i) => (v / total) * 100 - target[i]);
 }
 
 /**

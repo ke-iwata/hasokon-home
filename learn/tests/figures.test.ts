@@ -51,6 +51,21 @@ describe('図解の約束', () => {
     }
   });
 
+  it('図の部品は必ず Figure の中で使う（読み上げ用の名前が付かなくなる）', () => {
+    // Figure は role="img" と aria-label を付ける。外で使うと、図に名前が無くなる
+    const parts = ['LineChart', 'Bars', 'Ladder', 'NestedBox', 'Timeline', 'OrderBook', 'Flow'];
+    for (const { slug, src } of chapterSrc) {
+      // <Figure ...> ... </Figure> の中身を取り除いた残りに部品が現れたら違反
+      const outside = src.replace(/<Figure[\s\S]*?<\/Figure>/g, ' ');
+      for (const part of parts) {
+        expect(
+          new RegExp(`<${part}\\b`).test(outside),
+          `${slug}: <${part}> が Figure の外にある`,
+        ).toBe(false);
+      }
+    }
+  });
+
   it('章のページに生の <svg> を書かない（共通部品を通す）', () => {
     for (const { slug, src } of chapterSrc) {
       expect(src, `${slug} に生の svg がある`).not.toMatch(/<svg\b/);
@@ -89,7 +104,11 @@ describe('図と本文で数字を二重に書かない', () => {
     for (const { slug, src } of chapterSrc) {
       if (!src.includes('<LineChart')) continue;
       expect(src, `${slug} が calc を使っていない`).toMatch(/from '@\/lib\/calc'/);
-      expect(src, `${slug} が series() を使っていない`).toMatch(/series\(/);
+      // points に座標の配列を直書きしていないこと。
+      // 関数名までは縛らない（series() でも withdrawSeries() でもよい）
+      expect(src, `${slug} が折れ線の座標を直書きしている`).not.toMatch(
+        /points:\s*\[\s*\{\s*year:/,
+      );
     }
   });
 

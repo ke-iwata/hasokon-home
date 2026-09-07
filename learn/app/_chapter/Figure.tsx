@@ -102,6 +102,27 @@ export function LineChart({
   const x = (year: number) => padL + (year / xMax) * plotW;
   const y = (value: number) => padT + plotH - (value / yMax) * plotH;
 
+  /**
+   * 終端ラベルの位置。線が接近していたり0まで落ちたりすると、
+   * 文字どうしや横軸の目盛りと重なる。上から順に最小の間隔を空け、
+   * 描画領域からはみ出さない範囲に収める。
+   */
+  const MIN_GAP = 15;
+  const labelRows = series
+    .filter((s) => s.endLabel)
+    .map((s) => ({
+      name: s.name,
+      tone: s.tone,
+      text: s.endLabel as string,
+      y: y(s.points[s.points.length - 1].value) + 4,
+    }))
+    .sort((a, b) => a.y - b.y)
+    .map((row, i, rows) => {
+      if (i > 0) row.y = Math.max(row.y, rows[i - 1].y + MIN_GAP);
+      return row;
+    })
+    .map((row) => ({ ...row, y: Math.min(row.y, padT + plotH) }));
+
   return (
     <svg className="chart" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
       {/* 目盛り線。地の色に近い薄さにして、線そのものを主役にしない */}
@@ -138,27 +159,30 @@ export function LineChart({
       </text>
 
       {series.map((s) => (
-        <g key={s.name}>
-          <polyline
-            points={s.points.map((p) => `${x(p.year)},${y(p.value)}`).join(' ')}
-            fill="none"
-            stroke={STROKE[s.tone]}
-            strokeDasharray={DASH[s.tone]}
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-          {s.endLabel && (
-            <text
-              x={x(s.points[s.points.length - 1].year) + 5}
-              y={y(s.points[s.points.length - 1].value) + 4}
-              className="chart-endlabel"
-              fill={STROKE[s.tone]}
-            >
-              {s.endLabel}
-            </text>
-          )}
-        </g>
+        <polyline
+          key={s.name}
+          points={s.points.map((p) => `${x(p.year)},${y(p.value)}`).join(' ')}
+          fill="none"
+          stroke={STROKE[s.tone]}
+          strokeDasharray={DASH[s.tone]}
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      ))}
+
+      {/* 終端のラベル。線が重なったり0まで落ちたりすると文字どうし・目盛りと
+          ぶつかるので、**上下にずらしてから描く**（実測して直したもの） */}
+      {labelRows.map((row) => (
+        <text
+          key={row.name}
+          x={x(xMax) + 5}
+          y={row.y}
+          className="chart-endlabel"
+          fill={STROKE[row.tone]}
+        >
+          {row.text}
+        </text>
       ))}
     </svg>
   );
