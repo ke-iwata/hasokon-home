@@ -64,9 +64,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
             <p>
               <Link href="/">目次</Link>
-              {/* プライバシーポリシー・お問い合わせは同じドメインの tools 側にある
+              {/* プライバシーポリシーは home 実体の /privacy.html、お問い合わせは tools 側にある
                   （basePath の外なので <a> で絶対パスへ飛ばす） */}
-              <a href="/tools/privacy/">プライバシーポリシー</a>
+              <a href="/privacy.html">プライバシーポリシー</a>
               <a href="/tools/contact/">お問い合わせ</a>
               <a href="/">hasokon.com</a>
             </p>
