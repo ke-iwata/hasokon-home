@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Chapter slug="ango-zeikin" sources={['nta-1524', 'nta-1463', 'fsa-crypto']}>
+    <Chapter slug="ango-zeikin" sources={['nta-1524', 'nta-crypto', 'mof-taikou-2026', 'fsa-kaisei-2026', 'nta-1463', 'fsa-crypto']}>
       <p>
         暗号資産の税は、株式とは<strong>まったく別の仕組み</strong>です。
         章を分けているのは、株式の感覚で処理すると
@@ -217,6 +217,70 @@ export default function Page() {
         <strong>利益が出た時点で、納税分を円で確保しておく</strong>のが対策です。
       </div>
 
+      <h2>これから変わること（まだ変わっていない）</h2>
+
+      <p>
+        暗号資産の税は、<strong>大きく変わることが決まっています</strong>。
+        ただし<strong>いつからかがまだ確定していない</strong>ので、
+        「もう20%になった」という説明を見かけたら、適用の開始時期を確かめてください。
+      </p>
+
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>いま（この章の内容）</th>
+              <th>改正後</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>課税のしかた</th>
+              <td>雑所得・総合課税</td>
+              <td>
+                <strong>申告分離課税</strong>
+              </td>
+            </tr>
+            <tr>
+              <th>税率</th>
+              <td>累進。住民税と合わせ最大約55%</td>
+              <td>
+                <strong>20%</strong>（所得税15%・個人住民税5%）
+              </td>
+            </tr>
+            <tr>
+              <th>損失の繰越</th>
+              <td>できない</td>
+              <td>
+                <strong>翌年以後3年</strong>
+              </td>
+            </tr>
+            <tr>
+              <th>対象</th>
+              <td>すべての暗号資産</td>
+              <td>
+                <strong>特定暗号資産</strong>（登録された業者が扱うものに限る）
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p className="note">
+        <strong>適用が始まるのは、金融商品取引法の改正法が施行された年の翌年1月1日からです。</strong>
+        改正法は2026年7月15日に成立しましたが、施行日は政令で定められます。
+        <strong>つまり、いまはまだこの章の本文どおりの扱いです。</strong>
+        最新の数字と適用時期は、国税庁と財務省の公表資料（末尾の参考文献）で確かめてください。
+      </p>
+
+      <p className="note">
+        <strong>「登録された業者を通したものに限る」という条件が付きます。</strong>
+        海外の無登録業者での取引は分離課税の対象外になる見込みです。
+        また、いま抱えている含み損や、制度が変わる前に確定させた損を
+        新しい制度へ持ち越せるとはかぎりません。
+      </p>
+
       <h2>まとめ</h2>
 
       <ul>
@@ -226,6 +290,10 @@ export default function Page() {
         <li>円に戻していなくても、暗号資産どうしの交換や決済で課税される</li>
         <li>取引のたびに記録を残す。あとから再現するのは非常に難しい</li>
         <li>利益が出た年に、納税分を円で確保しておく</li>
+        <li>
+          20%の申告分離課税と3年の繰越控除への改正が決まっているが、
+          <strong>適用はまだ始まっていない</strong>
+        </li>
       </ul>
     </Chapter>
   );

@@ -339,8 +339,19 @@ export const chapters: ChapterDef[] = [
       'ビットコインなどの位置づけ、価格の源泉、取引所の破綻リスク、そして日本での税の重さ。',
     part: 'assets',
     stage: 'public',
+    volatility: 'annual',
+    updatedAt: '2026-09-08',
+  },
+  {
+    subject: 'toshi',
+    slug: 'ango-shurui',
+    title: '暗号資産の種類と特徴',
+    description:
+      '何千種類もあるものを4つの型で分ける。供給の決まり方、発行主体の有無、ステーブルコインが別枠な理由。',
+    part: 'assets',
+    stage: 'public',
     volatility: 'slow',
-    updatedAt: '2026-09-07',
+    updatedAt: '2026-09-08',
   },
   {
     subject: 'toshi',
@@ -427,11 +438,12 @@ export const chapters: ChapterDef[] = [
     subject: 'toshi',
     slug: 'ango-zeikin',
     title: '暗号資産の税金',
-    description: '雑所得・総合課税で、株式とはまったく違う扱いになる。損益通算も繰越もできない。',
+    description:
+      '雑所得・総合課税で、株式とはまったく違う扱いになる。20%分離課税への改正と、まだ適用が始まっていないこと。',
     part: 'system',
     stage: 'public',
     volatility: 'annual',
-    updatedAt: '2026-09-07',
+    updatedAt: '2026-09-08',
   },
 
   // ---- 第4部 実践（主軸） ----
@@ -509,6 +521,17 @@ export const chapters: ChapterDef[] = [
     stage: 'public',
     volatility: 'stable',
     updatedAt: '2026-09-07',
+  },
+  {
+    subject: 'toshi',
+    slug: 'saitei-torihiki',
+    title: '裁定取引（アービトラージ）',
+    description:
+      '価格差を取る考え方と、その差が手数料・送金時間・板の厚み・税で消えていく過程を数える。',
+    part: 'practice',
+    stage: 'public',
+    volatility: 'stable',
+    updatedAt: '2026-09-08',
   },
   {
     subject: 'toshi',

@@ -97,8 +97,8 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   断定的判断（金商法38条2号）は書かない。民間の個別商品名・証券会社名も出さない。
   **`learn/tests/compliance.test.ts` が本文を検査して落とす**
 - **出典のない章を作らない。** `learn/tests/sources.test.ts` が落とす
-- **2026-09-07に「投資の教科書」（全35章）を公開した。** ホームからのリンク
-  （`index.html` のヒーローと学ぶの節・`404.html` のカード）、`llms.txt` の37行、
+- **2026-09-07に「投資の教科書」を公開した（いまは全37章）。** ホームからのリンク
+  （`index.html` のヒーローと学ぶの節・`404.html` のカード）、`llms.txt` の39行、
   `sitemap.xml` の4本目が入っている。
   章を増やしたら**ホームの「全◯章」も直す**（`scripts/test/home-nav.test.mjs` が落とす）
 
