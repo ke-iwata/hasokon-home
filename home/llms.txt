@@ -1,6 +1,6 @@
 # hasokon.com
 
-> 登録不要・無料で使える計算ツールとブラウザゲームのサイト。税金・社会保険など法改正に追随した計算機と、定番ミニゲームに加え、投資を体系的に学べる読み物「投資の教科書」（全35章）を提供する。計算はすべてブラウザ内で完結し、入力した内容をサーバーに送信しない。制度に関わる計算機と読み物は法令・官公庁の一次資料にもとづき、各ページに出典と最終更新日を載せている。
+> 登録不要・無料で使える計算ツールとブラウザゲームのサイト。税金・社会保険など法改正に追随した計算機と、定番ミニゲームに加え、投資を体系的に学べる読み物「投資の教科書」（全37章）を提供する。計算はすべてブラウザ内で完結し、入力した内容をサーバーに送信しない。制度に関わる計算機と読み物は法令・官公庁の一次資料にもとづき、各ページに出典と最終更新日を載せている。
 
 ## ツール（hasokon.com/tools/）
 
@@ -71,7 +71,7 @@
 ## 学ぶ（hasokon.com/learn/）
 
 - [学ぶ トップ](https://hasokon.com/learn/): 学習ページの入口。分野ごとに分かれている
-- [投資の教科書](https://hasokon.com/learn/toshi/): 全35章の目次と学習の順路。基礎（原理）→ 資産クラス別 → 制度と税金 → 実践 → 資格の順に並ぶ
+- [投資の教科書](https://hasokon.com/learn/toshi/): 全37章の目次と学習の順路。基礎（原理）→ 資産クラス別 → 制度と税金 → 実践 → 資格の順に並ぶ
 - [投資とは何か](https://hasokon.com/learn/toshi/toshi-towa/): 貯蓄との違い、インフレがなぜ「何もしないリスク」になるのか。
 - [リスクとリターン](https://hasokon.com/learn/toshi/risk-return/): 投資の「リスク」は損失ではなく振れ幅。標準偏差で測るとはどういうことか。
 - [複利と時間](https://hasokon.com/learn/toshi/fukuri/): 複利がなぜ「時間を味方につける」と言われるのか、72の法則と、コストが複利で効く逆側まで。
@@ -86,6 +86,7 @@
 - [金・コモディティ](https://hasokon.com/learn/toshi/gold/): 利息を生まない資産をなぜ持つのか。インフレヘッジという言葉の中身。
 - [外貨・FX](https://hasokon.com/learn/toshi/gaika-fx/): 為替リスクとは何か。レバレッジがなぜ「損失が入金額を超える」ことになるのか。
 - [暗号資産](https://hasokon.com/learn/toshi/ango-shisan/): ビットコインなどの位置づけ、価格の源泉、取引所の破綻リスク、そして日本での税の重さ。
+- [暗号資産の種類と特徴](https://hasokon.com/learn/toshi/ango-shurui/): 何千種類もあるものを4つの型で分ける。供給の決まり方、発行主体の有無、ステーブルコインが別枠な理由。
 - [不動産（現物）](https://hasokon.com/learn/toshi/fudosan/): 実物の不動産投資。レバレッジ・流動性・空室リスクと、REITとの違い。
 - [保険・年金商品](https://hasokon.com/learn/toshi/hoken-nenkin/): 変額保険・個人年金保険。保障と運用を1つにまとめることの損得。
 - [デリバティブ（先物・オプション）](https://hasokon.com/learn/toshi/derivative/): 先物とオプションの仕組み。ヘッジの道具が投機の道具にもなる理由。
@@ -93,7 +94,7 @@
 - [iDeCo](https://hasokon.com/learn/toshi/ideco/): 掛金が全額所得控除になる仕組みと、2026年12月施行の合算ルール。
 - [特定口座・一般口座](https://hasokon.com/learn/toshi/tokutei-koza/): 源泉徴収ありとなしで何が変わるか。確定申告が要る場合・したほうがいい場合。
 - [税金（20.315%・損益通算・繰越控除）](https://hasokon.com/learn/toshi/zeikin/): 譲渡益と配当にかかる税、損を出した年にやっておくこと、3年間の繰越控除。
-- [暗号資産の税金](https://hasokon.com/learn/toshi/ango-zeikin/): 雑所得・総合課税で、株式とはまったく違う扱いになる。損益通算も繰越もできない。
+- [暗号資産の税金](https://hasokon.com/learn/toshi/ango-zeikin/): 雑所得・総合課税で、株式とはまったく違う扱いになる。20%分離課税への改正と、まだ適用が始まっていないこと。
 - [証券会社の選び方・口座開設](https://hasokon.com/learn/toshi/koza-kaisetsu/): 何を基準に選ぶか、口座開設で聞かれること、開設までの流れ。
 - [注文の出し方](https://hasokon.com/learn/toshi/chumon/): 成行・指値・逆指値の違いと使い分け。呼値の単位、板の見方、注文が約定する順番まで。
 - [板・歩み値の読み方](https://hasokon.com/learn/toshi/ita/): 板から何が分かり、何が分からないか。見せ板という言葉の意味。
@@ -101,6 +102,7 @@
 - [アセットアロケーション](https://hasokon.com/learn/toshi/asset-allocation/): リターンの大半を決めるのは商品選びではなく配分。自分の配分をどう決めるか。
 - [リバランス](https://hasokon.com/learn/toshi/rebalance/): 崩れた配分を戻す作業。いつ、どうやるか。税とコストをどう抑えるか。
 - [短期売買（デイトレード・スイング）](https://hasokon.com/learn/toshi/day-trade/): 実際の手順と、手数料・税・時間というコスト。研究が示す勝率の現実まで含めて扱う。
+- [裁定取引（アービトラージ）](https://hasokon.com/learn/toshi/saitei-torihiki/): 価格差を取る考え方と、その差が手数料・送金時間・板の厚み・税で消えていく過程を数える。
 - [テクニカル分析](https://hasokon.com/learn/toshi/technical/): 移動平均・出来高・オシレーター。何を見ているのか、どこに限界があるのか。
 - [信用取引とレバレッジ](https://hasokon.com/learn/toshi/shinyo/): 委託保証金、追証、逆日歩。損失が元本を超えるとはどういうことか。
 - [リスク管理と損切り](https://hasokon.com/learn/toshi/risk-kanri/): 1回の取引でいくらまで失ってよいかから、持つ量を決める（ポジションサイジング）。

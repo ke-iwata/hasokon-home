@@ -15,13 +15,14 @@ export const metadata: Metadata = {
 
 export default function Page() {
   return (
-    <Chapter slug="ango-shisan" sources={['fsa-crypto', 'nta-1524', 'fsa-warning', 'fsa-basic']}>
+    <Chapter slug="ango-shisan" sources={['fsa-crypto', 'fsa-kaisei-2026', 'nta-1524', 'fsa-warning', 'fsa-basic']}>
       <p>
         暗号資産は、この教科書で扱う資産のなかで
         <strong>制度上の位置づけが最も違います</strong>。
         「株式と同じように投資できるもの」と考えると、
         税金でも保護の仕組みでも想定と食い違います。
         ここでは値上がりの見通しではなく、性質と制度を扱います。
+        <strong>種類ごとの違いは次の章</strong>で扱います。
       </p>
 
       <h2>法律上は「金融商品」ではない</h2>
@@ -40,7 +41,8 @@ export default function Page() {
               <th>根拠法</th>
               <td>金融商品取引法</td>
               <td>
-                <strong>資金決済法</strong>（一部は金商法）
+                <strong>資金決済法</strong>（一部は金商法）。
+                <strong>改正法の施行後は金融商品取引法へ移る</strong>
               </td>
             </tr>
             <tr>
@@ -67,6 +69,17 @@ export default function Page() {
           </tbody>
         </table>
       </div>
+
+      <p className="note">
+        <strong>この位置づけは変わる途中です。</strong>
+        暗号資産の規制を資金決済法から金融商品取引法へ移す改正法が、
+        2026年7月15日に成立しました。施行後は
+        <strong>有価証券とは別の「金融商品」</strong>として金商法に位置づけられ、
+        交換業者の名称も暗号資産取引業者に変わり、
+        インサイダー取引の規制も新しく設けられます。
+        <strong>施行日は政令で定められるため、この章の表は改正で変わります。</strong>
+        取引する時点の扱いは、金融庁の公表資料で最新の数字を確かめてください。
+      </p>
 
       <p className="note">
         <strong>暗号資産は「通貨」ではありません。</strong>
@@ -185,6 +198,14 @@ export default function Page() {
           </tbody>
         </table>
       </div>
+
+      <p className="note">
+        <strong>この税の扱いも、改正が決まっています。</strong>
+        20%の申告分離課税と3年の繰越控除を導入する方針が令和8年度税制改正の大綱に
+        盛り込まれました。ただし適用が始まるのは
+        <strong>金融商品取引法の改正法が施行された年の翌年1月1日から</strong>で、
+        <strong>いまはまだ上の表のとおり</strong>です（第3部22章）。
+      </p>
 
       <p className="note">
         <strong>売っていなくても課税されることがあります。</strong>

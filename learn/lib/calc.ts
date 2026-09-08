@@ -191,6 +191,47 @@ export function sweepBook(
   return { filled, cost, average: filled === 0 ? 0 : cost / filled, fills };
 }
 
+/**
+ * 裁定取引（アービトラージ）の手残り。
+ *
+ * 見えている価格差から、実際にかかる費用を順に引いていく。
+ * **0で止めない。** 赤字になることこそがこの計算の要点で、
+ * 「差が1%あるから1%儲かる」という読み違いを数字で潰すために使う。
+ *
+ * 単位はすべて「元手に対する%」。往復ぶんの費用は呼び出し側で合算して渡す
+ * （買いと売りで手数料率が違うことがあるため、ここでは足さない）。
+ */
+export function arbitrageSteps(
+  gapPercent: number,
+  costs: readonly { label: string; percent: number }[],
+): { label: string; percent: number; rest: number }[] {
+  let rest = gapPercent;
+  return costs.map((c) => {
+    rest -= c.percent;
+    return { label: c.label, percent: c.percent, rest };
+  });
+}
+
+/** `arbitrageSteps` を通したあとの手残り（%）。費用が無ければ価格差そのもの */
+export function arbitrageNet(
+  gapPercent: number,
+  costs: readonly { label: string; percent: number }[],
+): number {
+  return costs.reduce((rest, c) => rest - c.percent, gapPercent);
+}
+
+/**
+ * 税引き後の手残り（%）。
+ *
+ * **損のときは引かない。** 暗号資産の利益は雑所得・総合課税で、
+ * 損が出ても給与などとは通算できない（第3部22章）。
+ * 「勝ったときは税で削られ、負けたときは誰も補ってくれない」を数字で出すためのもの。
+ */
+export function afterTax(profitPercent: number, taxRatePercent: number): number {
+  if (profitPercent <= 0) return profitPercent;
+  return profitPercent * (1 - taxRatePercent / 100);
+}
+
 /** 万円に丸める（小数第1位まで）。計算に使う値 */
 export function toMan(man: number): number {
   return Math.round(man * 10) / 10;
