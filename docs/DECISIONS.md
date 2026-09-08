@@ -8,6 +8,30 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-08：プライバシーポリシーを home 実体の /privacy.html 1枚に統合した
+
+`tools/app/privacy/` と `games/app/privacy/` を消し、フッター・運営者情報・learn からの
+リンクを `/privacy.html` に向けた。sitemap からも外した。
+旧URL（`/tools/privacy/`・`/games/privacy/`）は hasokon-infra の CloudFront Function が
+`/privacy.html` へ1ホップで301する（末尾スラッシュ無し・`/index.html` 付き・クエリ付きも同様）。
+
+**理由**：Search Console でサイト全体の登録済みが 68 URL 中 8 のまま止まっており、
+2026-09-05 の調査で「クロール済み - インデックス未登録」24件・「重複」1件が出ていた。
+同じ文面のプライバシーポリシーが `/privacy.html`・`/tools/privacy/`・`/games/privacy/` の
+3枚あるのは、そのまま「重複」と「インデックス候補の水増し」になる。
+`home/privacy.html` はもともと「/tools/ と /games/ を含む」全体向けの文面で、
+広告・アクセス解析・localStorage の扱いをすべて含んでいるので、これ1枚で足りる。
+
+- **`<Link>` ではなく `<a href="/privacy.html">` で書く。** basePath（`/tools`・`/games`）の
+  外にあるため。learn の footer が先に同じ書き方をしていた
+- **`tests/canonical.test.ts` が復活を止める。** tools / games に `app/privacy/page.tsx` が
+  現れたら落ちる
+- **デプロイ順に注意。** `deploy.yml` は tools/games の `out/` を `--delete` 付きで同期するので、
+  hasokon-infra の301を先に apply してからリリースする。逆にすると
+  `/tools/privacy/` が301になるまで404を返す
+- contact / about は残す。about は tools と games で中身が違い（計算の根拠／自作素材の話）、
+  contact は AdSense の要件で各サイトに窓口が要る
+
 ## 2026-09-07：学習セクションのURLに「分野」を1段挟んだ（/learn/{subject}/{slug}/）
 
 運営者の「学ぶ系は投資に限ったものにしたくないので1段パスは深くして、

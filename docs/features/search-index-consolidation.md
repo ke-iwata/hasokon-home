@@ -1,7 +1,7 @@
 # 検索インデックス統合の完了（旧サブドメイン → hasokon.com）
 
-**状態**：一部実装。計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) は追加済み（2026-08-10）。
-**Search Console 上の運用作業（手順1〜4）は未実施**で、運営者の操作待ち。
+**状態**：実装済み。計測スクリプト [`scripts/gsc-canonical-audit.mjs`](../../scripts/gsc-canonical-audit.mjs) は追加済み（2026-08-10）。
+**Search Console 上の運用作業（手順1〜2）は 2026-08-12 に実施済み**（3プロパティとも登録・アドレス変更済み。2026-09-05 に管理画面で確認）。
 **対象**：hasokon.com 全体（運用作業が中心。コード変更はほぼ無い）
 **起票**：2026-08-10
 

@@ -35,7 +35,8 @@ app/
   page.tsx            トップ（ツール一覧。registryから生成）
   globals.css         全スタイル。ここ以外にCSSを増やさない
   sitemap.ts          registryから自動生成
-  privacy/ contact/   AdSense審査に必要な固定ページ
+  contact/            AdSense審査に必要な固定ページ（プライバシーポリシーはサイト全体で
+                      home 実体の /privacy.html 1枚。tools/ 側には置かない）
   not-found.tsx       404ページ（out/404.html になる）
   AdUnit.tsx          広告枠。lib/adsense.ts が未設定なら何も出さない
   Analytics.tsx       ページビュー送信。lib/analytics.ts が未設定なら何もしない
@@ -143,8 +144,8 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
   サイコロを振る・グループ分けする・変換結果をコピーする）。
   GA4では `tool_use` イベントに `tool` / `action` パラメータが付く形で集計される
 - 新しいツールを足したときは、押して結果が出る操作があれば同じように呼ぶ
-- **Cookieを使うのでプライバシーポリシーへの記載が必要**。`app/privacy/page.tsx` の
-  「アクセス解析について」に記載済み。オプトアウトの案内も置いている
+- **Cookieを使うのでプライバシーポリシーへの記載が必要**。サイト全体の
+  `home/privacy.html` の「アクセス解析について」に記載済み。オプトアウトの案内も置いている
 
 ## SNS共有時のサムネイル（OGP画像）
 

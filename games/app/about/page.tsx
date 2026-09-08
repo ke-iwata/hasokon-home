@@ -111,7 +111,7 @@ export default function AboutPage() {
       <h2>スコアなどのデータの扱い</h2>
       <p>
         ゲームはすべてお使いのブラウザ内で動作し、ベストスコアや勝敗などの記録はブラウザの保存領域（localStorage）にのみ保存されます。サーバーには何も送信されません。詳しくは
-        <Link href="/privacy/">プライバシーポリシー</Link>
+        <a href="/privacy.html">プライバシーポリシー</a>
         をご覧ください。
       </p>
 

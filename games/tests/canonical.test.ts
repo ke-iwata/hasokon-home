@@ -72,12 +72,21 @@ describe('自己参照canonical', () => {
     expect(offenders, 'canonical は SITE_URL 起点の絶対URLで、末尾スラッシュ付き').toEqual([]);
   });
 
-  it('セクショントップとプライバシーが canonical を持つ（取りこぼした4ページ）', () => {
+  it('セクショントップが canonical を持つ（取りこぼしていたページ）', () => {
     const top = pages.find(({ path }) => path === 'page.tsx');
-    const privacy = pages.find(({ path }) => path === join('privacy', 'page.tsx'));
 
     expect(top?.source).toContain('canonical: `${SITE_URL}/`');
-    expect(privacy?.source).toContain('canonical: `${SITE_URL}/privacy/`');
+  });
+
+  /**
+   * プライバシーポリシーはサイト全体で home 実体の /privacy.html 1枚に統合した（2026-09-08）。
+   * tools / games 側に復活させると同じ内容のページが3枚に戻り、Search Console の
+   * 「重複」判定と低価値URLの増加を招く（DECISIONS.md 2026-09-08）。
+   * 旧URL（/tools/privacy/・/games/privacy/）は hasokon-infra の CloudFront Function が
+   * /privacy.html へ301している。
+   */
+  it('privacy ページを持たない（/privacy.html に統合済み）', () => {
+    expect(pages.some(({ path }) => path === join('privacy', 'page.tsx'))).toBe(false);
   });
 
   /**
