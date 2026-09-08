@@ -614,6 +614,12 @@ const REST_MOVE = 0.02;
 const MAX_REST_SPEED = 0.35;
 /** 「遅い」が何秒続いたら止めるか。その場で止めると斜面のものが加速できない */
 const REST_TIME = 0.14;
+/**
+ * 「下から支えられている」とみなす接触法線の縦成分（y は下向きに正）。
+ * 眠っているホールドには重力を乗せない（`integrate`）ので、
+ * 支えが無くなったら起こさないと、横の接触だけで宙に浮いたままになる
+ */
+const SUPPORT_NY = 0.1;
 /** 反発を効かせる下限の相対速度。触れているだけの接触で跳ねさせない */
 const BOUNCE_THRESHOLD = 0.3;
 
@@ -749,12 +755,32 @@ const WALL_FACES: { nx: number; ny: number; limit: number; axis: 0 | 1; sign: 1 
   { nx: 0, ny: -1, limit: BOX_H, axis: 1, sign: 1 }, // 床
 ];
 
+interface WallHit {
+  nx: number;
+  ny: number;
+  over: number;
+  px: number;
+  py: number;
+}
+
+/**
+ * 床に載っているか。
+ *
+ * 眠っているホールドは沈まないので、`wallOverlap`（はみ出し）では
+ * 床との接触が取れない。頂点が床から `SLOP_RATIO` の幅にあれば載っているとみなす
+ */
+function onFloor(h: Hold): boolean {
+  const tol = shapeOf(h.tier).bound * SLOP_RATIO;
+  for (const [, y] of worldPoints(h)) {
+    if (y >= BOX_H - tol) return true;
+  }
+  return false;
+}
+
 /** 面ごとに、いちばん外に出ている頂点と、その出っ張り量 */
-function wallOverlap(
-  h: Hold,
-): { nx: number; ny: number; over: number; px: number; py: number }[] {
+function wallOverlap(h: Hold): WallHit[] {
   const pts = worldPoints(h);
-  const out: { nx: number; ny: number; over: number; px: number; py: number }[] = [];
+  const out: WallHit[] = [];
   for (const f of WALL_FACES) {
     let worst = 0;
     let wx = 0;
@@ -796,7 +822,7 @@ function wallImpulses(h: Hold): boolean {
  * 山がわずかに動き続けるより悪い（実測：外接円の3%を許したら、
  * 大きいホールドの頂点が15個も箱の外に出た）。箱は硬い制約として扱う
  */
-function correctWalls(h: Hold): boolean {
+function correctWalls(h: Hold): WallHit[] {
   const hits = wallOverlap(h);
   for (const w of hits) {
     h.x += w.nx * w.over;
@@ -804,7 +830,7 @@ function correctWalls(h: Hold): boolean {
     if (w.nx !== 0) h.vx *= WALL_RESTITUTION;
     else if (h.vy > 0) h.vy *= WALL_RESTITUTION;
   }
-  return hits.length > 0;
+  return hits;
 }
 
 /* ------------------------------------------------------------------ *
@@ -923,9 +949,20 @@ export function drop(state: BoulderingMergeState): BoulderingMergeState {
   };
 }
 
+/**
+ * 速度と位置を進める。
+ *
+ * **眠っているホールドには重力も動きも与えない。** 速度を0にするだけだと、
+ * 次のサブステップで重力がまた乗って1歩ぶん沈み、押し戻しが接触の法線に
+ * 沿って返す。**斜めの接触では、その差し引きが横向きに残る。** 眠ったまま
+ * 毎ステップ同じ向きに 6e-6 ずつ流れ、実測では落ち着いた山の1つが30秒で
+ * 0.045（最小の外接円を超える）動き、種によっては8回も勝手に合体した
+ * （8種のうち4種で起きていた）。起こす条件は `solveContacts` の末尾
+ */
 function integrate(holds: Hold[], dt: number): void {
   const damp = Math.max(0, 1 - AIR * dt);
   for (const h of holds) {
+    if (h.restSec >= REST_TIME) continue;
     h.vy += GRAVITY * dt;
     h.vx *= damp;
     h.vy *= damp;
@@ -945,6 +982,8 @@ function integrate(holds: Hold[], dt: number): void {
  */
 function solveContacts(holds: Hold[], dt: number): void {
   const touched = new Array<boolean>(holds.length).fill(false);
+  /** 下から支えられているか（相手のホールドか床）。眠りを続けてよいかの条件 */
+  const supported = new Array<boolean>(holds.length).fill(false);
   const pairs: { i: number; j: number; c: Contact }[] = [];
 
   for (let i = 0; i < holds.length; i += 1) {
@@ -954,6 +993,9 @@ function solveContacts(holds: Hold[], dt: number): void {
       pairs.push({ i, j, c });
       touched[i] = true;
       touched[j] = true;
+      // 法線は i から j へ向く。下向きなら i が j に載っている
+      if (c.ny > SUPPORT_NY) supported[i] = true;
+      else if (c.ny < -SUPPORT_NY) supported[j] = true;
     }
   }
 
@@ -1007,7 +1049,10 @@ function solveContacts(holds: Hold[], dt: number): void {
     }
     // 箱は硬い制約なので、押し合いのあとに必ず入れ直す
     for (let i = 0; i < holds.length; i += 1) {
-      if (correctWalls(holds[i])) touched[i] = true;
+      const hits = correctWalls(holds[i]);
+      if (hits.length === 0) continue;
+      touched[i] = true;
+      if (hits.some((w) => w.ny !== 0)) supported[i] = true; // 床
     }
   }
 
@@ -1021,13 +1066,34 @@ function solveContacts(holds: Hold[], dt: number): void {
    *
    * 本当に見たいのは「どこかへ行こうとしているか」なので、基準の位置からの
    * 移動で見る。振動しているだけなら移動は増えないので止まり、
-   * 転がり落ちている最中のものは移動が伸びるので止まらない
+   * 転がり落ちている最中のものは移動が伸びるので止まらない。
+   *
+   * 眠ったホールドは `integrate` が進めない（重力も乗らない）。
+   * それでも押し戻しでは動くので、上に載られれば譲るし、基準から
+   * `room` を超えて押されれば起きる。加えて**支えを失ったときも起こす**
+   * （`supported`）。重力が乗らないので、合体で真下が消えても横の接触が
+   * 残っている限り宙に浮いたままになる。
+   *
+   * 「深く刺されたら起こす」は**やらない**。床の上の薄い板に重いホールドが
+   * 載ると、押し戻しの取り分（質量の逆比）では板が床に押し返されるだけで
+   * めり込みが7%で釣り合う。それを起こし続けると2つとも眠れず、
+   * 震えが続いて9秒後に山を崩した（種16）。生まれたホールドの周りは
+   * `resolveMerges` で起こす
    */
   for (let i = 0; i < holds.length; i += 1) {
     const h = holds[i];
     const room = shapeOf(h.tier).bound * REST_MOVE;
     const moved = Math.hypot(h.x - h.restX, h.y - h.restY);
-    if (!touched[i] || moved > room || Math.hypot(h.vx, h.vy) > MAX_REST_SPEED) {
+    if (!supported[i] && onFloor(h)) {
+      touched[i] = true;
+      supported[i] = true;
+    }
+    if (
+      !touched[i] ||
+      !supported[i] ||
+      moved > room ||
+      Math.hypot(h.vx, h.vy) > MAX_REST_SPEED
+    ) {
       h.restSec = 0;
       h.restX = h.x;
       h.restY = h.y;
@@ -1135,13 +1201,25 @@ function resolveMerges(
   // 箱から出ていた件の一般化）
   for (const h of born) {
     for (let k = 0; k < 4; k += 1) {
-      if (!correctWalls(h)) break;
+      if (correctWalls(h).length === 0) break;
     }
     h.vx = 0;
     h.vy = 0;
   }
 
   const kept = used.size === 0 ? holds : holds.filter((h) => !used.has(h.id));
+
+  // **生まれたホールドに触れているものを起こす。** 親より大きいので周りに刺さる。
+  // 眠ったままだと押し戻しに譲るだけで、回って逃げられず、山の中に
+  // 小さい方の外接円の15%のめり込みが残った（種8）
+  for (const b of born) {
+    for (const h of kept) {
+      if (h.restSec < REST_TIME || !collide(h, b)) continue;
+      h.restSec = 0;
+      h.restX = h.x;
+      h.restY = h.y;
+    }
+  }
   return {
     holds: born.length === 0 ? kept : [...kept, ...born],
     events,
