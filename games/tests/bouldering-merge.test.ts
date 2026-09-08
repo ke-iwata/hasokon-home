@@ -371,6 +371,16 @@ describe('積み上がりの安定（公開の条件2）', () => {
     expect(worst).toBeLessThan(0.1);
   });
 
+  /** 放置したあとで、いちばん動いたホールドの移動量 */
+  function driftOf(before: BoulderingMergeState, after: BoulderingMergeState): number {
+    let drift = 0;
+    for (const h of after.holds) {
+      const p = before.holds.find((q) => q.id === h.id);
+      if (p) drift = Math.max(drift, Math.hypot(h.x - p.x, h.y - p.y));
+    }
+    return drift;
+  }
+
   /**
    * **落ち着いた山は勝手に動かない。**
    *
@@ -379,16 +389,53 @@ describe('積み上がりの安定（公開の条件2）', () => {
    * 勝手に6回合体し、最大0.16（箱の16%）崩れた
    */
   it('放置しても勝手に崩れない・勝手に合体しない', () => {
-    const before = settled;
-    const after = run(before, 60 * 30); // 30秒
-    expect(after.holds.length).toBe(before.holds.length);
-    let drift = 0;
-    for (const h of after.holds) {
-      const p = before.holds.find((q) => q.id === h.id);
-      if (p) drift = Math.max(drift, Math.hypot(h.x - p.x, h.y - p.y));
-    }
-    expect(drift).toBeLessThan(boundOf(0));
+    const after = run(settled, 60 * 30); // 30秒
+    expect(after.holds.length).toBe(settled.holds.length);
+    expect(driftOf(settled, after)).toBeLessThan(boundOf(0));
   }, 120000);
+
+  /**
+   * **種を変えても同じ。** 1つの種だけだと山の形しだいで通ってしまう
+   * （同じコードでも CI の Linux と手元の macOS で浮動小数点の結果が違い、
+   * 種3の山は CI では通って手元では落ちていた）。
+   *
+   * 眠ったホールドにも重力を乗せ続けていたときは、斜めの接触の押し戻しが
+   * 横に残って眠ったまま流れ、8種のうち4種が30秒で最小の外接円を超えて動き、
+   * 種6は8回勝手に合体した。種16は床の上の薄い板が重いホールドに挟まれ、
+   * 「深く刺さったら起こす」規則で眠れず、震えが9秒後に山を崩した
+   */
+  it.each([1, 5, 6, 16])('種%iの山も放置して動かない', (seed) => {
+    const before = pile(seed);
+    const after = run(before, 60 * 30);
+    expect(after.holds.length).toBe(before.holds.length);
+    expect(driftOf(before, after)).toBeLessThan(boundOf(0));
+  }, 120000);
+
+  /**
+   * **眠ったホールドは支えを失えば落ちる。**
+   *
+   * 眠ったホールドには重力を乗せない（流れ止め）ので、真下が消えても
+   * 横の接触が残っていれば「触れている」まま宙に浮きかねない。
+   * 大きいホールドの横腹に触れながら台に載せて眠らせ、台を消して確かめる
+   */
+  it('眠っていても、支えが消えれば落ちる（横に触れていても浮かない）', () => {
+    const x = 0.5 - boundOf(6) - boundOf(0) + 0.036;
+    let s = place(initialState(1), [
+      { tier: 6, x: 0.5, y: BOX_H - boundOf(6) },
+      { tier: 3, x, y: BOX_H - boundOf(3) },
+      { tier: 0, x, y: BOX_H - boundOf(3) * 2 - boundOf(0) - 0.01 },
+    ]);
+    s = run(s, 180);
+    const [big, stand, top] = s.holds;
+    // 前提：台に載り、大きいホールドの横腹に触れていて、眠っている
+    expect(collide(top, stand)).not.toBeNull();
+    expect(collide(top, big)).not.toBeNull();
+    expect(Math.hypot(top.vx, top.vy)).toBe(0);
+    const before = top.y;
+    s = run({ ...s, holds: s.holds.filter((h) => h.id !== stand.id) }, 120);
+    const after = s.holds.find((h) => h.id === top.id)!;
+    expect(after.y - before).toBeGreaterThan(boundOf(0));
+  });
 
   it('最高速でぶつかっても相手を通り抜けない', () => {
     const r = shapeOf(0).bound;
