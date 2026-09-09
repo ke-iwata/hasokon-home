@@ -26,7 +26,7 @@
  * **出典を確認せずにエントリを足さないこと**。tests/saitei-chingin.test.ts が
  * 出典の欠落を落とす。
  *
- * ■ 一次情報（2026-08-31 取得）
+ * ■ 一次情報（2026-09-09 取得）
  * - 厚生労働省「地域別最低賃金の全国一覧」
  *   https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/
  *   → PDF「令和７年度地域別最低賃金全国一覧」の表を47件そのまま写したものが
@@ -46,7 +46,7 @@
 import { evaluateKabe, nextWall, type KabeResult } from './nenshu-kabe';
 
 /** データ全体の最終確認日 'YYYY-MM-DD'。ページに「データ最終更新日」として表示する */
-export const DATA_CHECKED_AT = '2026-08-31';
+export const DATA_CHECKED_AT = '2026-09-09';
 
 /** 現行（改定前）の年度。表の見出しに使う */
 export const CURRENT_FY_LABEL = '令和7年度';
@@ -133,8 +133,11 @@ export interface Prefecture {
  * `currentYen` / `currentEffectiveOn` は厚労省「令和７年度地域別最低賃金全国一覧」、
  * `rank` は厚労省「令和８年度地域別最低賃金額改定の目安について」から。
  * `answered` は都道府県労働局の報道発表で確認できたものだけを入れている
- * （2026-08-31 時点で43都道府県。残る岩手・佐賀・熊本・沖縄の4県は未答申で、
- * 目安ベースの見込み表示になる）。
+ * （2026-09-09 の第4次追補で47都道府県すべてがそろった。令和8年度は
+ * 沖縄の 2026-09-03 答申が最後で、以後は発効日が来るのを待つだけになる）。
+ * なお `revisionOf()` は `answered` を持たない県を「目安」として扱うので、
+ * 全件そろった今も**目安の分岐を消してはいけない**（翌年度の改定でまた全件が
+ * 未答申に戻る。UIの状態表示もこの分岐の上に載っている）。
  *
  * `effectiveOn` は労働局が日付を示しているものだけに入れる。答申文が
  * 「効力発生の日 法定どおり」とだけ書く県（群馬・岡山の答申文など）や、
@@ -178,7 +181,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 3, name: '岩手', rank: 'C', currentYen: 1031, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 3,
+    name: '岩手',
+    rank: 'C',
+    currentYen: 1031,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1090,
+      answeredOn: '2026-08-31',
+      effectiveOn: '2026-12-01',
+      source: {
+        label: '岩手労働局「令和８年度岩手県最低賃金の改正答申について」',
+        url: 'https://jsite.mhlw.go.jp/iwate-roudoukyoku/content/contents/002798636.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 4,
     name: '宮城',
@@ -845,7 +865,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 41, name: '佐賀', rank: 'C', currentYen: 1030, currentEffectiveOn: '2025-11-21', source: SOURCE_MHLW_LIST },
+  {
+    code: 41,
+    name: '佐賀',
+    rank: 'C',
+    currentYen: 1030,
+    currentEffectiveOn: '2025-11-21',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1095,
+      answeredOn: '2026-09-01',
+      effectiveOn: '2026-11-15',
+      source: {
+        label: '佐賀労働局「佐賀県最低賃金が令和8年11月15日から1,095円に」',
+        url: 'https://jsite.mhlw.go.jp/saga-roudoukyoku/newpage_03466.html',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 42,
     name: '長崎',
@@ -864,7 +901,26 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 43, name: '熊本', rank: 'C', currentYen: 1034, currentEffectiveOn: '2026-01-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 43,
+    name: '熊本',
+    rank: 'C',
+    currentYen: 1034,
+    currentEffectiveOn: '2026-01-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      // 報道発表は「時間額１，０９２円」「令和８年１２月１日発効」＝現行1,034円から+58円。
+      // 集計サイト経由のリードは +62円としていたが、一次情報の +58円を採る
+      yen: 1092,
+      answeredOn: '2026-09-01',
+      effectiveOn: '2026-12-01',
+      source: {
+        label: '熊本労働局「令和８年度熊本県最低賃金の改正答申について」',
+        url: 'https://jsite.mhlw.go.jp/kumamoto-roudoukyoku/content/contents/002801916.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
   {
     code: 44,
     name: '大分',
@@ -919,7 +975,24 @@ export const PREFECTURES: Prefecture[] = [
       },
     },
   },
-  { code: 47, name: '沖縄', rank: 'C', currentYen: 1023, currentEffectiveOn: '2025-12-01', source: SOURCE_MHLW_LIST },
+  {
+    code: 47,
+    name: '沖縄',
+    rank: 'C',
+    currentYen: 1023,
+    currentEffectiveOn: '2025-12-01',
+    source: SOURCE_MHLW_LIST,
+    answered: {
+      yen: 1086,
+      answeredOn: '2026-09-03',
+      effectiveOn: '2026-12-02',
+      source: {
+        label: '沖縄労働局「令和8年度沖縄県最低賃金の改正答申について～時間額63円引上げ1,086円へ～」',
+        url: 'https://jsite.mhlw.go.jp/okinawa-roudoukyoku/content/contents/002806175.pdf',
+        checkedAt: DATA_CHECKED_AT,
+      },
+    },
+  },
 ];
 
 /**

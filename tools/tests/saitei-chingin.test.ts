@@ -165,11 +165,13 @@ describe('PREFECTURES（47都道府県のデータ）', () => {
 });
 
 /**
- * 令和8年度の答申データの追補（8都道府県 → 28都道府県 → 30都道府県 → 43都道府県）。
+ * 令和8年度の答申データの追補
+ * （8都道府県 → 28都道府県 → 30都道府県 → 43都道府県 → 47都道府県）。
  *
  * 仕様: docs/features/saitei-chingin-r8-toshin-tsuiho.md
  *
- * 8〜9月は毎週どこかの県の答申が出るので、ここは**追補のたびに増える**テスト。
+ * 8〜9月は毎週どこかの県の答申が出るので、ここは**追補のたびに増えてきた**テスト。
+ * 第4次追補（2026-09-09）で47都道府県すべてがそろい、令和8年度の追補は完了した。
  * 焼き込む金額は各県労働局の報道発表（一次情報）から読み取ったもので、
  * 集計サイトの数字を写したものではない。
  */
@@ -178,6 +180,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   const ANSWERED: ReadonlyArray<readonly [string, number]> = [
     ['北海道', 1131],
     ['青森', 1090],
+    ['岩手', 1090],
     ['宮城', 1098],
     ['秋田', 1090],
     ['山形', 1092],
@@ -215,20 +218,23 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
     ['愛媛', 1093],
     ['高知', 1086],
     ['福岡', 1114],
+    ['佐賀', 1095],
     ['長崎', 1087],
+    ['熊本', 1092],
     ['大分', 1096],
     ['宮崎', 1085],
     ['鹿児島', 1090],
+    ['沖縄', 1086],
   ];
 
   it.each(ANSWERED)('%s の答申額は %i 円（労働局の報道発表どおり）', (name, yen) => {
     expect(byName(name).answered?.yen).toBe(yen);
   });
 
-  it('答申済みは43都道府県で、それ以外は答申を持たない', () => {
+  it('答申済みは47都道府県（第4次追補で全県そろった）', () => {
     const withAnswer = PREFECTURES.filter((p) => p.answered).map((p) => p.name);
     expect(withAnswer.sort()).toEqual(ANSWERED.map(([n]) => n).sort());
-    expect(withAnswer).toHaveLength(43);
+    expect(withAnswer).toHaveLength(47);
   });
 
   /**
@@ -264,6 +270,11 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['愛媛', 60],
       ['京都', 58],
       ['徳島', 57],
+      // 第4次追補（2026-09-09）で入れた最後の4県。佐賀+65円は令和8年度で最大の上振れ
+      ['佐賀', 65],
+      ['沖縄', 63],
+      ['岩手', 59],
+      ['熊本', 58],
     ] as const;
     for (const [name, raise] of overMeyasu) {
       const pref = byName(name);
@@ -311,6 +322,11 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['大分', '2026-11-01'],
       ['長崎', '2026-11-02'],
       ['京都', '2026-11-16'],
+      // 第4次追補（2026-09-09）。最後の4県は11月中旬〜12月上旬で、いちばん遅い
+      ['佐賀', '2026-11-15'],
+      ['岩手', '2026-12-01'],
+      ['熊本', '2026-12-01'],
+      ['沖縄', '2026-12-02'],
     ] as const;
     for (const [name, on] of dated) {
       const pref = byName(name);
@@ -390,17 +406,42 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   /**
-   * まだ答申が出ていない4県。二次情報（集計サイト）だけで答申額を書かない約束を
-   * テストでも見張る。答申が出て労働局の発表を確認できた県は、ここから ANSWERED へ移す。
+   * 第4次追補（2026-09-09）で入れた最後の4県。
+   * 発効日が11月中旬〜12月上旬と遅く、答申から発効までが3ヶ月ある県がある
+   * （岩手は 8/31 答申 → 12/1 発効）ことを固定する。
+   * 熊本は集計サイト経由のリードが「+62円」だったが、労働局の報道発表は
+   * 「時間額１，０９２円」＝現行1,034円から**+58円**。一次情報で裏取りする約束が
+   * 効いた例なので、引上げ額もここで焼き込んでおく。
    */
-  it('未答申の4県は「目安」のまま（二次情報で足さない）', () => {
-    const notAnswered = ['岩手', '佐賀', '熊本', '沖縄'];
-    for (const name of notAnswered) {
+  it('第4次追補の4県は一次情報どおりの額・答申日・発効日を持つ', () => {
+    const fourth = [
+      ['岩手', 1090, 59, '2026-08-31', '2026-12-01'],
+      ['佐賀', 1095, 65, '2026-09-01', '2026-11-15'],
+      ['熊本', 1092, 58, '2026-09-01', '2026-12-01'],
+      ['沖縄', 1086, 63, '2026-09-03', '2026-12-02'],
+    ] as const;
+    for (const [name, yen, raise, answeredOn, effectiveOn] of fourth) {
       const pref = byName(name);
-      expect(pref.answered, `${name}: 一次情報を確認せずに答申を足していないか`).toBeUndefined();
-      expect(revisionOf(pref, new Date('2026-08-31')).status, `${name}`).toBe('目安');
+      expect(pref.answered?.yen, `${name}: 答申額`).toBe(yen);
+      expect(pref.answered?.answeredOn, `${name}: 答申日`).toBe(answeredOn);
+      expect(pref.answered?.effectiveOn, `${name}: 発効予定日`).toBe(effectiveOn);
+      const r = revisionOf(pref, new Date('2026-09-09'));
+      expect(r.raise, `${name}: 引上げ額`).toBe(raise);
+      expect(r.status, `${name}`).toBe('答申');
     }
-    expect(PREFECTURES.filter((p) => !p.answered)).toHaveLength(notAnswered.length);
+  });
+
+  /**
+   * 令和8年度は47都道府県すべての答申が出そろった（沖縄の 2026-09-03 が最後）。
+   * 二次情報（集計サイト）だけで答申額を書かない約束は残るので、
+   * 追補が完了したこと自体をここで固定しておく
+   * （翌年度の改定で `answered` を全件外すと、この件数で気づける）。
+   */
+  it('未答申の県はもう無い（47都道府県すべて答申済み）', () => {
+    expect(PREFECTURES.filter((p) => !p.answered)).toHaveLength(0);
+    for (const p of PREFECTURES) {
+      expect(revisionOf(p, new Date('2026-09-09')).status, `${p.name}`).not.toBe('目安');
+    }
   });
 
   it('答申の出典URLは県ごとに違う（使い回しの取り違えを防ぐ）', () => {
@@ -416,7 +457,7 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   it('データ最終確認日を追補した日まで進めてある', () => {
-    expect(DATA_CHECKED_AT >= '2026-08-18').toBe(true);
+    expect(DATA_CHECKED_AT >= '2026-09-09').toBe(true);
   });
 });
 
@@ -432,12 +473,32 @@ describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
   });
 });
 
+/**
+ * 答申がまだ出ていない県を模した架空のエントリ。
+ *
+ * 令和8年度は47都道府県すべての答申がそろったので、実データからは「目安」の県が消えた。
+ * ただし目安の分岐は**翌年度の改定でまた全県が通る道**（`answered` を全件外して
+ * 始まる）なので、実データが無くなっても分岐そのものは固定しておく。
+ * 値は第4次追補の前の岩手（Cランク・1,031円）と同じにしてある。
+ */
+const notAnsweredPref: Prefecture = {
+  code: 3,
+  name: '岩手',
+  rank: 'C',
+  currentYen: 1031,
+  currentEffectiveOn: '2025-12-01',
+  source: {
+    label: '厚生労働省「地域別最低賃金の全国一覧」',
+    url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/',
+    checkedAt: DATA_CHECKED_AT,
+  },
+};
+
 describe('revisionOf', () => {
   it('答申が無い県はランク別の目安を足した「目安」として返す', () => {
-    const iwate = byName('岩手'); // Cランク・答申前（2026-08-31 時点で未答申の4県のひとつ）
-    const r = revisionOf(iwate, new Date('2026-08-14'));
+    const r = revisionOf(notAnsweredPref, new Date('2026-08-14'));
     expect(r.status).toBe('目安');
-    expect(r.yen).toBe(iwate.currentYen + 56);
+    expect(r.yen).toBe(notAnsweredPref.currentYen + 56);
     expect(r.raise).toBe(56);
     // 目安の出どころは厚労省の目安の答申
     expect(r.source.url).toContain('mhlw.go.jp');
@@ -530,8 +591,8 @@ describe('checkWage', () => {
   });
 
   it('目安の県でも改定後の見込みで判定できる（状態は目安のまま返る）', () => {
-    const iwate = byName('岩手'); // 1,031円・Cランク → 見込み 1,087円
-    const r = checkWage(iwate, 1050, asOf);
+    // 1,031円・Cランク → 見込み 1,087円（実データは全県答申済みなので架空のエントリで見る）
+    const r = checkWage(notAnsweredPref, 1050, asOf);
     expect(r.current.meets).toBe(true);
     expect(r.revised.minimumYen).toBe(1087);
     expect(r.revised.meets).toBe(false);
