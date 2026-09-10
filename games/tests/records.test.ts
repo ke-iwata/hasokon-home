@@ -421,7 +421,8 @@ describe('各ゲームの組み込み', () => {
     // リバーシ・五目並べの「強さ・手番」、大富豪の「強さ・ローカルルール」、
     // 七並べの「ローカルルール・CPUの速さ」、神経衰弱の「遊び方・枚数・強さ」、
     // スピードの「強さ」、花札こいこいの「強さ・月数・役の設定・月数の併記」、
-    // ヨットの「強さ」は、遊んだ記録ではなく設定なので例外
+    // ヨットの「強さ」、タイピング練習の「難易度」は、
+    // 遊んだ記録ではなく設定なので例外
     // （lib/records.ts の LEGACY_KEYS のコメントも参照）
     const allowed = new Set([
       'reversi',
@@ -432,6 +433,7 @@ describe('各ゲームの組み込み', () => {
       'speed',
       'hanafuda-koikoi',
       'yacht',
+      'typing',
     ]);
     for (const g of gameFiles) {
       if (allowed.has(g.slug)) continue;
