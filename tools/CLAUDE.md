@@ -195,6 +195,7 @@ npm run build    # out/ に静的出力
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・働き損・在職老齢年金の4ツールが参照） |
 | 毎年度（在職老齢年金） | 支給停止調整額を `lib/zaishoku-rorei-nenkin.ts` の `FISCAL_YEARS` に1行追加（賃金の変動に応じて毎年度改定される） |
+| 毎年8月1日（育児休業給付） | `lib/ikuji-kyugyo.ts` の `WAGE_DAILY_MAX` / `WAGE_DAILY_MIN` と支給上限額・下限額（`UNIT_CAP_*` / `UNIT_FLOOR_*` / `SHUSSHOGO_CAP` / `SHUSSHOGO_FLOOR` / `SHUSSHOJI_CAP`）を、厚労省「育児休業等給付の内容と支給申請手続」の改訂版か支給限度額のリーフレットから写し、`LIMIT_LABEL` / `LIMIT_EFFECTIVE_FROM` / `LIMIT_EFFECTIVE_UNTIL` / `DATA_CHECKED_AT` を直す。**失業保険と同じ日に改定されるが別表**（年齢区分が無い）なので、`lib/shitsugyo-hoken.ts` の値を写し合わせないこと。一次情報も基本手当の告示ではなく育児休業給付側から取る。給付率（67%/50%/13%）と180日・28日は法律なので毎年は変わらない |
 | 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
@@ -216,8 +217,9 @@ npm run build    # out/ に静的出力
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール37本（ほかに公開前が1本：`iryohi-kojo`（`stage: 'wip'`））/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1593件
+- ツール37本（ほかに公開前が2本：`iryohi-kojo`（`stage: 'wip'`）・
+  `ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1642件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -298,6 +300,17 @@ npm run build    # out/ に静的出力
   **所定給付日数の表（category）・給付制限（reason）・受給資格の被保険者期間の要件は
   独立した3つの軸**で、どれか一つからは導けない（`insuredMonthsRequired()` のコメント参照）
   （[docs/features/shitsugyo-hoken-kihon-teate.md](../docs/features/shitsugyo-hoken-kihon-teate.md)）
+- **育児休業給付の上限・下限は、失業保険と同じ日に改定される別表。** 賃金日額の上限
+  16,540円は基本手当の30〜44歳の上限額とたまたま同額だが、育児休業給付の表には
+  **年齢区分そのものが無い**。`lib/ikuji-kyugyo.ts` が `lib/shitsugyo-hoken.ts` から
+  借りていないのはこのため（借りると片方だけ改定されたときに黙ってずれる）。
+  **支給日数は1支給単位期間30日で頭打ち**にしてある。一次情報の「休業終了日の属する
+  支給単位期間は休業終了日までの日数」を実日数のまま実装すると、ちょうど6ヶ月の育休で
+  支給日数が181日になり「最後の1日だけ50%」という制度に無い段差が出る。
+  **支給単位期間の応当日は必ず休業開始日から数える**（前の期間の末日+1ヶ月で数えると、
+  応当日の無い月をまたいだあとズレたままになる）。出生後休業支援給付（+13%・最大28日）の
+  対象期間は**産後休業をするかどうか**で8週間・16週間に分かれ、父母のどちらかではない
+  （[docs/features/ikuji-kyugyo-kyufu.md](../docs/features/ikuji-kyugyo-kyufu.md)）
 - **インボイスは「納税額」より「簡易課税の届出期限」のほうが間違えやすい。**
   原則は「適用したい課税期間の初日の前日」＝個人なら前年12月31日だが、
   2割特例・3割特例からの移行には特則があり、**翌課税期間に係る確定申告期限まで**
