@@ -32,6 +32,14 @@ Google には載らない**（Bing 経由の流入で持っている状態）
 2026-08-10 の同じ検査では `/games/2048/` は「検出 - インデックス未登録」だった。
 それが今は「unknown」に**後退**している。時間が解決する方向には動いていない。
 
+この 30 / 91 の内訳は、現行スクリプトの `--out` で残る JSON（各行の `coverageState`）を
+集計したもの。**A が入る前でも同じ手順で再計測できる**：
+
+```bash
+node scripts/gsc-canonical-audit.mjs --out audit.json
+node -e 'const a=require("./audit.json");const c={};for(const r of a.rows)c[r.coverageState]=(c[r.coverageState]||0)+1;console.log(c)'
+```
+
 **Search Console の Search Analytics（プロパティ `https://hasokon.com/`）**
 
 | 期間 | クリック | 表示 |
@@ -84,8 +92,8 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 ### 考えられる原因（確度順）
 
 1. **サイト単位の品質判定（最有力）。** hasokon.com は Google から見ると 08-08 に生まれた
-   新しいサイトで、そこへ **08-08〜08-23 の2週間に 10回リリース（v1.6〜v1.15）し、
-   80ページ超を一気に載せた**。Google はこの型を「大量生成されたページ」として
+   新しいサイトで、そこへ **08-08〜08-23 の2週間に 17回リリース（v1.2.2〜v1.15.0。
+   タグの作成日で数えた）し、80ページ超を一気に載せた**。Google はこの型を「大量生成されたページ」として
    サイトごと低く評価することがある（2024年3月以降の「scaled content abuse」の扱い）。
    その場合の症状がまさに「トップだけ登録・下層は Crawled - not indexed / unknown・
    サイトマップは読むが登録 0」。
@@ -115,11 +123,16 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
    翌日以降に残りを回す（APIでは代替できない。Indexing API は求人・ライブ配信のページ専用）
 4. **Bing Webmaster Tools** に `hasokon.com` が登録済みか確認し、未登録なら登録して
    サイトマップを送る（Bing が命綱なので、こちらは守る。IndexNow は別提案
-   [indexnow.md](./indexnow.md)）
+   [indexnow.md](./indexnow.md)（#206 で起票中））
 5. **公開（`stage: 'public'` への昇格）を 2〜4週間止める提案。** `preview` までの実装は
    続けてよい（サイトマップに載らない）。理由：1 の判定なら、ページを増やすほど悪化する。
    1 か 2 かが分かり、登録数が増え始めるのを見てから昇格を再開する。
-   **これは運営者の判断事項**なので、ここでは提案に留める
+   **これは運営者の判断事項**なので、ここでは提案に留める。
+   停止を採る場合は、CLAUDE.md の「フラグは腐る」（状態行に「いつ `public` にするか」を書く）と
+   整合させるため、**公開待ちの仕様書（例：#202 育児休業給付金、#203 タイピング練習）の
+   `**状態**：` 行に「`public` は google-index-recovery.md の解除判断後」と書く**。
+   解除の判断（下記の判定条件を満たした日）はこのファイルの「経過」に残し、そのときに
+   各仕様書の状態行も戻す。これが無いと停止が黙って続き、誰も解除の判断をしなくなる
 
 ### コード側（運営者の確認のあとに実施。触るファイルまで書く）
 
@@ -141,13 +154,22 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   `generateMetadata` で直接返す。`tools/tests/stage.test.ts` の対象外なので、専用テストを1本足す
 - 登録が戻ったあとに `index` へ戻すかは、そのときの登録数で決める（戻す判断もこのファイルに追記）
 
-**C. 運営者情報を 1か所に（`home/about.html` 新設、`tools/app/about/`・`games/app/about/` はそこへ誘導）**
+**C. 運営者情報を 1か所に（`home/about.html` 新設、`tools/app/about/`・`games/app/about/` は `noindex` にして誘導）**
 - いま「運営者情報」は `/tools/about/` と `/games/about/` の2枚で、**どちらも Google に unknown**。
-  ホームの footer からも `/tools/about/` に飛ばしている
+  ホームの footer からも `/tools/about/` に飛ばしている。**learn の footer には「運営者情報」の
+  リンク自体が無い**（`/privacy.html` と `/tools/contact/` のみ）
 - YMYL（税・社会保険）のページが多いサイトで、運営者ページが登録されていないのは品質判定に
-  効く。ルート直下に 1枚置き、home / tools / games / learn 全部の footer から同じ URL を指す。
-  `sitemap-home.xml` に足す。既存2枚は 301 ではなく（`home/` は素の静的HTMLで CloudFront 関数の
-  変更が要る）、本文を短くして `/about.html` へのリンクを置く
+  効く。ルート直下に 1枚置き、`sitemap-home.xml` に足す
+- footer は **home / tools / games が「付け替え」、learn は「新規追加」**。learn は unknown 39件で
+  最大のブロックなので、ここが抜けると効果が薄れる
+- **既存2枚（`/tools/about/`・`/games/about/`）は `robots: { index: false, follow: true }` にし、
+  サイトマップから外す。** 本文を短くして `/about.html` へのリンクだけ置く。
+  `noindex` にしないと、B で減らそうとしている「近い作りの薄いページ」を自分で2枚増やすことになる。
+  `canonical` を `/about.html` に向ける案は採らない（内容が違うページへの canonical は
+  Google が無視することが多く、結果が読めない）。301 も採らない（`home/` は素の静的HTMLで
+  CloudFront 関数の変更が要る）
+- `home/about.html` は `privacy.html` と同じ骨組み・同じスマホ幅の見え方に揃える
+  （home はビルド無しで CSS を共有していない）
 
 **D. 統合前のまま止まっている 1件（`/tools/shobyo-teate/`）**
 - 運営者作業 3 の「インデックス登録をリクエスト」に含める。それで直らなければ、
@@ -182,9 +204,21 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 | 運営者の画面作業 1〜4 | 0（人手 15分＋登録リクエスト 1日 10件×2日） |
 | A. 監査スクリプトの内訳出力＋テスト＋週次 workflow | 40k |
 | B. 16ページの noindex・サイトマップ除外＋テスト | 30k |
-| C. `home/about.html` 新設と footer の付け替え（4サイト）＋ `home-nav` テスト更新 | 40k |
+| C. `home/about.html` 新設、footer の付け替え（home / tools / games）と新規追加（learn）、既存2枚の noindex＋サイトマップ除外＋テスト、`home-nav` テスト更新 | 50k |
 | D. 1件の再検査 | 5k |
-| **合計** | **約115k** |
+| **合計** | **約125k** |
+
+## 実装者への申し送り
+
+- **B の `noindex` は「まだ公開していないもの」ではなく、一度公開したものを引っ込める操作**なので、
+  CLAUDE.md の「引っ込めるのは別の作業」に当たる。戻す条件（登録数の閾値）は上に書いたとおり。
+  **実施日と戻した日を「経過」に必ず残す**こと
+- C の `home/about.html` は `privacy.html` と同じ骨組み・同じスマホ幅の見え方に揃える
+  （home はビルド無しで CSS を共有していない）
+- A の workflow に要る Secret `GOOGLE_SERVICE_ACCOUNT_JSON` の登録は運営者作業。
+  `.github/workflows/gsc-audit.yml` を足す PR の説明に、登録手順（Settings → Secrets and
+  variables → Actions、値はサービスアカウントの JSON をそのまま）を書くこと
+- コミットは `docs:` ではなく `feat:` / `chore:`（`scripts/`・`tools/`・`games/`・`learn/`・`home/` を触るため）
 
 ## やらないこと
 
@@ -201,3 +235,5 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 ## 経過
 
 - 2026-09-16：起票。上記の計測値を取得（URL検査 123件・Search Analytics・GA4・Sitemaps API）
+- 2026-09-16：企画レビュー（#204）で、既存 about 2枚の扱い（`noindex`）・learn の footer は新規追加・
+  `public` 停止時は公開待ち仕様書の状態行に書く運用、を反映。リリース数を 17回（v1.2.2〜v1.15.0）に訂正
