@@ -1,7 +1,8 @@
 # IndexNow を本番デプロイに組み込む（Bing 経由の流入を守り、更新を即日反映させる）
 
-**状態**：提案（2026-09-16 起票、未実装。同日の企画レビューで「`lastmod` 差分だけ送る」
-「鍵はファイルから読む」「無効化の完了を待つ」の3点を反映）。
+**状態**：実装済み（2026-09-16）。鍵ファイルは `home/bd59c05dafed335478f48aefb1c0ec57.txt`。
+**初回の送信は次の `v*` リリースまで起きない**ので、それまでに運営者が
+Bing Webmaster Tools の登録（下記 4）を済ませる。
 **対象**：`.github/workflows/deploy.yml`（本番デプロイのジョブ）・`home/`（鍵ファイル 1枚）・
 `scripts/`（送信スクリプト＋テスト、`scripts/lib/sitemap.mjs` に `lastmod` を拾う関数を1本）・
 `CLAUDE.md`「home/ の注意」（鍵ファイルの1行）
@@ -159,4 +160,8 @@ node scripts/indexnow-submit.mjs \
 ## 経過
 
 - 2026-09-16：起票。同日の企画レビュー（#206）で、差分送信・鍵の一元化・無効化の完了待ちを反映
+- 2026-09-16：実装。鍵ファイル `home/bd59c05dafed335478f48aefb1c0ec57.txt`、
+  送信スクリプト `scripts/indexnow-submit.mjs`、`deploy.yml` の3ステップ（本番のみ）。
+  本番のサイトマップ（123 URL）に対する `--dry-run` で、差分なし 0 件・
+  `lastmod` を1件動かすと1件・`--before` 無しで全件、を確認した
 - （Bing Webmaster Tools の登録日・初回リリースでの送信件数と受付数をここに残す）

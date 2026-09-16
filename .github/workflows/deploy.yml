@@ -141,6 +141,20 @@ jobs:
             echo "url=${url}"
           } >> "${GITHUB_OUTPUT}"
 
+      # 本番だけ。IndexNow は「変更したURLの通知」なので、同期する前の
+      # サイトマップを取っておき、同期後のものと <lastmod> で突き合わせて
+      # 差分だけ送る（docs/features/indexnow.md）。
+      # 取れなくても続行する（そのときは全件送る側に倒れる）
+      - name: 通知の差分用に、いまの本番サイトマップを保存
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          mkdir -p /tmp/sitemaps-before
+          for p in sitemap-home.xml tools/sitemap.xml games/sitemap.xml learn/sitemap.xml; do
+            out="/tmp/sitemaps-before/${p//\//-}"
+            curl -fsS --max-time 30 -o "${out}" "https://hasokon.com/${p}" \
+              || echo "::notice::${p} を取得できませんでした（初回なら想定どおり。全件送ります）"
+          done
+
       - uses: actions/download-artifact@v4
         with:
           name: tools-site
@@ -215,10 +229,37 @@ jobs:
             --cache-control "public,max-age=0,s-maxage=86400,must-revalidate"
 
       - name: CloudFrontのキャッシュを削除
+        id: invalidation
         run: |
-          aws cloudfront create-invalidation \
+          id=$(aws cloudfront create-invalidation \
             --distribution-id ${{ steps.target.outputs.dist }} \
-            --paths "/*"
+            --paths "/*" \
+            --query 'Invalidation.Id' --output text)
+          echo "id=${id}" >> "${GITHUB_OUTPUT}"
+          echo "無効化 ${id} を作成しました"
+
+      # create-invalidation は非同期で、完了まで数分かかる。待たずに通知すると
+      # Bing が古いHTMLを取り直してしまう（docs/features/indexnow.md）。
+      # 待ちきれなくてもリリース自体は済んでいるので、デプロイは落とさない
+      - name: CloudFrontの無効化の完了を待つ
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        continue-on-error: true
+        run: |
+          aws cloudfront wait invalidation-completed \
+            --distribution-id ${{ steps.target.outputs.dist }} \
+            --id ${{ steps.invalidation.outputs.id }}
+
+      # 更新したURLを Bing ほかに通知する（docs/features/indexnow.md）。
+      # テスト環境は Basic認証の裏なので送らない。鍵は home/<key>.txt の1か所だけで、
+      # Secrets には置かない（2か所がずれた瞬間に全送信が403になる）
+      - name: IndexNow に更新を通知
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        continue-on-error: true
+        run: |
+          node scripts/indexnow-submit.mjs \
+            --key-file home/bd59c05dafed335478f48aefb1c0ec57.txt \
+            --before /tmp/sitemaps-before \
+            --sitemap https://hasokon.com/sitemap.xml
 
       - name: デプロイ完了
         run: echo "デプロイ完了 → ${{ steps.target.outputs.url }}"

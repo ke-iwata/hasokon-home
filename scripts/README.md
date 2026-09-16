@@ -83,6 +83,47 @@ URL検査APIには **1日2000件 / 1分600件** の上限があります。
 86URLなら余裕がありますが、何度も回すときは日をまたいでください。
 `--concurrency` の既定値（4）は上限に当てないための値です。
 
+## indexnow-submit.mjs
+
+**更新したURLを IndexNow に通知する**スクリプトです。本番デプロイ（`v*` タグ）の
+最後に `.github/workflows/deploy.yml` から動きます。
+
+仕様: [docs/features/indexnow.md](../docs/features/indexnow.md)
+
+IndexNow は Bing・Yandex・Naver・Seznam・Yep が共同で受け付ける更新通知で、
+1つのエンドポイントに送れば参加エンジン全部に共有されます（Googleは参加していません）。
+**「変更したURLの通知」**なので、変わっていないURLは送りません。
+デプロイ前に取っておいた本番サイトマップと、同期後に配信されているサイトマップを
+`<loc>` ＋ `<lastmod>` で突き合わせ、**新規または `lastmod` が動いたURLだけ**を送ります
+（`lastmod` は registry の `updatedAt` から出ているので、既存の
+「内容を変えたら `updatedAt` を上げる」運用にそのまま乗ります）。
+
+```bash
+# 送る予定のURLと本文だけ見る（POSTしない）
+node scripts/indexnow-submit.mjs \
+  --key-file home/bd59c05dafed335478f48aefb1c0ec57.txt \
+  --before /tmp/sitemaps-before --dry-run
+```
+
+- **鍵は `home/<key>.txt` の1か所だけ**です。`deploy.yml` にも Secrets にも同じ値を
+  複製しません（2か所がずれた瞬間に全送信が403になり、しかも下の終了コードのとおり
+  誰も気づけません）。スクリプトは鍵をこのファイルから読み、
+  **中身＝ファイル名（拡張子を除く）**でなければ実行しません
+- **前のサイトマップが取れなかったとき（初回・取得失敗）は全件送ります。**
+  送り漏れ側には倒しません
+
+### 終了コード
+
+| コード | 意味 |
+|---|---|
+| 0 | 送信した／送る対象が0件だった／**送信に失敗した** |
+| 2 | 実行できなかった（引数の誤り、鍵ファイルを読めない・中身がファイル名と違う） |
+
+通知は「あれば嬉しい」であってデプロイの成否ではないので、**送信の失敗では落としません**。
+代わりに `::warning::` のワークフロー注釈を出します（終了コード0でもActionsの画面で見えます）。
+デプロイ側の該当ステップは `continue-on-error: true` なので、鍵の取り違え（2）でも
+リリースは止まりません。
+
 ## build-test-home.mjs
 
 **テスト環境に配るときだけ**、トップ（`home/index.html`）の一覧に
@@ -114,6 +155,10 @@ node --test "scripts/test/*.test.mjs"
 
 ネットワークもGoogleの認証情報も使いません（すべて差し替えて動かしています）。
 `.github/workflows/test.yml` で push 時にも走ります。
+
+`test/indexnow-submit.test.mjs` の末尾だけは、スクリプトではなく
+**`home/` の鍵ファイル**（1枚あるか・中身がファイル名と一致するか・`deploy.yml` が
+それを指しているか）を見ています。用途の分からない1枚は消されやすいためです。
 
 次の4つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
 生成物はビルド工程を持たず npm も vitest も無いので、

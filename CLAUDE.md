@@ -132,6 +132,9 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
 - `sitemap.xml` はインデックス形式で home / tools / games / learn の4本を指す。
   home のページを増やしたら `sitemap-home.xml` を更新する
+- `bd59c05dafed335478f48aefb1c0ec57.txt` は IndexNow（Bing ほかへの更新通知）の鍵ファイル。
+  **消さない**。中身とファイル名が一致していないと全送信が 403 になる。
+  仕様は [docs/features/indexnow.md](./docs/features/indexnow.md)
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
 - SNS共有時のサムネイル（`ogp.png`）は home / tools / games / learn に1枚ずつあり、
