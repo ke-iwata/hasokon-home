@@ -247,6 +247,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-19',
   },
   {
+    slug: 'taishokukin-tedori',
+    icon: 'Suitcase',
+    name: '退職金の税金・手取り計算機',
+    description:
+      '退職金にかかる所得税・住民税と手取りを計算。退職所得控除の式を「40万円 × 12年」の形で見せます。2026年からiDeCo一時金を先に受け取った場合の重複排除が5年→10年に延びた「10年ルール」に対応し、一時金が当時の控除額に満たないときの重複期間の短縮まで織り込みます。',
+    category: 'お金・社会保険',
+    // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
+    // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
+    stage: 'wip',
+    updatedAt: '2026-09-16',
+  },
+  {
     slug: 'shobyo-teate',
     icon: 'FirstAidKit',
     name: '傷病手当金 計算機',
