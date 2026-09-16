@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { trackToolUse } from '@/lib/analytics';
 import {
   CURRENT_FY_LABEL,
@@ -22,7 +22,19 @@ import {
 const STATUS_NOTE: Record<RevisionStatus, string> = {
   目安: 'まだ答申が出ていないため、ランク別の目安額を足した見込みです。県によっては目安を上回る額で答申されます',
   答申: '地方最低賃金審議会が答申した額です。異議申出の手続を経て正式に決定されます',
+  決定: '労働局長が改正を決定し、官報に公示された額です。発効日も確定しています',
   発効済み: 'すでに発効しています',
+};
+
+/**
+ * 状態バッジの色。既存クラスを増やさない約束なので、
+ * CSS変数だけを使ったインラインstyleで出す（決定は答申と発効済みの中間の色）。
+ */
+const STATUS_CHIP_STYLE: Record<RevisionStatus, CSSProperties | undefined> = {
+  目安: undefined,
+  答申: undefined,
+  決定: { color: 'var(--info-fg)', background: 'var(--info-soft)', borderColor: 'var(--info-fg)' },
+  発効済み: { color: 'var(--ok-fg)', background: 'var(--ok-soft)', borderColor: 'var(--ok-fg)' },
 };
 
 /** 初期表示の県。全国で最も人口が多く、検索も多い東京にしておく */
@@ -100,16 +112,29 @@ export default function Calculator() {
         <dl className="kv">
           <div>
             <dt>
-              状態<span className="chip">{revision.status}</span>
+              状態
+              <span className="chip" style={STATUS_CHIP_STYLE[revision.status]}>
+                {revision.status}
+              </span>
             </dt>
             <dd style={{ fontWeight: 400 }}>{STATUS_NOTE[revision.status]}</dd>
           </div>
           <div>
             <dt>発効（予定）日</dt>
             <dd>
-              {revision.effectiveOn
-                ? formatDate(revision.effectiveOn)
-                : '未公表（10月ごろの見込み）'}
+              {revision.effectiveOn ? (
+                formatDate(revision.effectiveOn)
+              ) : revision.plannedEffectiveOn ? (
+                <>
+                  {formatDate(revision.plannedEffectiveOn)} 発効予定
+                  <span style={{ display: 'block', fontWeight: 400 }} className="hint">
+                    厚生労働省の答申状況（別紙）の予定日です。
+                    予定日は労働局の公示で変わることがあります
+                  </span>
+                </>
+              ) : (
+                '未公表（10月ごろの見込み）'
+              )}
             </dd>
           </div>
           <div>

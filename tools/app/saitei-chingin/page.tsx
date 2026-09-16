@@ -14,6 +14,7 @@ import {
   NATIONAL_AVERAGE,
   PREFECTURES,
   REVISED_FY_LABEL,
+  SOURCE_MHLW_BESSHI,
   SOURCE_MHLW_LIST,
   SOURCE_MHLW_MEYASU,
   formatDate,
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: '2026年10月から最低賃金はいくら上がりますか？',
-    a: `2026年7月28日に中央最低賃金審議会が令和8年度の改定の目安を答申しました。引上げ額の目安はAランク54円、B・Cランク56円で、目安どおりに改定されれば全国加重平均は${NATIONAL_AVERAGE.current}円から${NATIONAL_AVERAGE.meyasu}円（+55円、+4.9%）になります。ただし実際の金額は都道府県ごとの地方最低賃金審議会が決めるため、目安を上回る県もあります。このページでは、答申が出た県は答申額を、まだの県は目安ベースの見込みとして区別して表示しています。`,
+    a: `2026年7月28日に中央最低賃金審議会が令和8年度の改定の目安を答申しました。引上げ額の目安はAランク54円、B・Cランク56円で、目安どおりに改定されれば全国加重平均は${NATIONAL_AVERAGE.current}円から${NATIONAL_AVERAGE.meyasu}円（+55円、+4.9%）になります。実際には目安を上回る額で答申した県があり、47都道府県の答申額でみた全国加重平均は${NATIONAL_AVERAGE.answered}円（+${NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}円）です。実際の金額は都道府県ごとの地方最低賃金審議会が決めます。このページでは、答申が出た県は答申額を、まだの県は目安ベースの見込みとして区別して表示しています。`,
   },
   {
     q: '発効日はいつですか？全国同じですか？',
@@ -50,8 +51,8 @@ const faq = [
     a: '対象になります。パート・アルバイトだけでなく、正社員・契約社員を含むすべての労働者に適用されます。月給制の場合は、月給を1か月の平均所定労働時間で割って時間額に換算し、最低賃金額と比べます。このとき、通勤手当・家族手当・住宅手当、残業や休日・深夜の割増賃金、賞与など臨時に支払われる賃金は、比較の対象から除いて計算します。',
   },
   {
-    q: '「目安」と「答申」と「発効」は何が違うのですか？',
-    a: `毎年7月末に中央最低賃金審議会が示すのが「目安」で、この段階ではランクごとの引上げ額しか決まっていません。8〜9月に各都道府県の地方最低賃金審議会が金額を決めるのが「答申」です。その後、異議申出の手続と官報公示を経て、10月前後に「発効」して実際に効力が生じます。目安の段階の額は確定額ではないため、このページでは状態を必ず添えて表示しています（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
+    q: '「目安」と「答申」と「決定」と「発効」は何が違うのですか？',
+    a: `毎年7月末に中央最低賃金審議会が示すのが「目安」で、この段階ではランクごとの引上げ額しか決まっていません。8〜9月に各都道府県の地方最低賃金審議会が金額を決めるのが「答申」です。答申の要旨が公示された日から15日以内は関係労働者・関係使用者が異議を申し出ることができ（最低賃金法第11条第2項）、その手続を経て労働局長が改正を「決定」し官報に公示します（同法第12条）。ここで効力発生日が確定し、その日が来て「発効」します。目安・答申の段階の額は確定額ではないため、このページでは状態を必ず添えて表示しています（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
   },
   {
     q: '産業によって別の最低賃金があると聞きました',
@@ -110,8 +111,9 @@ export default function Page() {
       <h1>最低賃金 早見表・チェッカー</h1>
       <p className="lead">
         2026年（令和8年度）10月の改定で、最低賃金は全国加重平均で
-        {NATIONAL_AVERAGE.current}円 → {NATIONAL_AVERAGE.meyasu}
-        円になる見込みです。都道府県を選ぶと、いまの額・改定後の額・引上げ幅・発効日が分かります。自分の時給が下回っていないかの判定と、月収・年収への換算もできます。
+        {NATIONAL_AVERAGE.current}円 → {NATIONAL_AVERAGE.answered}円（+
+        {NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}
+        円）になります（47都道府県の答申額ベース）。都道府県を選ぶと、いまの額・改定後の額・引上げ幅・発効日が分かります。自分の時給が下回っていないかの判定と、月収・年収への換算もできます。
       </p>
 
       <Calculator />
@@ -134,6 +136,14 @@ export default function Page() {
           {NATIONAL_AVERAGE.current}円から55円（+4.9%）の引き上げ。前年度の66円（+6.3%）より伸びは小さくなります
         </li>
         <li>
+          <strong>
+            答申ベースの実績は{NATIONAL_AVERAGE.answered}円（+
+            {NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}円）
+          </strong>{' '}
+          — 47都道府県の答申がそろった時点の全国加重平均。目安を上回る額で答申した県があるため、目安の
+          {NATIONAL_AVERAGE.meyasu}円を1円上回りました
+        </li>
+        <li>
           <strong>実際の金額は県ごとに決まる</strong> —
           目安はあくまで参考で、8〜9月に各都道府県の地方最低賃金審議会が金額を答申し、10月前後に発効します。<strong>目安を上回る額で答申する県もあります</strong>
         </li>
@@ -145,6 +155,8 @@ export default function Page() {
         {REVISED_FY_LABEL}
         の欄は、答申が出た県は<strong>答申額</strong>、まだの県は
         <strong>目安ベースの見込み</strong>として区別しています。見込みの額は確定額ではありません。
+        状態の<strong>決定</strong>は、労働局長が改正を決定し官報に公示済みという意味です。発効日に
+        <strong>（予定）</strong>が付く県は、厚生労働省の答申状況（別紙）の予定日で、労働局の公示で変わることがあります。
       </p>
       <div style={{ overflowX: 'auto' }}>
         <table>
@@ -175,9 +187,13 @@ export default function Page() {
                     {!answered && <span className="chip">見込み</span>}
                   </td>
                   <td>+{yen - p.currentYen}円</td>
-                  <td>{answered ? '答申済み' : '目安'}</td>
+                  <td>{!answered ? '目安' : answered.decidedOn ? '決定' : '答申済み'}</td>
                   <td>
-                    {answered?.effectiveOn ? formatDate(answered.effectiveOn) : '未公表'}
+                    {answered?.effectiveOn
+                      ? formatDate(answered.effectiveOn)
+                      : answered?.plannedEffectiveOn
+                        ? `${formatDate(answered.plannedEffectiveOn)}（予定）`
+                        : '未公表'}
                   </td>
                 </tr>
               );
@@ -194,7 +210,11 @@ export default function Page() {
         <a href={SOURCE_MHLW_MEYASU.url} target="_blank" rel="noopener noreferrer">
           {SOURCE_MHLW_MEYASU.label}
         </a>
-        （ランクと目安額）、および各都道府県労働局の答申の発表。データ最終更新日：
+        （ランクと目安額）、
+        <a href={SOURCE_MHLW_BESSHI.url} target="_blank" rel="noopener noreferrer">
+          {SOURCE_MHLW_BESSHI.label}
+        </a>
+        （答申ベースの全国加重平均と発効日の予定）、および各都道府県労働局の答申・決定公示の発表。データ最終更新日：
         {formatDate(DATA_CHECKED_AT)}
       </p>
 
@@ -203,10 +223,33 @@ export default function Page() {
         最低賃金は、使用者が労働者に支払わなければならない賃金の下限額です。パート・アルバイト・契約社員・正社員を問わず、その都道府県内で働くすべての労働者に適用されます。最低賃金額を下回る賃金の取り決めは無効となり、最低賃金額と同じ額を定めたものとみなされます（最低賃金法第4条）。
       </p>
       <p>
-        金額は都道府県ごとに定められ、毎年見直されます。7月末に国の審議会が引上げ額の
-        <strong>目安</strong>を示し、8〜9月に各都道府県の審議会が金額を<strong>答申</strong>
-        して、10月前後に<strong>発効</strong>するのが例年の流れです。<strong>発効日は県ごとに違う</strong>
-        ため、10月1日から一斉に上がるわけではありません。
+        金額は都道府県ごとに定められ、毎年見直されます。改定は
+        <strong>目安 → 答申 → 異議申出 → 決定・公示 → 発効</strong>
+        の順に進みます。
+      </p>
+      <ol>
+        <li>
+          <strong>目安</strong> — 7月末に中央最低賃金審議会がランク別の引上げ額の目安を示します
+        </li>
+        <li>
+          <strong>答申</strong> —
+          8〜9月に各都道府県の地方最低賃金審議会が金額を答申します。労働局長はその要旨を公示します
+        </li>
+        <li>
+          <strong>異議申出</strong> —
+          公示の日から15日以内に、関係労働者・関係使用者が異議を申し出ることができます（最低賃金法第11条第2項）
+        </li>
+        <li>
+          <strong>決定・公示</strong> —
+          異議申出の手続を経て労働局長が改正を決定し、官報に公示します（最低賃金法第12条）。ここで効力発生日が確定します
+        </li>
+        <li>
+          <strong>発効</strong> — 公示された効力発生日が来て、実際に効力が生じます
+        </li>
+      </ol>
+      <p>
+        このページの「状態」は、この流れのどこにいるかを表しています。
+        <strong>発効日は県ごとに違う</strong>ため、10月1日から一斉に上がるわけではありません。
       </p>
 
       <h2>時給が最低賃金を下回っていたら</h2>
