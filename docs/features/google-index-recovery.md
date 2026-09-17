@@ -170,6 +170,15 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   CloudFront 関数の変更が要る）
 - `home/about.html` は `privacy.html` と同じ骨組み・同じスマホ幅の見え方に揃える
   （home はビルド無しで CSS を共有していない）
+- **既存2枚を `noindex` にしたあとも、そこを指す導線が footer 以外に3か所残る。** 同じPRで
+  すべて `/about.html` へ付け替える（`noindex` のページへ案内し続けない）：
+  - `home/llms.txt` の「運営者情報」（`/tools/about/`）と「ゲームの運営者情報」（`/games/about/`）の
+    2行を、`/about.html` の1行に統合する（`scripts/test/llms-txt.test.mjs` は about を固定ページ
+    として除外しているので、テストの追加は不要）
+  - `home/privacy.html` の本文と footer にある `/tools/about/` へのリンク（2か所）。
+    「footer の付け替え（home）」は `index.html` だけでなく `privacy.html` も含む
+  - `games/app/about/page.tsx` の「計算ツール側の運営者情報」（`/tools/about/` へのリンク）。
+    `noindex` 同士で相互にリンクする形を残さない
 
 **D. 統合前のまま止まっている 1件（`/tools/shobyo-teate/`）**
 - 運営者作業 3 の「インデックス登録をリクエスト」に含める。それで直らなければ、
@@ -237,3 +246,5 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 - 2026-09-16：起票。上記の計測値を取得（URL検査 123件・Search Analytics・GA4・Sitemaps API）
 - 2026-09-16：企画レビュー（#204）で、既存 about 2枚の扱い（`noindex`）・learn の footer は新規追加・
   `public` 停止時は公開待ち仕様書の状態行に書く運用、を反映。リリース数を 17回（v1.2.2〜v1.15.0）に訂正
+- 2026-09-16：企画レビュー（#209）で、C の実装時に `home/llms.txt`・`home/privacy.html`・
+  `games/app/about/` に残る `/tools/about/`・`/games/about/` への導線も `/about.html` へ付け替えることを追記
