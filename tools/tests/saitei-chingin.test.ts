@@ -27,7 +27,7 @@ import {
  * 「発効日の形式」「全エントリに出典URLがある」を軸にしている。
  *
  * このツールで一番こわいのは**目安と答申の取り違え**なので、
- * 状態（目安 / 答申 / 決定 / 発効済み）の出し分けを重点的に見張る。
+ * 状態（目安 / 答申 / 発効済み）の出し分けを重点的に見張る。
  * あわせて厚労省の一次資料から読み取った金額そのものを何件か焼き込んでおく
  * （二次情報を見て書き換えられるのを防ぐため）。
  */
@@ -473,82 +473,52 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
  * 県の最低賃金ページで発効日を確認できた。**ここが埋まっていないと、
  * 10月1日に東京・大阪・千葉の表示が「答申」のまま止まる**ので、
  * このテストがいちばん守りたいのはそこ。
+ *
+ * **`'決定'` という状態は入れていない**（仕様書の案(b)）。決定公示を確認できているのは
+ * 一部の県だけで、状態に出すと確認できていない県が「まだ決まっていない」と読めるため。
  */
 describe('10月発効前のメンテ（決定公示の反映と出典の差し替え）', () => {
-  /** 決定・官報公示の日付を労働局が明記している県 */
-  const DECIDED = [
-    ['神奈川', '2026-08-31', '2026-10-01'],
-    ['千葉', '2026-09-01', '2026-10-01'],
-    ['東京', '2026-09-01', '2026-10-01'],
-    ['香川', '2026-09-01', '2026-10-01'],
-  ] as const;
-
   /**
-   * 発効日は確認できたが、公示日が労働局の発表本文に無い県。
-   * 発効日だけ入れて `decidedOn` は持たせない（分かっていないことを書かない）。
+   * 答申時に発効日が無く、今回 決定公示・県の最低賃金ページで発効日を確認できた9県。
+   * **この9県が埋まっていないと 10/1 に東京・大阪・千葉が「答申」のまま止まる。**
    */
-  const DATED_WITHOUT_KOJI = [
+  const NEWLY_DATED = [
+    ['千葉', '2026-10-01'],
+    ['東京', '2026-10-01'],
     ['新潟', '2026-10-01'],
     ['富山', '2026-10-01'],
     ['岐阜', '2026-10-01'],
     ['大阪', '2026-10-01'],
+    ['香川', '2026-10-01'],
     ['群馬', '2026-10-03'],
     ['和歌山', '2026-10-03'],
   ] as const;
 
-  it('決定公示を確認できた県は decidedOn と effectiveOn を持ち、発効前は「決定」', () => {
-    for (const [name, decidedOn, effectiveOn] of DECIDED) {
+  it('決定公示を確認できた9県が発効日を持ち、その日に「発効済み」へ切り替わる', () => {
+    for (const [name, on] of NEWLY_DATED) {
       const pref = byName(name);
-      expect(pref.answered?.decidedOn, `${name}: 公示日`).toBe(decidedOn);
-      expect(pref.answered?.effectiveOn, `${name}: 発効日`).toBe(effectiveOn);
-      expect(revisionOf(pref, new Date('2026-09-20')).status, `${name}: 公示後・発効前`).toBe(
-        '決定',
-      );
-    }
-  });
-
-  it('決定公示が確認できていない県は decidedOn を持たない（発効日だけ入れる）', () => {
-    for (const [name, effectiveOn] of DATED_WITHOUT_KOJI) {
-      const pref = byName(name);
-      expect(pref.answered?.effectiveOn, `${name}: 発効日`).toBe(effectiveOn);
-      expect(pref.answered?.decidedOn, `${name}: 公示日を推測で埋めている`).toBeUndefined();
-      expect(revisionOf(pref, new Date('2026-09-20')).status, `${name}`).toBe('答申');
-    }
-  });
-
-  /** 仕様書がいちばん気にしている効果。10月1日に11県が「発効済み」に変わること */
-  it('10月1日に東京・大阪・千葉など8県が「発効済み」になる', () => {
-    const onOct1 = ['東京', '大阪', '千葉', '神奈川', '新潟', '富山', '岐阜', '香川'];
-    for (const name of onOct1) {
-      const pref = byName(name);
-      expect(revisionOf(pref, new Date('2026-09-30T00:00:00')).status, `${name}: 前日`).not.toBe(
+      expect(pref.answered?.effectiveOn, `${name}: 発効日`).toBe(on);
+      const dayBefore = new Date(`${on}T00:00:00Z`);
+      dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+      expect(revisionOf(pref, dayBefore).status, `${name}: 発効前`).toBe('答申');
+      expect(revisionOf(pref, new Date(`${on}T00:00:00`)).status, `${name}: 発効日`).toBe(
         '発効済み',
       );
+    }
+  });
+
+  /** 仕様書がいちばん気にしている効果。10/1 に最大規模の県が「発効済み」になること */
+  it('10月1日に東京・大阪・千葉の表示が「発効済み」になる', () => {
+    for (const name of ['東京', '大阪', '千葉']) {
+      const pref = byName(name);
+      expect(revisionOf(pref, new Date('2026-09-30T00:00:00')).status, `${name}: 前日`).toBe('答申');
       expect(revisionOf(pref, new Date('2026-10-01T00:00:00')).status, `${name}: 発効日`).toBe(
         '発効済み',
       );
-    }
-    for (const name of ['群馬', '和歌山']) {
-      const pref = byName(name);
-      expect(revisionOf(pref, new Date('2026-10-02T00:00:00')).status, `${name}: 前日`).not.toBe(
+      // 仕様書が「いまの挙動」として挙げた再現手順（10/2 に「答申」のまま）が直っている
+      expect(revisionOf(pref, new Date('2026-10-02T00:00:00')).status, `${name}: 10/2`).toBe(
         '発効済み',
       );
-      expect(revisionOf(pref, new Date('2026-10-03T00:00:00')).status, `${name}: 発効日`).toBe(
-        '発効済み',
-      );
-    }
-  });
-
-  it('decidedOn を持つ県は effectiveOn も持ち、答申 → 公示 → 発効の順になっている', () => {
-    for (const p of PREFECTURES) {
-      const a = p.answered;
-      if (!a?.decidedOn) continue;
-      expect(a.decidedOn, `${p.name}`).toMatch(ymd);
-      expect(a.effectiveOn, `${p.name}: 公示日があるのに発効日が無い`).toBeDefined();
-      expect(a.effectiveOn! > a.decidedOn, `${p.name}: 発効日が公示日より前`).toBe(true);
-      if (a.answeredOn !== undefined) {
-        expect(a.decidedOn > a.answeredOn, `${p.name}: 公示日が答申日より前`).toBe(true);
-      }
     }
   });
 
@@ -567,9 +537,38 @@ describe('10月発効前のメンテ（決定公示の反映と出典の差し�
       expect(pref.answered?.effectiveOn, `${name}: 予定日を発効日にしている`).toBeUndefined();
       const r = revisionOf(pref, new Date(`${on}T00:00:00`));
       expect(r.status, `${name}: 予定日で発効済みにしている`).toBe('答申');
-      expect(r.plannedEffectiveOn, `${name}`).toBe(on);
       expect(r.effectiveOn, `${name}`).toBeUndefined();
     }
+  });
+
+  /**
+   * 予定日を過ぎても決定公示を反映できていないとき、UIから日付を引っ込めるための旗。
+   * これが無いと「10月24日 発効予定」が10月30日にも出続け、
+   * 発効済みかもしれない県を「これから」と読ませてしまう。
+   */
+  it('予定日の前後で plannedDatePassed が切り替わる（日付を出し続けない）', () => {
+    const miyazaki = byName('宮崎'); // 予定日 2026-10-24
+    const before = revisionOf(miyazaki, new Date('2026-10-20T00:00:00'));
+    expect(before.status).toBe('答申');
+    expect(before.plannedEffectiveOn).toBe('2026-10-24');
+    expect(before.plannedDatePassed).toBe(false);
+
+    // 予定日当日から true。当日には発効している可能性があり「発効予定」と言い切れない
+    expect(revisionOf(miyazaki, new Date('2026-10-24T00:00:00')).plannedDatePassed).toBe(true);
+
+    const after = revisionOf(miyazaki, new Date('2026-10-30T00:00:00'));
+    expect(after.status, '予定日超過で発効済みにしている').toBe('答申');
+    expect(after.plannedDatePassed).toBe(true);
+  });
+
+  it('発効日が確定した県と目安の県は plannedDatePassed が立たない', () => {
+    // 発効日が確定している県は、発効日を過ぎても「発効済み」であって「予定日超過」ではない
+    const tokyo = revisionOf(byName('東京'), new Date('2026-10-30T00:00:00'));
+    expect(tokyo.status).toBe('発効済み');
+    expect(tokyo.plannedDatePassed).toBe(false);
+    expect(tokyo.plannedEffectiveOn).toBeUndefined();
+
+    expect(revisionOf(notAnsweredPref, new Date('2026-12-01')).plannedDatePassed).toBe(false);
   });
 
   it('発効日が確定している県は plannedEffectiveOn を持たない（二重に持たない）', () => {
@@ -593,8 +592,16 @@ describe('10月発効前のメンテ（決定公示の反映と出典の差し�
     }
   });
 
+  it('差し替えた3件の出典の見出しは、ページどおり「答申」の発表だと分かる', () => {
+    for (const name of ['広島', '徳島', '山梨']) {
+      const label = byName(name).answered?.source.label ?? '';
+      expect(label, `${name}: 公示ではなく答申の報道発表ページ`).toContain('答申');
+      expect(label, `${name}: 古い「一般公示第◯号」の見出しが残っている`).not.toContain('一般公示');
+    }
+  });
+
   it('決定公示を反映した県の出典も、切れやすいPDF直リンクではない', () => {
-    for (const [name] of [...DECIDED, ...DATED_WITHOUT_KOJI]) {
+    for (const [name] of NEWLY_DATED) {
       const url = byName(name).answered?.source.url ?? '';
       expect(url, `${name}`).toMatch(/^https:\/\/jsite\.mhlw\.go\.jp\//);
       expect(url.endsWith('.pdf'), `${name}: PDF直リンク`).toBe(false);
@@ -679,9 +686,8 @@ describe('revisionOf', () => {
   });
 
   it('発効日を過ぎたら「発効済み」に変わる（運営者の手作業は要らない）', () => {
-    const kanagawa = byName('神奈川'); // 公示 2026-08-31 / 効力発生日 2026-10-01
-    expect(revisionOf(kanagawa, new Date('2026-08-30')).status).toBe('答申');
-    expect(revisionOf(kanagawa, new Date('2026-09-30')).status).toBe('決定');
+    const kanagawa = byName('神奈川'); // 効力発生予定日 2026-10-01
+    expect(revisionOf(kanagawa, new Date('2026-09-30')).status).toBe('答申');
     expect(revisionOf(kanagawa, new Date('2026-10-01')).status).toBe('発効済み');
     expect(revisionOf(kanagawa, new Date('2026-12-01')).status).toBe('発効済み');
   });

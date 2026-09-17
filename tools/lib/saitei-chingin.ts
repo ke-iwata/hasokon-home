@@ -14,9 +14,16 @@
  * 2. **答申**（8〜9月・各都道府県の地方最低賃金審議会）
  *    県ごとの金額と効力発生予定日が決まる。**目安を上回る県がある**ので、
  *    目安から機械的に足した額を確定額として見せてはいけない
- * 3. **決定・公示**（8月末〜9月）異議申出（最低賃金法11条2項・12条）の手続を経て
- *    労働局長が改正を決定し、官報に公示する。ここで効力発生日が確定する
- * 4. **発効**（10月〜）公示された効力発生日が来て、実際に効力が生じる
+ * 3. **決定・公示**（8月末〜9月）意見の要旨の公示から15日の異議申出（第11条）を経て
+ *    労働局長が改正を決定し（第12条）、決定した事項を公示する（第14条第1項）。
+ *    ここで効力発生日が確定する
+ * 4. **発効**（10月〜）公示の日から30日を経過した日、または決定が別に定めた日に
+ *    効力が生じる（第14条第2項）
+ *
+ * `RevisionStatus` は 3. を独立した状態にせず `'答申'` に含める。
+ * 決定公示の確認が取れているのは一部の県だけで、状態として出すと
+ * 「確認できていない県＝まだ決まっていない」と読めてしまうため
+ * （決定の段階を見せるかは別提案。docs/features/saitei-chingin-r8-hakko-mae-mente.md）。
  *
  * そのため各県の令和8年度額は「目安ベースの見込み」か「答申済み」かを
  * `RevisionStatus` で必ず区別する。答申が確認できた県だけ `answered` を持たせ、
@@ -43,11 +50,12 @@
  *   https://www.mhlw.go.jp/content/11302000/001745621.pdf
  *   → `plannedEffectiveOn`（労働局の決定公示がまだ確認できない県の「発効日（予定）」）と
  *     答申ベースの全国加重平均 `NATIONAL_AVERAGE.answered`
- * - 各都道府県労働局の**決定・公示**の発表 → `decidedOn` / `effectiveOn` / `source`
+ * - 各都道府県労働局の**決定・公示**の発表 → `effectiveOn` / `source`
  *
  * 【データ更新箇所】県の答申が出たら PREFECTURES の該当エントリに `answered` を足し、
- * 決定公示が出たら `decidedOn` / `effectiveOn` を入れて `source` を決定公示のページへ
- * 差し替える。発効したら `answered.effectiveOn` を過ぎるので表示は自動で「発効済み」に変わる。
+ * 決定公示が出たら `effectiveOn` を入れて `source` を決定公示のページへ差し替える
+ * （`plannedEffectiveOn` は消す）。発効したら `answered.effectiveOn` を過ぎるので
+ * 表示は自動で「発効済み」に変わる。
  * 翌年度の改定では `currentYen` / `currentEffectiveOn` を新しい額に置き換え、
  * `answered` を全件外して `MEYASU_BY_RANK` を新しい目安に入れ替える。
  * **確認したら数値が変わらなくても DATA_CHECKED_AT を必ず更新する**
@@ -136,15 +144,9 @@ export interface Answered {
   /** 答申された日 'YYYY-MM-DD'。労働局の発表に日付が無ければ持たない */
   answeredOn?: string;
   /**
-   * 労働局長が改正を決定し官報公示した日 'YYYY-MM-DD'。
-   * 決定公示は必ず効力発生日を含むので、**`decidedOn` を持つなら `effectiveOn` も持つ**
-   * （型では強制できないので tests/saitei-chingin.test.ts が落とす）。
-   * 労働局の発表が公示日を明記していない県には持たせない（`effectiveOn` だけ入る）。
-   */
-  decidedOn?: string;
-  /**
-   * 効力発生（発効）予定日 'YYYY-MM-DD'。
-   * 答申の発表時点で日付を示していない労働局があるので任意。
+   * 効力発生（発効）日 'YYYY-MM-DD'。
+   * **決定公示で確認した日付だけを入れる。予定は `plannedEffectiveOn`**。
+   * 答申の発表時点で日付を示していない労働局があるので任意で、
    * **推測で埋めないこと**（10月1日と決め打ちすると県によって外れる）。
    * 労働局が決定公示や県の最低賃金ページで日付を示したら、そこで初めて入れる。
    */
@@ -376,7 +378,7 @@ export const PREFECTURES: Prefecture[] = [
       yen: 1120,
       answeredOn: '2026-08-06',
       // 答申文の「効力発生の日」は「法定どおり」だったが、改正決定の報道発表で
-      // 10月3日と示された（公示日は発表本文に無いので decidedOn は持たせない）
+      // 10月3日と示された
       effectiveOn: '2026-10-03',
       source: {
         label: '群馬労働局「「群馬県最低賃金」は10月3日から時間額1,120円に引き上げ」',
@@ -413,7 +415,6 @@ export const PREFECTURES: Prefecture[] = [
     answered: {
       yen: 1195,
       answeredOn: '2026-08-05',
-      decidedOn: '2026-09-01',
       effectiveOn: '2026-10-01',
       source: {
         label:
@@ -433,7 +434,6 @@ export const PREFECTURES: Prefecture[] = [
     answered: {
       yen: 1280,
       answeredOn: '2026-08-05',
-      decidedOn: '2026-09-01',
       effectiveOn: '2026-10-01',
       source: {
         label: '東京労働局「東京都最低賃金を1,280円に引上げます」（決定・官報公示）',
@@ -452,12 +452,10 @@ export const PREFECTURES: Prefecture[] = [
     answered: {
       yen: 1279,
       answeredOn: '2026-08-04',
-      // 8/27の報道発表が「令和8年8月31日に官報公示を行います」と公示日を明記している
-      decidedOn: '2026-08-31',
       effectiveOn: '2026-10-01',
       source: {
-        label: '神奈川労働局「令和8年度「神奈川県最低賃金」を改正決定します」',
-        url: 'https://jsite.mhlw.go.jp/kanagawa-roudoukyoku/home/houdou/20260827_00001.html',
+        label: '神奈川労働局「神奈川県最低賃金額54円の引上げへ」',
+        url: 'https://jsite.mhlw.go.jp/kanagawa-roudoukyoku/home/houdou/20260804_00001.html',
         checkedAt: DATA_CHECKED_AT,
       },
     },
@@ -821,7 +819,7 @@ export const PREFECTURES: Prefecture[] = [
     currentEffectiveOn: '2025-11-01',
     source: SOURCE_MHLW_LIST,
     // 広島労働局は報道発表ではなく異議申出のための公示で額と発効日を示している。
-    // 公示は最低賃金法11条・12条にもとづく一次情報なので、これを出典にする
+    // これは最低賃金法第11条第1項の「意見の要旨の公示」にあたる一次情報なので、出典にする
     answered: {
       yen: 1141,
       answeredOn: '2026-08-17',
@@ -883,7 +881,6 @@ export const PREFECTURES: Prefecture[] = [
       yen: 1092,
       answeredOn: '2026-08-05',
       // 「本日9月1日官報公示を行った。効力発生日は、令和8年10月1日である」と明記されている
-      decidedOn: '2026-09-01',
       effectiveOn: '2026-10-01',
       source: {
         label:
@@ -1087,15 +1084,14 @@ export const PREFECTURES: Prefecture[] = [
  * 令和8年度額の確からしさ。
  *
  * - `目安`: 答申がまだなので、ランク別の目安額を足した**見込み**
- * - `答申`: 地方最低賃金審議会が金額を答申済み（決定公示はまだ）
- * - `決定`: 労働局長が改正を決定し官報公示済み（発効前）。額と発効日が確定している
+ * - `答申`: 地方最低賃金審議会が金額を答申済み（発効前）。決定・公示が済んだ県もここに入る
  * - `発効済み`: 効力発生日を過ぎている
  *
- * `答申` と `決定` の違いは `Answered.decidedOn` の有無だけで決まる。
- * 公示日が確認できていない県は、発効日を持っていても `答申` のままになる
- * （分かっていないことを分かったように見せない）。
+ * **決定・公示を独立した状態にしていない。** 決定公示を確認できているのは一部の県だけで、
+ * 状態として出すと「確認できていない県＝まだ決まっていない」と読めてしまう
+ * （経緯は docs/features/saitei-chingin-r8-hakko-mae-mente.md）。
  */
-export type RevisionStatus = '目安' | '答申' | '決定' | '発効済み';
+export type RevisionStatus = '目安' | '答申' | '発効済み';
 
 /** 令和8年度の改定の状態 */
 export interface Revision {
@@ -1106,7 +1102,7 @@ export interface Revision {
   raise: number;
   /** 引上げ率（％・小数第1位まで） */
   raisePercent: number;
-  /** 発効（予定）日 'YYYY-MM-DD'。労働局が示していなければ持たない */
+  /** 発効日 'YYYY-MM-DD'。決定公示で確認できていなければ持たない */
   effectiveOn?: string;
   /**
    * 厚労省の別紙が示す「発効日（予定）」'YYYY-MM-DD'。
@@ -1114,8 +1110,18 @@ export interface Revision {
    * UIは「◯月◯日 発効予定」と予定である旨を添えて出すこと
    */
   plannedEffectiveOn?: string;
-  /** 決定・官報公示日 'YYYY-MM-DD'。確認できていなければ持たない */
-  decidedOn?: string;
+  /**
+   * 予定日を過ぎたのに決定公示をまだ反映できていない状態。
+   * `plannedEffectiveOn` があり、その日以後に評価したときだけ true。
+   *
+   * **true のときUIは日付を出さない。** 「10月24日 発効予定」を10月30日に出し続けると、
+   * 発効済みかもしれない県を「これから」と読ませることになる。
+   * 代わりに「予定日を過ぎています。労働局の公示をご確認ください」と出す。
+   *
+   * 予定日当日から true にするのは、当日には発効している可能性があり、
+   * 「発効予定」と言い切れなくなるため（安全側に倒す）。
+   */
+  plannedDatePassed: boolean;
   /** 答申日 'YYYY-MM-DD'。答申前・未公表なら持たない */
   answeredOn?: string;
   /** この金額の根拠。目安なら厚労省の目安、答申済みなら労働局の発表 */
@@ -1146,28 +1152,31 @@ export function revisionOf(pref: Prefecture, asOf: Date = new Date()): Revision 
   const raisePercent = Math.round((raise / pref.currentYen) * 1000) / 10;
 
   if (!answered) {
-    return { status: '目安', yen, raise, raisePercent, source: SOURCE_MHLW_MEYASU };
+    return {
+      status: '目安',
+      yen,
+      raise,
+      raisePercent,
+      plannedDatePassed: false,
+      source: SOURCE_MHLW_MEYASU,
+    };
   }
 
-  const effective =
-    answered.effectiveOn !== undefined && toYmd(asOf) >= answered.effectiveOn;
-
-  // 公示日も asOf と比べる（effectiveOn と同じ作法）。
-  // 公示より前の日で評価したときに「決定」と出ると、過去の状態を偽ることになる
-  const decided = answered.decidedOn !== undefined && toYmd(asOf) >= answered.decidedOn;
+  const effective = answered.effectiveOn !== undefined && toYmd(asOf) >= answered.effectiveOn;
 
   // plannedEffectiveOn は「予定」なので、日が過ぎても '発効済み' にはしない
-  // （異議申出で動く余地がある。推測で埋めないのと同じ理由）
-  const status: RevisionStatus = effective ? '発効済み' : decided ? '決定' : '答申';
+  // （異議申出で動く余地がある。推測で埋めないのと同じ理由）。
+  // 代わりに plannedDatePassed を立てて、UIから予定日を引っ込める
+  const planned = answered.effectiveOn === undefined ? answered.plannedEffectiveOn : undefined;
 
   return {
-    status,
+    status: effective ? '発効済み' : '答申',
     yen,
     raise,
     raisePercent,
     effectiveOn: answered.effectiveOn,
-    plannedEffectiveOn: answered.effectiveOn === undefined ? answered.plannedEffectiveOn : undefined,
-    decidedOn: answered.decidedOn,
+    plannedEffectiveOn: planned,
+    plannedDatePassed: planned !== undefined && toYmd(asOf) >= planned,
     answeredOn: answered.answeredOn,
     source: answered.source,
   };
