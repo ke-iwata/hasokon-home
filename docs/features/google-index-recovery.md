@@ -248,3 +248,9 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   `public` 停止時は公開待ち仕様書の状態行に書く運用、を反映。リリース数を 17回（v1.2.2〜v1.15.0）に訂正
 - 2026-09-16：企画レビュー（#209）で、C の実装時に `home/llms.txt`・`home/privacy.html`・
   `games/app/about/` に残る `/tools/about/`・`/games/about/` への導線も `/about.html` へ付け替えることを追記
+- 2026-09-17：**C を実施。** `home/about.html` を新設して `sitemap-home.xml` に追加、
+  footer は home / tools / games を付け替え・learn に新規追加、既存2枚
+  （`/tools/about/`・`/games/about/`）を `noindex, follow` にしてサイトマップから外した。
+  導線は上に挙げた3か所に加え、**仕様書に無かった2か所**（`tools/app/page.tsx` のリード文と、
+  全ツールページ下部の `tools/app/ToolMeta.tsx`）と `PUBLISHER.mainEntityOfPage` も
+  `/about.html` へ付け替えた。**`noindex` にした日は 2026-09-17**（戻す判断はこの「経過」に追記する）
