@@ -44,6 +44,14 @@
  * 配当控除など住宅ローン控除以外の税額控除には対応していない。
  */
 
+import {
+  EMPLOYMENT_RATE,
+  HEALTH_RATE,
+  KAIGO_RATE,
+  PENSION_RATE,
+  SHIENKIN_RATE,
+} from '@/lib/shaho-ryoritsu';
+
 /** 自己負担額（制度上、必ず自己負担になる額） */
 export const SELF_PAY = 2_000;
 
@@ -233,16 +241,18 @@ const HEALTH_CAP = 22_410_000;
  * 月給と賞与の配分、住んでいる都道府県で変わる。
  * 正確に計算したい場合は源泉徴収票の「社会保険料等の金額」を入力すること。
  *
- * 【データ更新箇所】保険料率・上限額が変わったらここ。
+ * 【データ更新箇所】**料率はここに持たない。** lib/shaho-ryoritsu.ts が唯一の定義で、
+ * 料率改定はあちらだけを直せばこの概算も追随する。上限額（`HEALTH_CAP` / `PENSION_CAP`）が
+ * 変わったらここ。
  */
 export function estimateSocialInsurance(income: number, kaigo = false): number {
   if (income <= 0) return 0;
-  // 協会けんぽの全国平均（本人負担分）。介護保険は40〜64歳のみ
-  const healthRate = 0.0499 + (kaigo ? 0.008 : 0);
+  // 協会けんぽの全国平均（本人負担分）に子ども・子育て支援金を足す。介護保険は40〜64歳のみ
+  const healthRate = HEALTH_RATE + SHIENKIN_RATE + (kaigo ? KAIGO_RATE : 0);
   const health = Math.min(income, HEALTH_CAP) * healthRate;
-  const pension = Math.min(income, PENSION_CAP) * 0.0915;
+  const pension = Math.min(income, PENSION_CAP) * PENSION_RATE;
   // 雇用保険（一般の事業・労働者負担）は上限なし
-  const employment = income * 0.0055;
+  const employment = income * EMPLOYMENT_RATE;
   return Math.round(health + pension + employment);
 }
 

@@ -1,6 +1,7 @@
 import {
   ArticleIcon,
   BabyIcon,
+  BabyCarriageIcon,
   BeerSteinIcon,
   BicycleIcon,
   BriefcaseIcon,
@@ -29,6 +30,7 @@ import {
   RulerIcon,
   ScalesIcon,
   SnowflakeIcon,
+  SuitcaseIcon,
   TargetIcon,
   TextAaIcon,
   TimerIcon,
@@ -59,6 +61,7 @@ type PhosphorIcon = typeof WallIcon;
 const ICONS: Record<string, PhosphorIcon> = {
   Article: ArticleIcon,
   Baby: BabyIcon,
+  BabyCarriage: BabyCarriageIcon,
   BeerStein: BeerSteinIcon,
   Bicycle: BicycleIcon,
   Briefcase: BriefcaseIcon,
@@ -87,6 +90,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Ruler: RulerIcon,
   Scales: ScalesIcon,
   Snowflake: SnowflakeIcon,
+  Suitcase: SuitcaseIcon,
   Target: TargetIcon,
   TextAa: TextAaIcon,
   Timer: TimerIcon,

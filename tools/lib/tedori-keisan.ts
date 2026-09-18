@@ -45,7 +45,7 @@
  *   https://www.nenkin.go.jp/service/kounen/hokenryo/
  *
  * 【データ更新箇所】このファイルに料率・控除額は**持たない**。
- * 協会けんぽの料率改定は lib/hatarakizon.ts の HEALTH_RATE / KAIGO_RATE、
+ * 協会けんぽの料率改定・雇用保険料率の改定は lib/shaho-ryoritsu.ts（保険料率の唯一の定義）、
  * 控除額の改正は lib/furusato-nozei.ts と lib/nenmatsu-chosei.ts を直せば
  * こちらにも効く。ここで年ごとに増える持ち物は、令和10年分以降の比較対象を
  * 切り替えるときの TAX_RULES_R7 の差し替えだけ。

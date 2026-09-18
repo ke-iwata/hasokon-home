@@ -197,11 +197,13 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 |---|---|
 | 毎年2〜3月（翌年分の祝日が公示されたら） | `lib/nissu-keisan.ts` の `HOLIDAYS` に翌年分を内閣府CSVから写して足し、`HOLIDAY_LAST_YEAR` と `HOLIDAY_UPDATED_AT` を直す（写し間違いは `tests/nissu-keisan.test.ts` が祝日法からの導出と突き合わせて落とす） |
 | 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新（**支援金・働き損の2ツールに効く**。`hatarakizon.ts` は `status: '確定'` の最新年度を自動で拾うので、あちらは触らない） |
-| 毎年3月 | 協会けんぽの料率改定を `lib/hatarakizon.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照）。**働き損・手取り計算機の2ツールに効く**（`lib/tedori-keisan.ts` は料率を持たず `calcTakeHome()` を共有している） |
+| 毎年3月 | 協会けんぽの料率改定を `lib/shaho-ryoritsu.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照）。**保険料率の定義は `lib/shaho-ryoritsu.ts` の1か所だけ**で、`lib/hatarakizon.ts` は同名で re-export しているだけ。**働き損・手取り・ふるさと納税・年末調整・iDeCo・医療費控除の6ツールに効く** |
+| 毎年4月 | 雇用保険料率（労働者負担・一般の事業）を `lib/shaho-ryoritsu.ts` の `EMPLOYMENT_RATE` に反映。厚生労働省が毎年出す「令和◯年度の雇用保険料率」のPDF（[令和8年度](https://www.mhlw.go.jp/content/001692566.pdf)）を正とする（令和8年度は 5/1,000。**①労働者負担の欄を見る**。合計の 13.5/1,000 や事業主負担と取り違えないこと）。`tests/hatarakizon.test.ts` が率そのものを固定しているので、直し忘れではなく「直したこと」が差分に出る |
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・出産手当金・働き損・在職老齢年金の5ツールが参照） |
 | 全被保険者の標準報酬月額の平均額の改定時 | `lib/kenpo-daily-amount.ts` の `SHORT_TENURE_CAP`（被保険者期間12か月未満の上限。**傷病手当金・出産手当金の2ツールに効く**。協会けんぽを正とする。健保組合は別の額を定めている場合がある） |
 | 毎年度（在職老齢年金） | 支給停止調整額を `lib/zaishoku-rorei-nenkin.ts` の `FISCAL_YEARS` に1行追加（賃金の変動に応じて毎年度改定される） |
+| 毎年8月1日（育児休業給付） | `lib/ikuji-kyugyo.ts` の `WAGE_DAILY_MAX` / `WAGE_DAILY_MIN` と支給上限額・下限額（`UNIT_CAP_*` / `UNIT_FLOOR_*` / `SHUSSHOGO_CAP` / `SHUSSHOGO_FLOOR` / `SHUSSHOJI_CAP`）を、厚労省「育児休業等給付の内容と支給申請手続」の改訂版か支給限度額のリーフレットから写し、`LIMIT_LABEL` / `LIMIT_EFFECTIVE_FROM` / `LIMIT_EFFECTIVE_UNTIL` / `DATA_CHECKED_AT` を直す。**失業保険と同じ日に改定されるが別表**（年齢区分が無い）なので、`lib/shitsugyo-hoken.ts` の値を写し合わせないこと。一次情報も基本手当の告示ではなく育児休業給付側から取る。給付率（67%/50%/13%）と180日・28日は法律なので毎年は変わらない |
 | 毎年8〜10月（最低賃金） | 各労働局の答申 →**決定・公示**を追って `lib/saitei-chingin.ts` の `PREFECTURES` を更新する。**`effectiveOn` には決定公示で確認した日付だけを入れる**（答申文の「最短で」「早ければ」は入れない）。確認できない県は厚労省の別紙の「発効日（予定）」を `plannedEffectiveOn` に入れる（**予定日では「発効済み」にしない**。予定日を過ぎたら `plannedDatePassed` が立ち、UIは日付を引っ込める）。決定公示が確認できたら `plannedEffectiveOn` を `effectiveOn` に移して出典も差し替える。`DATA_CHECKED_AT` も毎回進める。出典は `node scripts/check-sources.mjs` で生存確認する |
 | 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
@@ -224,8 +226,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール37本（ほかに公開前が2本：`iryohi-kojo`・`shussan-teate`（ともに `stage: 'wip'`））/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1593件
+- ツール37本（ほかに公開前が4本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`
+  （`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1781件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -306,6 +309,18 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   **所定給付日数の表（category）・給付制限（reason）・受給資格の被保険者期間の要件は
   独立した3つの軸**で、どれか一つからは導けない（`insuredMonthsRequired()` のコメント参照）
   （[docs/features/shitsugyo-hoken-kihon-teate.md](../docs/features/shitsugyo-hoken-kihon-teate.md)）
+- **育児休業給付の上限・下限は、失業保険と同じ日に改定される別表。** 賃金日額の上限
+  16,540円は基本手当の30〜44歳の上限額とたまたま同額だが、育児休業給付の表には
+  **年齢区分そのものが無い**。`lib/ikuji-kyugyo.ts` が `lib/shitsugyo-hoken.ts` から
+  借りていないのはこのため（借りると片方だけ改定されたときに黙ってずれる）。
+  **支給日数は原則30日で、休業終了日を含む支給単位期間だけ実日数**（一次情報16頁 ※2）。
+  暦31日の最終期間は31日で、ちょうど6ヶ月の育休は通算181日になり最後の1日が50%になる。
+  **これは制度どおり**（通算180日を超えた日は50%）なので30日に丸めないこと
+  （一度丸めてレビューで差し戻した）。
+  **支給単位期間の応当日は必ず休業開始日から数える**（前の期間の末日+1ヶ月で数えると、
+  応当日の無い月をまたいだあとズレたままになる）。出生後休業支援給付（+13%・最大28日）の
+  対象期間は**産後休業をするかどうか**で8週間・16週間に分かれ、父母のどちらかではない
+  （[docs/features/ikuji-kyugyo-kyufu.md](../docs/features/ikuji-kyugyo-kyufu.md)）
 - **インボイスは「納税額」より「簡易課税の届出期限」のほうが間違えやすい。**
   原則は「適用したい課税期間の初日の前日」＝個人なら前年12月31日だが、
   2割特例・3割特例からの移行には特則があり、**翌課税期間に係る確定申告期限まで**
@@ -315,6 +330,25 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   また**3割特例は個人事業者限定で令和9年・10年分の2年間だけ**、
   **第3種（みなし仕入率70%）は3割特例と同率**で「安い」ではない
   （[docs/features/invoice-2wari-tokurei-shuryo.md](../docs/features/invoice-2wari-tokurei-shuryo.md)）
+- **退職金の「10年ルール」は、解説記事の要約で実装すると2か所間違える**
+  （どちらも税額を多く出す方向。`lib/taishokukin.ts`。
+  [docs/features/taishokukin-tedori.md](../docs/features/taishokukin-tedori.md)）。
+  iDeCo一時金を先に受け取った場合の重複排除が「前年以前4年内」→**「前年以前9年内」**に
+  延びたのは確かだが、**9年内で判定するのは一時金と退職金の「両方」が2026年以後のときだけ**。
+  施行令70条1項2号ロが対象の一時金を「令和八年一月一日以後に支払を受けたものに限り」と
+  限定していて、2025年以前の一時金は同号イの4年内のまま。**退職金の支払年だけで
+  切り替えてはいけない**（`lookbackYearsFor()`）。結果、新ルールで答えが変わる最初の人は
+  「2026年に一時金 → 2031年に退職金」。
+  もう1つは**重複期間の短縮（70条2項）が「年数の上限」ではなく「期間」**であること。
+  前の一時金が当時の控除額に満たなければ「**掛金期間の初日から**◯年を経過した日の前日まで」が
+  前の勤続期間等になるので、`min(みなし年数, 実際の重複年数)` にすると、転職前からiDeCoに
+  入っていた人で重なっていない部分まで差し引く。**みなし期間と勤続期間の重なりを取り直す**こと。
+  重複年数は利用者に聞かず `overlapMonths()` が出す。同じ年に受け取った場合は
+  69条1項3号の通算という別の計算なので対象外（画面で断る）。
+  **端数は所得税が1円未満切捨て・住民税が100円未満切捨て（市町村民税6%と道府県民税4%を
+  それぞれ。地方税法20条の4の2第3項＋第8項）**で、混ぜると100円ずれる。
+  **条文は e-Gov 法令API（`340CO0000000096`）で現行条文を引ける**ので、
+  改正が絡むときは解説記事ではなくこちらを見ること
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - **出産手当金の日額は傷病手当金と同一**（健康保険法102条2項が99条2項を準用）。
   日額の計算と `SHORT_TENURE_CAP` は `lib/kenpo-daily-amount.ts` に置き、
