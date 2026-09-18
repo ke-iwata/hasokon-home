@@ -17,24 +17,29 @@
  */
 
 /* ===================================================================
-   【データ更新箇所】
-   消費税率は法改正で動きうる唯一の数字。ここの2定数だけを直せば、
-   計算機・早見表・page.tsx の本文表示まで揃って追従する。
-   税率が動く可能性の低さから頻度は低いが、動くときは
-   `TAX_UPDATED_AT` を必ず一緒に直すこと。
+   消費税率は `lib/shohizei.ts` が持つ（このファイルは import するだけ）
+
+   2027年4月から飲食料品が1%になる予定で、「税率は10%と8%の2つ」という
+   前提が崩れる。税率の表を消費税計算機（`shohizei.ts`）に移し、
+   ここはそこから引いている。**数字を直すときは `shohizei.ts` のほうを直す。**
+   export 名は互換のためそのまま残してあるので、このツールの
+   `Calculator.tsx` とテストは今までどおり動く。
+
+   丸めの部品（`Rounding` / `ROUNDINGS` / `roundBy`）は `lib/rounding.ts` に
+   分けてある（`shohizei.ts` との循環importを避けるため）。
+   **既定の丸めだけはツールごとに違う**（下記 `DEFAULT_ROUNDING` 参照）。
    =================================================================== */
+export {
+  TAX_RATE_STANDARD,
+  TAX_RATE_REDUCED,
+  TAX_UPDATED_AT,
+} from './shohizei';
 
-/** 標準税率（消費税＋地方消費税の合計） */
-export const TAX_RATE_STANDARD = 0.10;
+import { TAX_RATE_REDUCED, TAX_RATE_STANDARD } from './shohizei';
+import { ROUNDINGS, roundBy, type Rounding, type RoundingOption } from './rounding';
 
-/** 軽減税率（飲食料品・定期購読の新聞など） */
-export const TAX_RATE_REDUCED = 0.08;
-
-/**
- * 現行の消費税率が施行された日。
- * 2019-10-01 の税率引き上げ（8% → 10%）以降は改定されていない。
- */
-export const TAX_UPDATED_AT = '2019-10-01';
+export { ROUNDINGS, roundBy };
+export type { Rounding, RoundingOption };
 
 /** セレクトに出す税率の選択肢 */
 export interface TaxRateOption {
@@ -66,55 +71,15 @@ export function taxRate(id: TaxRateId): TaxRateOption {
   return found;
 }
 
-/** 端数の丸め方 */
-export type Rounding = 'floor' | 'round' | 'ceil';
-
-export interface RoundingOption {
-  id: Rounding;
-  /** UIラベル */
-  label: string;
-  /** 内訳表示・チップ表示用の短い名前 */
-  short: string;
-}
-
 /**
- * 選べる端数処理。並び順は「切り捨て → 四捨五入 → 切り上げ」で、
- * 既定は四捨五入。並びを既定に合わせない（左から順の並び）のは、
- * ラジオボタンで既定が真ん中に来ても不自然にならないため。
- */
-export const ROUNDINGS: RoundingOption[] = [
-  { id: 'floor', label: '切り捨て', short: '切捨' },
-  { id: 'round', label: '四捨五入', short: '四捨' },
-  { id: 'ceil', label: '切り上げ', short: '切上' },
-];
-
-export const DEFAULT_ROUNDING: Rounding = 'round';
-
-/**
- * 値を整数（1円）に丸める。
- * 4捨5入・切り上げ・切り捨てのどれを選んでも、負の数の扱いは
- * 「値を0方向へ近づける（`ceil` は上へ・`floor` は下へ）」で
- * JavaScript の標準と同じ。負の値は割引計算では基本的に出ないが、
- * 逆算モードで「増えた（マークアップ）」を計算するときのため保険で挙げておく。
+ * このツールの既定の丸めは**四捨五入**。
  *
- * 無効値（NaN・Infinity）は `NaN` を返す。呼び出し側で `Number.isFinite`
- * で受けて表示を落とせるように、null は返さない（数値のシグネチャは崩さない）。
+ * 消費税計算機（`shohizei.ts` の `DEFAULT_TAX_ROUNDING` ＝ 切り捨て）とは
+ * **わざと違う値にしてある**。割引は店頭表示の検算なので四捨五入が自然だが、
+ * 消費税額の1円未満は実務で切り捨てがもっとも多い。
+ * 同じ `roundBy()` を共有するからといって既定まで揃えないこと。
  */
-export function roundBy(value: number, rounding: Rounding): number {
-  if (!Number.isFinite(value)) return Number.NaN;
-  switch (rounding) {
-    case 'floor':
-      return Math.floor(value);
-    case 'ceil':
-      return Math.ceil(value);
-    case 'round':
-      // Number.EPSILON を足して丸めると、二進小数の誤差で
-      // 「2.5円は2円に丸まる」ような境界のブレを避けられる。
-      // ただし負の値を上へ寄せるので、非負の値だけに適用する
-      if (value >= 0) return Math.round(value + Number.EPSILON);
-      return Math.round(value);
-  }
-}
+export const DEFAULT_ROUNDING: Rounding = 'round';
 
 /** 割引率の入力が使えるか（0以上100未満、または合計100未満で成り立つ範囲） */
 export function isValidRate(rate: number): boolean {

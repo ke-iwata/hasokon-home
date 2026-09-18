@@ -187,6 +187,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-15',
   },
   {
+    // 2027年4月の「飲食料品1%」は閣議決定済みで法案は未成立。
+    // 公開（`public`）への昇格は google-index-recovery.md の解除判断後。
+    // 仕様: docs/features/shohizei-keisan-shokuryohin-1percent.md
+    slug: 'shohizei-keisan',
+    // Receipt はインボイス納税額・医療費控除・割り勘が使っている。
+    // 同じ一覧でインボイスと並ぶと見分けがつかないので買い物かごにした
+    icon: 'ShoppingCart',
+    name: '消費税 計算機・軽減税率チェッカー',
+    description:
+      '税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を約50項目の一覧から引ける軽減税率チェッカーと、2027年4月からの食料品1%（予定）でいくら安くなるかの計算つき。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
+  },
+  {
     slug: 'shuzei-kaisei',
     icon: 'BeerStein',
     name: '酒税改正 早見表・負担額計算',
