@@ -4,6 +4,7 @@ import {
   MEYASU_BY_RANK,
   NATIONAL_AVERAGE,
   PREFECTURES,
+  SOURCE_MHLW_BESSHI,
   WEEKS_PER_YEAR,
   checkWage,
   estimateIncome,
@@ -341,13 +342,15 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   /**
-   * 答申文が「効力発生の日 法定どおり」とだけ書く県、報道発表が「最短で」「早ければ」
-   * 10月◯日と条件付きで書く県（宮崎の「10月下旬（最短で10月24日）」を含む）、
-   * 労働局の発表に発効日が載っていない県（鹿児島）は、発効日を持たせない（決め打ちしない）。
+   * 労働局が発効日を示していない県は、発効日を持たせない（決め打ちしない）。
    * この県は日付が過ぎても「答申」のままになる。
+   *
+   * 2026-09-16 の発効前メンテで9県の発効日が確認できたので、残るのは宮崎・鹿児島だけ。
+   * **この2県の決定公示が確認できたら、このテストは削除してよい**
+   * （残り0件になると「決め打ちしていない」を見張る対象が無くなるため）。
    */
   it('発効日が示されていない県は日付を持たず、日が過ぎても「答申」のまま', () => {
-    for (const name of ['群馬', '新潟', '富山', '岐阜', '和歌山', '香川', '宮崎', '鹿児島']) {
+    for (const name of ['宮崎', '鹿児島']) {
       const pref = byName(name);
       expect(pref.answered, `${name}: 答申が無い`).toBeDefined();
       expect(pref.answered?.effectiveOn, `${name}: 発効日を決め打ちしている`).toBeUndefined();
@@ -461,6 +464,160 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 });
 
+/**
+ * 10月発効前のメンテ（2026-09-16）。
+ *
+ * 仕様: docs/features/saitei-chingin-r8-hakko-mae-mente.md
+ *
+ * 答申時に発効日を持たせられなかった11県のうち9県は、労働局の決定公示・
+ * 県の最低賃金ページで発効日を確認できた。**ここが埋まっていないと、
+ * 10月1日に東京・大阪・千葉の表示が「答申」のまま止まる**ので、
+ * このテストがいちばん守りたいのはそこ。
+ *
+ * **`'決定'` という状態は入れていない**（仕様書の案(b)）。決定公示を確認できているのは
+ * 一部の県だけで、状態に出すと確認できていない県が「まだ決まっていない」と読めるため。
+ */
+describe('10月発効前のメンテ（決定公示の反映と出典の差し替え）', () => {
+  /**
+   * 答申時に発効日が無く、今回 決定公示・県の最低賃金ページで発効日を確認できた9県。
+   * **この9県が埋まっていないと 10/1 に東京・大阪・千葉が「答申」のまま止まる。**
+   */
+  const NEWLY_DATED = [
+    ['千葉', '2026-10-01'],
+    ['東京', '2026-10-01'],
+    ['新潟', '2026-10-01'],
+    ['富山', '2026-10-01'],
+    ['岐阜', '2026-10-01'],
+    ['大阪', '2026-10-01'],
+    ['香川', '2026-10-01'],
+    ['群馬', '2026-10-03'],
+    ['和歌山', '2026-10-03'],
+  ] as const;
+
+  it('決定公示を確認できた9県が発効日を持ち、その日に「発効済み」へ切り替わる', () => {
+    for (const [name, on] of NEWLY_DATED) {
+      const pref = byName(name);
+      expect(pref.answered?.effectiveOn, `${name}: 発効日`).toBe(on);
+      const dayBefore = new Date(`${on}T00:00:00Z`);
+      dayBefore.setUTCDate(dayBefore.getUTCDate() - 1);
+      expect(revisionOf(pref, dayBefore).status, `${name}: 発効前`).toBe('答申');
+      expect(revisionOf(pref, new Date(`${on}T00:00:00`)).status, `${name}: 発効日`).toBe(
+        '発効済み',
+      );
+    }
+  });
+
+  /** 仕様書がいちばん気にしている効果。10/1 に最大規模の県が「発効済み」になること */
+  it('10月1日に東京・大阪・千葉の表示が「発効済み」になる', () => {
+    for (const name of ['東京', '大阪', '千葉']) {
+      const pref = byName(name);
+      expect(revisionOf(pref, new Date('2026-09-30T00:00:00')).status, `${name}: 前日`).toBe('答申');
+      expect(revisionOf(pref, new Date('2026-10-01T00:00:00')).status, `${name}: 発効日`).toBe(
+        '発効済み',
+      );
+      // 仕様書が「いまの挙動」として挙げた再現手順（10/2 に「答申」のまま）が直っている
+      expect(revisionOf(pref, new Date('2026-10-02T00:00:00')).status, `${name}: 10/2`).toBe(
+        '発効済み',
+      );
+    }
+  });
+
+  /**
+   * 決定公示がまだの県には、厚労省の別紙が示す「発効日（予定）」を持たせる。
+   * **予定日では `'発効済み'` に切り替えない**（異議申出で動く余地があるため）。
+   */
+  it('予定日だけの県は plannedEffectiveOn を持ち、その日が来ても「答申」のまま', () => {
+    const planned = [
+      ['宮崎', '2026-10-24'],
+      ['鹿児島', '2026-10-25'],
+    ] as const;
+    for (const [name, on] of planned) {
+      const pref = byName(name);
+      expect(pref.answered?.plannedEffectiveOn, `${name}: 予定日`).toBe(on);
+      expect(pref.answered?.effectiveOn, `${name}: 予定日を発効日にしている`).toBeUndefined();
+      const r = revisionOf(pref, new Date(`${on}T00:00:00`));
+      expect(r.status, `${name}: 予定日で発効済みにしている`).toBe('答申');
+      expect(r.effectiveOn, `${name}`).toBeUndefined();
+    }
+  });
+
+  /**
+   * 予定日を過ぎても決定公示を反映できていないとき、UIから日付を引っ込めるための旗。
+   * これが無いと「10月24日 発効予定」が10月30日にも出続け、
+   * 発効済みかもしれない県を「これから」と読ませてしまう。
+   */
+  it('予定日の前後で plannedDatePassed が切り替わる（日付を出し続けない）', () => {
+    const miyazaki = byName('宮崎'); // 予定日 2026-10-24
+    const before = revisionOf(miyazaki, new Date('2026-10-20T00:00:00'));
+    expect(before.status).toBe('答申');
+    expect(before.plannedEffectiveOn).toBe('2026-10-24');
+    expect(before.plannedDatePassed).toBe(false);
+
+    // 予定日当日から true。当日には発効している可能性があり「発効予定」と言い切れない
+    expect(revisionOf(miyazaki, new Date('2026-10-24T00:00:00')).plannedDatePassed).toBe(true);
+
+    const after = revisionOf(miyazaki, new Date('2026-10-30T00:00:00'));
+    expect(after.status, '予定日超過で発効済みにしている').toBe('答申');
+    expect(after.plannedDatePassed).toBe(true);
+  });
+
+  it('発効日が確定した県と目安の県は plannedDatePassed が立たない', () => {
+    // 発効日が確定している県は、発効日を過ぎても「発効済み」であって「予定日超過」ではない
+    const tokyo = revisionOf(byName('東京'), new Date('2026-10-30T00:00:00'));
+    expect(tokyo.status).toBe('発効済み');
+    expect(tokyo.plannedDatePassed).toBe(false);
+    expect(tokyo.plannedEffectiveOn).toBeUndefined();
+
+    expect(revisionOf(notAnsweredPref, new Date('2026-12-01')).plannedDatePassed).toBe(false);
+  });
+
+  it('発効日が確定している県は plannedEffectiveOn を持たない（二重に持たない）', () => {
+    for (const p of PREFECTURES) {
+      const a = p.answered;
+      if (!a?.effectiveOn) continue;
+      expect(a.plannedEffectiveOn, `${p.name}: 発効日と予定日を二重に持っている`).toBeUndefined();
+      expect(revisionOf(p, new Date('2026-09-16')).plannedEffectiveOn, `${p.name}`).toBeUndefined();
+    }
+  });
+
+  /**
+   * 労働局のPDFは差し替えでURLが変わりやすく、広島・徳島・山梨の3件が404になっていた。
+   * 報道発表のHTMLページに寄せる方針にそろえた（scripts/check-sources.mjs で手動確認）。
+   */
+  it('差し替えた3件の出典は労働局のHTMLページで、PDF直リンクではない', () => {
+    for (const name of ['広島', '徳島', '山梨']) {
+      const url = byName(name).answered?.source.url ?? '';
+      expect(url, `${name}`).toMatch(/^https:\/\/jsite\.mhlw\.go\.jp\//);
+      expect(url.endsWith('.pdf'), `${name}: PDF直リンクに戻っている`).toBe(false);
+    }
+  });
+
+  it('差し替えた3件の出典の見出しは、ページどおり「答申」の発表だと分かる', () => {
+    for (const name of ['広島', '徳島', '山梨']) {
+      const label = byName(name).answered?.source.label ?? '';
+      expect(label, `${name}: 公示ではなく答申の報道発表ページ`).toContain('答申');
+      expect(label, `${name}: 古い「一般公示第◯号」の見出しが残っている`).not.toContain('一般公示');
+    }
+  });
+
+  it('決定公示を反映した県の出典も、切れやすいPDF直リンクではない', () => {
+    for (const [name] of NEWLY_DATED) {
+      const url = byName(name).answered?.source.url ?? '';
+      expect(url, `${name}`).toMatch(/^https:\/\/jsite\.mhlw\.go\.jp\//);
+      expect(url.endsWith('.pdf'), `${name}: PDF直リンク`).toBe(false);
+    }
+  });
+
+  it('別紙の出典を持っている（予定日と答申ベースの全国加重平均の根拠）', () => {
+    expect(SOURCE_MHLW_BESSHI.url).toMatch(/^https:\/\/www\.mhlw\.go\.jp\//);
+    expect(SOURCE_MHLW_BESSHI.checkedAt).toBe(DATA_CHECKED_AT);
+  });
+
+  it('データ最終確認日を発効前メンテの日まで進めてある', () => {
+    expect(DATA_CHECKED_AT >= '2026-09-16').toBe(true);
+  });
+});
+
 describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
   it('令和8年度の目安は A:54円・B:56円・C:56円', () => {
     expect(MEYASU_BY_RANK).toEqual({ A: 54, B: 56, C: 56 });
@@ -470,6 +627,17 @@ describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
     expect(NATIONAL_AVERAGE.current).toBe(1121);
     expect(NATIONAL_AVERAGE.meyasu).toBe(1176);
     expect(NATIONAL_AVERAGE.meyasu - NATIONAL_AVERAGE.current).toBe(55);
+  });
+
+  /**
+   * 答申ベースの実績は目安を1円上回る（目安を上回る額で答申した県があるため）。
+   * リード文とFAQがこの値を出しているので、目安と取り違えないよう固定しておく。
+   * 出典は厚労省「（別紙）令和８年度地域別最低賃金額答申状況」。
+   */
+  it('答申ベースの全国加重平均は 1,177円（+56円）で、目安を上回る', () => {
+    expect(NATIONAL_AVERAGE.answered).toBe(1177);
+    expect(NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current).toBe(56);
+    expect(NATIONAL_AVERAGE.answered).toBeGreaterThan(NATIONAL_AVERAGE.meyasu);
   });
 });
 
@@ -525,9 +693,9 @@ describe('revisionOf', () => {
   });
 
   it('発効日が未公表の答申は日付が来ても「答申」のまま（決め打ちしない）', () => {
-    // 大阪は答申の発表時点で効力発生日を示していない
-    expect(byName('大阪').answered?.effectiveOn).toBeUndefined();
-    expect(revisionOf(byName('大阪'), new Date('2026-12-01')).status).toBe('答申');
+    // 鹿児島は労働局の発表に効力発生日が載っていない
+    expect(byName('鹿児島').answered?.effectiveOn).toBeUndefined();
+    expect(revisionOf(byName('鹿児島'), new Date('2026-12-01')).status).toBe('答申');
   });
 
   it('引上げ率を小数第1位まで出す', () => {

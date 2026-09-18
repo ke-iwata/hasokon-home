@@ -22,13 +22,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'weekly',
       priority: 1,
     },
-    {
-      // 運営者情報。YMYLのページから参照されるので優先度は他の固定ページより高くする
-      url: `${SITE_URL}/about/`,
-      lastModified: SITE_UPDATED_AT,
-      changeFrequency: 'yearly',
-      priority: 0.5,
-    },
+    // 運営者情報（/about/）は載せない。本文は `/about.html` に1枚へまとめ、
+    // このアプリ側は noindex の受け皿として残してある
+    // （docs/features/google-index-recovery.md 提案 C）。
+    // `/about.html` は home/sitemap-home.xml に載っている
     {
       url: `${SITE_URL}/contact/`,
       lastModified: SITE_UPDATED_AT,
