@@ -106,6 +106,26 @@ cp home/index.html /tmp/index.html && node scripts/build-test-home.mjs --file /t
 **生成結果を `home/index.html` にcommitしないでください。** 本番のトップから
 `noindex` のページへリンクすることになります（`test/build-test-home.test.mjs` が落とします）。
 
+## stale-prs.mjs
+
+**開きっぱなしのPRを見つけて、PRにコメントで催促する**スクリプトです。
+`.github/workflows/pr-reminder.yml` が毎朝09:00(JST)に回します。
+
+仕様: [docs/features/stale-pr-reminder.md](../docs/features/stale-pr-reminder.md)
+
+```bash
+# コメントせずに対象だけ数える
+GITHUB_TOKEN=<token> node scripts/stale-prs.mjs --repo ke-iwata/hasokon-home
+
+# 実際にコメントする（Actions はこちら）
+GITHUB_TOKEN=<token> node scripts/stale-prs.mjs --repo ke-iwata/hasokon-home --post
+```
+
+**「動いた」の判定に PR の `updated_at` を使っていません。** 催促コメント自体が
+`updated_at` を動かすので、それを見ると催促した瞬間に経過日数が0に戻り、
+二度と催促が飛ばなくなります。コミット・ボット以外のコメント・レビューの
+最新時刻だけを見ています。
+
 ## テスト
 
 ```bash

@@ -1,0 +1,80 @@
+name: PR reminder
+
+# 開きっぱなしのPRを放置しないための2つの仕掛け。
+#
+# 1. 毎朝09:00(JST) — 3日動いていないPRにコメントで催促する
+# 2. PRが開かれたとき — 作者をassigneeに入れる（GitHubの Assigned に溜まるようにする）
+#
+# **セッションの生死に関係なく動くこと**がこのワークフローの存在理由。
+# 提案・実装・レビューの定期ルーチンは「PRを1時間おきに自分で確認する」建て付けで、
+# セッションが落ちるとそこで見張りが消える。ここはGitHub側だけで完結する。
+#
+# 仕様: docs/features/stale-pr-reminder.md
+on:
+  schedule:
+    # UTC。09:00 JST に回す
+    - cron: '0 0 * * *'
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      days:
+        description: '何日動いていなければ催促するか'
+        required: false
+        default: '3'
+      post:
+        description: 'コメントする（false なら一覧を出すだけ）'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: pr-reminder-${{ github.event_name }}-${{ github.event.pull_request.number || 'schedule' }}
+  cancel-in-progress: false
+
+jobs:
+  remind:
+    name: 止まっているPRを催促する
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 催促する
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DAYS: ${{ inputs.days || '3' }}
+          POST: ${{ github.event_name == 'schedule' && 'true' || inputs.post }}
+        run: |
+          if [ "$POST" = 'false' ]; then
+            node scripts/stale-prs.mjs --days "$DAYS"
+          else
+            node scripts/stale-prs.mjs --days "$DAYS" --post
+          fi
+
+  assign:
+    name: 作者をassigneeに入れる
+    # fork からのPRでは GITHUB_TOKEN が読み取り専用になるので触らない
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.assignees[0] == null
+    runs-on: ubuntu-latest
+    steps:
+      - name: assignee を付ける
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          gh api -X POST "repos/$REPO/issues/$NUMBER/assignees" -f "assignees[]=$AUTHOR"
