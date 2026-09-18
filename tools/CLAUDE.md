@@ -211,6 +211,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
+| 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 毎年12月（税制改正大綱が出たら） | セルフメディケーション税制の適用期限を `lib/iryohi-kojo.ts` の `SELF_MED_EXPIRES_AT` / `SELF_MED_CHECKED_AT` に反映（現行の期限は2026年12月31日。延長は令和9年度税制改正待ち）。**画面では「今年で終わり」と断定せず「現時点の期限は〜」と書く**（延長された瞬間に嘘になる文言を置かない）。足切り・上限が変わったら `MEDICAL_THRESHOLD_FIXED` / `MEDICAL_CAP` / `SELF_MED_THRESHOLD` / `SELF_MED_CAP` |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
@@ -229,9 +230,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール37本（ほかに公開前が5本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
-  `shohizei-keisan`（`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1864件
+- ツール37本（ほかに公開前が6本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
+  `shohizei-keisan`・`zangyodai-keisan`（`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1918件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
