@@ -19,8 +19,9 @@ import {
  * 保険料率の改定でテストがまとめて壊れ、何が壊れたのか分からなくなるため。
  * 推計そのものを見るテストだけ null を渡す。
  *
- * 734,500円は estimateSocialInsurance(5,000,000) と同じ額
- * （健康保険4.99% + 厚生年金9.15% + 雇用保険0.55%）。
+ * 734,500円は実額の入力（このテストを概算に依存させないための固定値）。
+ * 令和8年度の estimateSocialInsurance(5,000,000) は 735,750円
+ * （健保4.95% + 支援金0.115% + 厚年9.15% + 雇用0.5%）。
  */
 const base = (over: Partial<NenmatsuInput> = {}): NenmatsuInput => ({
   income: 5_000_000,
@@ -188,7 +189,7 @@ describe('還付額', () => {
   it('社会保険料を推計すると年収から概算される', () => {
     const r = calcNenmatsuChosei(base({ socialInsurance: null }));
     // 健康保険4.99% + 厚生年金9.15% + 雇用保険0.55% = 14.69%
-    expect(r.socialInsurance).toBe(734_500);
+    expect(r.socialInsurance).toBe(735_750);
     expect(r.socialInsuranceEstimated).toBe(true);
   });
 });

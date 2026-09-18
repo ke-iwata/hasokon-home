@@ -159,8 +159,9 @@ describe('adjustmentDeduction（住民税の調整控除）', () => {
 
 describe('estimateSocialInsurance', () => {
   it('年収500万円で約14.7%（会社員の目安）', () => {
+    // 健保 253,250（4.95% + 支援金 0.115%）+ 厚年 457,500（9.15%）+ 雇用 25,000（5/1,000）
     const v = estimateSocialInsurance(5_000_000);
-    expect(v).toBe(734_500);
+    expect(v).toBe(735_750);
     expect(v / 5_000_000).toBeGreaterThan(0.14);
     expect(v / 5_000_000).toBeLessThan(0.16);
   });
@@ -336,7 +337,7 @@ describe('calcFurusato 異常値', () => {
   it('社会保険料を未指定にすると概算値が使われる', () => {
     const r = calcFurusato(base({ socialInsurance: null }));
     expect(r.socialInsuranceEstimated).toBe(true);
-    expect(r.socialInsurance).toBe(734_500);
+    expect(r.socialInsurance).toBe(735_750);
   });
 });
 

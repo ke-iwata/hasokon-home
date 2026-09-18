@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEPENDENT_LIMIT,
   DEPENDENT_LIMIT_STUDENT,
+  EMPLOYMENT_RATE,
   HEALTH_RATE,
   KAIGO_RATE,
   PENSION_ACCRUAL_RATE,
@@ -88,8 +89,17 @@ describe('calcPremiums（社会保険料・本人負担）', () => {
     expect(p.standardMonthly).toBe(200_000);
     expect(p.health).toBe(10_130 * 12);
     expect(p.pension).toBe(18_300 * 12);
-    expect(p.employment).toBe(Math.round(2_400_000 * 0.0055));
+    expect(p.employment).toBe(Math.round(2_400_000 * EMPLOYMENT_RATE));
     expect(p.total).toBe(p.health + p.pension + p.employment);
+  });
+
+  it('雇用保険料率（労働者負担・一般の事業）は令和8年度で5/1,000', () => {
+    // 厚生労働省「令和8年4月1日から令和9年3月31日までの雇用保険料率」
+    // https://www.mhlw.go.jp/content/001692566.pdf
+    // 一般の事業 13.5/1,000（労働者負担 5/1,000・事業主負担 8.5/1,000）。
+    // 令和7年度は 14.5/1,000（労働者 5.5・事業主 9.0）だった。
+    // 率そのものが年度をまたいで取り残されたら、このテストが落ちる
+    expect(EMPLOYMENT_RATE).toBe(5 / 1_000);
   });
 
   it('40〜64歳は介護保険料（令和8年度1.62%・折半後0.81%）が健康保険料に上乗せされる', () => {

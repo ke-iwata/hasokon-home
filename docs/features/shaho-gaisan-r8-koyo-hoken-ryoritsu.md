@@ -1,11 +1,14 @@
 # 雇用保険料率の令和8年度改定（5.5 → 5/1,000）が 2ファイルに未反映で、社保概算は令和7年度の料率のまま — 6ツールの数字がずれている
 
-**状態**：提案（2026-09-17 起票、未実装。同日の企画レビュー（#221）で「料率は葉のモジュールに切り出す」
-「テストの範囲は 5ファイル」の 2点を反映）。**法対応の修正**なので、新機能より先に入れる。
-実装 PR は `fix(tools):`（`lib/`・`tests/` を触るため `docs:` にしない）
-**対象**：`tools/lib/shaho-ryoritsu.ts`（新規）・`tools/lib/hatarakizon.ts`・`tools/lib/furusato-nozei.ts`・
-`tools/tests/hatarakizon.test.ts`・`tools/tests/furusato-nozei.test.ts`・`tools/tests/nenmatsu-chosei.test.ts`・
-`tools/tests/ideco.test.ts`・`tools/tests/iryohi-kojo.test.ts`・`tools/CLAUDE.md`（運用表に 1行）
+**状態**：実装済み（2026-09-18。本番反映はタグリリース待ち）。
+実装時に厚労省 PDF の本文を機械的に読んで一次情報を確認した（起票時は表題どまりだった）：
+一般の事業 13.5/1,000・労働者負担 **5/1,000**・事業主負担 8.5/1,000、令和7年度は 5.5/1,000。
+**テストの範囲は 5ファイルではなく 6ファイルだった**（`tests/tedori-keisan.test.ts` の
+早見表スナップショットと保険料内訳が動く。下記 B の追記を参照）
+**対象**（実際に触ったファイル）：`tools/lib/shaho-ryoritsu.ts`（新規）・`tools/lib/hatarakizon.ts`・
+`tools/lib/furusato-nozei.ts`・`tools/tests/hatarakizon.test.ts`・`tools/tests/furusato-nozei.test.ts`・
+`tools/tests/nenmatsu-chosei.test.ts`・`tools/tests/tedori-keisan.test.ts`・`tools/CLAUDE.md`（運用表に 2行）。
+`tools/tests/ideco.test.ts`・`tools/tests/iryohi-kojo.test.ts` は変更不要だった（下記 B）
 **起票**：2026-09-17
 
 ---
@@ -122,6 +125,17 @@ import している（ファイル冒頭にも「計算式は lib/furusato-nozei
 - `tests/ideco.test.ts:259`・`tests/iryohi-kojo.test.ts:35`：**base 入力が `socialInsurance: null`**
   なので、そのファイル内で金額を固定している assertion は概算の +1,250円ぶんずれる。
   実額の期待値は付け替え、率・大小・区分で見ているものは触らない（上の方針どおり）
+- `tests/tedori-keisan.test.ts`（**起票時に数え漏れていた 6ファイル目**）：
+  `calcPremiums()` 経由で手取りそのものが動くため、`:132` の `p.employment` の実額
+  （27,500 → 25,000）と、`:350` の早見表スナップショット 22行を付け替えた。
+  スナップショットの差は全行で「手取りが増える」向きで、増分は各行とも
+  `年収 × 0.5/1,000`（雇用保険料の減）以下に収まっている（社会保険料控除が減るぶん
+  税が増えるため）。`:131` の `EMPLOYMENT_RATE` 経由の assertion は変更不要だった
+
+**実装で分かったこと**：`tests/ideco.test.ts` と `tests/iryohi-kojo.test.ts` は
+`socialInsurance: null` の base を使っているものの、金額を実額で固定している assertion が
+無かったため**変更不要だった**（率・大小・区分で見る形になっていた）。
+差し引き、テストの変更は 4ファイル（hatarakizon・furusato-nozei・nenmatsu-chosei・tedori-keisan）。
 
 ### C. 「年度で変わる料率」を点検表に載せる
 
