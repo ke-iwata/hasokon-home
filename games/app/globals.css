@@ -3942,6 +3942,202 @@ button.hf-card {
   border-radius: var(--radius-sm);
 }
 
+/* ---- タイピング練習 ----
+   仕様: docs/features/game-typing.md
+
+   **出題の枠は動かさない。** 語の長さは2文字から14文字まで幅があり、
+   ローマ字は30文字を超えることもある。`min-height` にすると、長い語が
+   出た瞬間に下の記録の帯とボタンが押し下げられて目が泳ぐので、
+   かな・ローマ字とも **2行ぶんを `height` で確保**して、そこに収める
+   （`line-height` を明示しているので「2行ぶん」が実寸で決まる）。 */
+.tp-stage {
+  position: relative;
+  margin: 10px 0;
+  padding: 14px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+/* お題のかな。**読ませる主役**なので大きく出す */
+.tp-kana {
+  height: calc(1.35em * 2);
+  margin: 0;
+  font-size: clamp(1.15rem, 5.2vw, 1.7rem);
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+/* ローマ字の見本。**等幅にする**（打つほど字がずれると位置を見失う） */
+.tp-romaji {
+  height: calc(1.5em * 2);
+  margin: 6px 0 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(0.95rem, 4.2vw, 1.25rem);
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  word-break: break-all;
+}
+
+/* 打てたところ。**薄くする**（残りのほうを目立たせたい） */
+.tp-typed {
+  color: var(--muted);
+}
+
+/* 次に打つ1文字。下線で位置を示す */
+.tp-next {
+  color: var(--text);
+  font-weight: 700;
+  border-bottom: 2px solid var(--accent);
+}
+
+.tp-rest {
+  color: var(--text);
+}
+
+/* 打ち間違えた瞬間だけ赤くする。**演出なので状態には持たせない**
+   （`Game.tsx` が短い時間だけこのクラスを足す） */
+.tp-missed .tp-next {
+  color: var(--on-accent);
+  background: var(--danger);
+  border-bottom-color: var(--danger);
+  border-radius: 3px;
+}
+
+/* 開始待ちと結果の幕。盤の大きさを変えずに上に重ねる */
+.tp-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+
+.tp-overlay p {
+  margin: 0;
+}
+
+.tp-overlay-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.tp-overlay-sub {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 状態の行。**数字は等幅の桁で出す**（60→9秒で幅が変わると行が揺れる） */
+.tp-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 14px;
+}
+
+.tp-num {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tp-controls {
+  justify-content: center;
+}
+
+/* ---- タッチだけの端末への案内 ----
+   遊べない理由を言うだけで終わらせない（仕様の「行き止まりにしない」）。
+   キーボードの要らないゲームのカードを並べて、検索から来た人を拾う */
+.tp-guide-title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.tp-guide-note {
+  margin: 0 0 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.tp-guide-lead {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+/* 案内のカードは**横並びに詰める**（アイコン左・名前と説明右）。
+   通常の `.game-card` のまま3枚並べると、375×667で card が854pxになり
+   1画面に収まらなかった（実測）。説明は2行で切って、案内全体を1画面に収める
+   （mobile-one-screen の約束は案内画面にも適用する） */
+.tp-guide .game-grid {
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.tp-guide .game-card {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.tp-guide .game-card .icon {
+  grid-row: span 2;
+}
+
+.tp-guide .game-card .name {
+  align-self: end;
+}
+
+.tp-guide .game-card .desc {
+  align-self: start;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  /* 2行で切る。**高さを揃えたいのではなく、3枚ぶんの高さを読めるようにする** */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+/* 本文のローマ字表。狭い画面でもはみ出さないよう、
+   横に長くなったら表だけを横スクロールさせる */
+.tp-table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.92rem;
+}
+
+.tp-table th,
+.tp-table td {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tp-table th {
+  background: var(--surface-2);
+  font-weight: 700;
+}
+
 /* ---- 狭い画面では操作まわりを詰める ----
    スマホでは設定の切り替え（`.seg`）が2〜3行に折り返して、盤がそのぶん
    画面の外に出ていた（実測で設定だけで131〜184px）。1つずつを小さくすれば
@@ -4222,5 +4418,42 @@ button.hf-card {
     height: 1.6em;
     margin: 2px 0 4px;
     font-size: 0.78rem;
+  }
+
+  /* ---- タイピング練習 ----
+     出題の枠の余白だけを詰める。**かな・ローマ字の行数（2行）は減らさない**
+     （むずかしいの14文字はローマ字が30字を超えるので、1行にすると欠ける）。
+     字の大きさは `clamp` の vw 側が効いて自然に縮む */
+  .tp-stage {
+    padding: 10px 6px;
+    margin: 8px 0;
+  }
+
+  .tp-status {
+    gap: 2px 10px;
+  }
+
+  /* 案内はカード3枚ぶん縦に伸びるので、狭い画面では字と余白を詰める。
+     実測（card の高さ）：320×568 で 584px→559px、390×664 で 532px→508px。
+     横並びのカードにする前は854pxあった。既存のゲーム（同じ端末でナンプレ595px・
+     2048は434px）と同じ水準に収まっている */
+  .tp-guide-title {
+    margin-bottom: 6px;
+    font-size: 1rem;
+  }
+
+  .tp-guide-note {
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .tp-guide-lead {
+    margin-bottom: 6px;
+    font-size: 0.92rem;
+  }
+
+  .tp-guide .game-card {
+    padding: 8px 10px;
   }
 }

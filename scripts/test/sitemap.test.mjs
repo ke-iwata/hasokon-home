@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
-import { collectUrls, isSitemapIndex, parseLocs } from '../lib/sitemap.mjs';
+import { collectUrls, isSitemapIndex, parseEntries, parseLocs } from '../lib/sitemap.mjs';
 
 const INDEX_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -63,6 +64,74 @@ describe('parseLocs', () => {
   });
 });
 
+describe('parseEntries', () => {
+  it('<url> ごとに loc と lastmod を返す', () => {
+    assert.deepEqual(parseEntries(urlset('https://hasokon.com/', 'https://hasokon.com/tools/')), [
+      { loc: 'https://hasokon.com/', lastmod: '2026-08-08' },
+      { loc: 'https://hasokon.com/tools/', lastmod: '2026-08-08' },
+    ]);
+  });
+
+  it('<lastmod> が無ければ null', () => {
+    assert.deepEqual(parseEntries('<urlset><url><loc>https://hasokon.com/</loc></url></urlset>'), [
+      { loc: 'https://hasokon.com/', lastmod: null },
+    ]);
+  });
+
+  it('<lastmod> が空でも null', () => {
+    assert.deepEqual(
+      parseEntries('<urlset><url><loc>https://hasokon.com/</loc><lastmod> </lastmod></url></urlset>'),
+      [{ loc: 'https://hasokon.com/', lastmod: null }],
+    );
+  });
+
+  it('他の要素が挟まっていても、その <url> の lastmod を拾う', () => {
+    const xml = `<urlset>
+      <url>
+        <loc>https://hasokon.com/</loc>
+        <lastmod>2026-09-16</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>1.0</priority>
+      </url>
+      <url>
+        <loc>https://hasokon.com/privacy.html</loc>
+        <lastmod>2026-08-16</lastmod>
+        <changefreq>yearly</changefreq>
+      </url>
+    </urlset>`;
+    assert.deepEqual(parseEntries(xml), [
+      { loc: 'https://hasokon.com/', lastmod: '2026-09-16' },
+      { loc: 'https://hasokon.com/privacy.html', lastmod: '2026-08-16' },
+    ]);
+  });
+
+  it('<url> で囲まれていない断片は loc だけ拾う', () => {
+    assert.deepEqual(parseEntries('<loc>https://hasokon.com/</loc>'), [
+      { loc: 'https://hasokon.com/', lastmod: null },
+    ]);
+  });
+
+  it('<urlset> の属性を <url> と読み違えない', () => {
+    const xml =
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://hasokon.com/</loc></url></urlset>';
+    assert.deepEqual(parseEntries(xml), [{ loc: 'https://hasokon.com/', lastmod: null }]);
+  });
+
+  it('<url> が無ければ空になる', () => {
+    assert.deepEqual(parseEntries('<urlset></urlset>'), []);
+  });
+
+  it('実物の sitemap-home.xml を読める', () => {
+    const xml = readFileSync(new URL('../../home/sitemap-home.xml', import.meta.url), 'utf8');
+    const entries = parseEntries(xml);
+    assert.ok(entries.length >= 2);
+    for (const entry of entries) {
+      assert.match(entry.loc, /^https:\/\/hasokon\.com\//);
+      assert.match(entry.lastmod, /^\d{4}-\d{2}-\d{2}$/);
+    }
+  });
+});
+
 describe('isSitemapIndex', () => {
   it('sitemapindex を見分ける', () => {
     assert.equal(isSitemapIndex(INDEX_XML), true);
@@ -93,6 +162,23 @@ describe('collectUrls', () => {
     ]);
     assert.equal(result.sitemaps.length, 4);
     assert.deepEqual(result.errors, []);
+  });
+
+  it('entries には lastmod も付いてくる（urls と同じ順・同じ件数）', async () => {
+    const { fetchText } = fakeFetcher({
+      'https://hasokon.com/sitemap.xml': INDEX_XML,
+      'https://hasokon.com/sitemap-home.xml': urlset('https://hasokon.com/'),
+      'https://hasokon.com/tools/sitemap.xml': urlset('https://hasokon.com/tools/'),
+      'https://hasokon.com/games/sitemap.xml': urlset('https://hasokon.com/games/'),
+    });
+
+    const result = await collectUrls('https://hasokon.com/sitemap.xml', fetchText);
+
+    assert.deepEqual(
+      result.entries.map((entry) => entry.loc),
+      result.urls,
+    );
+    assert.deepEqual(new Set(result.entries.map((entry) => entry.lastmod)), new Set(['2026-08-08']));
   });
 
   it('urlset を直接渡してもよい', async () => {

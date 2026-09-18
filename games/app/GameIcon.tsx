@@ -7,6 +7,7 @@ import {
   DiceFiveIcon,
   GridFourIcon,
   GridNineIcon,
+  KeyboardIcon,
   RacquetIcon,
   SpadeIcon,
   SquaresFourIcon,
@@ -562,6 +563,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,
   BoulderingMerge: BoulderingMergeIcon,
+  Keyboard: KeyboardIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
