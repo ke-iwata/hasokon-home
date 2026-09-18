@@ -51,9 +51,14 @@ GitHubは**自分のPRに自分をレビュアー指名できない**。ルー�
 同じPRに毎日積まないよう、直近の催促から `--remind-every` 日（既定3日）は何もしない。
 自分の過去のコメントは本文先頭の目印 `<!-- stale-pr-reminder -->` で見分ける。
 
-### 2. PRが開かれたら、作者をassigneeに入れる
+### 2. PRが開かれたら、assigneeを入れる
 
 レビュアー指名が使えないぶん、**GitHubの「Assigned」に溜まる**ようにする。
+入れるのは作者だが、**ボット名義のPR（`claude[bot]` など）は assignee にできない**
+（APIが403を返す。実際に [#230](https://github.com/ke-iwata/hasokon-home/pull/230) の
+初回実行がこれで落ちた）。その場合はリポジトリのオーナーを入れる。どのみち動かすのは
+人なので、「Assigned に溜める」目的はそれで満たせる。
+
 すでにassigneeがいれば何もしない。fork からのPRでは `GITHUB_TOKEN` が
 読み取り専用になるので触らない。
 

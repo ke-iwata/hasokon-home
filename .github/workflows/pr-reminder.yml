@@ -62,7 +62,7 @@ jobs:
           fi
 
   assign:
-    name: 作者をassigneeに入れる
+    name: PRにassigneeを入れる
     # fork からのPRでは GITHUB_TOKEN が読み取り専用になるので触らない
     if: >-
       github.event_name == 'pull_request'
@@ -76,5 +76,14 @@ jobs:
           REPO: ${{ github.repository }}
           NUMBER: ${{ github.event.pull_request.number }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
+          OWNER: ${{ github.repository_owner }}
         run: |
-          gh api -X POST "repos/$REPO/issues/$NUMBER/assignees" -f "assignees[]=$AUTHOR"
+          # ボット名義のPR（claude[bot] など）は assignee にできない（APIが403を返す）。
+          # その場合は代わりにリポジトリのオーナーを入れる。どのみち動かすのは人なので、
+          # 「Assigned に溜める」という目的はこれで満たせる
+          ASSIGNEE="$AUTHOR"
+          case "$AUTHOR" in
+            *'[bot]') ASSIGNEE="$OWNER" ;;
+          esac
+          echo "assignee: $ASSIGNEE (作者: $AUTHOR)"
+          gh api -X POST "repos/$REPO/issues/$NUMBER/assignees" -f "assignees[]=$ASSIGNEE"
