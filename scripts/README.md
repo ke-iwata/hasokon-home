@@ -38,6 +38,15 @@ node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json
   想定外のホスト (foreign)         : 0
   検査に失敗 (error)               : 0
 
+Google側の状態 (coverageState) 別:
+  Crawled - currently not indexed: 30
+    https://hasokon.com/tools/saitei-chingin/
+    ...
+  URL is unknown to Google: 91
+    ...
+  Submitted and indexed: 1
+    https://hasokon.com/
+
 旧サブドメインを指したままのURL:
   https://hasokon.com/tools/nenshu-kabe/
     → https://tool.hasokon.com/nenshu-kabe/（最終クロール: 2026-08-07T00:00:00Z）
@@ -45,6 +54,57 @@ node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json
 
 統合は未完了。残り 12 件
 ```
+
+### coverageState 別の内訳と、復旧の判定
+
+仕様: [docs/features/google-index-recovery.md](../docs/features/google-index-recovery.md)
+
+ドメイン統合そのものは済みましたが、**統合先の hasokon.com が Google に
+登録されないまま**という別の問題が残っています（2026-09-16 時点で 123件中 1件）。
+これを追うために、`legacy` / `consolidated` / `unindexed` の3区分とは別に、
+**Googleが返した `coverageState` ごとの件数とURL一覧**を出します。
+
+3区分だけだと、意味の違う2つが同じ `unindexed` に潰れてしまうためです。
+
+| coverageState | 意味 | 読み方 |
+|---|---|---|
+| `Submitted and indexed` | 登録済み | **これが増えるのが復旧** |
+| `Crawled - currently not indexed` | クロールしたうえで「登録しない」と判断された | Google の判断。ページ側の問題 |
+| `URL is unknown to Google` | URLの存在を認識していない | 未発見。サイトマップは読まれているのに、ここに居る |
+
+文字列は**Googleが返したまま**数えています（訳しも束ねもしません）。
+プロパティの言語設定によって英語にも日本語にもなるので、
+Search Console の画面と突き合わせるときはそのまま比べてください。
+
+**復旧の判定は「登録 1 → 増加」を見ます。** 具体的には次の2つが揃ったとき:
+
+1. `Submitted and indexed` の件数が **4週連続で増える**
+2. Search Console の表示が **1日 10 を超える**（2026-08-12〜16 の水準に戻る）
+
+`--out` のJSONには `coverageByState` として残るので、週ごとのファイルを並べれば
+増減が追えます。逆に、**登録リクエストした URL が2週間たっても
+`Crawled - currently not indexed` のまま**なら、仕様書の「原因1（サイト単位の品質判定）」が
+ほぼ確定、という見切りかたをします。
+
+### 週1回の自動実行
+
+`.github/workflows/gsc-audit.yml` が**毎週月曜 09:00 JST**に回します
+（`workflow_dispatch` で手動実行もできます）。
+結果は Actions のログと artifact（90日保持）に残るだけで、
+**リポジトリにはcommitしません**。
+
+動かすには Secret `GOOGLE_SERVICE_ACCOUNT_JSON` の登録（運営者作業）が要ります。
+**未登録のうちは警告を出して計測を飛ばす**ので、ジョブは緑のままです
+（登録するまで毎週失敗のメールが飛ぶのを避けるため）。
+
+登録の手順：リポジトリの **Settings → Secrets and variables → Actions → New repository secret**。
+Name は `GOOGLE_SERVICE_ACCOUNT_JSON`、Secret にはサービスアカウントの JSON を
+**そのまま貼り付け**ます（下の「認証」のとおり base64 で包んでも読みます）。
+登録したら **Actions → GSC audit → Run workflow** で1回手で回し、
+artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
+
+終了コード 1（統合が未完了・検査に失敗したURLがある）ではジョブを落としません。
+いまは 1 がふつうの状態だからです。落とすのは 2（実行できなかった）のときだけです。
 
 ### 終了コード
 
@@ -59,13 +119,11 @@ node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json
 
 ### いつ回すか
 
-仕様書の「効果の測り方」に沿って、次の3回です。
+統合の進み（`counts.legacy`）を見るときは、
+[search-index-consolidation.md](../docs/features/search-index-consolidation.md)
+の「効果の測り方」に沿って、実施前（ベースライン）・1週間後・4週間後の3回です。
 
-1. **アドレス変更ツールの実施前**（ベースライン）
-2. 実施の **1週間後**
-3. 実施の **4週間後**
-
-`--out` で残したJSONの `counts.legacy` を並べれば、減り方が分かります。
+登録の復旧（`coverageByState`）を見るいまは、上の週1回の自動実行がこれに当たります。
 
 ### 認証
 
@@ -80,7 +138,8 @@ node scripts/gsc-canonical-audit.mjs --out baseline-2026-08-10.json
 ### 注意
 
 URL検査APIには **1日2000件 / 1分600件** の上限があります。
-86URLなら余裕がありますが、何度も回すときは日をまたいでください。
+123URL（2026-09-16 時点）を週1回なら余裕がありますが、
+手で何度も回すときは日をまたいでください。
 `--concurrency` の既定値（4）は上限に当てないための値です。
 
 ## build-test-home.mjs

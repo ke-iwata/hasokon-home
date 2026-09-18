@@ -147,6 +147,38 @@ describe('main', () => {
     assert.equal(snapshot.rows.length, 2);
   });
 
+  it('--out のJSONに coverageState 別の内訳を残す', async () => {
+    // 週ごとに並べて「登録が増えているか」を見るのがこの内訳
+    // （docs/features/google-index-recovery.md）
+    const COVERAGE = {
+      'https://hasokon.com/': 'Submitted and indexed',
+      'https://hasokon.com/tools/nenshu-kabe/': 'Crawled - currently not indexed',
+    };
+    const h = harness({
+      inspect: async ({ url }) => ({
+        ok: true,
+        body: {
+          inspectionResult: {
+            indexStatusResult: { googleCanonical: CANONICALS[url], coverageState: COVERAGE[url] },
+          },
+        },
+      }),
+    });
+
+    await main(['--out', 'weekly.json'], h.deps);
+
+    const snapshot = JSON.parse(h.written[0].text);
+    assert.deepEqual(snapshot.coverageByState, [
+      {
+        state: 'Crawled - currently not indexed',
+        count: 1,
+        urls: ['https://hasokon.com/tools/nenshu-kabe/'],
+      },
+      { state: 'Submitted and indexed', count: 1, urls: ['https://hasokon.com/'] },
+    ]);
+    assert.match(h.out(), /Submitted and indexed: 1/);
+  });
+
   it('--out を指定しなければ何も書かない', async () => {
     const h = harness();
     await main([], h.deps);
