@@ -9,7 +9,12 @@
 //   node scripts/indexnow-submit.mjs \
 //     --key-file home/<key>.txt \
 //     --before /tmp/sitemaps-before/ \
+//     --after /tmp/sitemaps-after/ \
 //     --sitemap https://hasokon.com/sitemap.xml
+//
+// 「後」側は --after のファイルから読む。配信中のサイトマップをHTTPで取ると
+// CloudFront のキャッシュ次第でデプロイ前と同じものが返り、差分が0件になって
+// **黙って送り漏れる**（無効化の完了待ちは権限不足・タイムアウトで飛びうる）。
 //
 // 通知は「あれば嬉しい」であってデプロイの成否ではない。送信に失敗しても
 // ::warning:: を出して終了コード 0 で終える（設定の誤りだけは 2 で落とす）。
@@ -31,6 +36,7 @@ export const ENDPOINT = 'https://api.indexnow.org/indexnow';
 export const DEFAULTS = Object.freeze({
   keyFile: null,
   before: null,
+  after: null,
   sitemap: 'https://hasokon.com/sitemap.xml',
   dryRun: false,
   help: false,
@@ -46,7 +52,10 @@ const USAGE = `使い方: node scripts/indexnow-submit.mjs --key-file <path> [�
   --key-file <path>   鍵ファイル（home/<key>.txt）。中身＝ファイル名（拡張子を除く）
   --before <dir>      デプロイ前に保存したサイトマップ（*.xml）のディレクトリ。
                       無い・読めないときは全件送る（送り漏れ側に倒さない）
-  --sitemap <url>     いま配信されているサイトマップの起点（既定: ${DEFAULTS.sitemap}）
+  --after <dir>       いま同期したサイトマップ（*.xml）のディレクトリ。
+                      **渡すとHTTPを使わない**（CDNのキャッシュに左右されない）
+  --sitemap <url>     --after が無いときに読むサイトマップの起点。
+                      host / keyLocation はここから決まる（既定: ${DEFAULTS.sitemap}）
   --dry-run           送信せず、送る予定のURLだけ出す
   --help              この説明を出す
 
@@ -77,6 +86,7 @@ export function parseArgs(argv) {
         break;
       case '--key-file':
       case '--before':
+      case '--after':
       case '--sitemap': {
         const key = arg === '--key-file' ? 'keyFile' : arg.slice(2);
         const value = argv[i + 1];
@@ -123,12 +133,13 @@ export function verifyKey(keyFile, contents) {
 }
 
 /**
- * 保存しておいたサイトマップ（*.xml）を読み、`loc → lastmod` の対応表にする。
+ * ディレクトリの中のサイトマップ（*.xml）を読み、`{loc, lastmod}` の一覧にする。
+ * 重複する `loc` は最初の1件を採る。
  *
- * ディレクトリが無い・XMLが1枚も無いときは null を返す（＝前回が分からない）。
- * 呼び出し側はそのとき全件送る。
+ * 「前」（--before）も「後」（--after）もこれで読む。ディレクトリが無い・
+ * XMLが1枚も無い・1件も取れなかったときは null を返す。
  */
-export async function readBefore(dir, deps) {
+export async function readSitemapDir(dir, deps) {
   let names;
   try {
     names = await deps.readdir(dir);
@@ -136,7 +147,8 @@ export async function readBefore(dir, deps) {
     return null;
   }
 
-  const entries = new Map();
+  const entries = [];
+  const seen = new Set();
   for (const name of names.filter((n) => n.toLowerCase().endsWith('.xml')).sort()) {
     let xml;
     try {
@@ -145,11 +157,18 @@ export async function readBefore(dir, deps) {
       continue;
     }
     for (const entry of parseEntries(xml)) {
-      if (!entries.has(entry.loc)) entries.set(entry.loc, entry.lastmod);
+      if (seen.has(entry.loc)) continue;
+      seen.add(entry.loc);
+      entries.push(entry);
     }
   }
 
-  return entries.size > 0 ? entries : null;
+  return entries.length > 0 ? entries : null;
+}
+
+/** `readSitemapDir()` の結果を `loc → lastmod` の対応表にする（--before 用）。 */
+export function toLastmodMap(entries) {
+  return entries && new Map(entries.map((entry) => [entry.loc, entry.lastmod]));
 }
 
 /**
@@ -226,20 +245,32 @@ export async function main(argv, deps = {}) {
   const host = new URL(options.sitemap).host;
   const keyLocation = `https://${host}/${path.basename(options.keyFile)}`;
 
-  log(`サイトマップを読みます: ${options.sitemap}`);
-  const { entries, sitemaps, errors } = await collectUrls(options.sitemap, (url) =>
-    fetchTextOverHttp(url, fetchImpl),
-  );
-  for (const failure of errors) {
-    log(`  サイトマップを読めません: ${failure.sitemap}（${failure.message}）`);
+  // 「後」側は、渡されていれば同期したファイルから読む。HTTPで取ると
+  // CDNのキャッシュ次第でデプロイ前と同じものが返り、差分が0件になって黙って送り漏れる
+  let entries;
+  if (options.after) {
+    log(`同期したサイトマップを読みます: ${options.after}`);
+    entries = await readSitemapDir(options.after, io);
+    if (!entries) {
+      out(`::warning::IndexNow: ${options.after} からURLを1件も取れませんでした。通知を見送ります`);
+      return EXIT_OK;
+    }
+    log(`  URL ${entries.length} 件`);
+  } else {
+    log(`サイトマップを読みます: ${options.sitemap}`);
+    const collected = await collectUrls(options.sitemap, (url) => fetchTextOverHttp(url, fetchImpl));
+    for (const failure of collected.errors) {
+      log(`  サイトマップを読めません: ${failure.sitemap}（${failure.message}）`);
+    }
+    if (collected.entries.length === 0) {
+      out('::warning::IndexNow: サイトマップからURLを1件も取れませんでした。通知を見送ります');
+      return EXIT_OK;
+    }
+    entries = collected.entries;
+    log(`  サイトマップ ${collected.sitemaps.length} 本 / URL ${entries.length} 件`);
   }
-  if (entries.length === 0) {
-    out('::warning::IndexNow: サイトマップからURLを1件も取れませんでした。通知を見送ります');
-    return EXIT_OK;
-  }
-  log(`  サイトマップ ${sitemaps.length} 本 / URL ${entries.length} 件`);
 
-  const before = options.before ? await readBefore(options.before, io) : null;
+  const before = options.before ? toLastmodMap(await readSitemapDir(options.before, io)) : null;
   if (options.before && !before) {
     log(`  前回のサイトマップがありません（${options.before}）。全件送ります`);
   }

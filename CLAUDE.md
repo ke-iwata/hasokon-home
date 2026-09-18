@@ -131,7 +131,10 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   （`scripts/test/llms-txt.test.mjs` が registry との食い違いを検知する）。
   仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
 - `sitemap.xml` はインデックス形式で home / tools / games / learn の4本を指す。
-  home のページを増やしたら `sitemap-home.xml` を更新する
+  home のページを**増やしたら**`sitemap-home.xml` に足し、**中身を変えたら**
+  そのページの `lastmod` を変更日に上げる。IndexNow の差分送信は `lastmod` を見ていて、
+  据え置くと更新が Bing に通知されない（tools / games / learn は registry の
+  `updatedAt` から出るので自動。home だけは運用で守る）
 - `bd59c05dafed335478f48aefb1c0ec57.txt` は IndexNow（Bing ほかへの更新通知）の鍵ファイル。
   **消さない**。中身とファイル名が一致していないと全送信が 403 になる。
   仕様は [docs/features/indexnow.md](./docs/features/indexnow.md)

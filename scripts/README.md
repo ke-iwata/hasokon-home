@@ -93,18 +93,23 @@ URL検査APIには **1日2000件 / 1分600件** の上限があります。
 IndexNow は Bing・Yandex・Naver・Seznam・Yep が共同で受け付ける更新通知で、
 1つのエンドポイントに送れば参加エンジン全部に共有されます（Googleは参加していません）。
 **「変更したURLの通知」**なので、変わっていないURLは送りません。
-デプロイ前に取っておいた本番サイトマップと、同期後に配信されているサイトマップを
+デプロイ前に取っておいた本番サイトマップ（`--before`）と、いま同期するサイトマップ（`--after`）を
 `<loc>` ＋ `<lastmod>` で突き合わせ、**新規または `lastmod` が動いたURLだけ**を送ります
 （`lastmod` は registry の `updatedAt` から出ているので、既存の
-「内容を変えたら `updatedAt` を上げる」運用にそのまま乗ります）。
+「内容を変えたら `updatedAt` を上げる」運用にそのまま乗ります。
+`home/sitemap-home.xml` だけはビルド工程が無いので手で上げます）。
 
 ```bash
 # 送る予定のURLと本文だけ見る（POSTしない）
 node scripts/indexnow-submit.mjs \
   --key-file home/bd59c05dafed335478f48aefb1c0ec57.txt \
-  --before /tmp/sitemaps-before --dry-run
+  --before /tmp/sitemaps-before --after /tmp/sitemaps-after --dry-run
 ```
 
+- **「後」側は `--after` のファイルから読みます。** 配信中のサイトマップをHTTPで取ると、
+  CloudFront の無効化が終わる前だとデプロイ前と同じものが返り、差分が0件になって
+  **黙って送り漏れます**（無効化の完了待ちは権限不足やタイムアウトで飛びうる）。
+  `--after` を渡すとサイトマップのGETは1回も飛びません
 - **鍵は `home/<key>.txt` の1か所だけ**です。`deploy.yml` にも Secrets にも同じ値を
   複製しません（2か所がずれた瞬間に全送信が403になり、しかも下の終了コードのとおり
   誰も気づけません）。スクリプトは鍵をこのファイルから読み、

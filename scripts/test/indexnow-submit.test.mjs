@@ -18,7 +18,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-import { EXIT_FAILED, EXIT_OK, ENDPOINT, main, readBefore, selectChanged, verifyKey } from '../indexnow-submit.mjs';
+import {
+  EXIT_FAILED,
+  EXIT_OK,
+  ENDPOINT,
+  main,
+  readSitemapDir,
+  selectChanged,
+  toLastmodMap,
+  verifyKey,
+} from '../indexnow-submit.mjs';
 
 const KEY = 'bd59c05dafed335478f48aefb1c0ec57';
 const KEY_FILE = `home/${KEY}.txt`;
@@ -59,11 +68,21 @@ const BEFORE_FILES = {
   ),
 };
 
+// --after で渡す「同期したファイル」。上の AFTER（HTTP）と同じ中身を、
+// デプロイジョブが置くのと同じ並びのファイルにしたもの
+const AFTER_FILES = {
+  'sitemap-home.xml': AFTER['https://hasokon.com/sitemap-home.xml'],
+  'tools-sitemap.xml': AFTER['https://hasokon.com/tools/sitemap.xml'],
+};
+
+const DIRS = { '/tmp/before': BEFORE_FILES, '/tmp/after': AFTER_FILES };
+
 /** 出力を溜め、fetch と fs を全部差し替えた deps を作る。 */
 function harness(overrides = {}) {
   const stdout = [];
   const stderr = [];
   const posts = [];
+  const gets = [];
 
   const deps = {
     fetch: async (url, init) => {
@@ -71,17 +90,20 @@ function harness(overrides = {}) {
         posts.push({ url, body: JSON.parse(init.body), headers: init.headers });
         return { ok: true, status: 200, text: async () => '' };
       }
+      gets.push(url);
       if (!(url in AFTER)) return { ok: false, status: 404, text: async () => '' };
       return { ok: true, status: 200, text: async () => AFTER[url] };
     },
-    readFile: async (path) => {
-      if (path === KEY_FILE) return `${KEY}\n`;
-      const name = path.split('/').pop();
-      if (name in BEFORE_FILES) return BEFORE_FILES[name];
-      throw new Error(`ENOENT: ${path}`);
+    readFile: async (filePath) => {
+      if (filePath === KEY_FILE) return `${KEY}\n`;
+      const cut = filePath.lastIndexOf('/');
+      const files = DIRS[filePath.slice(0, cut)];
+      const name = filePath.slice(cut + 1);
+      if (files && name in files) return files[name];
+      throw new Error(`ENOENT: ${filePath}`);
     },
     readdir: async (dir) => {
-      if (dir === '/tmp/before') return Object.keys(BEFORE_FILES);
+      if (dir in DIRS) return Object.keys(DIRS[dir]);
       throw new Error(`ENOENT: ${dir}`);
     },
     stdout: (line) => stdout.push(line),
@@ -89,10 +111,21 @@ function harness(overrides = {}) {
     ...overrides,
   };
 
-  return { deps, stdout, stderr, posts, out: () => stdout.join('\n'), err: () => stderr.join('\n') };
+  return {
+    deps,
+    stdout,
+    stderr,
+    posts,
+    gets,
+    out: () => stdout.join('\n'),
+    err: () => stderr.join('\n'),
+  };
 }
 
-const ARGV = ['--key-file', KEY_FILE, '--before', '/tmp/before'];
+/** 本番と同じ呼び方（「後」側もファイルから読む） */
+const ARGV = ['--key-file', KEY_FILE, '--before', '/tmp/before', '--after', '/tmp/after'];
+/** --after を渡さず、配信中のサイトマップをHTTPで読む呼び方 */
+const ARGV_HTTP = ['--key-file', KEY_FILE, '--before', '/tmp/before'];
 
 describe('verifyKey', () => {
   it('中身とファイル名（拡張子を除く）が一致すれば鍵を返す', () => {
@@ -156,29 +189,39 @@ describe('selectChanged', () => {
   });
 });
 
-describe('readBefore', () => {
-  it('ディレクトリの *.xml を1つの対応表にまとめる', async () => {
+describe('readSitemapDir', () => {
+  it('ディレクトリの *.xml を1つの一覧にまとめる', async () => {
     const h = harness();
-    const before = await readBefore('/tmp/before', h.deps);
-    assert.equal(before.get('https://hasokon.com/tools/saitei-chingin/'), '2026-09-09');
-    assert.equal(before.get('https://hasokon.com/'), '2026-08-16');
-    assert.equal(before.size, 3);
+    const entries = await readSitemapDir('/tmp/before', h.deps);
+    assert.deepEqual(entries, [
+      { loc: 'https://hasokon.com/', lastmod: '2026-08-16' },
+      { loc: 'https://hasokon.com/tools/nenshu-kabe/', lastmod: '2026-08-01' },
+      { loc: 'https://hasokon.com/tools/saitei-chingin/', lastmod: '2026-09-09' },
+    ]);
   });
 
   it('ディレクトリが無ければ null', async () => {
     const h = harness();
-    assert.equal(await readBefore('/tmp/nope', h.deps), null);
+    assert.equal(await readSitemapDir('/tmp/nope', h.deps), null);
   });
 
   it('XMLが1枚も無ければ null', async () => {
     const h = harness({ readdir: async () => ['README.md'] });
-    assert.equal(await readBefore('/tmp/before', h.deps), null);
+    assert.equal(await readSitemapDir('/tmp/before', h.deps), null);
   });
 
   it('読めないファイルが混じっても、残りは読む', async () => {
     const h = harness({ readdir: async () => ['sitemap-home.xml', 'kowareta.xml'] });
-    const before = await readBefore('/tmp/before', h.deps);
-    assert.deepEqual([...before.keys()], ['https://hasokon.com/']);
+    const entries = await readSitemapDir('/tmp/before', h.deps);
+    assert.deepEqual(entries, [{ loc: 'https://hasokon.com/', lastmod: '2026-08-16' }]);
+  });
+
+  it('toLastmodMap は loc → lastmod の対応表にする（null はそのまま）', async () => {
+    const h = harness();
+    const before = toLastmodMap(await readSitemapDir('/tmp/before', h.deps));
+    assert.equal(before.get('https://hasokon.com/tools/saitei-chingin/'), '2026-09-09');
+    assert.equal(before.size, 3);
+    assert.equal(toLastmodMap(null), null);
   });
 });
 
@@ -237,7 +280,7 @@ describe('main', () => {
   });
 
   it('前のサイトマップが無ければ全件送る', async () => {
-    const h = harness({ readdir: async () => [] });
+    const h = harness({ readdir: async (dir) => (dir === '/tmp/before' ? [] : Object.keys(AFTER_FILES)) });
     assert.equal(await main(ARGV, h.deps), EXIT_OK);
     assert.deepEqual(h.posts[0].body.urlList, [
       'https://hasokon.com/',
@@ -249,27 +292,20 @@ describe('main', () => {
 
   it('--before を渡さなければ全件送る', async () => {
     const h = harness();
-    assert.equal(await main(['--key-file', KEY_FILE], h.deps), EXIT_OK);
+    assert.equal(await main(['--key-file', KEY_FILE, '--after', '/tmp/after'], h.deps), EXIT_OK);
     assert.equal(h.posts[0].body.urlList.length, 4);
   });
 
   it('変わっていなければ POST しない', async () => {
-    const unchanged = {
-      ...BEFORE_FILES,
-      'tools-sitemap.xml': urlset(
-        ['https://hasokon.com/tools/nenshu-kabe/', '2026-08-01'],
-        ['https://hasokon.com/tools/saitei-chingin/', '2026-09-16'],
-        ['https://hasokon.com/tools/ikuji-kyugyo-kyufu/', '2026-09-16'],
-      ),
-    };
+    // 「前」と「後」を同じ中身にする
     const h = harness({
-      readFile: async (path) => {
-        if (path === KEY_FILE) return KEY;
-        const name = path.split('/').pop();
-        if (name in unchanged) return unchanged[name];
+      readFile: async (filePath) => {
+        if (filePath === KEY_FILE) return KEY;
+        const name = filePath.split('/').pop();
+        if (name in AFTER_FILES) return AFTER_FILES[name];
         throw new Error('ENOENT');
       },
-      readdir: async () => Object.keys(unchanged),
+      readdir: async () => Object.keys(AFTER_FILES),
     });
 
     assert.equal(await main(ARGV, h.deps), EXIT_OK);
@@ -318,34 +354,79 @@ describe('main', () => {
     assert.match(h.out(), /::warning::.*ECONNRESET/);
   });
 
-  it('サイトマップが1本も読めなければ ::warning:: を出して 0', async () => {
+  it('--after が無いときにサイトマップを1本も読めなければ ::warning:: を出して 0', async () => {
     const h = harness({ fetch: async () => ({ ok: false, status: 503, text: async () => '' }) });
-    assert.equal(await main(ARGV, h.deps), EXIT_OK);
+    assert.equal(await main(ARGV_HTTP, h.deps), EXIT_OK);
     assert.match(h.out(), /::warning::.*1件も取れませんでした/);
     assert.equal(h.posts.length, 0);
   });
 
   it('ホストが違うURLは送らない（鍵ファイルのホスト以外は受け付けられない）', async () => {
     const withForeign = {
-      ...AFTER,
-      'https://hasokon.com/sitemap-home.xml': urlset(
+      ...AFTER_FILES,
+      'sitemap-home.xml': urlset(
         ['https://hasokon.com/', '2026-09-16'],
         ['https://tool.hasokon.com/nenshu-kabe/', '2026-09-16'],
       ),
     };
+    const h = harness({
+      readFile: async (filePath) => {
+        if (filePath === KEY_FILE) return KEY;
+        const name = filePath.split('/').pop();
+        if (filePath.startsWith('/tmp/after/') && name in withForeign) return withForeign[name];
+        if (filePath.startsWith('/tmp/before/') && name in BEFORE_FILES) return BEFORE_FILES[name];
+        throw new Error('ENOENT');
+      },
+      readdir: async (dir) =>
+        Object.keys(dir === '/tmp/after' ? withForeign : BEFORE_FILES),
+    });
+
+    assert.equal(await main(ARGV, h.deps), EXIT_OK);
+    assert.ok(!h.posts[0].body.urlList.some((url) => url.startsWith('https://tool.')));
+  });
+});
+
+// レビュー指摘A。配信中のサイトマップをHTTPで取ると、CloudFront の無効化が
+// 終わる前だとデプロイ前と同じものが返り、差分が0件になって黙って送り漏れる。
+// 「後」側は同期したファイルから読むので、CDNの状態に左右されない。
+describe('main（--after で「後」側をファイルから読む）', () => {
+  it('サイトマップのGETが1回も飛ばない', async () => {
+    const h = harness();
+    assert.equal(await main(ARGV, h.deps), EXIT_OK);
+    assert.deepEqual(h.gets, []);
+    assert.equal(h.posts.length, 1);
+  });
+
+  it('配信中のサイトマップが古いままでも、--after の中身で差分を出す', async () => {
+    // HTTPで取れるのはデプロイ「前」と同じ（＝CloudFrontのキャッシュ）という状況
     const h = harness({
       fetch: async (url, init) => {
         if (init?.method === 'POST') {
           h.posts.push({ url, body: JSON.parse(init.body) });
           return { ok: true, status: 200, text: async () => '' };
         }
-        if (!(url in withForeign)) return { ok: false, status: 404, text: async () => '' };
-        return { ok: true, status: 200, text: async () => withForeign[url] };
+        h.gets.push(url);
+        const stale = {
+          'https://hasokon.com/sitemap.xml': INDEX_XML,
+          'https://hasokon.com/sitemap-home.xml': BEFORE_FILES['sitemap-home.xml'],
+          'https://hasokon.com/tools/sitemap.xml': BEFORE_FILES['tools-sitemap.xml'],
+        };
+        return { ok: true, status: 200, text: async () => stale[url] ?? '' };
       },
     });
 
     assert.equal(await main(ARGV, h.deps), EXIT_OK);
-    assert.ok(!h.posts[0].body.urlList.some((url) => url.startsWith('https://tool.')));
+    assert.deepEqual(h.posts[0].body.urlList, [
+      'https://hasokon.com/tools/saitei-chingin/',
+      'https://hasokon.com/tools/ikuji-kyugyo-kyufu/',
+    ]);
+  });
+
+  it('--after からURLが1件も取れなければ ::warning:: を出して 0', async () => {
+    const h = harness({ readdir: async (dir) => (dir === '/tmp/after' ? [] : Object.keys(BEFORE_FILES)) });
+    assert.equal(await main(ARGV, h.deps), EXIT_OK);
+    assert.match(h.out(), /::warning::.*1件も取れませんでした/);
+    assert.equal(h.posts.length, 0);
   });
 });
 
@@ -355,24 +436,26 @@ describe('main', () => {
 describe('home/ の鍵ファイル', () => {
   const repoRoot = new URL('../../', import.meta.url);
   const read = (path) => readFileSync(fileURLToPath(new URL(path, repoRoot)), 'utf8');
+
+  // 鍵の名前は deploy.yml の --key-file を正とする。home/ の中身を名前の形だけで
+  // 拾うと、将来 home/security.txt などを置いた瞬間に落ちて原因が分かりにくい
+  const keyFileArg = /--key-file\s+home\/([^\s\\]+)/.exec(read('.github/workflows/deploy.yml'));
   const keyFiles = readdirSync(fileURLToPath(new URL('home/', repoRoot))).filter((name) =>
-    /^[A-Za-z0-9-]{8,128}\.txt$/.test(name),
+    /^[0-9a-f]{32}\.txt$/.test(name),
   );
 
-  it('home/ に鍵ファイルが1枚ある', () => {
-    assert.equal(keyFiles.length, 1, `home/ の鍵ファイル: ${keyFiles.join(', ') || 'なし'}`);
+  it('deploy.yml が鍵ファイルを --key-file で指している', () => {
+    assert.ok(keyFileArg, 'deploy.yml に --key-file home/... がありません');
+    assert.match(keyFileArg[1], /^[0-9a-f]{32}\.txt$/);
+  });
+
+  it('deploy.yml が指す鍵ファイルが home/ にある', () => {
+    assert.deepEqual(keyFiles, [keyFileArg[1]], `home/ の鍵ファイル: ${keyFiles.join(', ') || 'なし'}`);
   });
 
   it('中身がファイル名（拡張子を除く）と一致する', () => {
     for (const name of keyFiles) {
       assert.equal(verifyKey(name, read(`home/${name}`)), name.slice(0, -'.txt'.length));
-    }
-  });
-
-  it('deploy.yml が同じ鍵ファイルを指している', () => {
-    const deploy = read('.github/workflows/deploy.yml');
-    for (const name of keyFiles) {
-      assert.ok(deploy.includes(`home/${name}`), `deploy.yml が home/${name} を指していません`);
     }
   });
 

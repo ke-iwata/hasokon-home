@@ -152,7 +152,7 @@ jobs:
           for p in sitemap-home.xml tools/sitemap.xml games/sitemap.xml learn/sitemap.xml; do
             out="/tmp/sitemaps-before/${p//\//-}"
             curl -fsS --max-time 30 -o "${out}" "https://hasokon.com/${p}" \
-              || echo "::notice::${p} を取得できませんでした（初回なら想定どおり。全件送ります）"
+              || echo "::notice::${p} を取得できませんでした。取れなかった分は全件送る側に倒れます"
           done
 
       - uses: actions/download-artifact@v4
@@ -169,6 +169,22 @@ jobs:
         with:
           name: learn-site
           path: learn-out
+
+      # 差分の「後」側。**配信中のサイトマップをHTTPで取りに行かない。**
+      # CloudFront のキャッシュ次第でデプロイ前と同じものが返り、差分が0件になって
+      # 黙って送り漏れる（無効化の完了待ちは権限不足・タイムアウトで飛びうる）。
+      # ここで渡すのは、この直後に同期するファイルそのもの
+      - name: 通知の差分用に、いま同期するサイトマップを取る
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        run: |
+          mkdir -p /tmp/sitemaps-after
+          ok=1
+          cp home/sitemap-home.xml /tmp/sitemaps-after/sitemap-home.xml || ok=0
+          for s in tools games learn; do
+            cp "${s}-out/sitemap.xml" "/tmp/sitemaps-after/${s}-sitemap.xml" || ok=0
+          done
+          [ "${ok}" = 1 ] \
+            || echo "::warning::同期するサイトマップの一部をコピーできませんでした。その分は IndexNow に通知されません"
 
       - name: AWS認証（OIDC・長期キー不要）
         uses: aws-actions/configure-aws-credentials@v4
@@ -242,12 +258,20 @@ jobs:
       # Bing が古いHTMLを取り直してしまう（docs/features/indexnow.md）。
       # 待ちきれなくてもリリース自体は済んでいるので、デプロイは落とさない
       - name: CloudFrontの無効化の完了を待つ
+        id: wait-invalidation
         if: ${{ startsWith(github.ref, 'refs/tags/') }}
         continue-on-error: true
         run: |
           aws cloudfront wait invalidation-completed \
             --distribution-id ${{ steps.target.outputs.dist }} \
             --id ${{ steps.invalidation.outputs.id }}
+
+      # 待てなかったこと自体は送信を止める理由にならない（差分はファイルから出している）。
+      # ただし権限不足に気づけるよう、画面に残す
+      - name: 無効化を待てなかったことを知らせる
+        if: ${{ startsWith(github.ref, 'refs/tags/') && steps.wait-invalidation.outcome != 'success' }}
+        run: |
+          echo "::warning::CloudFront の無効化の完了を待てませんでした（cloudfront:GetInvalidation の権限不足、またはタイムアウト）。IndexNow の通知は送りますが、Bing が古いHTMLを取り直す可能性があります"
 
       # 更新したURLを Bing ほかに通知する（docs/features/indexnow.md）。
       # テスト環境は Basic認証の裏なので送らない。鍵は home/<key>.txt の1か所だけで、
@@ -259,6 +283,7 @@ jobs:
           node scripts/indexnow-submit.mjs \
             --key-file home/bd59c05dafed335478f48aefb1c0ec57.txt \
             --before /tmp/sitemaps-before \
+            --after /tmp/sitemaps-after \
             --sitemap https://hasokon.com/sitemap.xml
 
       - name: デプロイ完了

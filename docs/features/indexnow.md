@@ -68,14 +68,19 @@ Bing・Yandex・Naver・Seznam・Yep が共同で受け付ける「このURLが�
 node scripts/indexnow-submit.mjs \
   --key-file home/<key>.txt \
   --before /tmp/sitemaps-before/ \
+  --after /tmp/sitemaps-after/ \
   --sitemap https://hasokon.com/sitemap.xml \
   [--dry-run]
 ```
 
 - **`lastmod` が動いた URL だけ送る。** デプロイジョブの先頭（S3 同期の前）で本番の
   sitemap 4本（`sitemap-home.xml` / `tools/sitemap.xml` / `games/sitemap.xml` / `learn/sitemap.xml`）を
-  `--before` のディレクトリに取っておき、同期後に配信されている sitemap と
+  `--before` のディレクトリに取っておき、**いま同期する sitemap（`--after`）**と
   `<loc>` ＋ `<lastmod>` で突き合わせる。**新規の URL、または `lastmod` が変わった URL** が送信対象。
+  **「後」側を配信中の sitemap から HTTP で取ってはいけない**（#212 のレビュー指摘）。
+  CloudFront の無効化が終わる前に取りに行くとデプロイ前と同じものが返り、差分が 0 件になって
+  **黙って送り漏れる**。無効化の完了待ちは権限不足やタイムアウトで飛びうるので、
+  差分の判定をそこに依存させない。
   `lastmod` は既に `lib/registry.ts` の `updatedAt` から出している（毎ビルドで動かさない運用。
   `tools/app/sitemap.ts` のコメント）ので、**差分は既存の「内容を変えたら `updatedAt` を上げる」
   運用にそのまま乗る**。ビルド側の差分検出は要らない
@@ -104,10 +109,13 @@ node scripts/indexnow-submit.mjs \
 - **本番（`v*` タグ）のジョブだけ**、3ステップを足す。テスト環境（main）では送らない
   （`test.hasokon.com` は Basic 認証で、送っても無意味）
   1. S3 同期の前：本番の sitemap 4本を `curl` で `--before` のディレクトリに保存（失敗しても続行）
-  2. `CloudFrontのキャッシュを削除` のあと：**`aws cloudfront wait invalidation-completed`** で
+  2. `download-artifact` のあと：いま同期する sitemap 4本を `--after` のディレクトリにコピーする
+     （`home/sitemap-home.xml` と `{tools,games,learn}-out/sitemap.xml`）
+  3. `CloudFrontのキャッシュを削除` のあと：**`aws cloudfront wait invalidation-completed`** で
      無効化の完了を待つ（`create-invalidation` は非同期で、完了まで数分かかる。直後に通知すると
-     Bing が古い HTML を取り直す）
-  3. 送信：`node scripts/indexnow-submit.mjs --key-file home/<key>.txt --before … `。
+     Bing が古い HTML を取り直す）。待てなかったときは `::warning::` を1行出す
+     （`cloudfront:GetInvalidation` の権限不足に気づけるように）
+  4. 送信：`node scripts/indexnow-submit.mjs --key-file home/<key>.txt --before … --after … `。
      `continue-on-error: true`
 - 本番反映は `v*` タグなので、**初回の送信は次のリリースまで起きない**。運営者の
   Bing Webmaster Tools 登録（下記 4）はその前に済ませてもらう
