@@ -7,20 +7,32 @@
  *
  *   退職所得控除を引く → 残りの2分の1 → 他の所得と分けて課税（分離課税）
  *
- * ■ 2026年からの「10年ルール」
+ * ■ 2026年からの「10年ルール」（施行令70条1項2号ロ）
  * 令和7年度税制改正により、**iDeCo（確定拠出年金）の一時金を先に受け取ってから
- * 退職金を受け取る場合の重複排除期間が「5年 → 10年」に延びた**
- * （所得税法施行令 第70条。2026年1月1日以後に支払を受ける退職金から適用）。
+ * 退職金を受け取る場合の重複排除期間が「5年 → 10年」に延びた**。
  * 前の一時金の支払年が退職金の支払年の**前年以前9年内**なら、
- * 掛金期間と勤続期間の重なりに対応する控除額が差し引かれる（従来は4年内）。
+ * 重なりに対応する控除額が差し引かれる（従来は4年内）。
  *
- * ■ 重複期間の短縮（施行令 第70条）
+ * **ただし9年内で判定するのは、一時金と退職金の「両方」が2026年以後のときだけ。**
+ * 条文は対象の一時金を「令和八年一月一日以後に支払を受けたものに限り」と限定しており、
+ * 2025年以前に受け取った一時金は同号イの4年内のままになる（`lookbackYearsFor()`）。
+ * したがって**新ルールで答えが変わる最初の人は「2026年に一時金 → 2031年に退職金」**で、
+ * それより前の退職では旧ルールと同じ結果になる。
+ *
+ * ■ 重複期間の短縮（施行令70条2項）
  * **前の一時金の額が、その当時の退職所得控除額に満たなかった場合、
- * 重複期間はその収入金額に応じた年数（みなし勤続年数）まで短縮される。**
- * iDeCoの一時金は掛金期間で計算した控除額より小さいことが多く、
- * ここを省くと典型的な利用者で控除を引きすぎ、税額を実際より多く表示してしまう。
- * 例：掛金15年・一時金200万円なら、みなし勤続年数は5年（200万 ÷ 40万）。
- * 実際の重複が15年でも、差し引くのは 40万円 × 5年 ＝ 200万円 だけ。
+ * 「掛金期間の初日から（一時金の額に応じた年数）を経過した日の前日まで」の期間が
+ * 前の勤続期間等とみなされる。**
+ * これは**年数の上限ではなく期間**なので、`min(みなし年数, 実際の重複年数)` にすると、
+ * 掛金期間が勤続期間より前に始まっている人（転職前からiDeCoに入っていた人）で
+ * 引きすぎる。みなし期間と勤続期間の重なりを改めて取ること。
+ * 例：掛金15年・一時金200万円なら、みなし勤続期間は掛金開始から5年ぶん（200万 ÷ 40万）。
+ * その5年が勤続期間と重なっていれば 40万円 × 5年 ＝ 200万円 を差し引く。
+ *
+ * ■ 同じ年に受け取った場合は対象外
+ * 施行令70条1項2号は「その年の**前年以前**」なので、同年内の退職手当等は
+ * 69条1項3号の**通算**（額も期間も合算する）という別の計算になる。
+ * 本ツールは扱わず、画面で断る。
  *
  * ■ 端数処理（一次情報のとおり。ここは仕様書の記述より法令・国税庁の様式を優先した）
  * - 勤続年数：1年未満の端数は**切り上げ**（所得税法施行令 第69条）
@@ -28,8 +40,10 @@
  * - 所得税：速算表で求めた額に102.1%を乗じ、**1円未満切捨て**
  *   （国税庁「退職所得の源泉徴収税額の速算表」の注記。100円未満切捨てではない）
  * - 住民税：市町村民税6%・道府県民税4%を**それぞれ100円未満切捨て**
- *   （地方税法 第50条の6・第328条の5。合算してから丸めると100円ずれる）
- * - 重複年数・みなし勤続年数：1年未満**切捨て**
+ *   （地方税法 第20条の4の2第3項の100円未満切捨てを、同条第8項が
+ *   市町村民税と道府県民税を「それぞれ一の地方税とみなす」と定めているため。
+ *   合算してから丸めると100円ずれる）
+ * - 重複年数：1年未満**切捨て**（施行令70条3項）。みなし勤続年数も切捨て（同条2項）
  *
  * ■ 一次情報（2026-09-16 取得）
  * - 国税庁 タックスアンサー No.1420「退職金を受け取ったとき（退職所得）」
@@ -37,7 +51,9 @@
  * - 国税庁 タックスアンサー No.2732「退職手当等に対する源泉徴収」
  *   https://www.nta.go.jp/taxes/shiraberu/taxanswer/gensen/2732.htm
  * - 所得税法 第30条・第89条・第201条、同施行令 第69条〜第71条の2
- * - 地方税法 第50条の2〜第50条の6（道府県民税）・第328条〜第328条の5（市町村民税）
+ *   （**第69条・第70条は e-Gov 法令API で現行条文を取得して突き合わせた**）
+ * - 地方税法 第50条の2（道府県民税の退職所得の課税の特例）・第328条（市町村民税）、
+ *   第20条の4の2（課税標準額・税額等の端数計算）
  *
  * ■ このツールで計算しないもの（仕様書の「やらないこと」）
  * - 退職金を先に受け取り、iDeCo一時金を後で受け取るケース（19年ルール）。解説のみ
@@ -59,7 +75,7 @@ import {
 } from '@/lib/furusato-nozei';
 
 /** 一次情報を確認した日 */
-export const DATA_CHECKED_AT = '2026-09-16';
+export const DATA_CHECKED_AT = '2026-09-18';
 
 /** 勤続20年以下の1年あたりの退職所得控除額 */
 export const DEDUCTION_PER_YEAR = 400_000;
@@ -99,15 +115,15 @@ export const PREF_TAX_RATE = 0.04;
 export const NO_DECLARATION_RATE = 0.2042;
 
 /**
- * 10年ルールが適用される最初の年。
- * 2026年1月1日以後に支払を受ける退職金から、重複排除の期間が9年内になる。
+ * 10年ルールが適用される最初の年（令和8年1月1日）。
+ * **一時金と退職金の両方**がこの年以後のときだけ9年内で判定する（`lookbackYearsFor()`）。
  */
 export const TEN_YEAR_RULE_FROM = 2026;
 
-/** 2026年以後：前の一時金の支払年が「前年以前9年内」なら重複排除の対象 */
+/** 一時金・退職金とも2026年以後：前年以前9年内なら重複排除の対象（施行令70条1項2号ロ） */
 export const LOOKBACK_YEARS_FROM_2026 = 9;
 
-/** 2025年以前：従来の「前年以前4年内」 */
+/** それ以外：従来の「前年以前4年内」（同号イ） */
 export const LOOKBACK_YEARS_BEFORE_2026 = 4;
 
 /** 退職の区分 */
@@ -162,13 +178,26 @@ export interface TaishokukinInput {
 
 /** 10年ルール（重複期間の控除）の内訳 */
 export interface OverlapDetail {
-  /** 重複排除の対象になったか（支払年が「前年以前n年内」か） */
+  /** 重複排除の対象になったか（一時金の支払年が「前年以前n年内」か） */
   applies: boolean;
-  /** 判定に使った年数（2026年以後の退職金なら9） */
+  /**
+   * 判定に使った年数。
+   * **一時金と退職金の両方が2026年以後**のときだけ9、それ以外は4
+   * （施行令70条1項2号ロ「令和八年一月一日以後に支払を受けたものに限り」）。
+   */
   lookbackYears: number;
   /** 退職金の支払年 − 一時金の支払年 */
   gapYears: number;
-  /** 掛金期間と勤続期間が実際に重なった月数 */
+  /**
+   * 同じ年に受け取った（gapYears === 0）。
+   * 施行令70条1項2号は「その年の**前年以前**」なので、同年内はこの条文の対象外で、
+   * 69条1項3号の**通算**（一時金の額も収入に足し、期間を合算する）という別の計算になる。
+   * 本ツールでは扱えないので、画面で断る。
+   */
+  sameYear: boolean;
+  /** 一時金のほうが後（逆順）。19年ルールの領分で、本ツールでは扱わない */
+  reverseOrder: boolean;
+  /** 掛金期間と勤続期間が「短縮前に」重なっていた月数 */
   overlapMonths: number;
   /** 同・年数（1年未満切捨て） */
   actualOverlapYears: number;
@@ -178,9 +207,17 @@ export interface OverlapDetail {
   deductionAtThatTime: number;
   /** 一時金の額から導いた「みなし勤続年数」（1年未満切捨て） */
   deemedYears: number;
-  /** 重複期間の短縮（施行令70条）が効いたか */
+  /** 重複期間の短縮（施行令70条2項）が効いたか */
   shortened: boolean;
-  /** 実際に差し引く対象となった重複年数 */
+  /**
+   * 「前の勤続期間等」とみなす期間。短縮が効いたときは
+   * **掛金期間の初日から みなし勤続年数 ぶん**の期間になる（年数の上限ではない）。
+   * 短縮が効かなければ掛金期間そのもの。
+   */
+  priorPeriod?: { from: YearMonth; to: YearMonth };
+  /** 「前の勤続期間等」と勤続期間が重なった月数（＝実際に差し引く対象） */
+  deductibleMonths: number;
+  /** 実際に差し引く対象となった重複年数（1年未満切捨て。施行令70条3項） */
   years: number;
   /** 差し引く控除額 */
   amount: number;
@@ -332,11 +369,38 @@ export function deemedServiceYears(amount: number): number {
   );
 }
 
-/** 支払年に応じた重複排除の対象期間（前年以前n年内） */
-export function lookbackYearsFor(paymentYear: number): number {
-  return paymentYear >= TEN_YEAR_RULE_FROM
+/**
+ * 重複排除の対象期間（前年以前n年内）。
+ *
+ * **9年内で判定するのは、iDeCo一時金と退職金の「両方」が2026年以後のときだけ。**
+ * 施行令70条1項2号ロは対象の一時金を
+ * 「令和八年一月一日**以後に支払を受けたものに限り**」と限定しており、
+ * 2025年以前に受け取った一時金は同号イの**4年内**のままになる。
+ * 退職金の支払年だけで9年に切り替えると、2025年以前にiDeCoを受け取って
+ * 2026〜2030年に退職する人（5〜9年前のケース）で、本来は対象外のものを
+ * 対象にしてしまい、税額を実際より多く出す。
+ *
+ * この結果、**新ルールで答えが変わる最初の人は「2026年に一時金 → 2031年に退職金」**
+ * になる（1〜4年前はどちらの号でも対象なので結論が同じ）。
+ *
+ * @param paymentYear 退職金の支払年
+ * @param priorYear 先に受け取った一時金の支払年
+ */
+export function lookbackYearsFor(paymentYear: number, priorYear: number): number {
+  return paymentYear >= TEN_YEAR_RULE_FROM && priorYear >= TEN_YEAR_RULE_FROM
     ? LOOKBACK_YEARS_FROM_2026
     : LOOKBACK_YEARS_BEFORE_2026;
+}
+
+/** 年月を n か月進める（負の値なら戻す） */
+function addMonths(ym: YearMonth, n: number): YearMonth {
+  const idx = monthIndex(ym) + n;
+  return { year: Math.floor(idx / 12), month: (idx % 12) + 1 };
+}
+
+/** 2つの年月の早いほう */
+function earlier(a: YearMonth, b: YearMonth): YearMonth {
+  return monthIndex(a) <= monthIndex(b) ? a : b;
 }
 
 /** 円 → 「480万円」。控除額は必ず1万円単位なので万円で見せる */
@@ -387,12 +451,13 @@ function buildOverlap(
   paymentYear: number,
   period: { from: YearMonth; to: YearMonth } | undefined,
 ): OverlapDetail {
-  const lookbackYears = lookbackYearsFor(paymentYear);
+  const lookbackYears = lookbackYearsFor(paymentYear, prior.year);
   const gapYears = paymentYear - prior.year;
-  // 同じ年（gap 0）も重複排除の対象。同年内の退職手当等は本来合算だが、
-  // 画面では「同じ年に受けた退職手当等の合計」を1つの入力にまとめているので、
-  // ここでは前の一時金として扱っても控除を引きすぎることはない
-  const applies = gapYears >= 0 && gapYears <= lookbackYears;
+  const sameYear = gapYears === 0;
+  const reverseOrder = gapYears < 0;
+  // 施行令70条1項2号は「その年の**前年以前**」なので、同年（gap 0）と逆順は対象外。
+  // 同年内の退職手当等は69条1項3号の通算（額も期間も合算する）という別の計算になる
+  const applies = gapYears >= 1 && gapYears <= lookbackYears;
 
   const contributionMonths = monthsInPeriod(prior.from, prior.to);
   const contributionYears = serviceYearsFromMonths(contributionMonths);
@@ -401,25 +466,48 @@ function buildOverlap(
   const shortened = prior.amount < deductionAtThatTime;
 
   const indeterminate = period === undefined;
-  const months = period ? overlapMonths({ from: prior.from, to: prior.to }, period) : 0;
-  const actualOverlapYears = Math.floor(months / 12);
-
-  const years = applies
-    ? shortened
-      ? Math.min(deemedYears, actualOverlapYears)
-      : actualOverlapYears
+  const overlapBeforeShortening = period
+    ? overlapMonths({ from: prior.from, to: prior.to }, period)
     : 0;
+
+  /*
+   * 施行令70条2項の「みなし勤続期間」。
+   *
+   * 短縮は**年数の上限ではなく期間**で、掛金期間の
+   * 「初日から（みなし勤続年数）を経過した日の前日まで」が前の勤続期間等になる。
+   * `Math.min(みなし年数, 実際の重複年数)` にすると、掛金期間が勤続期間より
+   * 前に始まっている人（転職前からiDeCoに入っていた人）で、
+   * みなし期間と重なっていない部分まで差し引いてしまう。
+   */
+  const priorPeriod: { from: YearMonth; to: YearMonth } | undefined = shortened
+    ? deemedYears > 0
+      ? {
+          from: prior.from,
+          // 「のうち」なので、元の掛金期間の終わりを超えることはない
+          to: earlier(addMonths(prior.from, deemedYears * 12 - 1), prior.to),
+        }
+      : undefined
+    : { from: prior.from, to: prior.to };
+
+  const deductibleMonths =
+    period && priorPeriod ? overlapMonths(priorPeriod, period) : 0;
+  // 施行令70条3項：重複している部分の期間の1年未満の端数は切り捨てる
+  const years = applies ? Math.floor(deductibleMonths / 12) : 0;
 
   return {
     applies,
     lookbackYears,
     gapYears,
-    overlapMonths: months,
-    actualOverlapYears,
+    sameYear,
+    reverseOrder,
+    overlapMonths: overlapBeforeShortening,
+    actualOverlapYears: Math.floor(overlapBeforeShortening / 12),
     contributionYears,
     deductionAtThatTime,
     deemedYears,
     shortened,
+    priorPeriod,
+    deductibleMonths,
     years,
     // 重複ぶんの差引額に最低保障額（80万円）は効かせない
     amount: retirementDeduction(years, false),

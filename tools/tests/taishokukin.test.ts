@@ -264,125 +264,279 @@ describe('住民税（現年分離課税）', () => {
 });
 
 describe('10年ルール（iDeCo一時金を先に受け取った場合）', () => {
-  /** 掛金2002年4月〜2017年3月（15年）・一時金200万円 */
+  /**
+   * 掛金2002年4月〜2026年3月（24年）・一時金200万円。
+   * 既定は「2026年に一時金 → 2031年に退職金」で、**新ルールで答えが変わる最初のケース**。
+   */
   const prior = (over: Partial<PriorLumpSum> = {}): PriorLumpSum => ({
-    year: 2017,
+    year: 2026,
     amount: 2_000_000,
     from: { year: 2002, month: 4 },
-    to: { year: 2017, month: 3 },
+    to: { year: 2026, month: 3 },
     ...over,
   });
 
-  /** 勤続2002年4月〜2026年3月（24年） */
-  const service = { from: { year: 2002, month: 4 }, to: { year: 2026, month: 3 } };
+  /** 勤続2002年4月〜2031年3月（29年） */
+  const service = { from: { year: 2002, month: 4 }, to: { year: 2031, month: 3 } };
 
-  it('2026年以後の退職金は前年以前9年内、2025年以前は4年内', () => {
-    expect(lookbackYearsFor(2026)).toBe(9);
-    expect(lookbackYearsFor(2027)).toBe(9);
-    expect(lookbackYearsFor(2025)).toBe(4);
+  /**
+   * **9年内で判定するのは一時金と退職金の両方が2026年以後のときだけ。**
+   * 施行令70条1項2号ロは対象の一時金を
+   * 「令和八年一月一日以後に支払を受けたものに限り」と限定している。
+   */
+  it('一時金・退職金の両方が2026年以後なら9年内、どちらかが2025年以前なら4年内', () => {
+    expect(lookbackYearsFor(2031, 2026)).toBe(9);
+    expect(lookbackYearsFor(2036, 2027)).toBe(9);
+    // 一時金が2025年以前なら、退職金が2026年以後でも4年内のまま
+    expect(lookbackYearsFor(2030, 2025)).toBe(4);
+    expect(lookbackYearsFor(2026, 2020)).toBe(4);
+    expect(lookbackYearsFor(2025, 2021)).toBe(4);
   });
 
   it('一時金の支払が9年前なら対象になる', () => {
-    const r = calcTaishokukin(input({ service, paymentYear: 2026, prior: prior({ year: 2017 }) }));
+    const r = calcTaishokukin(
+      input({
+        service: { from: { year: 2002, month: 4 }, to: { year: 2035, month: 3 } },
+        paymentYear: 2035,
+        prior: prior({ year: 2026 }),
+      }),
+    );
     expect(r.deduction.overlap?.gapYears).toBe(9);
+    expect(r.deduction.overlap?.lookbackYears).toBe(9);
     expect(r.deduction.overlap?.applies).toBe(true);
     expect(r.deduction.overlapDeduct).toBeGreaterThan(0);
   });
 
   it('一時金の支払が10年前なら対象外（控除は満額）', () => {
-    const r = calcTaishokukin(input({ service, paymentYear: 2026, prior: prior({ year: 2016 }) }));
+    const r = calcTaishokukin(
+      input({
+        service: { from: { year: 2002, month: 4 }, to: { year: 2036, month: 3 } },
+        paymentYear: 2036,
+        prior: prior({ year: 2026 }),
+      }),
+    );
     expect(r.deduction.overlap?.gapYears).toBe(10);
     expect(r.deduction.overlap?.applies).toBe(false);
     expect(r.deduction.overlapDeduct).toBe(0);
-    expect(r.deduction.total).toBe(10_800_000); // 800万 + 70万 × 4年
+    expect(r.deduction.total).toBe(retirementDeduction(34));
   });
 
-  it('2025年以前の退職金なら5年前は対象外（旧ルールの4年内）', () => {
-    const before = calcTaishokukin(
+  /**
+   * **回帰テスト：退職金の支払年だけで9年に切り替えてはいけない。**
+   * 2025年以前にiDeCoを受け取って2026〜2030年に退職する人を
+   * 対象にしてしまうと、控除を引きすぎて税額を多く出す。
+   */
+  it('2025年以前に受け取った一時金は、2026年以後の退職でも4年内のまま', () => {
+    // 5年前：一時金が2025年なら対象外
+    const old = calcTaishokukin(
       input({
-        service: { from: { year: 2002, month: 4 }, to: { year: 2025, month: 3 } },
-        paymentYear: 2025,
-        prior: prior({ year: 2020 }),
+        service: { from: { year: 2002, month: 4 }, to: { year: 2030, month: 3 } },
+        paymentYear: 2030,
+        prior: prior({ year: 2025 }),
       }),
     );
-    expect(before.deduction.overlap?.gapYears).toBe(5);
-    expect(before.deduction.overlap?.applies).toBe(false);
+    expect(old.deduction.overlap?.gapYears).toBe(5);
+    expect(old.deduction.overlap?.lookbackYears).toBe(4);
+    expect(old.deduction.overlap?.applies).toBe(false);
+    expect(old.deduction.overlapDeduct).toBe(0);
 
-    // 同じ5年前でも、2026年に受け取るなら対象になる（これが改正の効果）
-    const after = calcTaishokukin(input({ service, paymentYear: 2026, prior: prior({ year: 2021 }) }));
-    expect(after.deduction.overlap?.gapYears).toBe(5);
-    expect(after.deduction.overlap?.applies).toBe(true);
+    // 同じ5年前でも、一時金が2026年なら対象になる（これが改正の効果）
+    const brandNew = calcTaishokukin(input({ service, paymentYear: 2031, prior: prior({ year: 2026 }) }));
+    expect(brandNew.deduction.overlap?.gapYears).toBe(5);
+    expect(brandNew.deduction.overlap?.lookbackYears).toBe(9);
+    expect(brandNew.deduction.overlap?.applies).toBe(true);
   });
 
-  it('同じ年に受け取った場合も重複排除の対象', () => {
-    const r = calcTaishokukin(input({ service, paymentYear: 2026, prior: prior({ year: 2026 }) }));
+  it('2025年以前の一時金でも、4年内なら従来どおり対象', () => {
+    const r = calcTaishokukin(
+      input({
+        service: { from: { year: 2002, month: 4 }, to: { year: 2028, month: 3 } },
+        paymentYear: 2028,
+        prior: prior({ year: 2025, to: { year: 2025, month: 3 } }),
+      }),
+    );
+    expect(r.deduction.overlap?.gapYears).toBe(3);
+    expect(r.deduction.overlap?.lookbackYears).toBe(4);
     expect(r.deduction.overlap?.applies).toBe(true);
+  });
+
+  /**
+   * 施行令70条1項2号は「その年の**前年以前**」。同年内は69条1項3号の通算
+   * （額も期間も合算する）という別の計算なので、この条文の対象にはならない。
+   */
+  it('同じ年に受け取った場合は対象外（通算という別の計算になる）', () => {
+    const r = calcTaishokukin(
+      input({
+        service: { from: { year: 2002, month: 4 }, to: { year: 2026, month: 3 } },
+        paymentYear: 2026,
+        prior: prior({ year: 2026 }),
+      }),
+    );
+    expect(r.deduction.overlap?.sameYear).toBe(true);
+    expect(r.deduction.overlap?.applies).toBe(false);
+    expect(r.deduction.overlapDeduct).toBe(0);
+  });
+
+  it('一時金のほうが後（逆順）なら対象外', () => {
+    const r = calcTaishokukin(
+      input({
+        service: { from: { year: 2002, month: 4 }, to: { year: 2026, month: 3 } },
+        paymentYear: 2026,
+        prior: prior({ year: 2028 }),
+      }),
+    );
+    expect(r.deduction.overlap?.reverseOrder).toBe(true);
+    expect(r.deduction.overlap?.applies).toBe(false);
+    expect(r.deduction.overlapDeduct).toBe(0);
   });
 });
 
-describe('重複期間の短縮（施行令 第70条）', () => {
-  const service = { from: { year: 2002, month: 4 }, to: { year: 2026, month: 3 } };
+describe('重複期間の短縮（施行令 第70条2項）', () => {
+  /** 勤続2002年4月〜2031年3月（29年） */
+  const service = { from: { year: 2002, month: 4 }, to: { year: 2031, month: 3 } };
+  /** 掛金2002年4月〜2026年3月（24年）・一時金200万円を2026年に受け取った */
   const base: PriorLumpSum = {
-    year: 2017,
+    year: 2026,
     amount: 2_000_000,
     from: { year: 2002, month: 4 },
-    to: { year: 2017, month: 3 },
+    to: { year: 2026, month: 3 },
   };
 
-  it('一時金が当時の控除額に満たなければ、みなし勤続年数まで短縮される', () => {
-    // 掛金15年 → 当時の控除額600万円。一時金200万円はこれに満たない
-    // → みなし勤続年数 5年（200万 ÷ 40万）。実際の重複15年でも差し引くのは40万×5年
-    const r = calcTaishokukin(input({ service, paymentYear: 2026, prior: base }));
+  it('一時金が当時の控除額に満たなければ、みなし勤続期間まで短縮される', () => {
+    // 掛金24年 → 当時の控除額1,080万円。一時金200万円はこれに満たない
+    // → みなし勤続期間は掛金開始から5年（200万 ÷ 40万）＝ 2002年4月〜2007年3月
+    const r = calcTaishokukin(input({ service, paymentYear: 2031, prior: base }));
     const o = r.deduction.overlap;
-    expect(o?.contributionYears).toBe(15);
-    expect(o?.deductionAtThatTime).toBe(6_000_000);
-    expect(o?.actualOverlapYears).toBe(15);
+    expect(o?.contributionYears).toBe(24);
+    expect(o?.deductionAtThatTime).toBe(10_800_000);
+    expect(o?.actualOverlapYears).toBe(24);
     expect(o?.deemedYears).toBe(5);
     expect(o?.shortened).toBe(true);
+    expect(o?.priorPeriod).toEqual({
+      from: { year: 2002, month: 4 },
+      to: { year: 2007, month: 3 },
+    });
+    expect(o?.deductibleMonths).toBe(60);
     expect(o?.years).toBe(5);
     expect(o?.amount).toBe(2_000_000);
-    // 控除：800万 + 70万 × 4年 = 1,080万 − 200万 = 880万
-    expect(r.deduction.total).toBe(8_800_000);
+    // 控除：800万 + 70万 × 9年 = 1,430万 − 200万 = 1,230万
+    expect(r.deduction.total).toBe(12_300_000);
   });
 
-  it('短縮を入れないと控除を引きすぎる（差は税額に出る）', () => {
-    const shortened = calcTaishokukin(input({ service, paymentYear: 2026, prior: base }));
-    // 短縮が効かない額（一時金が当時の控除額以上）と比べる
-    const notShortened = calcTaishokukin(
-      input({ service, paymentYear: 2026, prior: { ...base, amount: 8_000_000 } }),
-    );
-    expect(notShortened.deduction.overlap?.shortened).toBe(false);
-    expect(notShortened.deduction.overlap?.years).toBe(15);
-    expect(notShortened.deduction.overlap?.amount).toBe(6_000_000);
-    expect(notShortened.deduction.total).toBe(4_800_000); // 1,080万 − 600万
-    expect(shortened.deduction.total).toBeGreaterThan(notShortened.deduction.total);
-  });
-
-  it('一時金が当時の控除額とちょうど同額なら短縮されない', () => {
-    const r = calcTaishokukin(
-      input({ service, paymentYear: 2026, prior: { ...base, amount: 6_000_000 } }),
-    );
-    expect(r.deduction.overlap?.shortened).toBe(false);
-    expect(r.deduction.overlap?.years).toBe(15);
-  });
-
-  it('短縮されても、実際の重複年数を超えて差し引くことはない', () => {
-    // 掛金・重複はどちらも3年だけ。みなし勤続年数は20年だが、重複は3年しかない
+  /**
+   * **回帰テスト：`min(みなし年数, 実際の重複年数)` にしてはいけない。**
+   * 短縮は年数の上限ではなく「掛金期間の初日から◯年」という**期間**なので、
+   * 掛金期間が勤続期間より前に始まっていると重なりが消えることがある。
+   * 転職前からiDeCoに入っていた人がこれに当たる。
+   */
+  it('みなし勤続期間が勤続期間と重ならなければ、差し引きは0になる', () => {
     const r = calcTaishokukin(
       input({
-        service,
-        paymentYear: 2026,
+        amount: 10_000_000,
+        // 入社2015年4月・退職2027年3月（12年）
+        service: { from: { year: 2015, month: 4 }, to: { year: 2027, month: 3 } },
+        paymentYear: 2027,
         prior: {
-          year: 2017,
-          amount: 8_000_000,
-          from: { year: 2014, month: 4 },
-          to: { year: 2017, month: 3 },
+          year: 2026,
+          amount: 2_400_000,
+          // iDeCo 2008年1月〜2025年12月（18年）。入社より7年早く始めている
+          from: { year: 2008, month: 1 },
+          to: { year: 2025, month: 12 },
         },
       }),
     );
-    expect(r.deduction.overlap?.actualOverlapYears).toBe(3);
-    expect(r.deduction.overlap?.years).toBe(3);
-    expect(r.deduction.overlap?.amount).toBe(1_200_000);
+    const o = r.deduction.overlap;
+    expect(o?.applies).toBe(true);
+    expect(o?.shortened).toBe(true);
+    expect(o?.deemedYears).toBe(6);
+    // みなし勤続期間は2008年1月〜2013年12月。勤続期間（2015年4月〜）と重ならない
+    expect(o?.priorPeriod).toEqual({
+      from: { year: 2008, month: 1 },
+      to: { year: 2013, month: 12 },
+    });
+    expect(o?.deductibleMonths).toBe(0);
+    expect(o?.years).toBe(0);
+    expect(r.deduction.overlapDeduct).toBe(0);
+    // 控除は満額の480万円（40万 × 12年）。税金425,912円
+    expect(r.deduction.total).toBe(4_800_000);
+    expect(r.totalTax).toBe(425_912);
+    // 短縮前の重なりは10年あるので、そこを引いてしまうと大きく違う
+    expect(o?.actualOverlapYears).toBe(10);
+  });
+
+  it('みなし勤続期間が一部だけ重なるときは、その重なりぶんを引く', () => {
+    const r = calcTaishokukin(
+      input({
+        // 入社2013年4月・退職2027年3月（14年）
+        service: { from: { year: 2013, month: 4 }, to: { year: 2027, month: 3 } },
+        paymentYear: 2027,
+        prior: {
+          year: 2026,
+          amount: 2_000_000,
+          // iDeCo 2010年4月〜2025年3月（15年）。みなし5年 → 2010年4月〜2015年3月
+          from: { year: 2010, month: 4 },
+          to: { year: 2025, month: 3 },
+        },
+      }),
+    );
+    const o = r.deduction.overlap;
+    expect(o?.deemedYears).toBe(5);
+    expect(o?.priorPeriod).toEqual({
+      from: { year: 2010, month: 4 },
+      to: { year: 2015, month: 3 },
+    });
+    // 2013年4月〜2015年3月の24か月だけ重なる
+    expect(o?.deductibleMonths).toBe(24);
+    expect(o?.years).toBe(2);
+    expect(o?.amount).toBe(800_000);
+    expect(r.deduction.total).toBe(5_600_000 - 800_000); // 40万×14年 − 80万
+  });
+
+  it('短縮が効かないときは掛金期間そのものと突き合わせる', () => {
+    // 一時金1,080万円は当時の控除額（1,080万円）以上なので短縮されない
+    const r = calcTaishokukin(
+      input({ service, paymentYear: 2031, prior: { ...base, amount: 10_800_000 } }),
+    );
+    const o = r.deduction.overlap;
+    expect(o?.shortened).toBe(false);
+    expect(o?.priorPeriod).toEqual({
+      from: { year: 2002, month: 4 },
+      to: { year: 2026, month: 3 },
+    });
+    expect(o?.years).toBe(24);
+    expect(o?.amount).toBe(10_800_000); // 800万 + 70万 × 4年
+    expect(r.deduction.total).toBe(14_300_000 - 10_800_000);
+  });
+
+  it('短縮を入れないと控除を引きすぎる（差は税額に出る）', () => {
+    const shortened = calcTaishokukin(input({ service, paymentYear: 2031, prior: base }));
+    const notShortened = calcTaishokukin(
+      input({ service, paymentYear: 2031, prior: { ...base, amount: 10_800_000 } }),
+    );
+    expect(notShortened.deduction.overlap?.shortened).toBe(false);
+    expect(shortened.deduction.total).toBeGreaterThan(notShortened.deduction.total);
+  });
+
+  it('みなし勤続期間は元の掛金期間の終わりを超えない', () => {
+    // 掛金3年（2023年4月〜2026年3月）・一時金800万円 → みなし20年だが、掛金は3年しかない
+    const r = calcTaishokukin(
+      input({
+        service,
+        paymentYear: 2031,
+        prior: {
+          year: 2026,
+          amount: 8_000_000,
+          from: { year: 2023, month: 4 },
+          to: { year: 2026, month: 3 },
+        },
+      }),
+    );
+    const o = r.deduction.overlap;
+    // 当時の控除額は120万円（40万 × 3年）で、一時金800万円はこれ以上 → 短縮なし
+    expect(o?.shortened).toBe(false);
+    expect(o?.priorPeriod?.to).toEqual({ year: 2026, month: 3 });
+    expect(o?.years).toBe(3);
+    expect(o?.amount).toBe(1_200_000);
   });
 
   it('みなし勤続年数：800万円の境界と1年未満切捨て', () => {
@@ -398,6 +552,46 @@ describe('重複期間の短縮（施行令 第70条）', () => {
     expect(deemedServiceYears(8_699_999)).toBe(20);
     expect(deemedServiceYears(8_700_000)).toBe(21);
     expect(deemedServiceYears(15_000_000)).toBe(30);
+  });
+
+  /**
+   * 画面の既定値（「はい」を選んだとき）。
+   * **開いた瞬間の例が新ルールで効いている**ことを固定する。
+   * ここが旧ルールで対象外になる組み合わせ（2025年以前の一時金）だと、
+   * この計算機の売りである10年ルールが既定では何も起きない。
+   */
+  it('画面の既定値は「2026年に一時金 → 2031年に退職」で、新ルールが効く', () => {
+    const r = calcTaishokukin(
+      input({
+        amount: 20_000_000,
+        service: { from: { year: 2002, month: 4 }, to: { year: 2031, month: 3 } },
+        paymentYear: 2031,
+        prior: base,
+      }),
+    );
+    expect(r.serviceYears).toBe(29);
+    expect(r.deduction.overlap?.applies).toBe(true);
+    expect(r.deduction.overlap?.lookbackYears).toBe(9);
+    expect(r.deduction.overlap?.years).toBe(5);
+    expect(r.deduction.total).toBe(12_300_000);
+    expect(r.taxableIncome).toBe(3_850_000);
+    expect(r.incomeTax).toBe(349_692);
+    expect(r.residentTax).toBe(385_000);
+    expect(r.net).toBe(19_265_308);
+  });
+
+  it('みなし勤続年数が0年なら差し引きは0', () => {
+    const r = calcTaishokukin(
+      input({
+        service,
+        paymentYear: 2031,
+        // 一時金39万円 → みなし0年
+        prior: { ...base, amount: 390_000 },
+      }),
+    );
+    expect(r.deduction.overlap?.deemedYears).toBe(0);
+    expect(r.deduction.overlap?.priorPeriod).toBeUndefined();
+    expect(r.deduction.overlapDeduct).toBe(0);
   });
 });
 
@@ -441,13 +635,14 @@ describe('期間の重なり', () => {
   it('重なりが無ければ控除は満額のまま', () => {
     const r = calcTaishokukin(
       input({
-        service: { from: { year: 2010, month: 4 }, to: { year: 2026, month: 3 } },
-        paymentYear: 2026,
+        service: { from: { year: 2012, month: 4 }, to: { year: 2028, month: 3 } },
+        paymentYear: 2028,
         prior: {
-          year: 2020,
+          year: 2026,
           amount: 2_000_000,
+          // 掛金は入社より前に終わっている
           from: { year: 2000, month: 4 },
-          to: { year: 2010, month: 3 },
+          to: { year: 2012, month: 3 },
         },
       }),
     );
@@ -460,13 +655,13 @@ describe('期間の重なり', () => {
   it('勤続期間を年・月で入れた場合は重なりを出せない（indeterminate）', () => {
     const r = calcTaishokukin(
       input({
-        service: { years: 24, months: 0 },
-        paymentYear: 2026,
+        service: { years: 29, months: 0 },
+        paymentYear: 2031,
         prior: {
-          year: 2017,
+          year: 2026,
           amount: 2_000_000,
           from: { year: 2002, month: 4 },
-          to: { year: 2017, month: 3 },
+          to: { year: 2026, month: 3 },
         },
       }),
     );
@@ -549,13 +744,13 @@ describe('控除の内訳の式', () => {
   it('10年ルールが効いたら重複年数と金額を出す', () => {
     const r = calcTaishokukin(
       input({
-        service: { from: { year: 2002, month: 4 }, to: { year: 2026, month: 3 } },
-        paymentYear: 2026,
+        service: { from: { year: 2002, month: 4 }, to: { year: 2031, month: 3 } },
+        paymentYear: 2031,
         prior: {
-          year: 2017,
+          year: 2026,
           amount: 2_000_000,
           from: { year: 2002, month: 4 },
-          to: { year: 2017, month: 3 },
+          to: { year: 2026, month: 3 },
         },
       }),
     );

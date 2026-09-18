@@ -16,6 +16,10 @@ const man = (v: number) => `${(Math.round(v / 1000) / 10).toLocaleString('ja-JP'
 
 const num = (v: string) => Math.max(0, Number(v) || 0);
 
+/** 年月 → 「2002年4月」。短縮後の期間を画面に出すのに使う */
+const ymLabel = (ym?: { year: number; month: number }) =>
+  ym ? `${ym.year}年${ym.month}月` : '';
+
 /** 先にiDeCoの一時金を受け取ったか */
 type PriorChoice = 'no' | 'yes' | 'unknown';
 
@@ -83,18 +87,23 @@ export default function Calculator() {
   // iDeCo一時金を先に受け取ったか
   const [prior, setPrior] = useState<PriorChoice>('no');
 
-  // 勤続期間（「はい」のときは重複を出すために期間で聞く）
+  /*
+   * 「はい」のときの初期値は、**新ルールで結果が変わる最初のケース**に合わせている
+   * （2026年に一時金 → 2031年に退職）。9年内で判定されるのは一時金も退職金も
+   * 2026年以後のときだけなので、ここを「2020年に一時金」にすると
+   * 開いた瞬間の例が旧ルール（4年内）で対象外になり、機能が見えない。
+   */
   const [joinYear, setJoinYear] = useState('2002');
   const [joinMonth, setJoinMonth] = useState('4');
-  const [leaveYear, setLeaveYear] = useState('2026');
+  const [leaveYear, setLeaveYear] = useState('2031');
   const [leaveMonth, setLeaveMonth] = useState('3');
 
   // 先に受け取った一時金
-  const [priorYear, setPriorYear] = useState('2020');
+  const [priorYear, setPriorYear] = useState('2026');
   const [priorAmount, setPriorAmount] = useState('2000000');
   const [contribFromYear, setContribFromYear] = useState('2002');
   const [contribFromMonth, setContribFromMonth] = useState('4');
-  const [contribToYear, setContribToYear] = useState('2020');
+  const [contribToYear, setContribToYear] = useState('2026');
   const [contribToMonth, setContribToMonth] = useState('3');
 
   const usePeriod = prior === 'yes';
@@ -314,40 +323,73 @@ export default function Calculator() {
         {r.deduction.formula}
       </div>
 
-      {o?.applies && o.amount > 0 && (
+      {o?.applies && (
         <div className="note" style={{ lineHeight: 1.7 }}>
-          <strong>
-            iDeCo一時金との重複 {o.years}年分（{man(o.amount)}）を差し引きました。
-          </strong>
+          {o.amount > 0 ? (
+            <strong>
+              iDeCo一時金との重複 {o.years}年分（{man(o.amount)}）を差し引きました。
+            </strong>
+          ) : (
+            <strong>重複排除の対象ですが、差し引く期間が無いため控除は満額です。</strong>
+          )}
           <br />
           {o.shortened ? (
             <>
               掛金期間は{o.contributionYears}年で、当時の退職所得控除額は{man(o.deductionAtThatTime)}
               でした。受け取った一時金（{man(num(priorAmount))}）はこれに満たないため、
-              <strong>重複期間は「みなし勤続年数」{o.deemedYears}年まで短縮されます</strong>
-              （所得税法施行令 第70条）。期間が実際に重なっているのは{o.actualOverlapYears}年ですが、
-              差し引くのは短いほうの{o.years}年分だけです。
+              <strong>
+                「前の勤続期間」は掛金開始から{o.deemedYears}年ぶん（
+                {ymLabel(o.priorPeriod?.from)}〜{ymLabel(o.priorPeriod?.to)}）に短縮されます
+              </strong>
+              （所得税法施行令 第70条2項）。この短縮後の期間と勤続期間の重なりは
+              <strong>{o.years}年</strong>（{o.deductibleMonths}か月を1年未満切り捨て）です。
+              {o.deductibleMonths === 0 && (
+                <>
+                  {' '}
+                  掛金期間そのものは{o.actualOverlapYears}年重なっていますが、
+                  <strong>短縮後の期間は勤続期間と重なっていない</strong>ため、差し引きはありません。
+                </>
+              )}
             </>
           ) : (
             <>
-              掛金期間と勤続期間が<strong>{o.actualOverlapYears}年</strong>重なっています
-              （{o.overlapMonths}か月を1年未満切り捨て）。一時金（{man(num(priorAmount))}）は
-              当時の退職所得控除額（{man(o.deductionAtThatTime)}）以上なので、重複期間は短縮されません。
+              掛金期間と勤続期間が<strong>{o.years}年</strong>重なっています
+              （{o.deductibleMonths}か月を1年未満切り捨て）。一時金（{man(num(priorAmount))}）は
+              当時の退職所得控除額（{man(o.deductionAtThatTime)}）以上なので、期間は短縮されません。
             </>
           )}
         </div>
       )}
 
-      {o && !o.applies && (
+      {o?.sameYear && (
+        <div className="note" style={{ lineHeight: 1.7 }}>
+          一時金と退職金を<strong>同じ年に受け取る場合は、この計算ではありません。</strong>
+          重複排除（施行令70条1項2号）は「その年の<strong>前年以前</strong>」に受け取った分が対象で、
+          同じ年に受けた退職手当等どうしは<strong>通算</strong>（一時金の額も収入に足し、期間を合算する）
+          という別の計算になります（施行令69条1項3号）。
+          <strong>本ツールでは扱えない</strong>ので、勤務先・税理士にご確認ください。
+        </div>
+      )}
+
+      {o?.reverseOrder && (
+        <div className="note" style={{ lineHeight: 1.7 }}>
+          入力では<strong>一時金のほうが退職金より後</strong>になっています。
+          この順番（退職金が先、iDeCo一時金が後）は「前年以前19年内」で判定する別の決まりで、
+          計算の主体もiDeCo側になるため、<strong>本ツールでは扱っていません</strong>。
+        </div>
+      )}
+
+      {o && !o.applies && !o.sameYear && !o.reverseOrder && (
         <div className="note" style={{ lineHeight: 1.7 }}>
           一時金を受け取ったのは<strong>{o.gapYears}年前</strong>で、
           {o.lookbackYears === 9 ? '「前年以前9年内」' : '「前年以前4年内」'}
           に入らないため、<strong>控除の調整はありません</strong>（退職所得控除を満額使えます）。
-          {o.lookbackYears === 9 && o.gapYears > 9 && o.gapYears <= 14 && (
+          {o.lookbackYears === 4 && o.gapYears >= 5 && o.gapYears <= 9 && (
             <>
               {' '}
-              なお2025年以前に受け取る退職金なら「前年以前4年内」で判定されるため、
-              いずれにしても対象外でした。
+              <strong>9年内で判定されるのは、一時金も退職金も2026年以後のときだけ</strong>です
+              （施行令70条1項2号ロ「令和八年一月一日以後に支払を受けたものに限り」）。
+              この一時金は{priorYear}年に受け取っているため、従来どおり4年内で判定します。
             </>
           )}
         </div>
