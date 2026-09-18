@@ -8,6 +8,7 @@ import {
   DEFAULT_LEVEL_ID,
   daughterOf,
   directionFromDelta,
+  directionFromKey,
   EXIT_X,
   EXIT_Y,
   isCleared,
@@ -384,6 +385,23 @@ describe('入力の解釈', () => {
   it('ごく小さな動きは「はらった」とみなさない（タップとして扱う）', () => {
     expect(directionFromDelta(3, 4)).toBeNull();
     expect(directionFromDelta(0, 0)).toBeNull();
+  });
+
+  /**
+   * 駒は `<button>` なので Tab では選べるが、Enter / Space は `click` にしかならず
+   * ポインタの手順は起きない。矢印キーが向きに直せないと、キーボードだけでは1手も指せない
+   */
+  it('矢印キーが向きになる（キーボードだけでも指せる）', () => {
+    expect(directionFromKey('ArrowUp')).toBe('up');
+    expect(directionFromKey('ArrowDown')).toBe('down');
+    expect(directionFromKey('ArrowLeft')).toBe('left');
+    expect(directionFromKey('ArrowRight')).toBe('right');
+  });
+
+  it('矢印キー以外は向きにならない', () => {
+    for (const key of ['Enter', ' ', 'a', 'Tab', 'ArrowUpLeft']) {
+      expect(directionFromKey(key), key).toBeNull();
+    }
   });
 
   it('駒を選んで空きマスをタップすると、その向きの手になる', () => {

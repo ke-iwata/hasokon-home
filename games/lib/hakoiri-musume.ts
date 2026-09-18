@@ -604,6 +604,28 @@ export function directionFromDelta(dx: number, dy: number, threshold = 12): Dire
 }
 
 /**
+ * 矢印キーから向きを決める（キーボードで駒を動かす）。
+ *
+ * 駒は `<button>` なので Tab で選べるが、**Enter / Space は `click` にしかならず**、
+ * ポインタの手順（pointerdown → pointerup）は起きない。矢印キーをここで向きに直して、
+ * はらうのと同じ手（空きが続くかぎり滑って1手）につなぐ。
+ */
+export function directionFromKey(key: string): Direction | null {
+  switch (key) {
+    case 'ArrowUp':
+      return 'up';
+    case 'ArrowDown':
+      return 'down';
+    case 'ArrowLeft':
+      return 'left';
+    case 'ArrowRight':
+      return 'right';
+    default:
+      return null;
+  }
+}
+
+/**
  * 「駒を選んでから動かしたい先のマスをタップする」操作を1手に直す。
  *
  * 選んだ駒と同じ行（または列）にあるマスだけが対象。届かないマスをタップしたときは

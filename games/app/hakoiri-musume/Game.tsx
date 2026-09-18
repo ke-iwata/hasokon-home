@@ -11,12 +11,21 @@
  * 「動いている途中」という状態はどこにも持たない（画面の約束9）。
  */
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import {
   BOARD_H,
   BOARD_W,
   DEFAULT_LEVEL_ID,
   directionFromDelta,
+  directionFromKey,
   isCleared,
   LEVEL_GROUPS,
   LEVELS,
@@ -114,11 +123,14 @@ export default function Game() {
       setSelected(null);
       if (next === state) return;
       if (!counted.current) {
-        // プレイ数と時間は「1手目を指したとき」から数える
+        // プレイ数は「1手でも動かしたゲーム」だけ数える（同じ面のやり直しでは増やさない）
         counted.current = true;
         records.start(level.id);
-        timer.begin();
       }
+      // **時計は `counted` の中に入れない。** 「最初から」で時計だけ戻すので、
+      // ここを一度きりにすると、やり直したあと時間が0:00のまま動かなくなる
+      // （`begin` は動いているあいだ何度呼んでも無視される）
+      timer.begin();
       setState(next);
     },
     [cleared, state, level.id, records, timer],
@@ -137,8 +149,10 @@ export default function Game() {
    */
   const onPiecePointerUp = (e: PointerEvent<HTMLButtonElement>, piece: Piece) => {
     const start = drag.current;
-    drag.current = null;
+    // **自分のポインタでなければ捨てない。** 2本目の指で始めたドラッグを、
+    // 1本目を離した拍子に消してしまうと、その手が黙って無かったことになる
     if (start === null || start.pointerId !== e.pointerId || start.id !== piece.id) return;
+    drag.current = null;
     const dir = directionFromDelta(e.clientX - start.x, e.clientY - start.y);
     if (dir === null) {
       // タップ：選ぶ／選び直す
@@ -147,6 +161,28 @@ export default function Game() {
     }
     // スワイプ：空きが続くかぎりその方向へ（何マス動いても1手）
     move(piece.id, dir, maxSlide(state.board, piece.id, dir));
+  };
+
+  /**
+   * キーボードでの操作。
+   *
+   * 駒は `<button>` なので Tab で順に選べるが、**Enter / Space は `click` にしかならず、
+   * ポインタの手順（pointerdown → pointerup）は起きない**。空きマスの押し先は
+   * 読み上げから隠してあるので、ここを用意しないとキーボードだけでは1手も指せない。
+   * 矢印キーでその駒をその向きへ動かす（はらうのと同じ＝空きが続くかぎり滑って1手）。
+   */
+  const onPieceKeyDown = (e: KeyboardEvent<HTMLButtonElement>, piece: Piece) => {
+    const dir = directionFromKey(e.key);
+    if (dir !== null) {
+      // 盤の上で矢印キーを押したときにページが動かないようにする
+      e.preventDefault();
+      move(piece.id, dir, maxSlide(state.board, piece.id, dir));
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setSelected((current) => (current === piece.id ? null : piece.id));
+    }
   };
 
   /** 空きマスをタップしたとき（駒を選んでから動かす操作） */
@@ -273,8 +309,9 @@ export default function Game() {
               aria-label={`${PIECE_NAME[piece.kind]}、左から${piece.x + 1}・上から${piece.y + 1}`}
               onPointerDown={(e) => onPiecePointerDown(e, piece)}
               onPointerUp={(e) => onPiecePointerUp(e, piece)}
-              onPointerCancel={() => {
-                drag.current = null;
+              onKeyDown={(e) => onPieceKeyDown(e, piece)}
+              onPointerCancel={(e) => {
+                if (drag.current?.pointerId === e.pointerId) drag.current = null;
               }}
             >
               <span aria-hidden="true">{PIECE_LABEL[piece.kind] ?? ''}</span>
@@ -312,7 +349,8 @@ export default function Game() {
           <strong>行き先の空いているマスをタップ</strong>しても動かせます。
           <strong>「娘」と書かれた大きな駒を、盤の下の出口（太い線のところ）まで
           下ろせばクリア</strong>です。手数の右の「最短」は、この配置を解くのに
-          最低限かかる手数です。
+          最低限かかる手数です。キーボードでも遊べます（Tabで駒を選び、
+          <strong>矢印キー</strong>でその駒を動かします）。
         </p>
       </details>
     </div>
