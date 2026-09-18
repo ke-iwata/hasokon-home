@@ -1,8 +1,11 @@
 # 雇用保険料率の令和8年度改定（5.5 → 5/1,000）が 2ファイルに未反映で、社保概算は令和7年度の料率のまま — 6ツールの数字がずれている
 
-**状態**：提案（2026-09-17 起票、未実装。同日の企画レビュー（#221）で「料率は葉のモジュールに切り出す」
-「テストの範囲は 5ファイル」の 2点を反映）。**法対応の修正**なので、新機能より先に入れる。
-実装 PR は `fix(tools):`（`lib/`・`tests/` を触るため `docs:` にしない）
+**状態**：実装済み（2026-09-18。本番反映はタグリリース待ち）。
+2026-09-17 起票、同日の企画レビュー（#221）で「料率は葉のモジュールに切り出す」
+「テストの範囲は 5ファイル」の 2点を反映。実装時に厚労省PDFの本文を読み、
+一般の事業の労働者負担 5/1,000（事業主 8.5・合計 13.5）を確認した。
+実際に期待値が動いたテストは 4ファイル（`ideco` / `iryohi-kojo` は実額を固定しておらず無変更、
+代わりに本文が触れていなかった `tedori-keisan.test.ts` が動いた）
 **対象**：`tools/lib/shaho-ryoritsu.ts`（新規）・`tools/lib/hatarakizon.ts`・`tools/lib/furusato-nozei.ts`・
 `tools/tests/hatarakizon.test.ts`・`tools/tests/furusato-nozei.test.ts`・`tools/tests/nenmatsu-chosei.test.ts`・
 `tools/tests/ideco.test.ts`・`tools/tests/iryohi-kojo.test.ts`・`tools/CLAUDE.md`（運用表に 1行）

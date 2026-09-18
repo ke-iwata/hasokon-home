@@ -43,6 +43,17 @@ export interface RecordEntry {
   /** スコアのベスト（大きいほうが良い） */
   bestScore?: number;
   /**
+   * 正確率のベスト（%。大きいほうが良い）。タイピング練習が使う。
+   *
+   * スコア（KPM）と別に持つのは、**速さと正確さがトレードオフだから**。
+   * 1つの数にまとめると「速いが荒い記録」と「遅いが正確な記録」の
+   * どちらかが消えてしまい、練習の手がかりにならない。
+   *
+   * **`Improved` には入れていない。** 「ベスト更新！」で祝うのは速さのほうで、
+   * 正確率まで祝うと、1語だけ打って100%のまま終えた回まで光ってしまう。
+   */
+  bestAccuracy?: number;
+  /**
    * スコアの合計。**平均を出すためだけに持つ**（ヨット）。
    *
    * 平均そのものを持たないのは、記録を足すたびに丸め誤差が乗るため。
@@ -71,6 +82,8 @@ export interface PlayResult {
   timeMs?: number;
   /** スコア */
   score?: number;
+  /** 正確率（%）。タイピング練習が使う */
+  accuracy?: number;
   /** 手数。勝ったときだけ渡す */
   moves?: number;
 }
@@ -147,6 +160,7 @@ export function sanitizeEntry(value: unknown): RecordEntry {
     draws: count(v.draws),
     bestTimeMs: positive(v.bestTimeMs),
     bestScore: positive(v.bestScore),
+    bestAccuracy: positive(v.bestAccuracy),
     bestMoves: positive(v.bestMoves),
     scoreSum: count(v.scoreSum),
     clearedIds: ids && ids.length > 0 ? ids : undefined,
@@ -202,6 +216,7 @@ export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
     draws: best(base.draws, extra.draws, Math.max),
     bestTimeMs: best(base.bestTimeMs, extra.bestTimeMs, Math.min),
     bestScore: best(base.bestScore, extra.bestScore, Math.max),
+    bestAccuracy: best(base.bestAccuracy, extra.bestAccuracy, Math.max),
     bestMoves: best(base.bestMoves, extra.bestMoves, Math.min),
     // **足さずに大きいほうを残す。** ここが呼ばれるのは旧キーの取り込みと
     // 同じ記録を2つ読んだときで、足すと同じゲームを二重に数えてしまう
@@ -227,6 +242,7 @@ export function applyResult(
   const timeMs = positive(result.timeMs);
   const score = positive(result.score);
   const moves = positive(result.moves);
+  const rate = positive(result.accuracy);
   const improved: Improved = {
     time: timeMs !== undefined && (entry.bestTimeMs === undefined || timeMs < entry.bestTimeMs),
     score: score !== undefined && (entry.bestScore === undefined || score > entry.bestScore),
@@ -241,6 +257,11 @@ export function applyResult(
       bestTimeMs: improved.time ? timeMs : entry.bestTimeMs,
       bestScore: improved.score ? score : entry.bestScore,
       bestMoves: improved.moves ? moves : entry.bestMoves,
+      // 正確率は `Improved` に載せない（祝うのは速さのほうだけ）
+      bestAccuracy:
+        rate !== undefined && (entry.bestAccuracy === undefined || rate > entry.bestAccuracy)
+          ? rate
+          : entry.bestAccuracy,
       // 平均を出すための合計。スコアを渡さないゲームでは増えない
       scoreSum: score === undefined ? entry.scoreSum : (entry.scoreSum ?? 0) + score,
     }),

@@ -25,19 +25,14 @@
  * ■ 一次情報
  * - 厚生労働省「社会保険適用拡大特設サイト」 https://www.mhlw.go.jp/tekiyoukakudai/
  * - 日本年金機構「厚生年金保険の保険料」 https://www.nenkin.go.jp/service/kounen/hokenryo/
- * - 全国健康保険協会「令和8年度の都道府県毎の保険料率」
- *   https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/r08/index.html
- *   （全国平均9.9%・介護保険料率1.62%。令和8年3月分＝4月納付分から適用）
- * - こども家庭庁「子ども・子育て支援金制度について」
- *   https://www.cfa.go.jp/policies/kodomokosodateshienkinseido
  * - 年金制度改正法（令和7年6月成立）による賃金要件の撤廃
+ * - 保険料率（健康保険・介護・子ども・子育て支援金・厚生年金・雇用保険）の出典は
+ *   lib/shaho-ryoritsu.ts にまとめてある。ここでは持たない
  *
- * 【データ更新箇所】保険料率が変わったら HEALTH_RATE / KAIGO_RATE / PENSION_RATE /
- * EMPLOYMENT_RATE を、年金の給付乗率が変わったら PENSION_ACCRUAL_RATE を、
- * 住民税の均等割が変わったら RESIDENT_PER_CAPITA を更新する。
- * **子ども・子育て支援金率はここに持たない。** lib/kosodate-shienkin.ts の FISCAL_YEARS から
- * 確定値を引いている（SHIENKIN_RATE）ので、料率が変わったらあちらだけを更新すれば
- * このツールも追随する。同じ数字を2か所に置くと、片方だけが取り残される
+ * 【データ更新箇所】**保険料率はここに持たない。** lib/shaho-ryoritsu.ts が唯一の定義で、
+ * ここは同名で re-export しているだけ（既存の import 元を変えずに済ませるため）。
+ * 年金の給付乗率が変わったら PENSION_ACCRUAL_RATE を、住民税の均等割が変わったら
+ * RESIDENT_PER_CAPITA を更新する。
  */
 
 import {
@@ -55,39 +50,28 @@ import {
   type Position,
   type ShahoStatus,
 } from '@/lib/nenshu-kabe';
-import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
 import { gradeOf, pensionStandardMonthly, roundPremium } from '@/lib/shaho-grades';
+import {
+  EMPLOYMENT_RATE,
+  HEALTH_RATE,
+  KAIGO_RATE,
+  PENSION_RATE,
+  SHIENKIN_RATE,
+} from '@/lib/shaho-ryoritsu';
 import { calcShobyoTeate } from '@/lib/shobyo-teate';
 
-/** 健康保険料率（本人負担・労使折半後）。協会けんぽの全国平均 9.9%（令和8年度）の半分 */
-export const HEALTH_RATE = 0.0495;
-
-/** 介護保険料率（本人負担・労使折半後）。全国一律1.62%（令和8年度）の半分。40〜64歳のみ */
-export const KAIGO_RATE = 0.0081;
-
 /**
- * 子ども・子育て支援金率（本人負担・労使折半後）。令和8年4月分から健康保険料に加算される。
- *
- * 手取りは「いまいくら引かれるか」なので、`見込み`・`政府試算` は使わず `確定` の
- * 最新年度だけを見る。lib/kosodate-shienkin.ts に令和9年度の確定値が入った時点で、
- * こちらは何も触らずに追随する。
+ * 保険料率は lib/shaho-ryoritsu.ts が持つ（一次情報と改定時期もあちらのコメント）。
+ * ここは同名で re-export して、既存の import 元（lib/tedori-keisan.ts・tests）を
+ * そのまま動かすためのもの。**数字をこちらに書き戻さないこと。**
  */
-export const SHIENKIN_RATE = latestConfirmedShienkinRate() / 2;
-
-function latestConfirmedShienkinRate(): number {
-  const confirmed = FISCAL_YEARS.filter((y) => y.status === '確定');
-  if (confirmed.length === 0) {
-    // 確定値が1つも無い形に FISCAL_YEARS が変わったら、黙って0にせず気づけるようにする
-    throw new Error('kosodate-shienkin の FISCAL_YEARS に確定した支援金率がありません');
-  }
-  return confirmed.reduce((a, b) => (b.fiscalYear > a.fiscalYear ? b : a)).rate;
-}
-
-/** 厚生年金保険料率（本人負担・労使折半後）。18.3%の半分 */
-export const PENSION_RATE = 0.0915;
-
-/** 雇用保険料率（労働者負担・一般の事業）。標準報酬月額ではなく実際の賃金にかかる */
-export const EMPLOYMENT_RATE = 0.0055;
+export {
+  EMPLOYMENT_RATE,
+  HEALTH_RATE,
+  KAIGO_RATE,
+  PENSION_RATE,
+  SHIENKIN_RATE,
+} from '@/lib/shaho-ryoritsu';
 
 /**
  * 老齢厚生年金（報酬比例部分）の給付乗率。平成15年4月以降の総報酬制で 5.481/1000。

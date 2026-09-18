@@ -1,0 +1,62 @@
+name: GSC audit
+
+# Search Console の URL検査APIで、サイトマップ全URLの登録状況を週1回数える。
+# 仕様: docs/features/google-index-recovery.md の「A. 監査スクリプトの内訳出力」
+#
+# 見るのは coverageState 別の内訳で、判定は「登録（Submitted and indexed）が
+# 4週連続で増えているか」。結果は Actions のログと artifact に残すだけで、
+# **リポジトリにはcommitしない**（生成物を履歴に混ぜないため）。
+on:
+  schedule:
+    # 毎週月曜 09:00 JST（= 00:00 UTC）。週明けに前週ぶんを見る
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: URL検査APIで登録状況を数える
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 計測する
+        id: audit
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Secret は運営者が登録するまで空。仕様書では画面作業のあとなので、
+          # 未設定のうちは失敗させず、警告だけ出して飛ばす
+          if [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::warning::Secret GOOGLE_SERVICE_ACCOUNT_JSON が未設定なので計測を飛ばしました。docs/features/google-index-recovery.md を参照"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mkdir -p audit-out
+          # 既定のシェルは bash -e なので、`|| code=$?` で受けないと
+          # 終了コード 1 の時点でステップごと落ちる
+          code=0
+          node scripts/gsc-canonical-audit.mjs --out "audit-out/gsc-audit-$(date -u +%Y-%m-%d).json" || code=$?
+
+          # 終了コード 1 は「旧サブドメインが残っている／検査に失敗したURLがある」で、
+          # いまは1がふつう。ジョブを落とすのは 2（実行できなかった）だけにする
+          if [ "$code" -ge 2 ]; then
+            echo "::error::計測を実行できませんでした（終了コード $code）"
+            exit "$code"
+          fi
+          echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+      - name: 結果を artifact に残す
+        if: steps.audit.outputs.skipped == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: gsc-audit-${{ github.run_id }}
+          path: audit-out/
+          retention-days: 90

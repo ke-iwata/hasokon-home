@@ -818,17 +818,22 @@ export const PREFECTURES: Prefecture[] = [
     currentYen: 1085,
     currentEffectiveOn: '2025-11-01',
     source: SOURCE_MHLW_LIST,
-    // 広島労働局は報道発表ではなく異議申出のための公示で額と発効日を示している。
-    // これは最低賃金法第11条第1項の「意見の要旨の公示」にあたる一次情報なので、出典にする
+    // 出典は**改正決定の報道発表**（2026-09-11）にしてある。
+    //
+    // もとは異議申出のための公示PDFで、それが404になったので答申の報道発表へ移したが、
+    // 答申のページは発効日を「改正決定の効力発生日は、**早ければ**令和８年１０月11日と
+    // なる予定です」と条件付きでしか書いていない。`effectiveOn` は決定公示で確認した
+    // 日付だけを入れる約束（Answered.effectiveOn・tools/CLAUDE.md）なので、条件付きの
+    // 記述しかないページでは根拠にならない。改正決定の発表は見出しで
+    // 「令和8年10月11日から1,141円（時間額）へ」と断定しているので、そちらを出典にする。
     answered: {
       yen: 1141,
       answeredOn: '2026-08-17',
       effectiveOn: '2026-10-11',
       source: {
-        // 公示PDFの直リンクが404になったため、報道発表ページへ差し替え
         label:
-          '広島労働局「広島県最低賃金は56円（5.2％）引き上げて「時間額1,141円」に －広島地方最低賃金審議会が答申－」',
-        url: 'https://jsite.mhlw.go.jp/hiroshima-roudoukyoku/news_topics/houdou_newpage_00512.html',
+          '広島労働局「広島県最低賃金の改正について ～令和8年10月11日から1,141円（時間額）へ～」',
+        url: 'https://jsite.mhlw.go.jp/hiroshima-roudoukyoku/news_topics/houdou_newpage_00522.html',
         checkedAt: DATA_CHECKED_AT,
       },
     },
