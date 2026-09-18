@@ -1,8 +1,8 @@
 # Google検索のインデックスが「123件中1件」に落ちている — 調査結果と復旧計画
 
-**状態**：提案（2026-09-16 起票、未実施）。**運営者の手作業（Search Console の画面確認）が先で、
-コード変更はそのあと。** 本ファイルの「まず運営者がやること」を済ませたら、結果をこのファイルの
-末尾「経過」に追記する。
+**状態**：提案（2026-09-16 起票）。**運営者作業 1〜3 は 2026-09-17 に実施済み**（手動対策なし。
+結果は末尾「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
+運営者の最終判断待ち。** コード側は **C を 2026-09-17 に実施済み**（#219）、A は #211 で進行中、B・D はこれから。
 **対象**：hasokon.com 全体（tools / games / learn / home）。運用作業が中心、コード変更は小さい
 **起票**：2026-09-16
 **緊急度**：高。**Google 経由の流入がほぼゼロになっており、いま新しいツール・ゲームを足しても
@@ -31,6 +31,14 @@ Google には載らない**（Bing 経由の流入で持っている状態）
 
 2026-08-10 の同じ検査では `/games/2048/` は「検出 - インデックス未登録」だった。
 それが今は「unknown」に**後退**している。時間が解決する方向には動いていない。
+
+この 30 / 91 の内訳は、現行スクリプトの `--out` で残る JSON（各行の `coverageState`）を
+集計したもの。**A が入る前でも同じ手順で再計測できる**：
+
+```bash
+node scripts/gsc-canonical-audit.mjs --out audit.json
+node -e 'const a=require("./audit.json");const c={};for(const r of a.rows)c[r.coverageState]=(c[r.coverageState]||0)+1;console.log(c)'
+```
 
 **Search Console の Search Analytics（プロパティ `https://hasokon.com/`）**
 
@@ -84,8 +92,8 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 ### 考えられる原因（確度順）
 
 1. **サイト単位の品質判定（最有力）。** hasokon.com は Google から見ると 08-08 に生まれた
-   新しいサイトで、そこへ **08-08〜08-23 の2週間に 10回リリース（v1.6〜v1.15）し、
-   80ページ超を一気に載せた**。Google はこの型を「大量生成されたページ」として
+   新しいサイトで、そこへ **08-08〜08-23 の2週間に 17回リリース（v1.2.2〜v1.15.0。
+   タグの作成日で数えた）し、80ページ超を一気に載せた**。Google はこの型を「大量生成されたページ」として
    サイトごと低く評価することがある（2024年3月以降の「scaled content abuse」の扱い）。
    その場合の症状がまさに「トップだけ登録・下層は Crawled - not indexed / unknown・
    サイトマップは読むが登録 0」。
@@ -115,11 +123,16 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
    翌日以降に残りを回す（APIでは代替できない。Indexing API は求人・ライブ配信のページ専用）
 4. **Bing Webmaster Tools** に `hasokon.com` が登録済みか確認し、未登録なら登録して
    サイトマップを送る（Bing が命綱なので、こちらは守る。IndexNow は別提案
-   [indexnow.md](./indexnow.md)）
+   [indexnow.md](./indexnow.md)（#206 で起票中））
 5. **公開（`stage: 'public'` への昇格）を 2〜4週間止める提案。** `preview` までの実装は
    続けてよい（サイトマップに載らない）。理由：1 の判定なら、ページを増やすほど悪化する。
    1 か 2 かが分かり、登録数が増え始めるのを見てから昇格を再開する。
-   **これは運営者の判断事項**なので、ここでは提案に留める
+   **これは運営者の判断事項**なので、ここでは提案に留める。
+   停止を採る場合は、CLAUDE.md の「フラグは腐る」（状態行に「いつ `public` にするか」を書く）と
+   整合させるため、**公開待ちの仕様書（例：#202 育児休業給付金、#203 タイピング練習）の
+   `**状態**：` 行に「`public` は google-index-recovery.md の解除判断後」と書く**。
+   解除の判断（下記の判定条件を満たした日）はこのファイルの「経過」に残し、そのときに
+   各仕様書の状態行も戻す。これが無いと停止が黙って続き、誰も解除の判断をしなくなる
 
 ### コード側（運営者の確認のあとに実施。触るファイルまで書く）
 
@@ -141,13 +154,31 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   `generateMetadata` で直接返す。`tools/tests/stage.test.ts` の対象外なので、専用テストを1本足す
 - 登録が戻ったあとに `index` へ戻すかは、そのときの登録数で決める（戻す判断もこのファイルに追記）
 
-**C. 運営者情報を 1か所に（`home/about.html` 新設、`tools/app/about/`・`games/app/about/` はそこへ誘導）**
+**C. 運営者情報を 1か所に（`home/about.html` 新設、`tools/app/about/`・`games/app/about/` は `noindex` にして誘導）**
 - いま「運営者情報」は `/tools/about/` と `/games/about/` の2枚で、**どちらも Google に unknown**。
-  ホームの footer からも `/tools/about/` に飛ばしている
+  ホームの footer からも `/tools/about/` に飛ばしている。**learn の footer には「運営者情報」の
+  リンク自体が無い**（`/privacy.html` と `/tools/contact/` のみ）
 - YMYL（税・社会保険）のページが多いサイトで、運営者ページが登録されていないのは品質判定に
-  効く。ルート直下に 1枚置き、home / tools / games / learn 全部の footer から同じ URL を指す。
-  `sitemap-home.xml` に足す。既存2枚は 301 ではなく（`home/` は素の静的HTMLで CloudFront 関数の
-  変更が要る）、本文を短くして `/about.html` へのリンクを置く
+  効く。ルート直下に 1枚置き、`sitemap-home.xml` に足す
+- footer は **home / tools / games が「付け替え」、learn は「新規追加」**。learn は unknown 39件で
+  最大のブロックなので、ここが抜けると効果が薄れる
+- **既存2枚（`/tools/about/`・`/games/about/`）は `robots: { index: false, follow: true }` にし、
+  サイトマップから外す。** 本文を短くして `/about.html` へのリンクだけ置く。
+  `noindex` にしないと、B で減らそうとしている「近い作りの薄いページ」を自分で2枚増やすことになる。
+  `canonical` を `/about.html` に向ける案は採らない（内容が違うページへの canonical は
+  Google が無視することが多く、結果が読めない）。301 も採らない（`home/` は素の静的HTMLで
+  CloudFront 関数の変更が要る）
+- `home/about.html` は `privacy.html` と同じ骨組み・同じスマホ幅の見え方に揃える
+  （home はビルド無しで CSS を共有していない）
+- **既存2枚を `noindex` にしたあとも、そこを指す導線が footer 以外に3か所残る。** 同じPRで
+  すべて `/about.html` へ付け替える（`noindex` のページへ案内し続けない）：
+  - `home/llms.txt` の「運営者情報」（`/tools/about/`）と「ゲームの運営者情報」（`/games/about/`）の
+    2行を、`/about.html` の1行に統合する（`scripts/test/llms-txt.test.mjs` は about を固定ページ
+    として除外しているので、テストの追加は不要）
+  - `home/privacy.html` の本文と footer にある `/tools/about/` へのリンク（2か所）。
+    「footer の付け替え（home）」は `index.html` だけでなく `privacy.html` も含む
+  - `games/app/about/page.tsx` の「計算ツール側の運営者情報」（`/tools/about/` へのリンク）。
+    `noindex` 同士で相互にリンクする形を残さない
 
 **D. 統合前のまま止まっている 1件（`/tools/shobyo-teate/`）**
 - 運営者作業 3 の「インデックス登録をリクエスト」に含める。それで直らなければ、
@@ -182,9 +213,21 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 | 運営者の画面作業 1〜4 | 0（人手 15分＋登録リクエスト 1日 10件×2日） |
 | A. 監査スクリプトの内訳出力＋テスト＋週次 workflow | 40k |
 | B. 16ページの noindex・サイトマップ除外＋テスト | 30k |
-| C. `home/about.html` 新設と footer の付け替え（4サイト）＋ `home-nav` テスト更新 | 40k |
+| C. `home/about.html` 新設、footer の付け替え（home / tools / games）と新規追加（learn）、既存2枚の noindex＋サイトマップ除外＋テスト、`home-nav` テスト更新 | 50k |
 | D. 1件の再検査 | 5k |
-| **合計** | **約115k** |
+| **合計** | **約125k** |
+
+## 実装者への申し送り
+
+- **B の `noindex` は「まだ公開していないもの」ではなく、一度公開したものを引っ込める操作**なので、
+  CLAUDE.md の「引っ込めるのは別の作業」に当たる。戻す条件（登録数の閾値）は上に書いたとおり。
+  **実施日と戻した日を「経過」に必ず残す**こと
+- C の `home/about.html` は `privacy.html` と同じ骨組み・同じスマホ幅の見え方に揃える
+  （home はビルド無しで CSS を共有していない）
+- A の workflow に要る Secret `GOOGLE_SERVICE_ACCOUNT_JSON` の登録は運営者作業。
+  `.github/workflows/gsc-audit.yml` を足す PR の説明に、登録手順（Settings → Secrets and
+  variables → Actions、値はサービスアカウントの JSON をそのまま）を書くこと
+- コミットは `docs:` ではなく `feat:` / `chore:`（`scripts/`・`tools/`・`games/`・`learn/`・`home/` を触るため）
 
 ## やらないこと
 
@@ -201,3 +244,65 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
 ## 経過
 
 - 2026-09-16：起票。上記の計測値を取得（URL検査 123件・Search Analytics・GA4・Sitemaps API）
+- 2026-09-16：企画レビュー（#204）で、既存 about 2枚の扱い（`noindex`）・learn の footer は新規追加・
+  `public` 停止時は公開待ち仕様書の状態行に書く運用、を反映。リリース数を 17回（v1.2.2〜v1.15.0）に訂正
+- 2026-09-16：企画レビュー（#209）で、C の実装時に `home/llms.txt`・`home/privacy.html`・
+  `games/app/about/` に残る `/tools/about/`・`/games/about/` への導線も `/about.html` へ付け替えることを追記
+- 2026-09-17：**C を実施。** `home/about.html` を新設して `sitemap-home.xml` に追加、
+  footer は home / tools / games を付け替え・learn に新規追加、既存2枚
+  （`/tools/about/`・`/games/about/`）を `noindex, follow` にしてサイトマップから外した。
+  導線は上に挙げた3か所に加え、**仕様書に無かった2か所**（`tools/app/page.tsx` のリード文と、
+  全ツールページ下部の `tools/app/ToolMeta.tsx`）と `PUBLISHER.mainEntityOfPage` も
+  `/about.html` へ付け替えた。**`noindex` にした日は 2026-09-17**（戻す判断はこの「経過」に追記する）
+- 2026-09-17：**運営者作業 1〜3 を実施**（Chrome の Search Console 画面、プロパティ `https://hasokon.com/`）。
+  - **1. 手動による対策・セキュリティの問題：どちらも「問題は検出されませんでした」。**
+    原因 2（手動対策）は消えた。残るのは原因 1（サイト単位の品質判定）と 3（アドレス変更の副作用）
+  - **2. 「ページのインデックス登録」レポート（画面の最終更新 2026/09/04）**：登録済み **8**・未登録 **60**。
+    未登録の理由内訳：クロール済み - インデックス未登録 **24**／検出 - インデックス未登録 **34**／
+    ページにリダイレクトがあります 1／重複（Google が別の正規 URL を選択）1。
+    登録済み 8 件は `/`・`/tools/koko-jugyoryo/`・`/games/block-puzzle/`・`/tools/warikan/`・
+    `/tools/hebon-romaji/`・`/tools/privacy/`・`/tools/group/`・`/games/solitaire/`
+    （最終クロール 08/11〜08/26）。
+    **API（09-16 の 1 / 30 / 91）との差**：画面は 09/04 で止まっている。画面で「登録済み」の
+    `hebon-romaji`・`block-puzzle` は、URL 検査のライブ結果では「クロール済み - インデックス未登録」
+    だった。つまり **09/04 以降にさらに落ちている**。画面が数えるのは Google が「認識している」
+    68 URL だけで、API の unknown 91 の大半は画面に出ない
+  - **3. インデックス登録をリクエスト：13 件送信**（割り当て超過にはならなかった）。送信時の状態：
+
+    | URL | URL 検査の結果（ライブ） | 前回のクロール |
+    |---|---|---|
+    | `/tools/saitei-chingin/` | URL が Google に認識されていません | — |
+    | `/tools/tabako-zei-neage/` | クロール済み - インデックス未登録 | 08/16 |
+    | `/tools/yoikuhi-keisan/` | 認識されていません | — |
+    | `/tools/shuzei-kaisei/` | 認識されていません | — |
+    | `/tools/hebon-romaji/` | クロール済み - 未登録（参照元は `tool.hasokon.com` の旧URL） | 08/21 |
+    | `/tools/hankaku-zenkaku/` | 認識されていません | — |
+    | `/tools/hatarakizon/` | クロール済み - 未登録 | 08/22 |
+    | `/tools/` | クロール済み - 未登録（参照元 `/tools/nenshu-kabe/`） | 09/05 |
+    | `/games/` | クロール済み - 未登録 | 09/05 |
+    | `/games/2048/` | 認識されていません | — |
+    | `/games/block-puzzle/` | クロール済み - 未登録（サイトマップ欄「一時的な処理エラー」） | 08/22 |
+    | `/learn/toshi/` | 認識されていません（参照元サイトマップなし） | — |
+    | `/tools/shobyo-teate/`（D） | 重複・Google が別の正規 URL を選択 | 08/08 |
+
+    **Bing で流入のある 3 本（最低賃金・養育費・酒税）が「認識されていません」**。Google はこれらの
+    URL の存在自体を知らない。2 週間後（10-01 ごろ）に同じ 13 件を URL 検査 API で再計測する
+  - **4. Bing Webmaster Tools：未確認。** AI エージェントの Chrome ではサインインしていない状態で、
+    認証情報の入力は運営者にしか行えない。運営者が `hasokon.com` の登録とサイトマップ送信を確認する
+  - **5.（`public` 昇格の一時停止）**：**運営者の最終判断は未**。企画レビュー（#204）が同意したのは
+    「停止を採る場合の運用」（公開待ち仕様書の状態行に書く）であって、停止そのものは仕様書どおり
+    運営者の判断事項のまま。運営者が採用したら、この行に「運営者が採用（日付）」と書き換える。
+    それまでは #218・#220 など新規ツールの提案は「`public` は本ファイルの解除判断後」と書いて
+    `preview` までで止める運用で進める。
+    **（#209 で決めた、#202 育児休業給付金・#203 タイピング練習の `**状態**：` 行への
+    「`public` は google-index-recovery.md の解除判断後」の追記は別PRで行う約束で、未実施）**
+  - **新しい発見：サイトマップ index の子が Google に読まれていない。**
+    Search Console の「サイトマップ」で `/sitemap.xml`（インデックス）は 09/15 に「成功しました」だが、
+    **「読み込まれたサイトマップ」が 0 件・検出されたページ数 0**。Google が読んでいるのは 08/14 に
+    個別送信した `/tools/sitemap.xml`（56）と `/games/sitemap.xml`（26）だけで、
+    **`/learn/sitemap.xml`（39 URL）と `/sitemap-home.xml` は一度も読まれていない**。
+    learn の unknown 39 件、`/learn/toshi/` の「参照元サイトマップなし」と一致する。
+    実体の `https://hasokon.com/sitemap.xml` は 4 本の `<sitemap>` を正しく列挙しており（curl で確認）、
+    ファイル側の問題ではない。**次の手：Search Console から `/learn/sitemap.xml` と
+    `/sitemap-home.xml` を個別に送信する**（運営者の判断待ち。送信するだけで戻せる）。
+    A の週次監査には、index の子サイトマップが読まれているかの確認も足す

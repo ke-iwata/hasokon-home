@@ -96,9 +96,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </p>
             <p>
               <Link href="/">ツール一覧</Link>
-              <Link href="/about/">運営者情報</Link>
-              {/* プライバシーポリシーはサイト全体で1枚（home 実体の /privacy.html）。
-                  basePath の外なので <a> で絶対パスへ飛ばす */}
+              {/* 運営者情報・プライバシーポリシーはサイト全体で1枚（home 実体の
+                  /about.html・/privacy.html）。basePath の外なので <a> で絶対パスへ飛ばす */}
+              <a href="/about.html">運営者情報</a>
               <a href="/privacy.html">プライバシーポリシー</a>
               <Link href="/contact/">お問い合わせ</Link>
               <a href="/">

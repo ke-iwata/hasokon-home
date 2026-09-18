@@ -18,10 +18,16 @@ import {
   type RevisionStatus,
 } from '@/lib/saitei-chingin';
 
-/** 状態の見せ方。目安は「見込み」であることを言い切る文言にする */
+/**
+ * 状態の見せ方。目安は「見込み」であることを言い切る文言にする。
+ *
+ * 「答申」の文言で**段階を断定しない**こと。決定・公示が済んだ県にも同じ文言が出るので、
+ * 「異議申出の手続を経て正式に決定されます」と書くと、もう決定済みの県まで
+ * 「まだ決まっていない」と読めてしまう（県ごとに進み方が違い、確認も追いつかない）。
+ */
 const STATUS_NOTE: Record<RevisionStatus, string> = {
   目安: 'まだ答申が出ていないため、ランク別の目安額を足した見込みです。県によっては目安を上回る額で答申されます',
-  答申: '地方最低賃金審議会が答申した額です。異議申出の手続を経て正式に決定されます',
+  答申: '地方最低賃金審議会が答申した額です。労働局の決定・公示を経て、発効日から効力が生じます',
   発効済み: 'すでに発効しています',
 };
 
@@ -109,7 +115,13 @@ export default function Calculator() {
             <dd>
               {revision.effectiveOn
                 ? formatDate(revision.effectiveOn)
-                : '未公表（10月ごろの見込み）'}
+                : // 予定日を過ぎたら日付を出さない。「10月24日 発効予定」を10月30日に
+                  // 出し続けると、発効済みかもしれない県を「これから」と読ませてしまう
+                  revision.plannedDatePassed
+                  ? '予定日を過ぎています'
+                  : revision.plannedEffectiveOn
+                    ? `${formatDate(revision.plannedEffectiveOn)} 発効予定`
+                    : '未公表（10月ごろの見込み）'}
             </dd>
           </div>
           <div>
@@ -117,6 +129,23 @@ export default function Calculator() {
             <dd>{pref.rank}ランク</dd>
           </div>
         </dl>
+        {/*
+          予定日の注記は dl の外に出す。dd の中に入れると、狭い画面（390px）で
+          dd が広がって dt が潰れ、「発効（予定）日」が1文字ずつ縦に折り返す
+        */}
+        {revision.plannedDatePassed ? (
+          <p className="hint" style={{ marginTop: 8 }}>
+            予定日（厚生労働省の答申状況（別紙）による）を過ぎていますが、
+            労働局の決定・公示をまだ確認できていません。
+            <strong>発効済みの可能性があります。</strong>
+            最新の状況は労働局の公示でご確認ください。
+          </p>
+        ) : revision.plannedEffectiveOn ? (
+          <p className="hint" style={{ marginTop: 8 }}>
+            この日付は厚生労働省の答申状況（別紙）が示す<strong>予定</strong>です。
+            労働局の決定・公示はまだ確認できておらず、予定日は公示で変わることがあります。
+          </p>
+        ) : null}
         <p className="hint" style={{ marginTop: 8 }}>
           出典：
           <a href={revision.source.url} target="_blank" rel="noopener noreferrer">
