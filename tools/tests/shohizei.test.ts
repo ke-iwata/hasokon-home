@@ -497,6 +497,22 @@ describe('page.tsx の title / description', () => {
     expect(description).toContain('予定');
   });
 
+  /**
+   * **「予定」が前半30字に入っていること。**
+   *
+   * 日本語の検索結果で表示されるのは全角30字前後なので、`title` の後ろに
+   * 「（予定）」を置くと**スニペットでは切れて見えない**。文字列として
+   * 含まれているかだけを見ていると、まさに仕様書が避けたかった
+   * 「成立済みの事実として読まれる」形を通してしまう（レビューで指摘された）。
+   */
+  it('title の「予定」が前半30字に入る（スニペットで切れない位置）', () => {
+    if (!isFoodRatePending()) return;
+    const raw = pageSource.match(/^const title = PENDING\s*\?\s*'([^']*)'/m)?.[1] ?? '';
+    expect(raw).not.toBe('');
+    expect(raw).toContain('予定');
+    expect(raw.indexOf('予定')).toBeLessThan(30);
+  });
+
   it('「決定」「確定」と断定していない', () => {
     if (!isFoodRatePending()) return;
     const title = pageSource.match(/^const title =\s*([\s\S]*?);$/m)?.[1] ?? '';

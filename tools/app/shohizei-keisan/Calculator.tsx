@@ -99,14 +99,24 @@ export default function Calculator() {
 
         <div className="field">
           <span className="field-label">入れた金額は</span>
+          {/* globals.css は [aria-pressed] にスタイルを持たないので、選ばれている側は
+              インラインの fontWeight で示す（サイトの他の計算機と同じ作法）。
+              ここはこのツールで一番効く入力（税込1,000円と税抜1,000円で答えが変わる）
+              なので、見た目が同じだとどちらを選んでいるか分からない */}
           <div className="field-row">
-            <button type="button" onClick={() => setMode('inclusive')} aria-pressed={mode === 'inclusive'}>
+            <button
+              type="button"
+              onClick={() => setMode('inclusive')}
+              aria-pressed={mode === 'inclusive'}
+              style={{ fontWeight: mode === 'inclusive' ? 700 : 400 }}
+            >
               税込
             </button>
             <button
               type="button"
               onClick={() => setMode('exclusive')}
               aria-pressed={mode === 'exclusive'}
+              style={{ fontWeight: mode === 'exclusive' ? 700 : 400 }}
             >
               税抜
             </button>
@@ -173,7 +183,7 @@ export default function Calculator() {
             </div>
 
             <div className="panel quiet">
-              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>3つの税率で比べる</p>
+              <p style={{ margin: '0 0 6px', fontWeight: 700 }}>税率ごとに比べる</p>
               <table>
                 <thead>
                   <tr>
@@ -364,7 +374,8 @@ export default function Calculator() {
                   aria-pressed={parsedFood === preset.monthly}
                   style={{ fontSize: 'var(--fs-sm)' }}
                 >
-                  {preset.label}（{preset.monthly.toLocaleString('ja-JP')}円）
+                  {preset.label}
+                  {preset.showAmount && `（${preset.monthly.toLocaleString('ja-JP')}円）`}
                 </button>
               ))}
             </div>

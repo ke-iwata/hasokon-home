@@ -428,13 +428,19 @@ export interface FoodBudgetPreset {
   monthly: number;
   /** どこから引いた数字か（画面に出す） */
   basis: string;
+  /**
+   * ボタンのラベルに金額を添えるか。
+   * 「月3万円」のような丸い金額はラベル自身が金額なので添えない
+   * （同じ数字を2回書くことになり、390px で全ボタンが2行に折れる）。
+   */
+  showAmount?: boolean;
 }
 
 /**
  * 家計調査の出どころ。
  *
  * **二人以上の世帯は「家計の概要」の表Ⅰ－１－１に食料の内訳（外食・酒類）が
- * 載っているが、単身世帯は10大費目（表ⅠⅠ－１－２の食料 49,321円）までで、
+ * 載っているが、単身世帯は10大費目（表Ⅱ－１－２の食料 49,321円）までで、
  * 外食・酒類の内訳が概要に無い。**単身世帯のプリセットを入れるには
  * e-Stat の詳細結果表（単身世帯・年）から内訳を取る必要があるので、
  * いまは丸い金額のプリセットで代用している（推計値を平均として出さない）。
@@ -459,6 +465,7 @@ export const FOOD_BUDGET_PRESETS: FoodBudgetPreset[] = [
     label: '2人以上の世帯の平均',
     monthly: KAKEI_TWO_OR_MORE_AT_HOME,
     basis: `${KAKEI_CHOSA.year}年平均の「食料」${KAKEI_CHOSA.twoOrMore.food.toLocaleString('ja-JP')}円から外食${KAKEI_CHOSA.twoOrMore.eatingOut.toLocaleString('ja-JP')}円・酒類${KAKEI_CHOSA.twoOrMore.alcohol.toLocaleString('ja-JP')}円を引いた額`,
+    showAmount: true,
   },
   { id: 'm30000', label: '月3万円', monthly: 30000, basis: '目安の金額' },
   { id: 'm50000', label: '月5万円', monthly: 50000, basis: '目安の金額' },

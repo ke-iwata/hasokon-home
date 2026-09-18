@@ -2,7 +2,7 @@
 
 **状態**：提案（2026-09-16 起票）。**運営者作業 1〜3 は 2026-09-17 に実施済み**（手動対策なし。
 結果は末尾「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
-運営者の最終判断待ち。** コード側は **C を 2026-09-17 に実施済み**（#219）、A は #211 で進行中、B・D はこれから。
+運営者の最終判断待ち。** コード側は **A を #211 で・C を 2026-09-17 に（#219）実施済み**、B・D はこれから。
 **対象**：hasokon.com 全体（tools / games / learn / home）。運用作業が中心、コード変更は小さい
 **起票**：2026-09-16
 **緊急度**：高。**Google 経由の流入がほぼゼロになっており、いま新しいツール・ゲームを足しても
@@ -248,6 +248,13 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   `public` 停止時は公開待ち仕様書の状態行に書く運用、を反映。リリース数を 17回（v1.2.2〜v1.15.0）に訂正
 - 2026-09-16：企画レビュー（#209）で、C の実装時に `home/llms.txt`・`home/privacy.html`・
   `games/app/about/` に残る `/tools/about/`・`/games/about/` への導線も `/about.html` へ付け替えることを追記
+- 2026-09-16：**A を実施（#211）。** `scripts/gsc-canonical-audit.mjs` に `coverageState` 別の
+  件数・URL一覧を足し（`--out` のJSONには `coverageByState`）、
+  `.github/workflows/gsc-audit.yml` で毎週月曜 09:00 JST に回すようにした。
+  判定条件は `scripts/README.md` に書いた。
+  **Secret `GOOGLE_SERVICE_ACCOUNT_JSON` の登録は運営者作業**（未登録のうちは警告を出して飛ばす。
+  登録手順は `scripts/README.md`）。**B・D はここでは触っていない。** B（16ページの `noindex`）は
+  公開中のページを検索から引っ込める後戻りしにくい変更なので、運営者作業 1〜2 の結果を待った
 - 2026-09-17：**C を実施。** `home/about.html` を新設して `sitemap-home.xml` に追加、
   footer は home / tools / games を付け替え・learn に新規追加、既存2枚
   （`/tools/about/`・`/games/about/`）を `noindex, follow` にしてサイトマップから外した。
