@@ -198,11 +198,46 @@ export function kpm(hits: number, roundMs: number = ROUND_MS): number {
   return Math.round(hits / (roundMs / 60_000));
 }
 
-/** 正確率（%）。1打も打っていなければ100（「正確率0%」と出さないため） */
+/**
+ * 正確率（%）。
+ *
+ * **100% は「ミスが1回も無かった回」だけ**。四捨五入をそのまま出すと、
+ * 303打鍵でミス1回でも `Math.round(303 / 304 * 100)` が100になり、
+ * 結果の行に「正確率 100%」と「（ミス 1）」が並ぶ。打った本人には
+ * 「いま赤くなったのに？」と読めるので、ミスがあるうちは99%で頭を止める。
+ *
+ * **切り捨てにはしない。** 99.98% が99%になるのは同じくらい実態と違う。
+ * 止めたいのは上の端だけなので、上限だけを切る。
+ *
+ * 1打も打っていなければ100（「正確率0%」と出さないため。ミス0の一種として扱う）。
+ */
 export function accuracy(hits: number, misses: number): number {
-  const total = hits + misses;
-  if (total === 0) return 100;
-  return Math.round((hits / total) * 100);
+  if (misses === 0) return 100;
+  return Math.min(99, Math.round((hits / (hits + misses)) * 100));
+}
+
+/**
+ * 正確率を記録に残すのに要る最低の打鍵数。
+ *
+ * **短すぎる回でベストを取らせないための下限。** 0打鍵だと `accuracy()` が
+ * 100を返すので、スタートして60秒放置しただけで「ベスト正確率 100%」が
+ * 保存され、以後どう打っても更新されない（練習の手がかりという役割を失う）。
+ * 数語だけ打って止めた回も同じで、ミスが出る前に終われば必ず100%になる。
+ *
+ * 20打鍵は、やさしいの語でおよそ4〜5語ぶん。**いちばん遅い人でも60秒あれば
+ * 超えるが、始めてすぐ離席した回は超えない**あたりに置いている
+ * （ページに書いた目安は150 KPM、速い人で300 KPM）。
+ */
+export const MIN_KEYS_FOR_ACCURACY = 20;
+
+/**
+ * 記録に残す正確率。下限に届かない回は `undefined`（＝記録しない）。
+ *
+ * `lib/records.ts` は渡さなかった項目を増やさないので、これを通すだけで
+ * 「短すぎる回はベスト正確率を取らない」が成り立つ。
+ */
+export function recordedAccuracy(result: TypingResult): number | undefined {
+  return result.hits + result.misses >= MIN_KEYS_FOR_ACCURACY ? result.accuracy : undefined;
 }
 
 /** ラウンドの結果を出す */
@@ -220,8 +255,12 @@ export function resultOf(state: TypingState, roundMs: number = ROUND_MS): Typing
  * 記録に残すスコア。**KPMをそのまま使う**。
  *
  * `lib/records.ts` の `bestScore` は「大きいほうが良い」1つの数しか持てないので、
- * 速さ（KPM）を主にし、正確率は画面の結果にだけ出す。
- * 正確率もベストにすると「1打だけ正しく打って100%」が最高記録になってしまう。
+ * 速さ（KPM）をここに入れ、正確率は別項目（`bestAccuracy`）に持つ。
+ * 「1打だけ正しく打って100%」を最高記録にしないための下限は
+ * `recordedAccuracy` 側にある。
+ *
+ * KPMには下限が要らない。打鍵0なら0で、`lib/records.ts` の `positive()` が
+ * 0を記録として扱わないため、放置した回は初めから残らない。
  */
 export function scoreOf(result: TypingResult): number {
   return result.kpm;

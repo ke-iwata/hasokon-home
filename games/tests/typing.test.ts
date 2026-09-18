@@ -8,8 +8,10 @@ import {
   isLevel,
   kpm,
   makeQueue,
+  MIN_KEYS_FOR_ACCURACY,
   orderedGame,
   pressKey,
+  recordedAccuracy,
   resultOf,
   ROUND_MS,
   scoreOf,
@@ -215,6 +217,29 @@ describe('KPM と正確率', () => {
     expect(accuracy(0, 0)).toBe(100);
   });
 
+  /**
+   * **100% は「ミスが1回も無かった回」だけ。**
+   *
+   * 四捨五入をそのまま出していたときは、303打鍵でミス1回でも100%になり、
+   * 結果の行に「正確率 100%」と「（ミス 1）」が並んでいた（レビューで実測）。
+   * 300打鍵前後は普通に出る速度なので、そのまま見えてしまう。
+   */
+  it('ミスが1回でもあれば100%にならない', () => {
+    expect(accuracy(303, 1)).toBe(99);
+    expect(accuracy(9999, 1)).toBe(99);
+  });
+
+  it('ミスが0なら100%（ここだけが100%）', () => {
+    expect(accuracy(4, 0)).toBe(100);
+    expect(accuracy(300, 0)).toBe(100);
+  });
+
+  it('切り捨てにはしない（上の端だけ止める）', () => {
+    // 95.5% は96%のまま。下も丸めると 99.98% が99%になって、今度は過小になる
+    expect(accuracy(191, 9)).toBe(96);
+    expect(accuracy(2, 1)).toBe(67);
+  });
+
   it('resultOf は状態からそのまま結果を作る', () => {
     const state: TypingState = { ...playing(), hits: 300, misses: 20, cleared: 15 };
     expect(resultOf(state)).toEqual({
@@ -226,12 +251,50 @@ describe('KPM と正確率', () => {
     });
   });
 
-  it('記録に残すスコアはKPM（正確率をベストにすると1打100%が最高記録になる）', () => {
+  it('記録に残すスコアはKPM', () => {
     expect(scoreOf(resultOf({ ...playing(), hits: 250, misses: 0, cleared: 12 }))).toBe(250);
   });
 
   it('ラウンドの長さは60秒', () => {
     expect(ROUND_MS).toBe(60_000);
+  });
+});
+
+/**
+ * **記録に残す正確率の下限。**
+ *
+ * `accuracy()` は0打鍵でも100を返す（画面に「正確率0%」と出さないため）ので、
+ * そのまま記録に渡すと**スタートして60秒放置しただけで「ベスト正確率 100%」が
+ * 保存され、以後どう打っても更新されない**（レビューで実測）。
+ * 数語だけ打って止めた回も、ミスが出る前に終われば必ず100%になる。
+ */
+describe('recordedAccuracy（記録に残す正確率）', () => {
+  const round = (hits: number, misses: number) =>
+    resultOf({ ...playing(), hits, misses, cleared: 0 });
+
+  it('1打も打っていない回は記録しない（放置で100%が固定されるのを防ぐ）', () => {
+    expect(recordedAccuracy(round(0, 0))).toBeUndefined();
+  });
+
+  it('下限に届かない回は記録しない（数語だけ打って止めた回）', () => {
+    expect(recordedAccuracy(round(MIN_KEYS_FOR_ACCURACY - 1, 0))).toBeUndefined();
+    expect(recordedAccuracy(round(4, 0))).toBeUndefined();
+  });
+
+  it('下限に届けば記録する', () => {
+    expect(recordedAccuracy(round(MIN_KEYS_FOR_ACCURACY, 0))).toBe(100);
+    expect(recordedAccuracy(round(280, 20))).toBe(93);
+  });
+
+  it('ミスも打鍵数に数える（ミスばかりの回も下限を超えれば記録する）', () => {
+    expect(recordedAccuracy(round(0, MIN_KEYS_FOR_ACCURACY))).toBe(0);
+  });
+
+  it('下限は60秒でいちばん遅い人でも超えられる大きさにする', () => {
+    // ページに書いた目安は150 KPM（速い人で300）。下限がそれに近いと、
+    // 遅い人のベスト正確率がいつまでも記録されない
+    expect(MIN_KEYS_FOR_ACCURACY).toBeGreaterThan(0);
+    expect(MIN_KEYS_FOR_ACCURACY).toBeLessThan(60);
   });
 });
 

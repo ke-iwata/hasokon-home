@@ -10,6 +10,7 @@ import {
   isLevel,
   orderedGame,
   pressKey,
+  recordedAccuracy,
   resultOf,
   ROUND_MS,
   scoreOf,
@@ -194,8 +195,9 @@ export default function Game() {
     if (state.status !== 'finished' || recorded.current) return;
     recorded.current = true;
     const round = resultOf(state);
+    // 正確率は短すぎる回を弾いてから渡す（放置した回で100%が固定されるのを防ぐ）
     const { improved } = records.finish(
-      { score: scoreOf(round), accuracy: round.accuracy },
+      { score: scoreOf(round), accuracy: recordedAccuracy(round) },
       state.level,
     );
     setResult({ ...round, improved });
