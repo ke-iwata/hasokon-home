@@ -84,8 +84,10 @@ export const PUBLISHER = {
   '@id': `${SITE_URL}/#publisher`,
   name: SITE_NAME,
   url: SITE_URL,
-  // 運営者情報のページ。検索エンジンにも利用者にも辿れるようにしておく
-  mainEntityOfPage: `${SITE_URL}/about/`,
+  // 運営者情報のページ。検索エンジンにも利用者にも辿れるようにしておく。
+  // サイト全体で1枚（home 実体の /about.html）で、/tools/about/ は noindex の受け皿
+  // （docs/features/google-index-recovery.md 提案 C）
+  mainEntityOfPage: `${HOME_URL}about.html`,
 } as const;
 
 /** publisher / author の参照（実体は上の PUBLISHER 側に持たせる） */

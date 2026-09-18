@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { toolUpdatedAt } from '@/lib/jsonld';
 
 /** '2026-08-02' → '2026年8月2日' */
@@ -65,8 +64,10 @@ export default function ToolMeta({
       <p style={{ margin: 0 }}>
         最終更新：{formatDate(toolUpdatedAt(slug))}
         {' ／ '}
-        {/* 計算のないツール（ルーレット等）で「計算の根拠」と書くと不自然なので出し分ける */}
-        <Link href="/about/">{ymyl ? '計算の根拠と運営者について' : '運営者情報'}</Link>
+        {/* 計算のないツール（ルーレット等）で「計算の根拠」と書くと不自然なので出し分ける。
+            運営者情報はサイト全体で1枚（home 実体の /about.html）。basePath の外なので
+            <a> で絶対パスへ飛ばす（docs/features/google-index-recovery.md 提案 C） */}
+        <a href="/about.html">{ymyl ? '計算の根拠と運営者について' : '運営者情報'}</a>
       </p>
     </section>
   );
