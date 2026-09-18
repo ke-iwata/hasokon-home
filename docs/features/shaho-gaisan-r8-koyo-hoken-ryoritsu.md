@@ -1,9 +1,11 @@
 # 雇用保険料率の令和8年度改定（5.5 → 5/1,000）が 2ファイルに未反映で、社保概算は令和7年度の料率のまま — 6ツールの数字がずれている
 
-**状態**：提案（2026-09-17 起票、未実装）。**法対応の修正**なので、新機能より先に入れる。
+**状態**：提案（2026-09-17 起票、未実装。同日の企画レビュー（#221）で「料率は葉のモジュールに切り出す」
+「テストの範囲は 5ファイル」の 2点を反映）。**法対応の修正**なので、新機能より先に入れる。
 実装 PR は `fix(tools):`（`lib/`・`tests/` を触るため `docs:` にしない）
-**対象**：`tools/lib/hatarakizon.ts`・`tools/lib/furusato-nozei.ts`・
-`tools/tests/hatarakizon.test.ts`・`tools/tests/furusato-nozei.test.ts`・`tools/tests/nenmatsu-chosei.test.ts`（コメント）
+**対象**：`tools/lib/shaho-ryoritsu.ts`（新規）・`tools/lib/hatarakizon.ts`・`tools/lib/furusato-nozei.ts`・
+`tools/tests/hatarakizon.test.ts`・`tools/tests/furusato-nozei.test.ts`・`tools/tests/nenmatsu-chosei.test.ts`・
+`tools/tests/ideco.test.ts`・`tools/tests/iryohi-kojo.test.ts`・`tools/CLAUDE.md`（運用表に 1行）
 **起票**：2026-09-17
 
 ---
@@ -68,32 +70,63 @@ export function estimateSocialInsurance(income: number, kaigo = false): number {
 
 ## 提案する仕様
 
-### A. 定数を 1か所にして、`estimateSocialInsurance()` は `hatarakizon.ts` の料率を使う
+### A. 料率を**葉のモジュール** `tools/lib/shaho-ryoritsu.ts` に切り出し、両ファイルがそこから import する
 
-- `hatarakizon.ts:90` を `EMPLOYMENT_RATE = 0.005` にし、JSDoc に令和8年度と一次情報（上記 PDF）を書く。
-  冒頭の「■ 一次情報」にも雇用保険料率の行を足す（次の点検で漏れないように）
+**`furusato-nozei.ts` から `hatarakizon.ts` を import してはいけない。**
+`hatarakizon.ts:43-50` は `BASIC_DEDUCTION_DIFF` / `adjustmentDeduction` / `basicDeductionIncomeTax` /
+`basicDeductionResidentTax` / `incomeTaxAmount` / `salaryIncome` を `@/lib/furusato-nozei` から
+import している（ファイル冒頭にも「計算式は lib/furusato-nozei.ts のものをそのまま再利用」とある）。
+逆向きの import を足すと **furusato-nozei ⇄ hatarakizon の循環**になる。定数は関数の中でしか
+使わないので ESM の live binding で動いてしまう可能性はあるが、バンドラの評価順に依存する形を
+「一次情報を 1か所に」の実装で持ち込まない（起票時の「循環 import は起きない」は誤りだった。
+企画レビュー #221 の指摘）。
+
+- **新規 `tools/lib/shaho-ryoritsu.ts`**（名前は任意）に、本人負担・労使折半後の 5定数を置く：
+  `HEALTH_RATE`（0.0495）・`KAIGO_RATE`（0.0081）・`SHIENKIN_RATE`（`kosodate-shienkin.ts` の
+  `FISCAL_YEARS` から現行年度の `rate / 2` を引く。数字を書き写さない）・`PENSION_RATE`（0.0915）・
+  **`EMPLOYMENT_RATE`（0.005。令和8年度。JSDoc に上記 PDF）**。
+  C の点検表コメントもこのファイルの冒頭に置く。
+  import は `@/lib/kosodate-shienkin` だけ（`kosodate-shienkin.ts` は `shaho-grades` しか
+  import しない葉なので循環しない。`furusato-nozei.ts` 自身は import を 1つも持たない）
+- `hatarakizon.ts` は自前の 5定数を消して `shaho-ryoritsu.ts` から import し、
+  **同名で re-export する**（`export { HEALTH_RATE, ... } from '@/lib/shaho-ryoritsu'`）。
+  `tedori-keisan.ts:60`・`tests/tedori-keisan.test.ts:131`・`tests/hatarakizon.test.ts` など
+  既存の import 元は変えない
 - `furusato-nozei.ts` の `estimateSocialInsurance()` は自前の数字を捨て、
-  `import { HEALTH_RATE, KAIGO_RATE, SHIENKIN_RATE, EMPLOYMENT_RATE } from '@/lib/hatarakizon'` で
-  組み立てる（`healthRate = HEALTH_RATE + SHIENKIN_RATE + (kaigo ? KAIGO_RATE : 0)`）。
-  **循環 import は起きない**（`hatarakizon.ts` は `kosodate-shienkin`・`shaho-grades`・`shobyo-teate` しか
-  import しておらず、`furusato-nozei` を見ていない。`tedori-keisan.ts` が両方を import しているのは問題ない）
+  `import { HEALTH_RATE, KAIGO_RATE, SHIENKIN_RATE, PENSION_RATE, EMPLOYMENT_RATE } from '@/lib/shaho-ryoritsu'` で
+  組み立てる（`healthRate = HEALTH_RATE + SHIENKIN_RATE + (kaigo ? KAIGO_RATE : 0)`）
 - 上限（`HEALTH_CAP`・`PENSION_CAP`）と「等級に丸めない概算」という性格はそのまま
   （このツール群は年収ベースの概算で足りる。等級で厳密に出すのは手取り計算機の役割）
+- `tools/CLAUDE.md` の運用表（「毎年3月 | 協会けんぽの料率改定を…」の行）の更新先を
+  `lib/shaho-ryoritsu.ts` に直し、**「毎年4月 | 雇用保険料率（労働者負担）を `lib/shaho-ryoritsu.ts` の
+  `EMPLOYMENT_RATE` に反映」の 1行を足す**（触っても `fix(tools):` のままでよい）
 
 ### B. テストを「率を固定する」形から「一次情報の値を 1か所で見る」形に直す
+
+概算 `estimateSocialInsurance()` に依存する assertion は **5ファイル**にある
+（`git grep -n "socialInsurance: null\|734_500" tools/tests` で洗い出した。起票時の「3ファイル・3行」は不足。
+企画レビュー #221 の指摘）。**方針：実額で固定している期待値は新しい値に付け替える。
+率や大小で見ているもの（「約14.7%」・`toBeGreaterThan`）はそのまま。**
 
 - `tests/hatarakizon.test.ts:91`：`2_400_000 * 0.0055` のべた書きを `EMPLOYMENT_RATE` 経由にし、
   **別に「令和8年度の労働者負担は 5/1,000」を一次情報つきで固定する 1本**を足す
   （率そのものが変わったら落ちる。`tests/tedori-keisan.test.ts:131` は既に `EMPLOYMENT_RATE` 経由なので変更不要）
-- `tests/furusato-nozei.test.ts:162`：`734_500` → `735_750`。「約14.7%」の見出しはそのまま（14.7%）
+- `tests/furusato-nozei.test.ts:162-163`：`734_500` → `735_750`。「約14.7%」の見出しはそのまま（14.7%）。
+  **同 337-339 行**（`socialInsurance: null` で `r.socialInsurance` が `734_500` を期待）も `735_750` へ
 - `tests/nenmatsu-chosei.test.ts:22` のコメント（734,500円＝健保4.99%＋厚年9.15%＋雇用0.55%）を
-  新しい内訳に直す。**`socialInsurance: 734_500` の実額入力はそのままでよい**
+  新しい内訳に直す。**同 189-191 行**（`socialInsurance: null` で `734_500` を期待）は
+  「コメントだけ直す」では落ちるので `735_750` へ。
+  **28 行の `socialInsurance: 734_500` の実額入力はそのままでよい**
   （このテストは「推計に依存させない」ために実額を渡しており、値が現実の年度と
   ずれていてもテストの意図には影響しない。コメントだけ嘘にならないようにする）
+- `tests/ideco.test.ts:259`・`tests/iryohi-kojo.test.ts:35`：**base 入力が `socialInsurance: null`**
+  なので、そのファイル内で金額を固定している assertion は概算の +1,250円ぶんずれる。
+  実額の期待値は付け替え、率・大小・区分で見ているものは触らない（上の方針どおり）
 
 ### C. 「年度で変わる料率」を点検表に載せる
 
-`hatarakizon.ts` の冒頭コメントに、**毎年 3〜4月に見る一次情報**として次の 4行を並べる：
+`shaho-ryoritsu.ts` の冒頭コメントに、**毎年 3〜4月に見る一次情報**として次の 4行を並べる
+（`hatarakizon.ts` の冒頭「■ 一次情報」からは料率の出典を外し、「料率は shaho-ryoritsu.ts」と 1行書く）：
 
 | 料率 | 改定時期 | 一次情報 |
 |---|---|---|
@@ -107,19 +140,20 @@ export function estimateSocialInsurance(income: number, kaigo = false): number {
 | 効果 | 測り方 |
 |---|---|
 | 6ツール（手取り・損得・ふるさと納税・年末調整・iDeCo・医療費控除）の社保概算が令和8年度で揃う | 同じ年収で `calcPremiums().employment` と `estimateSocialInsurance()` の雇用保険分が一致 |
-| 料率の定義が `hatarakizon.ts` の 1か所になり、次の改定（令和9年4月）で 1ファイルだけ直せばよくなる | `grep -rn "0\.005\|0\.0495" tools/lib` が `hatarakizon.ts` だけを返す |
-| 雇用保険料率が点検の対象に入る（出典つき定数になる） | 冒頭コメントの一次情報一覧に雇用保険の行がある |
+| 料率の定義が `shaho-ryoritsu.ts` の 1か所になり、次の改定（令和9年4月）で 1ファイルだけ直せばよくなる | `grep -rn "0\.005\|0\.0495\|0\.0081\|0\.0915" tools/lib` が `shaho-ryoritsu.ts` だけを返す |
+| 雇用保険料率が点検の対象に入る（出典つき定数になり、`tools/CLAUDE.md` の運用表に行がある） | `shaho-ryoritsu.ts` 冒頭の一次情報一覧と CLAUDE.md の表に雇用保険の行がある |
+| 循環 import を持ち込まない | `furusato-nozei.ts` の import が `@/lib/shaho-ryoritsu` の 1行だけ |
 
 ## 工数の見積り
 
 | 作業 | 消費トークン（目安） |
 |---|---|
 | 一次情報の再確認（厚労省 PDF を実装時に読み直す。本ファイルは二次情報 3件と PDF の表題で裏取り） | 10k |
-| A（定数・import・JSDoc・冒頭コメント） | 15k |
-| B（テスト 3ファイル） | 15k |
+| A（`shaho-ryoritsu.ts` 新設・`hatarakizon.ts` の re-export・`furusato-nozei.ts` の import・JSDoc・`tools/CLAUDE.md` の運用表） | 20k |
+| B（テスト 5ファイル） | 20k |
 | C（点検表） | 5k |
 | `npm test && npm run build`、テスト環境での 6ツールの表示確認 | 10k |
-| **合計** | **約55k** |
+| **合計** | **約65k** |
 
 ## やらないこと
 
@@ -130,11 +164,15 @@ export function estimateSocialInsurance(income: number, kaigo = false): number {
 - **令和7年度の料率を残して年度切替を入れる。** 手取り計算機だけが「令和7年分との比較」を持つが、
   それは税（控除）の比較で、保険料は現行年度だけでよい（`tedori-keisan.ts` の設計どおり）
 - **賞与の保険料。** 年収ベースの概算では月給・賞与の配分を持たない（従来どおり）
+- **`furusato-nozei.ts` から `hatarakizon.ts` を直接 import する。** 循環になる（A のとおり）。
+  料率だけを葉に出すのが最小の直し方で、既存の import 元を 1つも変えずに済む
 
 ## 一次情報
 
 - 厚生労働省「令和8年4月1日から令和9年3月31日までの雇用保険料率」
-  https://www.mhlw.go.jp/content/001692566.pdf （一般の事業 13.5/1,000、労働者負担 5/1,000）
+  https://www.mhlw.go.jp/content/001692566.pdf （一般の事業 13.5/1,000、労働者負担 5/1,000）。
+  **本ファイルは二次情報 3件と PDF の表題で裏取りしており、PDF 本文は機械的に読めていない。
+  実装時に PDF 本文で再確認する**（企画レビュー #221 も同条件）
 - 全国健康保険協会「令和8年度の都道府県毎の保険料率」
   https://www.kyoukaikenpo.or.jp/about/business/insurance_rate/rate_prefectures/r08/index.html
   （全国平均 9.9%・介護 1.62%）
