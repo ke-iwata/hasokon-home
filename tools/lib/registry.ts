@@ -286,6 +286,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-09',
   },
   {
+    slug: 'zangyodai-keisan',
+    icon: 'ClockCountdown',
+    name: '残業代（割増賃金）計算機',
+    description:
+      '月給と今月の残業時間から、法定どおりの残業代を計算。1時間あたりの賃金の出しかた（除外できる手当）・月60時間超の5割増・深夜・法定休日の内訳まで出します。時給換算が最低賃金を下回っていないかも同じ画面で判定。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
+  },
+  {
     slug: 'jitensha-hansokukin',
     icon: 'Bicycle',
     name: '自転車の反則金（青切符）早見表・チェッカー',
