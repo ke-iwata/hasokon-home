@@ -138,29 +138,61 @@ describe('休業開始時賃金日額', () => {
   });
 });
 
-describe('出生後休業支援給付の対象期間（一次情報の例1・例3）', () => {
+describe('出生後休業支援給付の対象期間（一次情報の例1〜例4）', () => {
   /**
-   * 一次情報：出生日10月5日 →
-   * 「出生日から起算して8週間を経過する日の翌日は11/30」（産後休業をしない親）、
-   * 「16週間を経過する日の翌日は1/25」（産後休業をする親）。
+   * 対象期間は「子の出生日または出産予定日のうち**早い日**」から
+   * 「**遅い日**から起算して8週間（産後休業をする場合は16週間）を経過する日の翌日」まで。
+   * **始期と終期で見る日が違う**ので、4つの例をそのまま入れて突き合わせる。
    */
-  it('産後休業をしない親（父など）は8週間', () => {
-    const w = shusshogoWindowFor(d('2026-10-05'), 'partner');
+  it('例1：出産予定日（10/1）より後に出生（10/5）・産後休業をしない親', () => {
+    const w = shusshogoWindowFor(d('2026-10-05'), 'partner', d('2026-10-01'));
     expect(w.weeks).toBe(8);
+    expect(formatDate(w.start)).toBe('2026-10-01');
+    expect(formatDate(w.end)).toBe('2026-11-30');
+  });
+
+  it('例2：出産予定日（10/6）より前に出生（10/1）・産後休業をしない親', () => {
+    const w = shusshogoWindowFor(d('2026-10-01'), 'partner', d('2026-10-06'));
+    expect(formatDate(w.start)).toBe('2026-10-01');
+    expect(formatDate(w.end)).toBe('2026-12-01');
+  });
+
+  it('例3：出産予定日（10/1）より後に出生（10/5）・産後休業をする親', () => {
+    const w = shusshogoWindowFor(d('2026-10-05'), 'mother', d('2026-10-01'));
+    expect(w.weeks).toBe(16);
+    expect(formatDate(w.start)).toBe('2026-10-01');
+    expect(formatDate(w.end)).toBe('2027-01-25');
+  });
+
+  it('例4：出産予定日（10/6）より前に出生（10/1）・産後休業をする親', () => {
+    const w = shusshogoWindowFor(d('2026-10-01'), 'mother', d('2026-10-06'));
+    expect(formatDate(w.start)).toBe('2026-10-01');
+    expect(formatDate(w.end)).toBe('2027-01-26');
+  });
+
+  it('出産予定日を省略すると出生日と同じ日として扱う', () => {
+    const w = shusshogoWindowFor(d('2026-10-05'), 'partner');
     expect(formatDate(w.start)).toBe('2026-10-05');
     expect(formatDate(w.end)).toBe('2026-11-30');
   });
 
-  it('産後休業をする親（出産した本人）は16週間', () => {
-    const w = shusshogoWindowFor(d('2026-10-05'), 'mother');
-    expect(w.weeks).toBe(16);
-    expect(formatDate(w.end)).toBe('2027-01-25');
-  });
-
-  it('出産予定日より前に出生した例（一次情報の例2・例4は起算日が出産予定日）', () => {
-    // 起算日に出産予定日10/6を渡すと、8週間 → 12/1、16週間 → 1/26
-    expect(formatDate(shusshogoWindowFor(d('2026-10-06'), 'partner').end)).toBe('2026-12-01');
-    expect(formatDate(shusshogoWindowFor(d('2026-10-06'), 'mother').end)).toBe('2027-01-26');
+  /**
+   * **始期にまで遅いほうの日を使うと、もらえる人を取りこぼす。**
+   * 予定日より早く生まれて出生日から産後パパ育休に入るのは典型的な形で、
+   * 始期を予定日まで遅らせると重なりが14日を切って「対象外」と出てしまう。
+   */
+  it('予定日より早く出生し、出生日から14日の産後パパ育休 → 13%が付く（例2の日程）', () => {
+    const r = calcIkujiKyugyo(
+      input({
+        birthDate: d('2026-10-01'),
+        dueDate: d('2026-10-06'),
+        leaveStart: d('2026-10-01'),
+        leaveEnd: d('2026-10-14'),
+      }),
+    );
+    expect(r.shusshogo.overlapDays).toBe(14);
+    expect(r.shusshogo.shortOfMinDays).toBe(false);
+    expect(r.totalShusshogo).toBe(18_200);
   });
 });
 
@@ -303,23 +335,39 @@ describe('給付率67% → 50% の段差', () => {
   });
 
   /**
-   * ちょうど6ヶ月の育休は「180日まで67%」の枠にぴったり収まる。
-   * 最後の支給単位期間の暦日が31日あっても支給日数を30日で止めないと、
-   * 支給日数が181日になって「最後の1日だけ50%」という制度に無い段差が出る。
+   * **休業終了日を含む支給単位期間だけは実日数**（一次情報16頁 ※2）。
+   * 暦で31日ある最終期間は31日で、ちょうど6ヶ月の育休は通算181日になる。
+   * 181日目は50%——これは制度の規則そのままの帰結なので、30日に丸めない。
    */
-  it('6ヶ月で終わる育休は50%の期間に届かない', () => {
+  it('ちょうど6ヶ月の育休は最終期間が実日数31日になり、181日目だけ50%', () => {
     const r = calcIkujiKyugyo(input({ leaveMonths: 6 }));
     expect(r.periods).toHaveLength(6);
-    expect(r.periods.at(-1)?.calendarDays).toBe(31);
+
+    const last = r.periods.at(-1);
+    expect(last?.calendarDays).toBe(31);
+    expect(last?.payDays).toBe(31);
+    expect(last?.days67).toBe(30);
+    expect(last?.days50).toBe(1);
+    expect(last?.ikuji).toBe(Math.floor(10_000 * 30 * RATE_EARLY + 10_000 * 1 * RATE_LATE));
+
+    expect(r.payDays).toBe(HIGH_RATE_DAYS + 1);
+    expect(r.days67).toBe(HIGH_RATE_DAYS);
+    expect(r.days50).toBe(1);
+    expect(r.reachesLateRate).toBe(true);
+  });
+
+  it('最終期間が30日以下なら通算180日に届かない', () => {
+    // 10/5開始・2027/4/3終了（6ヶ月に1日足りない）→ 最終期間は30日
+    const r = calcIkujiKyugyo(input({ leaveEnd: d('2027-04-03') }));
     expect(r.periods.at(-1)?.payDays).toBe(UNIT_PERIOD_PAY_DAYS);
     expect(r.payDays).toBe(HIGH_RATE_DAYS);
     expect(r.days50).toBe(0);
-    expect(r.reachesLateRate).toBe(false);
   });
 
-  it('支給日数は1つの支給単位期間で30日を超えない', () => {
+  it('途中の支給単位期間は暦日数にかかわらず30日', () => {
     const r = calcIkujiKyugyo(input({ leaveMonths: 12 }));
-    expect(r.periods.every((p) => p.payDays <= UNIT_PERIOD_PAY_DAYS)).toBe(true);
+    expect(r.periods.slice(0, -1).every((p) => p.payDays === UNIT_PERIOD_PAY_DAYS)).toBe(true);
+    expect(r.periods.slice(0, -1).some((p) => p.calendarDays !== UNIT_PERIOD_PAY_DAYS)).toBe(true);
   });
 
   it('取得期間は12ヶ月で頭打ちにする（延長は扱わない）', () => {

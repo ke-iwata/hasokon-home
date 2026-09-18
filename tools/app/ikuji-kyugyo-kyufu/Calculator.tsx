@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatJa, parseDate } from '@/lib/date-parts';
 import {
+  HIGH_RATE_DAYS,
   LEAVE_MONTHS_MAX,
   RATE_SHUSSHOGO,
   SHUSSHOGO_MAX_DAYS,
@@ -22,12 +23,12 @@ const PARENTS: { value: ParentType; label: string; hint: string }[] = [
   {
     value: 'mother',
     label: '出産した本人（産後休業をする）',
-    hint: '産後休業（出生日の翌日から8週間）のあとに育児休業に入ります。出生後休業支援給付の対象期間は、出生日から16週間を経過する日の翌日までです。',
+    hint: '産後休業（出生日の翌日から8週間）のあとに育児休業に入ります。出生後休業支援給付の対象期間は、出生日または出産予定日のうち遅い日から16週間を経過する日の翌日までです。',
   },
   {
     value: 'partner',
     label: '配偶者（父など・産後休業をしない）',
-    hint: '出生日から育児休業（産後パパ育休を含む）を取れます。出生後休業支援給付の対象期間は、出生日から8週間を経過する日の翌日までです。',
+    hint: '出生日から育児休業（産後パパ育休を含む）を取れます。出生後休業支援給付の対象期間は、出生日または出産予定日のうち遅い日から8週間を経過する日の翌日までです。',
   },
 ];
 
@@ -49,6 +50,13 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const [monthly, setMonthly] = useState('300000');
   const [parent, setParent] = useState<ParentType>('mother');
   const [birth, setBirth] = useState(() => buildDate.slice(0, 10));
+  /**
+   * 出産予定日。**空なら出生日と同じ日として扱う。**
+   * 対象期間は「出生日と出産予定日の早いほう」から「遅いほうから8週間／16週間」までで、
+   * 始期と終期で見る日が違うため、1つの日付では表せない。
+   * 予定日どおりに生まれた人に2つ目の日付を強いないよう、任意入力にしている。
+   */
+  const [due, setDue] = useState('');
   const [months, setMonths] = useState('12');
   const [shusshogo, setShusshogo] = useState<ShusshogoAnswer>('yes');
   /**
@@ -63,6 +71,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   }, []);
 
   const birthDate = parseDate(birth);
+  const dueDate = parseDate(due) ?? undefined;
   const suggested = birthDate ? defaultLeaveStart(birthDate, parent) : null;
   const suggestedStart = suggested ? formatDate(suggested) : '';
   const startValue = startEdited && start !== '' ? start : suggestedStart;
@@ -74,12 +83,13 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
       totalWage6m: (Number(monthly) || 0) * 6,
       parent,
       birthDate,
+      dueDate,
       leaveStart: startDate,
       leaveMonths: Number(months) || 12,
       shusshogo,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthly, parent, birth, startValue, months, shusshogo]);
+  }, [monthly, parent, birth, due, startValue, months, shusshogo]);
 
   return (
     <div className="card">
@@ -128,6 +138,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             />
           </div>
           <div>
+            <label htmlFor="ik-due">出産予定日（出生日と違う場合）</label>
+            <input id="ik-due" type="date" value={due} onChange={(e) => setDue(e.target.value)} />
+          </div>
+          <div>
             <label htmlFor="ik-start">育児休業の開始日</label>
             <input
               id="ik-start"
@@ -141,9 +155,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </div>
         </div>
         <p className="hint">
-          出生後休業支援給付の対象期間は出生日から数えます（
-          <strong>出産予定日のほうが遅ければ出産予定日を入れてください</strong>。
-          予定日と出生日がずれると対象期間も数日ずれます）。 開始日には、選んだ立場での最短の日を
+          出産予定日は<strong>出生日と違うときだけ</strong>入れてください（空なら出生日と同じ
+          として計算します）。対象期間は「出生日と出産予定日の<strong>早いほう</strong>」から
+          「<strong>遅いほう</strong>から8週間（産後休業をする場合は16週間）」までなので、
+          予定日とずれて生まれた場合は期間が数日のびます。 開始日には、選んだ立場での最短の日を
           入れてあります（出産した本人は産後休業の8週間が明けた日）。予定が決まっていれば
           書き換えてください。
           {suggested && startValue !== suggestedStart && (
@@ -198,7 +213,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         </div>
         <p className="hint">
           出生後休業支援給付は、<strong>原則として両親がともに14日以上の育児休業</strong>を
-          対象期間内に取ると、最大{SHUSSHOGO_MAX_DAYS}日ぶん13%が上乗せされる給付です。
+          取ると、最大{SHUSSHOGO_MAX_DAYS}日ぶん13%が上乗せされる給付です。
+          本人は下に出る<strong>対象期間</strong>の中で14日以上、
+          <strong>配偶者は出生日等から8週間以内</strong>に14日以上で見ます
+          （本人が産後休業をする場合も、配偶者側の窓は8週間のままです）。
           配偶者が無業・自営業・産後休業中などの場合は、本人だけの休業でも対象になります。
           1歳6ヶ月・2歳までの延長給付、パパ・ママ育休プラスはこの計算機では扱いません。
         </p>
@@ -237,14 +255,16 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             1期間 = 1枚の縦積みカードにしている（仕様書の表示の約束）。
           */}
           {r.periods.map((p) => {
+            // 期間の全部が同じ率とは限らない。13%が付くのは対象期間内の日だけ
+            // （30日の期間に28日ぶんなど）で、通算180日の境目も期間の途中に来うる。
+            // チップに率だけ出すと期間ぜんぶがその率に見えるので、日数を添える
+            const base = p.days50 === 0 ? '67%' : p.days67 === 0 ? '50%' : '67%→50%';
             const rate =
               p.shusshogoDays > 0
-                ? '80%'
-                : p.days50 === 0
-                  ? '67%'
-                  : p.days67 === 0
-                    ? '50%'
-                    : '67%→50%';
+                ? p.shusshogoDays === p.payDays
+                  ? '80%'
+                  : `80%（${p.shusshogoDays}日分）→ ${base}`
+                : base;
             return (
               <div key={p.index} className="panel quiet" style={{ marginTop: 10 }}>
                 <div
@@ -272,10 +292,18 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                       {fmtYen(p.shusshogo)}（{p.shusshogoDays}日分）
                     </>
                   )}
-                  {p.isFinal && p.payDays < 30 && (
+                  {p.isFinal && p.payDays !== 30 && (
                     <>
                       <br />
-                      休業終了日を含む期間なので、支給日数は終了日までの{p.payDays}日です。
+                      休業終了日を含む期間なので、支給日数は原則の30日ではなく
+                      終了日までの{p.payDays}日です。
+                    </>
+                  )}
+                  {p.days67 > 0 && p.days50 > 0 && (
+                    <>
+                      <br />
+                      この期間の途中で通算{HIGH_RATE_DAYS}日に達するため、{p.days67}日分が67%、
+                      残り{p.days50}日分が50%です。
                     </>
                   )}
                 </p>

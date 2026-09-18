@@ -17,9 +17,10 @@
  *   「実質10割」も社会保険料免除・非課税を前提にした概算で、**住民税は前年所得
  *   ベースなので休業中も課税される**（人によっては10割に届かない）
  * - **出生後休業支援給付の対象期間の起算は、産後休業をするかどうかで変わる。**
- *   産後休業をしない親（父など）は「子の出生日（出産予定日のうち遅い日）から
+ *   産後休業をしない親（父など）は「子の出生日**または**出産予定日のうち遅い日から
  *   8週間を経過する日の翌日」まで、産後休業をする親（出産した本人）は同じ起算日から
- *   **16週間**を経過する日の翌日まで。1本の式で書くと28日の位置がずれる
+ *   **16週間**を経過する日の翌日まで。1本の式で書くと28日の位置がずれる。
+ *   **始期は「早い日」で終期は「遅い日」起算**と非対称なので、1つの日付では表せない
  * - **上限・下限は基本手当（失業保険）の賃金日額の表とは別表**で、年齢区分も無い。
  *   `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` を流用してはいけない
  *   （たまたま30〜44歳の上限額と同額だが、根拠が違うので別々に持つ）
@@ -190,21 +191,39 @@ export interface ShusshogoWindow {
 /**
  * 出生後休業支援給付金の対象期間を出す。
  *
- * 一次情報の言い方は「子の出生日または出産予定日のうち早い日」から
+ * 一次情報の言い方は「子の出生日または出産予定日のうち**早い日**」から
  * 「子の出生日または出産予定日のうち**遅い日**から起算して8週間（産後休業を
  * する場合は16週間）を経過する日の翌日」まで。
  *
+ * **始期と終期で見る日が違う（非対称）。** 出生日と出産予定日が違うとき、
+ * 両方に同じ日を使うと期間が実際より短くなる。とくに
+ * **予定日より早く生まれて、出生日から産後パパ育休に入る**という典型的な形で、
+ * 「早い日」＝出生日から始まるはずの期間を予定日まで遅らせてしまい、
+ * 14日以上の要件を満たしている人に「対象外」と出す（実際にそう出ていた）。
+ *
  * 起算日を1日目として8週間（56日）を経過する日は `起算日 + 55日` で、
  * その翌日は `起算日 + 56日` ＝ `起算日 + 8週間`。よって末日は
- * 「起算日 + 週数×7日」になる（一次情報の例：出生日10月5日 → 11月30日、
- * 産後休業をする場合は 1月25日）。
+ * 「遅い日 + 週数×7日」になる。一次情報の例と合わせると:
  *
- * **出産予定日と出生日が違う場合、実際の対象期間は数日ずれる。**
- * ここでは片方（`birthDate`）しか受け取らないので、画面でその旨を断ること。
+ * | 例 | 出生日 | 出産予定日 | 産後休業 | 対象期間 |
+ * |---|---|---|---|---|
+ * | 1 | 10/5 | 10/1 | しない | 10/1〜**11/30** |
+ * | 2 | 10/1 | 10/6 | しない | 10/1〜**12/1** |
+ * | 3 | 10/5 | 10/1 | する | 10/1〜**1/25** |
+ * | 4 | 10/1 | 10/6 | する | 10/1〜**1/26** |
+ *
+ * @param dueDate 出産予定日。省略すると出生日と同じ日として扱う
  */
-export function shusshogoWindowFor(birthDate: DateParts, parent: ParentType): ShusshogoWindow {
+export function shusshogoWindowFor(
+  birthDate: DateParts,
+  parent: ParentType,
+  dueDate?: DateParts,
+): ShusshogoWindow {
   const weeks = shusshogoWeeksFor(parent);
-  return { start: birthDate, end: addDays(birthDate, weeks * 7), weeks };
+  const due = dueDate ?? birthDate;
+  const earlier = compareDate(birthDate, due) <= 0 ? birthDate : due;
+  const later = compareDate(birthDate, due) >= 0 ? birthDate : due;
+  return { start: earlier, end: addDays(later, weeks * 7), weeks };
 }
 
 /**
@@ -360,8 +379,13 @@ export interface IkujiKyugyoInput {
   totalWage6m: number;
   /** 育休を取る本人の立場（対象期間の起算が変わる） */
   parent: ParentType;
-  /** 子の出生日（出産予定日のほうが遅ければ出産予定日） */
+  /** 子の出生日 */
   birthDate: DateParts;
+  /**
+   * 出産予定日。省略すると出生日と同じ日として扱う。
+   * **出生日と違うと対象期間の始期・終期が別々に動く**（`shusshogoWindowFor`）
+   */
+  dueDate?: DateParts;
   /** 育児休業の開始日 */
   leaveStart: DateParts;
   /** 取得予定期間（月数）。`leaveEnd` を渡すときは使われない */
@@ -426,7 +450,7 @@ export function calcIkujiKyugyo(input: IkujiKyugyoInput): IkujiKyugyoResult {
   const leaveEnd =
     compareDate(leaveEndRaw, input.leaveStart) < 0 ? input.leaveStart : leaveEndRaw;
 
-  const window = shusshogoWindowFor(input.birthDate, input.parent);
+  const window = shusshogoWindowFor(input.birthDate, input.parent, input.dueDate);
   const answer = input.shusshogo ?? 'unknown';
   const overlap = overlapDays(input.leaveStart, leaveEnd, window.start, window.end);
   const shortOfMinDays = overlap < SHUSSHOGO_MIN_LEAVE_DAYS;
@@ -439,14 +463,16 @@ export function calcIkujiKyugyo(input: IkujiKyugyoInput): IkujiKyugyoResult {
   let shusshogoAssignedAmount = 0;
 
   for (const [i, span] of unitPeriodsBetween(input.leaveStart, leaveEnd).entries()) {
-    // 支給日数は原則30日で、休業終了日を含む期間だけ「休業終了日までの日数」。
-    // **30日を超えさせない。** 期間の暦日が31日あっても支給日数は30日で、
-    // 支給上限額（一次情報）も支給日数30日を前提に示されている。
-    // ここを実日数のままにすると、ちょうど6ヶ月の育休で支給日数が181日になり
-    // 「最後の1日だけ50%」という制度に無い段差が出る
-    const payDays = span.isFinal
-      ? Math.min(span.calendarDays, UNIT_PERIOD_PAY_DAYS)
-      : UNIT_PERIOD_PAY_DAYS;
+    // 支給日数は原則30日で、**休業終了日を含む期間だけ「休業終了日までの日数」**
+    // （一次情報16頁 ※2）。暦で31日ある最終期間は31日になる。
+    //
+    // かつて30日で頭打ちにしていた（ちょうど6ヶ月の育休で通算181日になり
+    // 「最後の1日だけ50%」と出るのを段差の作り込みすぎと見たため）が、
+    // **この段差は制度のほう**にある（通算180日を超えた日は50%、という規則の
+    // そのままの帰結）。丸めるとページの説明とも食い違うので実日数に戻した
+    const payDays = span.isFinal ? span.calendarDays : UNIT_PERIOD_PAY_DAYS;
+    // 1つの支給単位期間の中で67%と50%に割れることがある
+    // （通算180日の境目が期間の途中に来るとき。暦31日の最終期間で実際に起きる）
     const days67 = Math.max(0, Math.min(HIGH_RATE_DAYS - paidDays, payDays));
     const days50 = payDays - days67;
     const ikuji = Math.floor(w * days67 * RATE_EARLY + w * days50 * RATE_LATE);
