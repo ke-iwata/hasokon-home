@@ -54,6 +54,13 @@
   /* 麻雀ソリティアの卓。牌は明暗どちらでも象牙色のままなので、
      地は暗い緑に固定して牌を浮かせる（明るい地だと牌の輪郭が沈む） */
   --mj-felt: #2f6b4c;
+
+  /* 箱入り娘の駒。**娘だけがアクセント色**で、ほかの3種類は
+     「形＋落ち着いた色」で見分ける（盤の地 --surface-2 から浮く明度にそろえる）。
+     娘以外に強い色を使うと、どれを出口へ運ぶのかが一目で分からなくなる */
+  --hm-tall: #ded5c6;
+  --hm-wide: #ccd7dc;
+  --hm-piece-border: #b9b2a8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -74,6 +81,10 @@
     --ok: #4ade80;
     --warn-bg: #2a2213;
     --warn-border: #b98a2a;
+
+    --hm-tall: #4a423a;
+    --hm-wide: #384750;
+    --hm-piece-border: #57504a;
 
     --cell-closed: #3f3a36;
     --cell-closed-hi: #524b46;
@@ -1372,6 +1383,131 @@ ol {
 
 .cs-game .btn:disabled:hover {
   border-color: var(--border);
+}
+
+/* ---- 箱入り娘 ----
+
+   **盤が縦長（4横 × 5縦）の唯一のゲーム**なので、「盤を画面の高さに合わせる」節の
+   共通指定（正方形が前提）には乗せられない。盤の高さを `100dvh - --chrome` に
+   収めたいので、**幅の上限はその 4/5** になる（縦横比から逆算する）。
+   `--chrome` は盤以外が使う高さの実測値、`--board-max` は広い画面での上限。
+   `Game.tsx` から幅をインラインで渡さないこと（渡すとこの制限ごと消える）。
+
+   下限の180pxは「1マス45px」（押す先の下限44pxを丸めで割り込まない大きさ）×4マス。
+   ここは譲らない（詰めるより盤が画面から少しはみ出すほうを選ぶ） */
+.hm-board {
+  --chrome: 475px;
+  --board-max: 400px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-width: min(var(--board-max), max(180px, calc((100dvh - var(--chrome)) * 4 / 5)));
+  margin: 0 auto;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* はらう操作をページのスクロールに取られない */
+  touch-action: none;
+}
+
+/* 空きマスの押し先。駒より先に置いて下に敷く（駒を選んでから行き先を押す操作）。
+   見た目は持たない（マス目の線を引くと、駒の隙間と二重の格子に見える） */
+.hm-cell {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+}
+
+/* 駒。位置と大きさは `Game.tsx` が % で渡す（マス目そのもの）。
+   **動きは left / top の transition に任せる**。「動いている途中」という状態を
+   持たずに済み、ロジック（lib/）に演出が混ざらない（画面の約束9） */
+.hm-piece {
+  position: absolute;
+  padding: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  transition:
+    left 130ms ease-out,
+    top 130ms ease-out;
+}
+
+/* 駒の面。**文字が載るのは娘だけ**（同じ形の駒は遊ぶうえで区別する必要がない） */
+.hm-piece > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hm-piece-border);
+  font-size: clamp(0.9rem, 5vw, 1.4rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hm-daughter > span {
+  background: var(--accent);
+  border-color: var(--accent-strong);
+  color: var(--on-accent);
+}
+
+.hm-tall > span {
+  background: var(--hm-tall);
+}
+
+.hm-wide > span {
+  background: var(--hm-wide);
+}
+
+.hm-small > span {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* 選んでいる駒。**輪郭と浮きの2つで示す**（色だけに頼らない） */
+.hm-piece.selected > span {
+  box-shadow: 0 0 0 3px var(--accent);
+  border-color: var(--accent);
+}
+
+/* 出口（下辺の中央2マス）。盤の下の縁に太い線で示す */
+.hm-exit {
+  position: absolute;
+  left: 25%;
+  width: 50%;
+  bottom: -2px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* レベル選び。**畳まない**（画面の約束5）。区分ごとに1段、狭ければ折り返す */
+.hm-levels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 0;
+}
+
+/* 押せない局面でもボタンを消さない（消すと段が詰まって盤の位置が動く） */
+.hm-game .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.hm-game .btn:disabled:hover {
+  border-color: var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-piece {
+    transition: none;
+  }
 }
 
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
@@ -4181,6 +4317,20 @@ button.hf-card {
 
   .cs-pattern {
     font-size: 0.78rem;
+  }
+
+  /* ---- 箱入り娘 ----
+     狭い画面ではレベルの2段（区分の見出し＋ボタン）とボタンの段で
+     盤以外が広い画面より増える。375×667の内訳はパンくず22・見出し36・
+     リード55・レベル80・ボタン44・状態26・記録の帯32・結果43・見かた23＋余白で
+     実測およそ400px。少し余裕を見た430pxを入れて、そのぶん盤を小さくする */
+  .hm-board {
+    --chrome: 495px;
+  }
+
+  .hm-levels {
+    gap: 6px 8px;
+    margin: 8px 0;
   }
 
   /* ---- ヨット ----
