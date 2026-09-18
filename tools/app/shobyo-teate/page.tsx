@@ -138,7 +138,7 @@ export default function Page() {
       <ToolMeta slug="shobyo-teate" ymyl>
         出典：
         <a
-          href="https://www.kyoukaikenpo.or.jp/g6/cat620/r306/"
+          href="https://www.kyoukaikenpo.or.jp/benefit/injury_and_sickness_allowance/"
           target="_blank"
           rel="nofollow noopener noreferrer"
         >

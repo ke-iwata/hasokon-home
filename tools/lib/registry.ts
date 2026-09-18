@@ -278,6 +278,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'shussan-teate',
+    icon: 'CalendarHeart',
+    name: '出産手当金・出産育児一時金 計算機',
+    description:
+      '産休中にもらえる出産手当金と出産育児一時金を、出産予定日と月給から計算。産前42日（多胎98日）・産後56日の支給期間と、予定日より遅れた分の上乗せまで日付で出します。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
+  },
+  {
     slug: 'kogaku-ryoyohi',
     icon: 'Hospital',
     name: '高額療養費 自己負担限度額 計算機',
