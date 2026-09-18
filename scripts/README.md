@@ -97,6 +97,12 @@ Search Console の画面と突き合わせるときはそのまま比べてく�
 **未登録のうちは警告を出して計測を飛ばす**ので、ジョブは緑のままです
 （登録するまで毎週失敗のメールが飛ぶのを避けるため）。
 
+登録の手順：リポジトリの **Settings → Secrets and variables → Actions → New repository secret**。
+Name は `GOOGLE_SERVICE_ACCOUNT_JSON`、Secret にはサービスアカウントの JSON を
+**そのまま貼り付け**ます（下の「認証」のとおり base64 で包んでも読みます）。
+登録したら **Actions → GSC audit → Run workflow** で1回手で回し、
+artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
+
 終了コード 1（統合が未完了・検査に失敗したURLがある）ではジョブを落としません。
 いまは 1 がふつうの状態だからです。落とすのは 2（実行できなかった）のときだけです。
 

@@ -247,6 +247,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-19',
   },
   {
+    slug: 'ikuji-kyugyo-kyufu',
+    icon: 'BabyCarriage',
+    name: '育児休業給付金 計算機',
+    description:
+      '育休でいくらもらえるかを支給単位期間ごとの推移で計算。出生後休業支援給付（+13%）を足した最初の28日の80%から、67%・50%への段差までを出します。令和8年8月1日改定の上限額（賃金日額16,540円）に対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-10',
+  },
+  {
     slug: 'shobyo-teate',
     icon: 'FirstAidKit',
     name: '傷病手当金 計算機',
