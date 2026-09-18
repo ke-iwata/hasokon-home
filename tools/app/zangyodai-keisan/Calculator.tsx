@@ -8,6 +8,7 @@ import {
   DEFAULT_ANNUAL_WORK_DAYS,
   MONTHLY_OVERTIME_THRESHOLD,
   calcZangyodai,
+  displayBreakdown,
   displayYen,
   hoursFrom,
   workDaysFromHolidays,
@@ -173,10 +174,15 @@ export default function Calculator() {
   );
 
   const r = calcZangyodai(input);
+  // 行の和と合計がずれないよう、画面に出す金額はすべて displayBreakdown から取る
+  const d = displayBreakdown(r, rounding);
   // 端数処理を切り替えたときの差を1行で出すため、もう一方も計算しておく
   const otherRounding: RoundingMode = rounding === 'strict' ? 'simplified' : 'strict';
-  const other = calcZangyodai({ ...input, rounding: otherRounding });
-  const roundingDiff = displayYen(other.total, otherRounding) - displayYen(r.total, rounding);
+  const other = displayBreakdown(
+    calcZangyodai({ ...input, rounding: otherRounding }),
+    otherRounding,
+  );
+  const roundingDiff = other.total - d.total;
 
   const check = r.minWageCheck;
 
@@ -463,7 +469,8 @@ export default function Calculator() {
               />
             </div>
             <p className="hint">
-              求人票や給与明細に「みなし残業◯時間分（◯円）」と書かれている額と時間数です。無ければ0のままで構いません。
+              求人票や給与明細に「みなし残業◯時間分（◯円）」と書かれている額と時間数です。
+              無ければ0のままで構いません。<strong>月額と時間数の両方</strong>を入れると突き合わせます。
             </p>
           </div>
 
@@ -490,7 +497,7 @@ export default function Calculator() {
 
       <div className="panel">
         <div className="metric">
-          <span className="value">{displayYen(r.total, rounding).toLocaleString('ja-JP')}</span>
+          <span className="value">{d.total.toLocaleString('ja-JP')}</span>
           <span className="unit">円</span>
           <span className="label">
             が今月の残業代（法定の最低限度
@@ -511,7 +518,7 @@ export default function Calculator() {
         </p>
       </div>
 
-      {r.rows.length > 0 && (
+      {d.rows.length > 0 && (
         <table>
           <thead>
             <tr>
@@ -521,14 +528,15 @@ export default function Calculator() {
             </tr>
           </thead>
           <tbody>
-            {r.rows.map((row) => (
+            {d.rows.map((row) => (
               <tr key={row.key}>
                 <td style={{ textAlign: 'left' }}>
                   {row.label}
                   <span style={{ color: 'var(--muted)' }}>（{rateLabel(row.rate)}）</span>
                 </td>
                 <td>{hoursLabel(row.hours)}h</td>
-                <td>{dispYen(row.amount, rounding)}</td>
+                {/* 390px で「123,980」と「円」が2行に折れるので1行に固定する */}
+                <td style={{ whiteSpace: 'nowrap' }}>{yen(row.displayAmount)}</td>
               </tr>
             ))}
             <tr>
@@ -536,8 +544,8 @@ export default function Calculator() {
                 <strong>合計</strong>
               </td>
               <td />
-              <td>
-                <strong>{dispYen(r.total, rounding)}</strong>
+              <td style={{ whiteSpace: 'nowrap' }}>
+                <strong>{yen(d.total)}</strong>
               </td>
             </tr>
           </tbody>
@@ -553,15 +561,15 @@ export default function Calculator() {
 
       <div className="panel quiet">
         <dl className="kv">
-          {r.grossWithOvertime !== undefined && (
+          {d.grossWithOvertime !== undefined && (
             <div>
               <dt>残業代込みの今月の額面</dt>
-              <dd>{dispYen(r.grossWithOvertime, rounding)}</dd>
+              <dd>{yen(d.grossWithOvertime)}</dd>
             </div>
           )}
           <div>
             <dt>同じ残業が1年続いた場合の残業代</dt>
-            <dd>{dispYen(r.annualOvertime, rounding)}</dd>
+            <dd>{yen(d.annualOvertime)}</dd>
           </div>
           {r.overtimeOver60 > 0 && (
             <div>
@@ -570,7 +578,7 @@ export default function Calculator() {
             </div>
           )}
         </dl>
-        {r.grossWithOvertime !== undefined && (
+        {d.grossWithOvertime !== undefined && (
           <p className="hint" style={{ marginBottom: 0 }}>
             この額面から手取りがいくらになるかは{' '}
             <Link href="/tedori-keisan/">手取り計算機</Link> で計算できます。
@@ -582,7 +590,7 @@ export default function Calculator() {
         <div className="panel quiet">
           <strong>固定残業代（みなし残業）との差額</strong>
           <p className="hint" style={{ marginBottom: 0 }}>
-            固定分の{hoursLabel(r.fixedOvertime.hours)}時間を法定どおり払うと{' '}
+            固定分の{hoursLabel(r.fixedOvertime.hours)}時間を法定どおり（1時間あたりの賃金 ×1.25）払うと{' '}
             {dispYen(r.fixedOvertime.requiredYen, rounding)} です。
             {r.fixedOvertime.sufficient ? (
               <>入力された{yen(r.fixedOvertime.amount)}はこれを満たしています。</>
@@ -593,15 +601,19 @@ export default function Calculator() {
                 （固定残業代は、その時間数を法定の割増で払える額である必要があります）。
               </>
             )}{' '}
-            今月の残業代{dispYen(r.total, rounding)}のうち、固定残業代を超える分は{' '}
-            <strong>{dispYen(r.fixedOvertime.differenceYen, rounding)}</strong> です。
-            {r.fixedOvertime.differenceYen <= 0 &&
-              '（今月は固定分の範囲に収まっているため、差額はありません。）'}
+            今月の<strong>時間外労働</strong>の割増賃金{yen(d.overtimeTotal)}のうち、固定残業代を超える分は{' '}
+            <strong>{yen(d.fixedDifferenceYen ?? 0)}</strong> です。
+            {(d.fixedDifferenceYen ?? 0) <= 0 &&
+              '（今月の時間外労働は固定分の範囲に収まっているため、差額はありません。）'}
+            <br />
+            <strong>法定休日・深夜の加算・法定内残業の分は、固定残業代とは別に支払われます</strong>
+            （固定残業代を「時間外◯時間分」として比べているためです。就業規則で休日・深夜も
+            含むと定めている場合は、その分も固定残業代の中に入ります）。
           </p>
         </div>
       )}
 
-      {r.total > 0 && roundingDiff !== 0 && (
+      {d.total > 0 && roundingDiff !== 0 && (
         <p className="hint">
           端数処理を「{rounding === 'strict' ? '通達の簡便法' : '法令どおり'}」にすると{' '}
           <strong>

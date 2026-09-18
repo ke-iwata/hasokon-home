@@ -5,6 +5,7 @@ import {
   MONTHLY_OVERTIME_THRESHOLD,
   PREMIUM_RATES,
   calcZangyodai,
+  displayBreakdown,
   displayYen,
   hoursFrom,
   monthlyAverageHours,
@@ -273,6 +274,29 @@ describe('端数処理（基発150号の簡便法）', () => {
     expect(Number.isInteger(r.total)).toBe(true);
   });
 
+  /**
+   * 基発150号(1) の対象は「時間外労働、休日労働及び深夜業」だけ。
+   * 法定内残業まで丸めると、20分＝通常の賃金が落ちる（全額払いの原則に触れる方向）。
+   */
+  it('簡便法でも法定内残業の時間は丸めない', () => {
+    const r = calcZangyodai({
+      ...base,
+      rounding: 'simplified',
+      hours: { withinStatutory: hoursFrom(3, 20) },
+    });
+    expect(r.hours.withinStatutory).toBeCloseTo(hoursFrom(3, 20), 6);
+    expect(r.total).toBe(roundYenSimplified(1_837 * 1 * hoursFrom(3, 20)));
+  });
+
+  it('簡便法では深夜の合計にも30分ルールが当たる', () => {
+    const r = calcZangyodai({
+      ...base,
+      rounding: 'simplified',
+      hours: { overtime: 5, overtimeNight: hoursFrom(2, 40) },
+    });
+    expect(r.nightHours).toBe(3);
+  });
+
   it('法令どおり（既定）は丸めない', () => {
     const r = calcZangyodai({ ...base, hours: { overtime: hoursFrom(10, 29) } });
     expect(r.hours.overtime).toBeCloseTo(hoursFrom(10, 29), 6);
@@ -306,6 +330,41 @@ describe('固定残業代（みなし残業）', () => {
     expect(r.fixedOvertime?.exceedsHours).toBe(true);
   });
 
+  /**
+   * 固定残業代は「時間外◯時間分」として比べる（`requiredYen` が ×1.25 なので）。
+   * 合計と比べると、時間外が固定分に満たない月に**法定休日の分を固定残業代が吸収**して
+   * しまい、受け取れる額を少なく出す。よくある月なので足りないほうへ間違わせない。
+   */
+  it('法定休日・深夜・法定内残業の分は固定残業代で相殺しない', () => {
+    const r = calcZangyodai({
+      ...base,
+      hours: { overtime: 10, holiday: 8 },
+      fixedOvertime: { amount: 30_000, hours: 20 },
+    });
+    const overtimeYen = RATE * 10 * 1.25;
+    const holidayYen = RATE * 8 * 1.35;
+    expect(r.total).toBeCloseTo(overtimeYen + holidayYen, 6);
+    // 時間外（22,959円）は固定30,000円の範囲なので差額は0。法定休日の分は別に払われる
+    expect(r.fixedOvertime?.overtimeYen).toBeCloseTo(overtimeYen, 6);
+    expect(r.fixedOvertime?.differenceYen).toBe(0);
+    expect(r.fixedOvertime?.exceedsHours).toBe(false);
+
+    const d = displayBreakdown(r);
+    expect(d.fixedDifferenceYen).toBe(0);
+    // 合計と比べていたら 42,796 − 30,000 = 12,796円 が出てしまう
+    expect(d.total - 30_000).toBeGreaterThan(12_000);
+  });
+
+  it('時間外だけが固定分を超えていれば、その超過分が差額になる', () => {
+    const r = calcZangyodai({
+      ...base,
+      hours: { overtime: 30, holiday: 8, scheduledNight: 4 },
+      fixedOvertime: { amount: 30_000, hours: 20 },
+    });
+    expect(r.fixedOvertime?.differenceYen).toBeCloseTo(RATE * 30 * 1.25 - 30_000, 6);
+    expect(r.fixedOvertime?.exceedsHours).toBe(true);
+  });
+
   it('固定残業代が「何時間分」に足りていなければ不足額を出す', () => {
     const r = calcZangyodai({
       wageType: 'hourly',
@@ -323,6 +382,19 @@ describe('固定残業代（みなし残業）', () => {
     expect(
       calcZangyodai({ ...base, fixedOvertime: { amount: 0, hours: 0 } }).fixedOvertime,
     ).toBeUndefined();
+  });
+
+  /** 片方だけだと「0時間を法定どおり払うと0円です。満たしています」になってしまう */
+  it('月額と「何時間分」の両方が入っているときだけ突き合わせる', () => {
+    expect(
+      calcZangyodai({ ...base, fixedOvertime: { amount: 30_000, hours: 0 } }).fixedOvertime,
+    ).toBeUndefined();
+    expect(
+      calcZangyodai({ ...base, fixedOvertime: { amount: 0, hours: 20 } }).fixedOvertime,
+    ).toBeUndefined();
+    expect(
+      calcZangyodai({ ...base, fixedOvertime: { amount: 30_000, hours: 20 } }).fixedOvertime,
+    ).toBeDefined();
   });
 });
 
@@ -379,5 +451,68 @@ describe('異常値', () => {
   it('NaN が来ても落ちない', () => {
     const r = calcZangyodai({ ...base, monthlyWage: Number.NaN, hours: { overtime: Number.NaN } });
     expect(r.total).toBe(0);
+  });
+});
+
+
+describe('表示（displayBreakdown）', () => {
+  /** 全部の行が出る入力。各行と合計を別々に切り上げると行数−1円ずれる */
+  const fullInput: ZangyodaiInput = {
+    ...base,
+    allowances: { commuteFamily: 10_000, housing: 20_000, attendance: 5_000 },
+    hours: {
+      withinStatutory: hoursFrom(3, 20),
+      overtime: hoursFrom(70, 29),
+      overtimeNight: 10,
+      holiday: 10,
+      holidayNight: 2,
+      scheduledNight: 4,
+    },
+  };
+  const full = calcZangyodai(fullInput);
+
+  it('全部の行が出る（合計のずれがいちばん大きくなる形）', () => {
+    expect(displayBreakdown(full).rows).toHaveLength(5);
+  });
+
+  /**
+   * **行を足すと合計になること。** 内訳を式で見せるのがこのツールの売りなので、
+   * 電卓で足した人が「数円合わない」と気づく表は出せない。
+   */
+  it('表示した各行の和が合計に一致する', () => {
+    for (const rounding of ['strict', 'simplified'] as const) {
+      const d = displayBreakdown(calcZangyodai({ ...fullInput, rounding }), rounding);
+      const sum = d.rows.reduce((acc, row) => acc + row.displayAmount, 0);
+      expect(sum, `端数処理 ${rounding} で行の和と合計がずれている`).toBe(d.total);
+    }
+  });
+
+  it('各行と合計を別々に切り上げるとずれる（この回帰を防いでいる）', () => {
+    const d = displayBreakdown(full);
+    // この入力が実際にずれる形であること（ずれない入力だと上のテストが素通りする）
+    expect(d.total - displayYen(full.total)).toBeGreaterThan(0);
+    // ずれは最大でも「行数−1円」。切り上げなので労働者に不利にはならない
+    expect(d.total - displayYen(full.total)).toBeLessThan(d.rows.length);
+  });
+
+  it('額面・年換算・固定残業代の差額も表示の合計から出す', () => {
+    const r = calcZangyodai({ ...base, hours: { overtime: 10 } });
+    const d = displayBreakdown(r);
+    expect(d.total).toBe(22_960);
+    expect(d.grossWithOvertime).toBe(300_000 + 22_960);
+    expect(d.annualOvertime).toBe(22_960 * 12);
+  });
+
+  it('簡便法では lib の時点で円なので切り上げは効かない', () => {
+    const r = calcZangyodai({ ...base, rounding: 'simplified', hours: { overtime: 10 } });
+    const d = displayBreakdown(r, 'simplified');
+    expect(d.total).toBe(r.total);
+  });
+
+  it('時給制では額面を出さない', () => {
+    const d = displayBreakdown(
+      calcZangyodai({ wageType: 'hourly', hourlyWage: 1_500, hours: { overtime: 10 } }),
+    );
+    expect(d.grossWithOvertime).toBeUndefined();
   });
 });

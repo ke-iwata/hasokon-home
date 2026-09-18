@@ -12,7 +12,16 @@
  * - 労働基準法施行規則 21条（除外できる手当の限定列挙。7つ）
  * - 労働基準法第三十七条第一項の時間外及び休日の割増賃金に係る率の最低限度を定める政令
  *   （平成6年政令第5号。時間外2割5分・休日3割5分）
- * - 昭和63年3月14日 基発第150号（1か月の時間数・金額の端数処理の簡便法）
+ * - 昭和63年3月14日 基発第150号（1か月の時間数・金額の端数処理の簡便法）。
+ *   愛知労働局「賃金計算の端数の取扱い」PDF（テキスト層あり・2026-09-18 取得）で本文を確認した:
+ *   https://jsite.mhlw.go.jp/aichi-roudoukyoku/var/rev0/0119/6636/hasuutoriatukai.pdf
+ *   「(1) 1か月における時間外労働、休日労働**及び深夜業**の各々の時間数の合計に1時間未満の
+ *   端数がある場合に、30分未満の端数を切り捨て、それ以上を1時間に切り上げること」
+ *   「(2) 1時間当たりの賃金額及び割増賃金額に円未満の端数が生じた場合、50銭未満の端数を
+ *   切り捨て、それ以上を1円に切り上げること」「(3) 1か月における時間外労働、休日労働、深夜業の
+ *   **各々の**割増賃金の総額に1円未満の端数が生じた場合、(2)と同様に処理すること」。
+ *   **(1) の対象は時間外・休日・深夜業だけ**で、法定内残業（×1.00・通常の賃金）は入らない。
+ *   同通達1は「5分の遅刻を30分として賃金カットする」ような1日ごとの切り捨てを違法としている
  * - 厚生労働省・東京労働局「しっかりマスター 労働基準法 割増賃金編」
  *   https://jsite.mhlw.go.jp/tokyo-roudoukyoku/content/contents/000501860.pdf
  *   （**このPDFはテキスト層を持たない画像PDFで、機械的には読めていない**。
@@ -183,9 +192,19 @@ export interface FixedOvertimeResult {
   sufficient: boolean;
   /** 満たしていないときの不足額（円）。満たしていれば0 */
   shortfallYen: number;
-  /** 今月の残業代が固定残業代を超えた分（円）。超えていなければ0 */
+  /**
+   * 今月の**時間外労働**の割増賃金が固定残業代を超えた分（円）。超えていなければ0。
+   *
+   * 比較する相手を残業代の合計にしてはいけない。`requiredYen` が「時間数 × 1.25」＝
+   * 時間外の率で必要額を出している（＝固定残業代を「時間外◯時間分」と見ている）のに、
+   * 差額だけ合計と比べると、**法定休日・深夜・法定内残業の分を固定残業代の余りで
+   * 相殺**してしまう。「固定20時間分・実際の時間外はそれ以下・休日出勤が1回」の月に
+   * 足りないほうへ間違うので、時間外の行（60時間まで＋60時間超）だけと比べる。
+   */
   differenceYen: number;
-  /** 今月の残業時間（時間外＋法定休日）が固定分の時間数を超えているか */
+  /** 比較に使った時間外労働の割増賃金（円）。法定休日・深夜・法定内残業は含まない */
+  overtimeYen: number;
+  /** 今月の**時間外労働**の時間が固定分の時間数を超えているか */
   exceedsHours: boolean;
 }
 
@@ -213,6 +232,10 @@ export interface ZangyodaiResult {
   rows: ZangyodaiRow[];
   /** 残業代の合計（円）。strict では丸めない */
   total: number;
+  /** 時間外労働（60時間まで＋60時間超）の割増賃金だけの合計（円） */
+  overtimeYen: number;
+  /** 計算に使った月給（額面・円）。時給制では0 */
+  monthlyWage: number;
   /** 残業代込みの今月の額面（円）。時給制では undefined（所定内賃金が分からないため） */
   grossWithOvertime?: number;
   /** 今月と同じ残業が12か月続いたときの残業代（円） */
@@ -280,7 +303,7 @@ export function displayYen(yen: number, rounding: RoundingMode = 'strict'): numb
 const ROW_LABELS: Record<ZangyodaiRow['key'], string> = {
   withinStatutory: '法定内残業',
   overtime: '時間外労働',
-  overtimeOver60: '時間外労働（月60時間超）',
+  overtimeOver60: '時間外労働 月60時間超',
   holiday: '法定休日労働',
   night: '深夜労働の加算',
 };
@@ -352,7 +375,10 @@ export function calcZangyodai(input: ZangyodaiInput): ZangyodaiResult {
   const hours: OvertimeHours =
     rounding === 'simplified'
       ? {
-          withinStatutory: roundHoursSimplified(raw.withinStatutory),
+          // 基発150号(1) の対象は「時間外労働、休日労働及び深夜業」だけ。
+          // 法定内残業は割増賃金ではなく通常の賃金なので、30分ルールで丸める根拠がない
+          // （丸めると全額払いの原則に触れる方向に落ちる）
+          withinStatutory: raw.withinStatutory,
           overtime: roundHoursSimplified(raw.overtime),
           overtimeNight: raw.overtimeNight,
           holiday: roundHoursSimplified(raw.holiday),
@@ -392,9 +418,16 @@ export function calcZangyodai(input: ZangyodaiInput): ZangyodaiResult {
   // (3) 1か月の割増賃金の総額の円未満も四捨五入。各行が円になっているので和も円
   const total = rows.reduce((sum, r) => sum + r.amount, 0);
 
+  // 時間外労働の割増賃金だけの合計（固定残業代と比べる相手）
+  const overtimeYen = rows
+    .filter((r) => r.key === 'overtime' || r.key === 'overtimeOver60')
+    .reduce((sum, r) => sum + r.amount, 0);
+
   const fixed = input.fixedOvertime;
   let fixedOvertime: FixedOvertimeResult | undefined;
-  if (fixed && (num(fixed.amount) > 0 || num(fixed.hours) > 0)) {
+  // **月額と「何時間分」の両方**が入っているときだけ突き合わせる。
+  // 片方だけだと「0時間を法定どおり払うと0円です。満たしています」のような無意味な judgement になる
+  if (fixed && num(fixed.amount) > 0 && num(fixed.hours) > 0) {
     const amount = num(fixed.amount);
     const fixedHours = num(fixed.hours);
     // 固定残業代は「何時間分」を法定どおり払える額でなければならない（1時間あたりの賃金×1.25）
@@ -406,8 +439,9 @@ export function calcZangyodai(input: ZangyodaiInput): ZangyodaiResult {
       requiredYen,
       sufficient: amount + 1e-9 >= requiredYen,
       shortfallYen: Math.max(0, requiredYen - amount),
-      differenceYen: Math.max(0, total - amount),
-      exceedsHours: hours.overtime + hours.holiday > fixedHours,
+      differenceYen: Math.max(0, overtimeYen - amount),
+      overtimeYen,
+      exceedsHours: hours.overtime > fixedHours,
     };
   }
 
@@ -429,9 +463,71 @@ export function calcZangyodai(input: ZangyodaiInput): ZangyodaiResult {
     nightHours,
     rows,
     total,
+    overtimeYen,
+    monthlyWage: wageType === 'monthly' ? monthlyWage : 0,
     grossWithOvertime: wageType === 'monthly' ? monthlyWage + total : undefined,
     annualOvertime: total * 12,
     fixedOvertime,
     minWageCheck,
+  };
+}
+
+/** 表示用の1行（表示額つき） */
+export interface ZangyodaiDisplayRow extends ZangyodaiRow {
+  /** 画面に出す金額（円）。法令どおりモードでは切り上げ */
+  displayAmount: number;
+}
+
+/** 画面に出す金額をまとめたもの */
+export interface ZangyodaiDisplay {
+  /** 各行（表示額つき）。並びは `result.rows` と同じ */
+  rows: ZangyodaiDisplayRow[];
+  /** 残業代の合計（円）。**表示した各行の和**にする */
+  total: number;
+  /** 時間外労働の行だけの合計（円）。固定残業代と比べる相手 */
+  overtimeTotal: number;
+  /** 残業代込みの今月の額面（円）。時給制では undefined */
+  grossWithOvertime?: number;
+  /** 今月と同じ残業が12か月続いたときの残業代（円） */
+  annualOvertime: number;
+  /** 固定残業代を超える分（円）。固定残業代の入力が無ければ undefined */
+  fixedDifferenceYen?: number;
+}
+
+/**
+ * 画面に出す金額を作る。
+ *
+ * **合計は「表示した各行の和」にする。** 各行と合計をそれぞれ円へ丸めると、
+ * 行を足した額と合計が最大で「行数−1円」ずれる（法令どおりモードは切り上げなので
+ * 合計のほうが小さく出る）。このツールの売りは内訳を式で見せることなので、
+ * 電卓で足した人が合わないと気づく表は出せない。
+ *
+ * ずれは最大で数円、かつ切り上げなので労働者に不利にはならない。
+ * 額面・年換算・固定残業代の差額もこの合計から出して、画面全体をそろえる。
+ */
+export function displayBreakdown(
+  result: ZangyodaiResult,
+  rounding: RoundingMode = 'strict',
+): ZangyodaiDisplay {
+  const rows: ZangyodaiDisplayRow[] = result.rows.map((row) => ({
+    ...row,
+    displayAmount: displayYen(row.amount, rounding),
+  }));
+  const total = rows.reduce((sum, r) => sum + r.displayAmount, 0);
+  const overtimeTotal = rows
+    .filter((r) => r.key === 'overtime' || r.key === 'overtimeOver60')
+    .reduce((sum, r) => sum + r.displayAmount, 0);
+
+  return {
+    rows,
+    total,
+    overtimeTotal,
+    grossWithOvertime:
+      result.grossWithOvertime === undefined ? undefined : result.monthlyWage + total,
+    annualOvertime: total * 12,
+    fixedDifferenceYen:
+      result.fixedOvertime === undefined
+        ? undefined
+        : Math.max(0, overtimeTotal - result.fixedOvertime.amount),
   };
 }
