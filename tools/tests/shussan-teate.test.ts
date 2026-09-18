@@ -36,6 +36,11 @@ describe('支給期間（産前42日・産後56日）', () => {
     expect(formatDate(r.endDate)).toBe('2026-11-26');
     expect(r.overdueDays).toBe(0);
     expect(r.earlyDays).toBe(0);
+    // 早産でなければ「予定日基準で産休に入った場合」は支給期間そのものと一致する
+    expect(formatDate(r.leaveFromDue)).toBe(formatDate(r.startDate));
+    expect(r.beforeDaysIfLeaveFromDue).toBe(r.beforeDays);
+    expect(r.totalDaysIfLeaveFromDue).toBe(r.totalDays);
+    expect(r.allowanceTotalIfLeaveFromDue).toBe(r.allowanceTotal);
   });
 
   it('予定日より5日遅れた場合: 遅れた分も産前に足され、47日＋56日＝103日', () => {
@@ -47,6 +52,9 @@ describe('支給期間（産前42日・産後56日）', () => {
     expect(formatDate(r.startDate)).toBe('2026-08-21');
     // 産後は実際の出産日の翌日から56日
     expect(formatDate(r.endDate)).toBe('2026-12-01');
+    // 遅れた場合は開始日が予定日基準そのものなので、両方の値が一致する
+    expect(r.beforeDaysIfLeaveFromDue).toBe(r.beforeDays);
+    expect(r.allowanceTotalIfLeaveFromDue).toBe(r.allowanceTotal);
   });
 
   it('予定日より5日早い場合: 産前は42日のまま、開始日が5日前にずれる', () => {
@@ -57,6 +65,15 @@ describe('支給期間（産前42日・産後56日）', () => {
     expect(r.totalDays).toBe(98);
     expect(formatDate(r.startDate)).toBe('2026-08-16');
     expect(formatDate(r.endDate)).toBe('2026-11-21');
+
+    // 産前休業は予定日基準で請求するのが普通なので、8/21から休み始めていれば
+    // 8/16〜8/20 の5日間は出勤日＝支給されない。ここを42日フルで出すと多く見せてしまう
+    expect(formatDate(r.leaveFromDue)).toBe('2026-08-21');
+    expect(r.beforeDaysIfLeaveFromDue).toBe(37);
+    expect(r.totalDaysIfLeaveFromDue).toBe(93);
+    expect(r.allowanceTotalIfLeaveFromDue).toBe(6_667 * 93);
+    expect(r.allowanceTotalIfLeaveFromDue).toBe(620_031);
+    expect(r.allowanceTotal).toBeGreaterThan(r.allowanceTotalIfLeaveFromDue);
   });
 
   it('多胎妊娠は産前98日（予定日どおりなら合計154日）', () => {
@@ -72,6 +89,14 @@ describe('支給期間（産前42日・産後56日）', () => {
     const r = calc({ ...BASE, birthDate: '2026-10-11', fetusCount: 3 });
     expect(r.beforeDays).toBe(BEFORE_DAYS_MULTIPLE + 10);
     expect(r.totalDays).toBe(BEFORE_DAYS_MULTIPLE + 10 + AFTER_DAYS);
+  });
+
+  it('多胎の早産でも予定日基準の産前は98日から早まった分だけ短くなる', () => {
+    const r = calc({ ...BASE, birthDate: '2026-09-24', fetusCount: 2 });
+    expect(r.earlyDays).toBe(7);
+    expect(r.beforeDays).toBe(BEFORE_DAYS_MULTIPLE);
+    expect(r.beforeDaysIfLeaveFromDue).toBe(BEFORE_DAYS_MULTIPLE - 7);
+    expect(formatDate(r.leaveFromDue)).toBe('2026-06-26');
   });
 
   it('開始日から終了日までの暦日数と支給日数が一致する（数え方の整合）', () => {
@@ -271,10 +296,11 @@ describe('制度データ（【データ更新箇所】が腐っていないこ�
    * 無償化の改正法は**公布済みだが施行日は政令待ち**。
    * 一次資料で確認できていない法律番号を勝手に埋めない（null のままなら画面に出さない）。
    */
-  it('無償化の改正法は公布日まで。施行日は政令で定める（未定）', () => {
+  it('無償化の改正法は法律番号・公布日まで。施行日は政令で定める（未定）', () => {
     expect(REFORM.promulgatedOn).toBe('2026-06-05');
     expect(REFORM.effectiveRule).toContain('政令で定める日');
-    expect(REFORM.lawNumber).toBeNull();
+    // e-Gov 法令API の健康保険法 current_revision_info で確認した法律番号
+    expect(REFORM.lawNumber).toBe('令和8年法律第31号');
   });
 
   it('確認日は ISO 形式', () => {

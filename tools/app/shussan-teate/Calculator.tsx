@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { formatJa, parseDate } from '@/lib/date-parts';
+import { formatJa, parseDate, addDays } from '@/lib/date-parts';
 import { trackToolUse } from '@/lib/analytics';
 import {
   AFTER_DAYS,
@@ -201,6 +201,24 @@ export default function Calculator() {
                   </span>
                 </td>
               </tr>
+              {r.earlyDays > 0 && (
+                <tr>
+                  <td style={{ textAlign: 'left' }}>
+                    予定日基準で産休に入っていた場合
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', display: 'block' }}>
+                      産前休業は予定日を基準に請求するのが一般的です
+                    </span>
+                  </td>
+                  <td>
+                    {yen(r.allowanceTotalIfLeaveFromDue)}
+                    <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', display: 'block' }}>
+                      {formatJa(r.leaveFromDue)}から産休なら、{formatJa(r.startDate)}〜
+                      {formatJa(addDays(r.leaveFromDue, -1))}の{r.earlyDays}日間は出勤日なので支給されず、
+                      産前{r.beforeDaysIfLeaveFromDue}日・合計{r.totalDaysIfLeaveFromDue}日分になります
+                    </span>
+                  </td>
+                </tr>
+              )}
               <tr>
                 <td style={{ textAlign: 'left' }}>標準報酬月額</td>
                 <td>

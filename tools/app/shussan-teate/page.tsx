@@ -45,7 +45,7 @@ const jaMonth = (iso: string) => {
 const faq = [
   {
     q: '出産が予定日より遅れたら、出産手当金は減りますか？',
-    a: `減りません。むしろ増えます。産前の支給期間は「出産の日以前${BEFORE_DAYS_SINGLE}日（多胎妊娠は${BEFORE_DAYS_MULTIPLE}日）」ですが、実際の出産が予定日より後になったときは出産予定日を起点に数え、遅れた日数分もそのまま支給されます。たとえば5日遅れて生まれた場合、産前は${BEFORE_DAYS_SINGLE}日＋5日の47日分になります。逆に予定日より早く生まれた場合は、出産日を起点に${BEFORE_DAYS_SINGLE}日を数え直すので日数は変わらず、支給の開始日が前にずれます。`,
+    a: `減りません。むしろ増えます。産前の支給期間は「出産の日以前${BEFORE_DAYS_SINGLE}日（多胎妊娠は${BEFORE_DAYS_MULTIPLE}日）」ですが、実際の出産が予定日より後になったときは出産予定日を起点に数え、遅れた日数分もそのまま支給されます。たとえば5日遅れて生まれた場合、産前は${BEFORE_DAYS_SINGLE}日＋5日の47日分になります。逆に予定日より早く生まれた場合は、出産日を起点に${BEFORE_DAYS_SINGLE}日を数え直すので日数は変わらず、支給の開始日が前にずれます。ただし産前休業は出産予定日を基準に請求するのが一般的なので、予定日の${BEFORE_DAYS_SINGLE}日前から休み始めていた場合、それより前の日は出勤日となり支給されません。その場合は早まった日数の分だけ産前が短くなります。`,
   },
   {
     q: '双子（多胎）のときはいくらもらえますか？',
@@ -69,7 +69,7 @@ const faq = [
   },
   {
     q: '国民健康保険や扶養に入っている場合はもらえますか？',
-    a: `出産手当金は健康保険の被保険者本人が対象です。国民健康保険（自営業・フリーランス等）には出産手当金の給付がなく、配偶者の扶養に入っている被扶養者も対象外です。任意継続被保険者も対象外です（健康保険法102条1項かっこ書き）。一方、出産育児一時金は国民健康保険にも被扶養者にもあり、額は${yen(LUMP_SUM_PER_CHILD)}で同じです。`,
+    a: `出産手当金は健康保険の被保険者本人が対象です。国民健康保険（自営業・フリーランス等）には出産手当金の給付がなく、配偶者の扶養に入っている被扶養者も対象外です。任意継続被保険者も対象外です（健康保険法99条1項かっこ書き・102条1項）。一方、出産育児一時金は国民健康保険にも被扶養者にもあり、額は${yen(LUMP_SUM_PER_CHILD)}で同じです。`,
   },
 ];
 
@@ -113,16 +113,14 @@ function PeriodBar() {
   };
   return (
     <div style={{ display: 'flex', margin: '12px 0', overflow: 'hidden', borderRadius: 8 }}>
-      <div style={{ ...cell, flex: 42, background: 'var(--bg-soft, #f4f6f8)' }}>
+      <div style={{ ...cell, flex: 42, background: 'var(--surface-2)' }}>
         産前 {BEFORE_DAYS_SINGLE}日<br />
         <span style={{ color: 'var(--muted)' }}>多胎 {BEFORE_DAYS_MULTIPLE}日</span>
       </div>
-      <div style={{ ...cell, flex: 12, background: 'var(--bg-soft, #f4f6f8)' }}>
-        予定日
-        <br />
-        <span style={{ color: 'var(--muted)' }}>超過分</span>
+      <div style={{ ...cell, flex: 12, background: 'var(--surface-2)', whiteSpace: 'nowrap' }}>
+        超過分
       </div>
-      <div style={{ ...cell, flex: 56, background: 'var(--bg-soft, #f4f6f8)' }}>
+      <div style={{ ...cell, flex: 56, background: 'var(--surface-2)' }}>
         産後 {AFTER_DAYS}日
       </div>
     </div>
@@ -219,7 +217,7 @@ export default function Page() {
       <h2>もらえない人・注意が要る人</h2>
       <ul>
         <li>
-          <strong>任意継続被保険者</strong>：出産手当金は対象外です（健康保険法102条1項かっこ書き）
+          <strong>任意継続被保険者</strong>：出産手当金は対象外です（健康保険法99条1項かっこ書き・102条1項）
         </li>
         <li>
           <strong>国民健康保険</strong>

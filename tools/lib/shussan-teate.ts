@@ -75,8 +75,12 @@ export const REFORM = {
   enactedOn: '2026-05-29',
   /** 公布日 */
   promulgatedOn: '2026-06-05',
-  /** 令和8年法律第◯号。e-Gov で確認できたら入れる */
-  lawNumber: null as string | null,
+  /**
+   * 令和8年法律第31号（e-Gov 法令API の健康保険法 `current_revision_info` で確認。
+   * 改正法題名「健康保険法等の一部を改正する法律」・公布 2026-06-05）。
+   * 画面は null なら法律番号を出さない
+   */
+  lawNumber: '令和8年法律第31号' as string | null,
   /** 施行日の定め方（条文どおりの表現） */
   effectiveRule: '公布の日から起算して2年を超えない範囲内において政令で定める日',
 } as const;
@@ -134,6 +138,24 @@ export interface ShussanTeateResult {
   endDate: DateParts;
   /** 産後休業が明けて育児休業に入れる日（産後56日の翌日） */
   childcareLeaveFrom: DateParts;
+
+  /**
+   * 出産予定日を基準に産休へ入った場合の開始日（予定日 − 41日。多胎は −97日）。
+   * 産前休業は予定日基準で請求するのが普通なので、**早産のときは実際の休み始めがこの日**になる。
+   */
+  leaveFromDue: DateParts;
+  /**
+   * 予定日基準で産休に入った場合の産前日数（= beforeDays − earlyDays）。
+   *
+   * 法102条の支給期間は早産のとき「出産日 − 41日」から始まるが、
+   * 予定日の42日前から休んでいた人は**それより前の日は出勤日＝支給されない**ので、
+   * 産前は早まった日数分だけ短くなる。`earlyDays === 0` なら `beforeDays` と一致する
+   */
+  beforeDaysIfLeaveFromDue: number;
+  /** 同上の支給日数の合計 */
+  totalDaysIfLeaveFromDue: number;
+  /** 同上の出産手当金の総額（円） */
+  allowanceTotalIfLeaveFromDue: number;
 
   /** 算定に使った標準報酬月額（円） */
   standardMonthly: number;
@@ -205,6 +227,12 @@ export function calcShussanTeate(input: ShussanTeateInput): ShussanTeateResult |
   const endDate = addDays(birthDate, AFTER_DAYS);
   const childcareLeaveFrom = addDays(endDate, 1);
 
+  // 産前休業は出産予定日を基準に請求するので、早産のときは実際の休み始めが予定日基準になる。
+  // そのぶん「出産日 − 41日」からの数日は出勤日で支給されないため、産前は earlyDays だけ短くなる
+  const leaveFromDue = addDays(dueDate, -(baseBeforeDays - 1));
+  const beforeDaysIfLeaveFromDue = beforeDays - earlyDays;
+  const totalDaysIfLeaveFromDue = beforeDaysIfLeaveFromDue + afterDays;
+
   // 日額の計算は傷病手当金と同一（健康保険法102条2項が99条2項を準用）
   const { standardMonthly, capped, standardDaily, dailyAmount } = kenpoDailyAmount(
     Math.max(0, input.monthlyIncome),
@@ -240,6 +268,10 @@ export function calcShussanTeate(input: ShussanTeateInput): ShussanTeateResult |
     startDate,
     endDate,
     childcareLeaveFrom,
+    leaveFromDue,
+    beforeDaysIfLeaveFromDue,
+    totalDaysIfLeaveFromDue,
+    allowanceTotalIfLeaveFromDue: payableDaily * totalDaysIfLeaveFromDue,
     standardMonthly,
     capped,
     standardDaily,
