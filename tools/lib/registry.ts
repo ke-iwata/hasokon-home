@@ -247,6 +247,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-19',
   },
   {
+    slug: 'ikuji-kyugyo-kyufu',
+    icon: 'BabyCarriage',
+    name: '育児休業給付金 計算機',
+    description:
+      '育休でいくらもらえるかを支給単位期間ごとの推移で計算。出生後休業支援給付（+13%）を足した最初の28日の80%から、67%・50%への段差までを出します。令和8年8月1日改定の上限額（賃金日額16,540円）に対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-10',
+  },
+  {
     slug: 'taishokukin-tedori',
     icon: 'Suitcase',
     name: '退職金の税金・手取り計算機',
@@ -256,7 +266,7 @@ export const tools: ToolDef[] = [
     // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
     // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
     stage: 'wip',
-    updatedAt: '2026-09-16',
+    updatedAt: '2026-09-18',
   },
   {
     slug: 'shobyo-teate',
