@@ -1,7 +1,8 @@
 # IndexNow を本番デプロイに組み込む（Bing 経由の流入を守り、更新を即日反映させる）
 
-**状態**：提案（2026-09-16 起票、未実装。同日の企画レビューで「`lastmod` 差分だけ送る」
-「鍵はファイルから読む」「無効化の完了を待つ」の3点を反映）。
+**状態**：実装済み（2026-09-16）。鍵ファイルは `home/bd59c05dafed335478f48aefb1c0ec57.txt`。
+**初回の送信は次の `v*` リリースまで起きない**ので、それまでに運営者が
+Bing Webmaster Tools の登録（下記 4）を済ませる。
 **対象**：`.github/workflows/deploy.yml`（本番デプロイのジョブ）・`home/`（鍵ファイル 1枚）・
 `scripts/`（送信スクリプト＋テスト、`scripts/lib/sitemap.mjs` に `lastmod` を拾う関数を1本）・
 `CLAUDE.md`「home/ の注意」（鍵ファイルの1行）
@@ -67,14 +68,19 @@ Bing・Yandex・Naver・Seznam・Yep が共同で受け付ける「このURLが�
 node scripts/indexnow-submit.mjs \
   --key-file home/<key>.txt \
   --before /tmp/sitemaps-before/ \
+  --after /tmp/sitemaps-after/ \
   --sitemap https://hasokon.com/sitemap.xml \
   [--dry-run]
 ```
 
 - **`lastmod` が動いた URL だけ送る。** デプロイジョブの先頭（S3 同期の前）で本番の
   sitemap 4本（`sitemap-home.xml` / `tools/sitemap.xml` / `games/sitemap.xml` / `learn/sitemap.xml`）を
-  `--before` のディレクトリに取っておき、同期後に配信されている sitemap と
+  `--before` のディレクトリに取っておき、**いま同期する sitemap（`--after`）**と
   `<loc>` ＋ `<lastmod>` で突き合わせる。**新規の URL、または `lastmod` が変わった URL** が送信対象。
+  **「後」側を配信中の sitemap から HTTP で取ってはいけない**（#212 のレビュー指摘）。
+  CloudFront の無効化が終わる前に取りに行くとデプロイ前と同じものが返り、差分が 0 件になって
+  **黙って送り漏れる**。無効化の完了待ちは権限不足やタイムアウトで飛びうるので、
+  差分の判定をそこに依存させない。
   `lastmod` は既に `lib/registry.ts` の `updatedAt` から出している（毎ビルドで動かさない運用。
   `tools/app/sitemap.ts` のコメント）ので、**差分は既存の「内容を変えたら `updatedAt` を上げる」
   運用にそのまま乗る**。ビルド側の差分検出は要らない
@@ -103,10 +109,13 @@ node scripts/indexnow-submit.mjs \
 - **本番（`v*` タグ）のジョブだけ**、3ステップを足す。テスト環境（main）では送らない
   （`test.hasokon.com` は Basic 認証で、送っても無意味）
   1. S3 同期の前：本番の sitemap 4本を `curl` で `--before` のディレクトリに保存（失敗しても続行）
-  2. `CloudFrontのキャッシュを削除` のあと：**`aws cloudfront wait invalidation-completed`** で
+  2. `download-artifact` のあと：いま同期する sitemap 4本を `--after` のディレクトリにコピーする
+     （`home/sitemap-home.xml` と `{tools,games,learn}-out/sitemap.xml`）
+  3. `CloudFrontのキャッシュを削除` のあと：**`aws cloudfront wait invalidation-completed`** で
      無効化の完了を待つ（`create-invalidation` は非同期で、完了まで数分かかる。直後に通知すると
-     Bing が古い HTML を取り直す）
-  3. 送信：`node scripts/indexnow-submit.mjs --key-file home/<key>.txt --before … `。
+     Bing が古い HTML を取り直す）。待てなかったときは `::warning::` を1行出す
+     （`cloudfront:GetInvalidation` の権限不足に気づけるように）
+  4. 送信：`node scripts/indexnow-submit.mjs --key-file home/<key>.txt --before … --after … `。
      `continue-on-error: true`
 - 本番反映は `v*` タグなので、**初回の送信は次のリリースまで起きない**。運営者の
   Bing Webmaster Tools 登録（下記 4）はその前に済ませてもらう
@@ -159,4 +168,8 @@ node scripts/indexnow-submit.mjs \
 ## 経過
 
 - 2026-09-16：起票。同日の企画レビュー（#206）で、差分送信・鍵の一元化・無効化の完了待ちを反映
+- 2026-09-16：実装。鍵ファイル `home/bd59c05dafed335478f48aefb1c0ec57.txt`、
+  送信スクリプト `scripts/indexnow-submit.mjs`、`deploy.yml` の3ステップ（本番のみ）。
+  本番のサイトマップ（123 URL）に対する `--dry-run` で、差分なし 0 件・
+  `lastmod` を1件動かすと1件・`--before` 無しで全件、を確認した
 - （Bing Webmaster Tools の登録日・初回リリースでの送信件数と受付数をここに残す）
