@@ -8,10 +8,61 @@
 
 ---
 
+## 2026-09-18：雇用保険料率を令和8年度（5/1,000）に直し、保険料率を lib/shaho-ryoritsu.ts の1か所にまとめた
+
+[features/shaho-gaisan-r8-koyo-hoken-ryoritsu.md](../../docs/features/shaho-gaisan-r8-koyo-hoken-ryoritsu.md)。
+`hatarakizon.ts` の `EMPLOYMENT_RATE` と `furusato-nozei.ts` の `estimateSocialInsurance()` が
+令和7年度の料率のままで、社保の概算が6ツールで年度をまたいで混在していた。
+
+- **料率を新しい葉のモジュール `lib/shaho-ryoritsu.ts` に切り出した。**
+  `furusato-nozei.ts` から `hatarakizon.ts` を import すると循環になる
+  （`hatarakizon.ts` が `furusato-nozei.ts` の控除関数を import している）。
+  料率だけを葉に出すと、既存の import 元を1つも変えずに済む。
+  `hatarakizon.ts` は同名で re-export しているだけで、数字は持たない
+- **雇用保険料率（労働者負担・一般の事業）は 5.5/1,000 → 5/1,000。**
+  厚労省PDFの本文で確認した（事業主負担 8.5・合計 13.5。令和7年度は 5.5/9/14.5）。
+  **①労働者負担の欄**を見ること。合計の 13.5/1,000 と取り違えやすい
+- **`estimateSocialInsurance()` は健保・介護も令和7年度のままで、支援金が入っていなかった。**
+  4.99%→4.95%、介護 0.8%→0.81%、支援金 0.115% を加算。
+  年収500万円の概算は 734,500円 → 735,750円
+- **`estimateSocialInsurance()` を `calcPremiums()`（等級ベース）に置き換えてはいない。**
+  概算の性格が変わり、4ツールの結果が一斉に動く。年末調整・ふるさと納税は
+  「源泉徴収票の実額を入れれば正確」という設計なので、概算は年収ベースの近似で足りる
+- **テストは「率を一次情報で固定する1本」を足した。** `Math.round(... * EMPLOYMENT_RATE)`
+  だけだと定数を変えても一緒に動き、改定の見落としに気づけない。
+  料率が揃っていることを見る `6ツールで社会保険料の料率が揃っている` も足した
+- **仕様書が挙げていた `ideco` / `iryohi-kojo` のテストは実額を固定しておらず無変更だった。**
+  代わりに仕様書が「変更不要」としていた `tedori-keisan.test.ts` が動いた
+  （雇用保険の実額 27,500円と、料率改定に気づくための早見表スナップショット22行）。
+  早見表は全行で手取りが上がり、増分はどの行も年収の 0.05%（料率の下げ幅）以内に収まっている
+
+## 2026-09-18：広島の出典を答申の発表から改正決定の発表に直した（断定した発効日の裏づけにする）
+
+[#214](https://github.com/ke-iwata/hasokon-home/pull/214) のあと追いの修正。
+広島の `effectiveOn: '2026-10-11'` は断定した日付なのに、出典が答申の報道発表
+（`houdou_newpage_00512`）のままだった。**このページの添付PDFは
+「改正決定の効力発生日は、早ければ令和８年１０月11日となる予定です」と
+条件付きでしか書いていない。**
+
+`effectiveOn` には決定公示で確認した日付だけを入れる、というのは
+`Answered.effectiveOn` のコメントにも tools/CLAUDE.md の運用表にも書いてある約束で、
+**その約束を足したPR自身が広島で破っていた**という取り合わせだった。
+額（1,141円）も日付（10-11）も正しく、間違っていたのは根拠リンクだけなので、
+利用者に見える数字は変わらない。
+
+差し替え先は広島労働局の改正決定の発表（2026-09-11）
+「広島県最低賃金の改正について ～令和8年10月11日から1,141円（時間額）へ～」。
+見出しで日付を断定しているので、そのまま `effectiveOn` の根拠になる。
+
+**徳島・山梨は答申のページのままでよい。** こちらは添付PDFが
+「効力発生日は令和８年11月１日（日）となる」「効力発生日 令和８年１１月１日予定」と
+書いていて、条件付きの「早ければ」ではない。3件をまとめて「答申のページ」に
+そろえたくなるが、**中身の書きぶりが違う**ので、テストも広島だけ分けてある。
+
 ## 2026-09-16：退職金の税金・手取り計算機を作った（`wip`）
 
 仕様は [features/taishokukin-tedori.md](../../docs/features/taishokukin-tedori.md)。
-`lib/taishokukin.ts` ＋ `tests/taishokukin.test.ts`（58件）と
+`lib/taishokukin.ts` ＋ `tests/taishokukin.test.ts`（64件）と
 `app/taishokukin-tedori/`。`stage: 'wip'` で入れてあり、公開の判断は
 [features/google-index-recovery.md](../../docs/features/google-index-recovery.md) の
 運営者確認のあと。`public` にするPRで `home/index.html`・`home/404.html`・
@@ -63,6 +114,7 @@
 2進数で表せず誤差が乗るため、切り捨てと組み合わせるとちょうどの額で1円・100円ずれる。
 率そのものの単一の情報源は `lib/furusato-nozei.ts` のまま（速算表・復興特別所得税率を
 そこから import している）。
+
 ## 2026-09-16：最低賃金チェッカーの11県の発効日を決定公示で埋め、切れた出典3件を差し替えた
 
 [features/saitei-chingin-r8-hakko-mae-mente.md](../../docs/features/saitei-chingin-r8-hakko-mae-mente.md)。
