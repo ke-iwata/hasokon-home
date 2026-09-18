@@ -215,6 +215,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年12月（税制改正大綱が出たら） | セルフメディケーション税制の適用期限を `lib/iryohi-kojo.ts` の `SELF_MED_EXPIRES_AT` / `SELF_MED_CHECKED_AT` に反映（現行の期限は2026年12月31日。延長は令和9年度税制改正待ち）。**画面では「今年で終わり」と断定せず「現時点の期限は〜」と書く**（延長された瞬間に嘘になる文言を置かない）。足切り・上限が変わったら `MEDICAL_THRESHOLD_FIXED` / `MEDICAL_CAP` / `SELF_MED_THRESHOLD` / `SELF_MED_CAP` |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
+| 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞の扱いも条文で確認し、確認できるまで `rate2027For()` は `'newspaper-unconfirmed'` を返したままにする |
+| 軽減税率Q&Aが改訂されたとき | `lib/shohizei-items.ts` の `ITEMS` の `qa`（設問番号）を国税庁「消費税の軽減税率制度に関するQ&A（個別事例編）」と突き合わせ直し、`QA_REVISION` / `ITEMS_CHECKED_AT` を直す。**改訂で設問番号がずれる**ので番号だけ信じないこと。有料老人ホーム等の金額基準（令和8年6月1日から一食730円以下・1日2,190円まで）も同じQ&Aにある |
+| 毎年2月上旬（家計調査の前年平均が出たら） | `lib/shohizei.ts` の `KAKEI_CHOSA`（`food` / `eatingOut` / `alcohol` と `year` / `table` / `publishedOn`）を総務省「家計調査（家計収支編）」の「家計の概要」表Ⅰ－１－１から写す。**プリセットは `食料 − 外食 − 酒類` で導出している**ので3つとも写すこと |
 | 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | インボイスの経過措置が改正されたとき | `lib/invoice-nozeigaku.ts` の `YEARS`（年ごとに使える特例）・`SPECIAL_RATES`（2割・3割）・`BUSINESS_TYPES`（みなし仕入率）・`PURCHASE_TRANSITION`（7・5・3割控除）。国税庁のインボイス特設サイトとインボイスQ&Aを正とする。**3割特例は2028年分で終わる**ので、それ以降の措置が決まるまで追加は不要 |
@@ -226,9 +229,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール37本（ほかに公開前が4本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`
-  （`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1781件
+- ツール37本（ほかに公開前が5本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
+  `shohizei-keisan`（`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
+  用途別ルーレット10本 / 使い方の記事6本 / テスト1864件
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
@@ -349,6 +352,24 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   それぞれ。地方税法20条の4の2第3項＋第8項）**で、混ぜると100円ずれる。
   **条文は e-Gov 法令API（`340CO0000000096`）で現行条文を引ける**ので、
   改正が絡むときは解説記事ではなくこちらを見ること
+- **消費税率は `lib/shohizei.ts` が持つ一次情報で、整数のパーセントで扱う。**
+  `waribiki-percent.ts` は `TAX_RATE_STANDARD` / `TAX_RATE_REDUCED` をそこから import している
+  （「税率は10%と8%の2つ」という前提が2027年4月の1%で崩れるため、数字を1か所に集めた）。
+  **小数で割ってはいけない**：`1100 / 1.1` は二進小数の誤差で `999.9999999999999` になり、
+  切り捨てで税抜が999円になる（実際にこれで1円ずれる不具合を作った）。
+  `amount × 100 ÷ (100 + percent)` の順で計算すること。丸めの部品（`Rounding` / `ROUNDINGS` /
+  `roundBy`）は `lib/rounding.ts` に分けてある（`shohizei.ts` ↔ `waribiki-percent.ts` の
+  循環importを避けるため。トップレベルで早見表を作っているので、輪があるとTDZで落ちる）。
+  **既定の丸めはツールごとに違う**（消費税は切り捨て・割引は四捨五入）。同じ関数を共有するからと揃えないこと
+- **2027年4月の飲食料品1%は「閣議決定済み・法案未成立」。** 印を出すかどうかは
+  `FOOD_RATE_2027.status` の1つの値だけで決まる。**画面の印は検索結果のスニペットに見えない**ので、
+  `title` / `description` にも文字列として「（予定）」を入れてある
+  （`tests/shohizei.test.ts` が status と文字列の食い違いを落とす）。軽減額は
+  `1 − 1.01 / 1.08 ≒ 6.48%` で**「最大で」の目安**（便乗値上げ・値下げの遅れは織り込まない）。
+  給付付き税額控除の給付額は制度設計が未公表なので計算しない。
+  **定期購読の新聞が1%になるかは条文で未確認**なので、`rate2027For()` は税率を返さず
+  `'newspaper-unconfirmed'` を返す（報道の見方を表に書かない）
+  （[docs/features/shohizei-keisan-shokuryohin-1percent.md](../docs/features/shohizei-keisan-shokuryohin-1percent.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - **出産手当金の日額は傷病手当金と同一**（健康保険法102条2項が99条2項を準用）。
   日額の計算と `SHORT_TENURE_CAP` は `lib/kenpo-daily-amount.ts` に置き、
