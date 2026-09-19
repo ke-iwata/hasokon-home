@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   DEPENDENT_LIMIT,
   DEPENDENT_LIMIT_STUDENT,
+  EMPLOYMENT_RATE,
   HEALTH_RATE,
+  PENSION_RATE,
   KAIGO_RATE,
   PENSION_ACCRUAL_RATE,
   SHIENKIN_RATE,
@@ -16,6 +18,7 @@ import {
   calcTakeHome,
   type HatarakizonInput,
 } from '@/lib/hatarakizon';
+import { estimateSocialInsurance } from '@/lib/furusato-nozei';
 import {
   GRADES,
   PENSION_STANDARD_MAX,
@@ -88,8 +91,21 @@ describe('calcPremiums（社会保険料・本人負担）', () => {
     expect(p.standardMonthly).toBe(200_000);
     expect(p.health).toBe(10_130 * 12);
     expect(p.pension).toBe(18_300 * 12);
-    expect(p.employment).toBe(Math.round(2_400_000 * 0.0055));
+    expect(p.employment).toBe(Math.round(2_400_000 * EMPLOYMENT_RATE));
     expect(p.total).toBe(p.health + p.pension + p.employment);
+  });
+
+  /**
+   * 料率そのものを一次情報で固定する。上の `Math.round(... * EMPLOYMENT_RATE)` は
+   * 定数を変えても一緒に動いてしまうので、改定の見落としには気づけない。
+   *
+   * 厚生労働省「令和8年4月1日から令和9年3月31日までの雇用保険料率」
+   * https://www.mhlw.go.jp/content/001692566.pdf
+   * 一般の事業：労働者負担 5/1,000・事業主負担 8.5/1,000・合計 13.5/1,000
+   * （令和7年度は労働者 5.5/1,000・事業主 9/1,000・合計 14.5/1,000）
+   */
+  it('雇用保険料率（労働者負担・一般の事業）は令和8年度の 5/1,000', () => {
+    expect(EMPLOYMENT_RATE).toBe(5 / 1_000);
   });
 
   it('40〜64歳は介護保険料（令和8年度1.62%・折半後0.81%）が健康保険料に上乗せされる', () => {
@@ -388,5 +404,33 @@ describe('calcTakeHome（手取りの内訳）', () => {
     const t = calcTakeHome(1_500_000, false);
     expect(t.premiums.total).toBe(0);
     expect(t.net).toBeGreaterThan(calcTakeHome(1_500_000, true).net);
+  });
+});
+
+/**
+ * この改定の主題は金額の大きさではなく、**ツールによって社保の概算の年度が食い違わないこと**。
+ * 等級ベースの calcPremiums()（手取り・損得の2ツール）と年収ベースの
+ * estimateSocialInsurance()（ふるさと納税・年末調整・iDeCo・医療費控除の4ツール）は
+ * 精度が違うので総額は一致しないが、**同じ料率の定数を見ている**ことは確かめられる。
+ * docs/features/shaho-gaisan-r8-koyo-hoken-ryoritsu.md
+ */
+describe('6ツールで社会保険料の料率が揃っている', () => {
+  it('雇用保険は等級ベースでも年収ベースでも同じ料率で引かれる', () => {
+    for (const income of [2_000_000, 5_000_000, 8_000_000, 20_000_000]) {
+      // 概算から健保・厚年（どちらも上限あり）を引いた残りが雇用保険分
+      const health = Math.min(income, 22_410_000) * (HEALTH_RATE + SHIENKIN_RATE);
+      const pension = Math.min(income, 12_300_000) * PENSION_RATE;
+      const employmentInEstimate =
+        estimateSocialInsurance(income) - Math.round(health + pension);
+      expect(employmentInEstimate).toBeCloseTo(
+        calcPremiums(income).employment,
+        0,
+      );
+    }
+  });
+
+  it('概算が令和8年度の料率で組まれている（年収500万円で735,750円）', () => {
+    // 健保4.95% + 支援金0.115% = 253,250 / 厚年9.15% = 457,500 / 雇用0.5% = 25,000
+    expect(estimateSocialInsurance(5_000_000)).toBe(735_750);
   });
 });

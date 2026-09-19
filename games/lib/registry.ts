@@ -353,6 +353,23 @@ export const games: GameDef[] = [
     stage: 'wip',
     updatedAt: '2026-09-07',
   },
+  {
+    // **キーボードを必須とする初めてのゲーム**（docs/features/game-typing.md）。
+    // 「タイピング練習」は行為そのものを指す一般名称と考えられるが、
+    // **商標の確認は運営者のタスク**（この環境から J-PlatPat を引けない。
+    // 色水ソート・二角取り・ボルダリングと同じ扱い）。
+    // 既存タイトル（寿司打・e-typing 等）の名称・題材・演出は一切参照していない。
+    // **公開の条件は仕様書の判定リスト**（表記ゆれの判定・語彙の品質・
+    // Escでのリセット・タッチ端末の案内・記録の保存）。満たしたら `preview` → `public`。
+    // `public` にするPRでは `home/index.html` のカードと `home/llms.txt` の行も足す
+    slug: 'typing',
+    icon: 'Keyboard',
+    name: 'タイピング練習',
+    description:
+      'ひらがなのお題をローマ字で打つ60秒トレーニング。KPMと正確率を測ります。shi・si どちらの打ち方でも判定します。パソコンのキーボード向け。',
+    stage: 'wip',
+    updatedAt: '2026-09-10',
+  },
 ];
 
 /**

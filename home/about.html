@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>運営者情報｜hasokon</title>
+    <meta
+      name="description"
+      content="hasokon.com（/tools/ ・ /games/ ・ /learn/ を含む）の運営者と、制度に関わる計算機・読み物をどの資料にもとづいて作り、どう検証しているかのご案内です。"
+    />
+    <link rel="canonical" href="https://hasokon.com/about.html" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <style>
+      /* デザイントークン。原典は /design/tokens.css。index.html と同じ値にすること */
+      :root {
+        color-scheme: light dark;
+        --bg: #faf9f7;
+        --surface: #ffffff;
+        --text: #1c1917;
+        --muted: #6f6a65;
+        --border: #e5e2dd;
+        --brand: #15803d;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a1817;
+          --surface: #242120;
+          --text: #f2efec;
+          --muted: #a8a29c;
+          --border: #3d3835;
+          --brand: #4ade80;
+        }
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          'Hiragino Sans', 'Noto Sans JP', system-ui, -apple-system, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.9;
+        padding: 40px 20px 32px;
+      }
+      main {
+        max-width: 44rem;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+      }
+      h2 {
+        font-size: 1.1rem;
+        margin: 26px 0 6px;
+        border-left: 4px solid var(--brand);
+        padding-left: 10px;
+      }
+      h3 {
+        font-size: 0.98rem;
+        margin: 18px 0 4px;
+      }
+      p {
+        margin: 8px 0;
+        font-size: 0.95rem;
+      }
+      a {
+        color: var(--brand);
+      }
+      ul,
+      ol {
+        margin: 8px 0 8px 1.3em;
+        font-size: 0.95rem;
+      }
+      li {
+        margin: 4px 0;
+      }
+      /* 運営者の表。スマホ幅では縦積みにして、狭い画面で項目名が潰れないようにする */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+        font-size: 0.95rem;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--border);
+        padding: 8px 10px;
+      }
+      th {
+        width: 30%;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      @media (max-width: 30rem) {
+        th,
+        td {
+          display: block;
+          width: auto;
+          border-bottom: none;
+          padding: 2px 0;
+        }
+        td {
+          border-bottom: 1px solid var(--border);
+          padding-bottom: 8px;
+        }
+      }
+      .note {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 10px 0;
+      }
+      .lead {
+        color: var(--muted);
+        font-size: 0.92rem;
+      }
+      footer {
+        color: var(--muted);
+        font-size: 0.8rem;
+        margin-top: 32px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>運営者情報</h1>
+      <p class="lead">
+        本ページは、hasokon.com および配下のサイト（/tools/ ・ /games/ ・ /learn/ を含む。以下「本サイト」）について、誰が運営し、各ページを<strong>どの資料にもとづき、どう検証して作っているか</strong>をまとめたものです。あわせて、本サイトでは<strong>できないこと</strong>も明記します。
+      </p>
+
+      <h2>運営者</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>サイト名</th>
+            <td>hasokon（hasokon.com）</td>
+          </tr>
+          <tr>
+            <th>運営</th>
+            <td>hasokon tools（個人による運営）</td>
+          </tr>
+          <tr>
+            <th>運営者の背景</th>
+            <td>
+              ソフトウェアエンジニア。税理士・社会保険労務士・ファイナンシャルプランナーなどの資格は保有しておらず、金融商品取引業（投資助言・代理業）の登録も受けていません。
+            </td>
+          </tr>
+          <tr>
+            <th>公開しているもの</th>
+            <td>
+              <a href="/tools/">無料計算ツール集</a>（税・社会保険などの計算機）、
+              <a href="/games/">無料ミニゲーム集</a>、
+              <a href="/learn/">学ぶ</a>（分野ごとの読み物）
+            </td>
+          </tr>
+          <tr>
+            <th>お問い合わせ</th>
+            <td><a href="/tools/contact/">お問い合わせフォーム</a></td>
+          </tr>
+          <tr>
+            <th>プライバシーポリシー</th>
+            <td><a href="/privacy.html">プライバシーポリシー</a></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>計算の根拠をどう作っているか</h2>
+      <p>
+        制度に関わるツールと読み物は、次の手順で作っています。解説記事やまとめサイトを根拠にすることはしません。
+      </p>
+      <ol>
+        <li>
+          <strong>一次情報にあたる</strong> —
+          法令の条文、官公庁（国税庁・厚生労働省・総務省・金融庁・こども家庭庁など）が公開している資料を確認し、金額・料率・区分をそこから取ります。各ページの下部に、実際に参照した資料へのリンクを載せています
+        </li>
+        <li>
+          <strong>計算部分を画面から切り離して実装する</strong> —
+          計算式は入力欄や表示とは別のファイルに、外部に依存しない関数として書いています。画面を触らずに計算式だけを直せるので、制度改正のときに間違いが入りにくくなります
+        </li>
+        <li>
+          <strong>一次資料の計算例で検証する</strong> —
+          公的資料に載っている計算例、制度の境界にあたる金額（「◯万円ちょうど」のような値）、ありえない入力（マイナスや0）を自動テストにしています。これが全部通らないと公開できない仕組みにしています
+        </li>
+        <li>
+          <strong>制度の数値は1か所にまとめる</strong> —
+          料率や金額の表はファイルの先頭にまとめてあり、改正があったときはそこだけを直せば全体に反映されます
+        </li>
+      </ol>
+
+      <h3>ゲームについて</h3>
+      <p>
+        ゲームも同じ考え方で、ルールの根幹（札の移動可否・勝敗の判定・盤面の生成）は画面とは別のファイルに切り出し、自動テストで検証しています。ナンプレとノノグラムは答えが必ず1通りになる問題だけを、麻雀ソリティアは必ず最後まで消せる並びだけを配ります。一般に別名で知られるゲームでも、登録商標にあたる名称は使わず一般名称で呼んでいます。花札の絵柄48枚を含め、画像はこのサイトのために描き起こしたものです。
+      </p>
+
+      <h2>本サイトでできないこと</h2>
+      <div class="note">
+        <p style="margin: 0 0 8px">
+          <strong>個別の税務相談・法律相談ではありません。</strong>
+          本サイトの計算機は、公開されている制度の計算式を誰でも試せるようにしたものです。特定の方の状況に対する助言ではなく、税理士法・社会保険労務士法などで有資格者に限られている業務を行うものでもありません。
+        </p>
+        <p style="margin: 0 0 8px">
+          <strong>投資助言ではありません。</strong>
+          「学ぶ」の読み物は、一般的・客観的な情報提供を目的とした教育コンテンツです。個別の銘柄・商品の推奨や、売買時期の助言は行いません。
+        </p>
+        <p style="margin: 0 0 8px">
+          <strong>有資格者の監修は受けていません。</strong>
+          根拠は一次情報にあたって確認していますが、税理士・社会保険労務士等による監修は入っていません。申告や手続きなど実際の判断をされる際は、公的機関の窓口または専門家にご確認ください。
+        </p>
+        <p style="margin: 0">
+          <strong>対応していない条件があります。</strong>
+          たとえばふるさと納税の計算機には対応していない控除の組み合わせがあります。こうした制限は各ページに明記しています。「前提」や「このページについて」の欄をご確認ください。
+        </p>
+      </div>
+      <p>
+        <strong>誤りを見つけたらご連絡ください。</strong>
+        制度の解釈や数値の誤りに気づかれた場合は、<a href="/tools/contact/">お問い合わせフォーム</a>からお知らせいただけると助かります。確認のうえ修正し、ページの最終更新日を更新します。
+      </p>
+
+      <h2>更新の方針</h2>
+      <ul>
+        <li>
+          制度改正があったときに更新します。各ページの下部に<strong>最終更新日</strong>を表示しており、sitemapに載せている更新日も同じ値です
+        </li>
+        <li>
+          記事の定期的な書き足しはしません。計算式は年月で古くならないため、内容が変わっていないのに更新日だけを新しくすることはしません
+        </li>
+        <li>
+          料率や金額に見込み値を使っている場合は、その旨をページに明記し、確定後に更新します
+        </li>
+      </ul>
+
+      <h2>入力データの扱い</h2>
+      <p>
+        すべての計算・ゲームはお使いのブラウザの中だけで動作します。年収や病名にあたる情報を入力しても、サーバーに送信・保存されることはありません。ゲームのベストスコアなどの記録は、お使いのブラウザの保存領域（localStorage）にのみ保存されます。サイトの利用状況の集計にはGoogleアナリティクスを使っていますが、ツールに入力された数値や文字列は含まれません。詳しくは<a href="/privacy.html">プライバシーポリシー</a>をご覧ください。
+      </p>
+
+      <h2>無料で公開できる理由</h2>
+      <p>
+        本サイトはすべて無料で、会員登録もアイテム課金もありません。運営費は広告（Google
+        AdSense）でまかなっています。広告の表示より使いやすさを優先する方針で、計算結果やゲームの盤面の中に広告を挟むことはしません。
+      </p>
+
+      <p class="lead">最終更新：2026年9月17日（/tools/about/ と /games/about/ を1枚にまとめました）</p>
+
+      <footer>
+        <p>
+          <a href="/privacy.html">プライバシーポリシー</a> ／
+          <a href="/tools/contact/">お問い合わせ</a> ／
+          <a href="/">hasokon.com トップへ戻る</a>
+        </p>
+        <p>© 2026 hasokon tools All rights reserved.</p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -64,7 +64,9 @@ export default function Home() {
         </div>
         <p className="lead">
           制度に関わる計算機は、法令や官公庁の一次資料にもとづいて作り、根拠へのリンクと最終更新日を各ページに載せています。年収の壁・iDeCo・高額療養費・高校無償化など、2026年の制度改正にも対応しています。詳しくは
-          <Link href="/about/">運営者情報と計算の根拠について</Link>
+          {/* 運営者情報はサイト全体で1枚（home 実体の /about.html）。basePath の外なので
+              <a> で絶対パスへ飛ばす（docs/features/google-index-recovery.md 提案 C） */}
+          <a href="/about.html">運営者情報と計算の根拠について</a>
           をご覧ください。
         </p>
       </section>

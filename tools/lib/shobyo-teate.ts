@@ -3,7 +3,7 @@
  *
  * 一次情報:
  * - 全国健康保険協会（協会けんぽ）「病気やケガで会社を休んだとき（傷病手当金）」
- *   https://www.kyoukaikenpo.or.jp/g6/cat620/r306/
+ *   https://www.kyoukaikenpo.or.jp/benefit/injury_and_sickness_allowance/
  * - 1日あたりの支給額 = 支給開始日以前12ヶ月の各月の標準報酬月額の平均 ÷ 30日 × 2/3
  *   （÷30 の段階で10円未満四捨五入、×2/3 の段階で1円未満四捨五入）
  * - 連続3日間の待期期間（土日祝・有給を含む）を経て4日目から支給
@@ -11,22 +11,19 @@
  * - 被保険者期間が12ヶ月未満の場合は、その期間の標準報酬月額の平均と
  *   「全被保険者の標準報酬月額の平均額」の低い方を使う（令和7年4月1日以降は32万円）
  *
- * 標準報酬月額の等級表は '@/lib/shaho-grades' の standardMonthly を再利用。
- * 【データ更新箇所】等級表が改定されたら shaho-grades.ts の GRADES を、
- * 全被保険者の標準報酬月額の平均額が改定されたら SHORT_TENURE_CAP を更新する
+ * **日額の計算と SHORT_TENURE_CAP は `lib/kenpo-daily-amount.ts` にある。**
+ * 出産手当金（健康保険法102条2項が99条2項を準用）が同じ式なので、
+ * 同じ数字を2か所に置かないよう切り出した。ここでは再エクスポートだけしている
+ * （既存の `import { SHORT_TENURE_CAP } from '@/lib/shobyo-teate'` を壊さないため）。
  */
 
-import { standardMonthly } from '@/lib/shaho-grades';
+import { kenpoDailyAmount } from '@/lib/kenpo-daily-amount';
+
+export { SHORT_TENURE_CAP } from '@/lib/kenpo-daily-amount';
+export type { KenpoDailyAmount } from '@/lib/kenpo-daily-amount';
 
 /** 待期期間（連続した暦日数） */
 export const TAIKI_DAYS = 3;
-
-/**
- * 被保険者期間が12ヶ月未満のときに上限として使う「全被保険者の標準報酬月額の平均額」。
- * 協会けんぽ・支給開始日が令和7年4月1日以降は32万円（それ以前は30万円）。
- * 健康保険組合では別の額が定められている場合がある。
- */
-export const SHORT_TENURE_CAP = 320_000;
 
 /**
  * 支給期間の上限日数（通算1年6ヶ月）。
@@ -83,15 +80,11 @@ export function calcShobyoTeate(input: ShobyoTeateInput): ShobyoTeateResult {
   const income = Math.max(0, input.monthlyIncome);
   const restDays = Math.max(0, Math.floor(input.restDays));
 
-  // 被保険者期間が12ヶ月未満なら、全被保険者の平均額を超えない額で算定する
-  const graded = standardMonthly(income);
-  const capped = input.under12Months === true && graded > SHORT_TENURE_CAP;
-  const std = capped ? SHORT_TENURE_CAP : graded;
-
-  // 標準報酬日額: ÷30 の10円未満四捨五入（=10円単位に丸め）
-  const standardDaily = Math.round(std / 30 / 10) * 10;
-  // 日額: ×2/3 の1円未満四捨五入
-  const dailyAmount = Math.round((standardDaily * 2) / 3);
+  // 日額の計算（等級表への丸め・12ヶ月未満の上限・端数処理）は出産手当金と共通
+  const { standardMonthly: std, capped, standardDaily, dailyAmount } = kenpoDailyAmount(
+    income,
+    input.under12Months === true,
+  );
   // 待期3日間（最初の連続3日）は支給されない
   const requestedDays = Math.max(0, restDays - TAIKI_DAYS);
   // 支給期間は通算1年6ヶ月が上限。これを超える日数を入れられても頭打ちにする
