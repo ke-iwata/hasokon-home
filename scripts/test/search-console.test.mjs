@@ -3,10 +3,15 @@ import { describe, it } from 'node:test';
 
 import {
   INSPECTION_ENDPOINT,
+  SITEMAPS_ENDPOINT,
   backoffDelay,
+  getSitemap,
   inspectUrl,
   isRetryable,
+  listSitemaps,
   mapWithConcurrency,
+  sitemapsUrl,
+  toSitemapStatus,
 } from '../lib/search-console.mjs';
 
 const PARAMS = {
@@ -168,5 +173,173 @@ describe('mapWithConcurrency', () => {
   it('同時実行数が不正なら落とす', async () => {
     await assert.rejects(() => mapWithConcurrency([1], 0, async () => 1), /1以上の整数/);
     await assert.rejects(() => mapWithConcurrency([1], 1.5, async () => 1), /1以上の整数/);
+  });
+});
+
+// Sitemaps API（docs/features/sitemap-discovery-audit.md の「B」）
+// 「Google がそのサイトマップを読んだか」を見るための2関数。
+
+const SITE = { siteUrl: 'https://hasokon.com/', accessToken: 'ya29.test' };
+
+describe('sitemapsUrl', () => {
+  it('siteUrl を丸ごとエンコードして一覧のURLを作る', () => {
+    assert.equal(
+      sitemapsUrl('https://hasokon.com/'),
+      `${SITEMAPS_ENDPOINT}/https%3A%2F%2Fhasokon.com%2F/sitemaps`,
+    );
+  });
+
+  it('feedpath も丸ごとエンコードする（スラッシュを残すとパスとして切られる）', () => {
+    assert.equal(
+      sitemapsUrl('https://hasokon.com/', 'https://hasokon.com/learn/sitemap.xml'),
+      `${SITEMAPS_ENDPOINT}/https%3A%2F%2Fhasokon.com%2F/sitemaps/https%3A%2F%2Fhasokon.com%2Flearn%2Fsitemap.xml`,
+    );
+  });
+});
+
+describe('listSitemaps', () => {
+  it('GET で一覧を取り、sitemap 配列を返す', async () => {
+    const seen = {};
+    const fetchImpl = async (url, init) => {
+      seen.url = url;
+      seen.init = init;
+      return jsonResponse({ sitemap: [{ path: 'https://hasokon.com/sitemap.xml' }] });
+    };
+
+    const result = await listSitemaps(SITE, { fetchImpl });
+
+    assert.equal(result.ok, true);
+    assert.deepEqual(result.sitemaps, [{ path: 'https://hasokon.com/sitemap.xml' }]);
+    assert.equal(seen.url, sitemapsUrl(SITE.siteUrl));
+    assert.equal(seen.init.method, 'GET');
+    assert.equal(seen.init.headers.authorization, 'Bearer ya29.test');
+  });
+
+  it('1本も登録が無ければ空配列（キーごと返らないことがある）', async () => {
+    const result = await listSitemaps(SITE, { fetchImpl: async () => jsonResponse({}) });
+    assert.deepEqual(result.sitemaps, []);
+  });
+
+  it('5xx は投げ直す', async () => {
+    const { waited, sleep } = fakeSleep();
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls += 1;
+      return calls < 3 ? errorResponse(503) : jsonResponse({ sitemap: [] });
+    };
+
+    const result = await listSitemaps(SITE, { fetchImpl, sleep, baseDelayMs: 1000 });
+
+    assert.equal(result.ok, true);
+    assert.equal(calls, 3);
+    assert.deepEqual(waited, [1000, 2000]);
+  });
+});
+
+describe('getSitemap', () => {
+  const params = { ...SITE, feedpath: 'https://hasokon.com/learn/sitemap.xml' };
+
+  it('1本ぶんのURLを GET する', async () => {
+    const seen = {};
+    const fetchImpl = async (url, init) => {
+      seen.url = url;
+      seen.init = init;
+      return jsonResponse({ lastDownloaded: '2026-09-08T19:37:21.507Z' });
+    };
+
+    const result = await getSitemap(params, { fetchImpl });
+
+    assert.equal(result.ok, true);
+    assert.equal(result.body.lastDownloaded, '2026-09-08T19:37:21.507Z');
+    assert.equal(seen.url, sitemapsUrl(SITE.siteUrl, params.feedpath));
+    assert.equal(seen.init.headers.authorization, 'Bearer ya29.test');
+  });
+
+  it('404 は notFound として即返す（投げ直さない）', async () => {
+    const { waited, sleep } = fakeSleep();
+    let calls = 0;
+    const fetchImpl = async () => {
+      calls += 1;
+      return errorResponse(404, 'notFound');
+    };
+
+    const result = await getSitemap(params, { fetchImpl, sleep });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.notFound, true);
+    assert.equal(result.status, 404);
+    assert.equal(calls, 1, '404 で投げ直しています');
+    assert.deepEqual(waited, []);
+  });
+
+  it('403 は失敗として返す（notFound ではない）', async () => {
+    const result = await getSitemap(params, { fetchImpl: async () => errorResponse(403, 'forbidden') });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.notFound, false);
+    assert.match(result.error, /HTTP 403/);
+  });
+
+  it('通信そのものが失敗しても notFound にはしない', async () => {
+    const { sleep } = fakeSleep();
+    const fetchImpl = async () => {
+      throw new Error('ECONNRESET');
+    };
+
+    const result = await getSitemap(params, { fetchImpl, sleep });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.notFound, false);
+    assert.match(result.error, /ECONNRESET/);
+  });
+});
+
+describe('toSitemapStatus', () => {
+  it('contents の submitted / indexed を数値にして合計する', () => {
+    const status = toSitemapStatus('https://hasokon.com/tools/sitemap.xml', {
+      ok: true,
+      body: {
+        lastDownloaded: '2026-09-13T00:00:00.000Z',
+        contents: [
+          { type: 'web', submitted: '56', indexed: '0' },
+          { type: 'image', submitted: '4', indexed: '1' },
+        ],
+      },
+    });
+
+    assert.deepEqual(status, {
+      path: 'https://hasokon.com/tools/sitemap.xml',
+      known: true,
+      lastDownloaded: '2026-09-13T00:00:00.000Z',
+      submitted: 60,
+      indexed: 1,
+    });
+  });
+
+  it('index のように contents が無ければ件数は null', () => {
+    const status = toSitemapStatus('https://hasokon.com/sitemap.xml', {
+      ok: true,
+      body: { lastDownloaded: '2026-09-14T00:00:00.000Z', isSitemapsIndex: true },
+    });
+
+    assert.equal(status.known, true);
+    assert.equal(status.submitted, null);
+    assert.equal(status.indexed, null);
+  });
+
+  it('一度も読まれていなければ lastDownloaded は null', () => {
+    const status = toSitemapStatus('x', { ok: true, body: { contents: [] } });
+    assert.equal(status.known, true);
+    assert.equal(status.lastDownloaded, null);
+  });
+
+  it('取れなかったものは known: false（404 も通信失敗も同じ形にそろえる）', () => {
+    assert.deepEqual(toSitemapStatus('https://hasokon.com/learn/sitemap.xml', { ok: false, notFound: true }), {
+      path: 'https://hasokon.com/learn/sitemap.xml',
+      known: false,
+      lastDownloaded: null,
+      submitted: null,
+      indexed: null,
+    });
   });
 });
