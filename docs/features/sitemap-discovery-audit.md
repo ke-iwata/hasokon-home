@@ -1,6 +1,6 @@
 # learn のサイトマップ（39 URL）が Google に一度も読まれていない — robots.txt に子サイトマップを直接書き、週次監査で「読まれたか」を数える
 
-**状態**：提案（2026-09-19 起票）。[google-index-recovery.md](./google-index-recovery.md) の「経過」
+**状態**：**A・B は実装済み（2026-09-19）。C（運営者の画面作業）は未実施。**[google-index-recovery.md](./google-index-recovery.md) の「経過」
 2026-09-17 の末尾にある **「サイトマップ index の子が Google に読まれていない」を Sitemaps API で
 裏づけ、コード側でできる手当てを切り出したもの**。復旧計画の A（週次監査）の拡張と、
 `home/robots.txt` の 1 か所の変更で済む。
@@ -152,6 +152,12 @@ Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitem
 
 - 2026-09-19：起票。企画レビュー（#234）で `sitemap-home.xml` の実体を main（3 URL）で数えていた
   誤りを訂正（本番 v1.18.0 は 2 URL）
+- 2026-09-19：**A・B を実装。** `home/robots.txt` に子サイトマップ 4 本を `Sitemap:` で追加し、
+  `scripts/lib/search-console.mjs` に `listSitemaps()` / `getSitemap()` / `toSitemapStatus()` を足して
+  週次監査が 1 本ずつの「読まれた日・送信数・登録数」を出すようにした。
+  `--out` の JSON に `sitemaps` が増え、読まれていない／14 日より古い子があれば終了コード 1。
+  **C は未実施**（Search Console の画面で `/learn/sitemap.xml` と `/sitemap-home.xml` を個別送信する）。
+  効果の確認は本番リリース後、次の月曜の監査 artifact で `known: true` が入るかを見る
 
 ## 期待される効果
 

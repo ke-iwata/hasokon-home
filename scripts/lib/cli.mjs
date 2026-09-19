@@ -16,9 +16,11 @@ const USAGE = `使い方: node scripts/gsc-canonical-audit.mjs [オプション]
 サイトマップに載っている全URLを Search Console の URL検査API にかけ、
 googleCanonical が旧サブドメイン（tool / game / roulette.hasokon.com）を
 指したままのページが何件あるかを数える。
-あわせて、Google側の状態（coverageState）ごとの件数とURLも出す。
+あわせて、Google側の状態（coverageState）ごとの件数とURLと、
+サイトマップ1本ずつが Google に読まれたか（Sitemaps API）も出す。
 仕様: docs/features/search-index-consolidation.md
       docs/features/google-index-recovery.md
+      docs/features/sitemap-discovery-audit.md
 
 オプション:
   --sitemap <url>     起点のサイトマップ（既定: ${DEFAULTS.sitemap}）
@@ -33,7 +35,8 @@ googleCanonical が旧サブドメイン（tool / game / roulette.hasokon.com）
 
 終了コード:
   0  旧サブドメインを指すURLが0件（統合完了）／--dry-run が成功
-  1  旧サブドメインを指すURLが残っている、または検査に失敗したURLがある
+  1  旧サブドメインを指すURLが残っている、検査に失敗したURLがある、
+     またはGoogleに読まれていないサイトマップがある
   2  実行できなかった（認証・サイトマップ取得の失敗など）`;
 
 export function usage() {

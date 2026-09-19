@@ -86,6 +86,46 @@ Search Console の画面と突き合わせるときはそのまま比べてく�
 `Crawled - currently not indexed` のまま**なら、仕様書の「原因1（サイト単位の品質判定）」が
 ほぼ確定、という見切りかたをします。
 
+### サイトマップが Google に読まれたか
+
+仕様: [docs/features/sitemap-discovery-audit.md](../docs/features/sitemap-discovery-audit.md)
+
+`URL is unknown to Google` は「未発見」ですが、**サイトマップが読まれていれば
+起きないはず**のものです。2026-09-19 に Sitemaps API を手で叩いたところ、
+`/learn/sitemap.xml`（39 URL）は **Google に一度も読まれておらず**、
+index に並べただけの子が読まれないことがある、と分かりました。
+URL検査の結果だけ見ていても気づけないので、監査にも入れてあります。
+
+サイトマップ index を辿って見つけた1本ごとに Sitemaps API を叩き、
+**読まれた日・送信URL数・登録URL数**を標準エラーに1行ずつ出します。
+
+```
+サイトマップが読まれたかを見ます（Sitemaps API）…
+  https://hasokon.com/sitemap.xml：読まれた日 2026-09-14T00:00:00.000Z / 送信 — / 登録 —
+  https://hasokon.com/sitemap-home.xml：読まれた日 2026-09-08T19:37:21.507Z（14日より古い）/ 送信 2 / 登録 0
+  https://hasokon.com/learn/sitemap.xml：Google は知らない（送信済みでも既知でもない）
+  読まれていない／14日より古いサイトマップ: 2 本
+```
+
+- 1本でも「知らない」「一度も読まれていない」「最終ダウンロードが **14日**より古い」なら
+  **終了コード 1**（統合の未完了と同じ扱い。ジョブは落ちません）
+- Sitemaps API の **404 は「送信済みでも既知でもない」という答え**なので、
+  投げ直さずそのまま `known: false` にします。401/403/5xx は再試行し、
+  それでも駄目なら終了コード 2（URL検査は始めません）
+- `--out` のJSONには `sitemaps` として1本ずつ残ります
+
+```json
+"sitemaps": [
+  { "path": "https://hasokon.com/learn/sitemap.xml", "known": false, "lastDownloaded": null, "submitted": null, "indexed": null },
+  { "path": "https://hasokon.com/sitemap-home.xml", "known": true, "lastDownloaded": "2026-09-08T19:37:21.507Z", "submitted": 2, "indexed": 0 }
+]
+```
+
+発見経路そのものは `home/robots.txt` に子サイトマップ4本を `Sitemap:` で
+直接書いて増やしてあります（index の処理と独立した経路）。
+**子を増減したら `home/sitemap.xml` と `home/robots.txt` の両方を直してください**
+（`scripts/test/robots-sitemaps.test.mjs` が落ちます）。
+
 ### 週1回の自動実行
 
 `.github/workflows/gsc-audit.yml` が**毎週月曜 09:00 JST**に回します
@@ -103,7 +143,8 @@ Name は `GOOGLE_SERVICE_ACCOUNT_JSON`、Secret にはサービスアカウン�
 登録したら **Actions → GSC audit → Run workflow** で1回手で回し、
 artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
 
-終了コード 1（統合が未完了・検査に失敗したURLがある）ではジョブを落としません。
+終了コード 1（統合が未完了・検査に失敗したURLがある・読まれていないサイトマップがある）
+ではジョブを落としません。
 いまは 1 がふつうの状態だからです。落とすのは 2（実行できなかった）のときだけです。
 
 ### 終了コード
@@ -111,7 +152,7 @@ artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
 | コード | 意味 |
 |---|---|
 | 0 | 旧サブドメインを指すURLが0件（統合完了）。`--dry-run` の成功も0 |
-| 1 | 旧サブドメインを指すURLが残っている、または検査に失敗したURLがある |
+| 1 | 旧サブドメインを指すURLが残っている、検査に失敗したURLがある、またはGoogleに読まれていないサイトマップがある |
 | 2 | 実行できなかった（認証の失敗、サイトマップを読めない、など） |
 
 「1件でも失敗したら完了とは言わない」ようにしてあります。
