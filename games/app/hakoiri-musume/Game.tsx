@@ -276,11 +276,14 @@ export default function Game() {
         ]}
       />
 
+      {/* **レベル名はここに出さない。** 区分と面のボタンで分かるうえ、狭い画面では
+          この行が2行になって盤が動く（隠して高さを合わせると、手数やタイマーのほうが
+          黙って消える）。仕様で「常に表示」なのは手数と最短手数 */}
       <p className="status-bar">
-        <span>{level.name}</span>
         <span>
-          {state.moves}手 ／ 最短 {level.minMoves}手{'　'}⏱ {formatTime(result?.timeMs ?? timer.ms)}
+          {state.moves}手 ／ 最短 {level.minMoves}手
         </span>
+        <span>⏱ {formatTime(result?.timeMs ?? timer.ms)}</span>
       </p>
 
       <div className="hm-board" role="group" aria-label="箱入り娘の盤面">
