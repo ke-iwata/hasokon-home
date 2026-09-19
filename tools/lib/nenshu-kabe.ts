@@ -12,8 +12,9 @@
  * - 住民税の壁: 119万円（給与所得控除74万円 + 非課税限度額45万円）。
  *   2026年の収入＝2027年度の住民税から。住民税の基礎控除43万円は
  *   課税所得の計算に使うもので、非課税ラインの算定には使わない
- * - 社会保険 106万円の壁: 51人以上・週20時間以上。賃金要件は2026年10月1日に撤廃され、
- *   以降は「金額の壁」ではなくなる（WALL_DEFS の effectiveUntil で自動的に消える）
+ * - 社会保険 106万円の壁: 短時間労働者が加入対象の勤務先・週20時間以上。賃金要件は
+ *   2026年10月1日に撤廃され、以降は「金額の壁」ではなくなる
+ *   （WALL_DEFS の effectiveUntil で自動的に消える）
  * - 社会保険 130万円の壁: 扶養認定基準（19〜22歳の学生は150万円）。
  *   2026年4月から残業代を含まず基本給ベースで判定
  * - 配偶者控除136万円（=74+62） / 配偶者特別控除169万円（=74+95）で減額開始・207万円（=74+133）で消失
@@ -32,12 +33,27 @@ export type Position =
   | 'dependent' // 親の扶養内・その他
   | 'none'; // 扶養に入っていない
 
+/**
+ * 勤務先が短時間労働者を社会保険に加入させる事業所かどうか。
+ *
+ * もとは `size51: boolean`（従業員51人以上か）だったが、2026年10月1日に始まる
+ * 保険料調整制度の対象は「**50人以下だが短時間労働者を加入させることにした事業所**
+ * （任意特定適用事業所）」なので、真ん中の状態を持てないと対象者の判定ができなかった。
+ * 「51人以上でないなら加入しない」は施行後は事実としても誤りになる。
+ *
+ * - `over51`: 従業員51人以上（特定適用事業所）。加入するが、保険料調整制度の対象外
+ * - `optional-covered`: 50人以下だが社会保険に加入することになった（任意特定適用事業所ほか）。
+ *   加入し、勤務先が申し出ていれば保険料調整制度の対象になる
+ * - `not-covered`: 50人以下で加入しない
+ */
+export type Workplace = 'over51' | 'optional-covered' | 'not-covered';
+
 export interface KabeInput {
   /** 年収（額面・円） */
   income: number;
   position: Position;
-  /** 勤務先の従業員数が51人以上 */
-  size51: boolean;
+  /** 勤務先が短時間労働者を社会保険に加入させる事業所か */
+  workplace: Workplace;
   /** 週の所定労働時間が20時間以上 */
   hours20: boolean;
   /**
@@ -107,6 +123,17 @@ export const WAGE_REQUIREMENT_ABOLISHED_ON = '2026-10-01';
 export const DAYTIME_STUDENT_EXCLUSION_NOTE =
   '昼間部の学生は適用除外のため加入しません（夜間部・定時制・通信制、休学中の方は対象です）。';
 
+/**
+ * 保険料調整制度（2026年10月1日〜）の注記。
+ *
+ * **このファイルは保険料も手取りも計算しない**（import が1つも無い判定ロジックのまま保つ）。
+ * 金額は「社会保険 損得計算機」（/hatarakizon/）の役割なので、ここでは制度があることだけを
+ * 伝えて、そちらに送る。同じ計算を2か所に置かないため。
+ * 仕様は docs/features/hokenryo-chosei-seido.md。
+ */
+export const HOKENRYO_CHOSEI_NOTE =
+  '勤務先が保険料調整制度（2026年10月1日開始）を利用している場合、加入後の厚生年金保険料・健康保険料は最長3年、本人負担が25〜48%に軽減されます（対象は標準報酬月額12.6万円以下の方）。制度を使えるのは50人以下で新たに短時間労働者を加入対象にした勤務先などに限られ、事業主の申出制です。';
+
 export const WALL_DEFS: WallDef[] = [
   {
     amount: 106 * M,
@@ -114,13 +141,13 @@ export const WALL_DEFS: WallDef[] = [
     category: '社会保険',
     effect:
       '勤務先の社会保険（厚生年金・健康保険）に加入し、保険料の天引きが始まります（目安: 年収106万円で年約16万円）。将来の年金は増えます。',
-    note: '従業員51人以上かつ週20時間以上勤務の場合。賃金要件（月8.8万円）は2026年10月1日に撤廃され、以降は週20時間以上なら年収に関係なく加入対象になります（この壁は施行日に自動で表示されなくなります）。',
+    note: '従業員51人以上の勤務先（または50人以下でも短時間労働者を加入させることにした勤務先）で週20時間以上勤務の場合。賃金要件（月8.8万円）は2026年10月1日に撤廃され、以降は週20時間以上なら年収に関係なく加入対象になります（この壁は施行日に自動で表示されなくなります）。',
     impact: 'high',
     inclusive: true,
     // 賃金要件の撤廃で「106万円」という金額の壁は消える。加入するかどうかの判定は
     // evaluateShaho() が引き継ぐ
     effectiveUntil: WAGE_REQUIREMENT_ABOLISHED_ON,
-    applies: (i) => i.position !== 'none' && i.size51 && i.hours20,
+    applies: (i) => i.position !== 'none' && i.workplace !== 'not-covered' && i.hours20,
   },
   {
     amount: 119 * M,
@@ -245,8 +272,11 @@ export const WALL_DEFS: WallDef[] = [
  * 期間の判定を Date どうしの比較でやると、`new Date('2026-10-01')` がUTCの
  * 深夜として解釈され、日本時間では9月30日中に切り替わってしまう。
  * 施行日は「日本の暦日」で決まるので、閲覧者のローカル暦日の文字列で比較する。
+ *
+ * lib/hatarakizon.ts も保険料調整制度の施行日（2026-10-01）の判定に使うので export している。
+ * **同じ比較を Date どうしで書き直さないこと**（上の理由で日本時間の前日に切り替わる）。
  */
-function toYmd(d: Date): string {
+export function toYmd(d: Date): string {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${mm}-${dd}`;
@@ -268,8 +298,8 @@ function isEffective(def: WallDef, asOf: Date): boolean {
  * - not-applicable: 加入要件（従業員51人以上・週20時間以上）を満たさない等
  */
 export type ShahoStatus =
-  | { kind: 'enrolled'; reason: string }
-  | { kind: 'wage-gate'; threshold: number }
+  | { kind: 'enrolled'; reason: string; choseiEligible: boolean }
+  | { kind: 'wage-gate'; threshold: number; choseiEligible: boolean }
   | { kind: 'not-applicable'; reason: string };
 
 export function evaluateShaho(input: KabeInput): ShahoStatus {
@@ -279,18 +309,25 @@ export function evaluateShaho(input: KabeInput): ShahoStatus {
       reason: '扶養に入っていない方は、この判定（扶養から抜けるかどうか）の対象外です。',
     };
   }
-  if (!(input.size51 && input.hours20)) {
+  if (input.workplace === 'not-covered' || !input.hours20) {
     return {
       kind: 'not-applicable',
       reason:
-        '勤務先の社会保険に加入するのは「従業員51人以上」かつ「週20時間以上」の両方を満たす場合です。',
+        '勤務先の社会保険に加入するのは「短時間労働者が加入対象の勤務先（従業員51人以上、または50人以下でも加入させることにした勤務先）」で「週20時間以上」働く場合です。',
     };
   }
+  // 保険料調整制度が使えるのは、50人以下で新たに短時間労働者を加入させることにした
+  // 事業所だけ。もともとの特定適用事業所（51人以上）は対象外
+  const choseiEligible = input.workplace === 'optional-covered';
   const asOf = input.asOf ?? new Date();
   if (toYmd(asOf) < WAGE_REQUIREMENT_ABOLISHED_ON) {
-    return { kind: 'wage-gate', threshold: 106 * M };
+    return { kind: 'wage-gate', threshold: 106 * M, choseiEligible };
   }
-  return { kind: 'enrolled', reason: '週20時間以上・従業員51人以上のため、年収に関係なく加入' };
+  return {
+    kind: 'enrolled',
+    reason: '週20時間以上・短時間労働者が加入対象の勤務先のため、年収に関係なく加入',
+    choseiEligible,
+  };
 }
 
 /**

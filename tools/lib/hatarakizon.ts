@@ -5,9 +5,16 @@
  * 年収の軸で並べ、手取りの逆転区間（働き損ゾーン）と損益分岐点を出す。
  *
  * 2026年10月1日に短時間労働者の賃金要件（月額8.8万円＝年収106万円相当）が撤廃され、
- * 従業員51人以上の勤務先で週20時間以上働く人は年収に関係なく加入する。
+ * 短時間労働者が加入対象の勤務先で週20時間以上働く人は年収に関係なく加入する。
  * 「壁がどこにあるか」は lib/nenshu-kabe.ts が答える。こちらは
  * 「加入すると手取りがいくら減り、いくら稼げば取り戻せるか」に答える。
+ *
+ * 同じ2026年10月1日に**保険料調整制度**が始まる。50人以下で新たに短時間労働者を
+ * 加入対象にした事業所が申し出ると、標準報酬月額12.6万円以下の人の厚生年金保険料・
+ * 健康保険料の本人負担が、労使折半（全体の50%）ではなく 25〜48% になる（通算3年）。
+ * 対象者の「働き損ゾーン」「損益分岐点」はこの軽減後の保険料で決まるので、
+ * 折半のまま出すと**実際より広い働き損ゾーン**を見せることになる。
+ * 仕様は docs/features/hokenryo-chosei-seido.md。
  *
  * ■ 計算の前提
  * - 給与収入のみ・賞与なし・本人に扶養親族なし（扶養される側の人が対象のため）
@@ -48,12 +55,16 @@ import {
   evaluateShaho,
   type KabeInput,
   type Position,
+  toYmd,
   type ShahoStatus,
+  type Workplace,
 } from '@/lib/nenshu-kabe';
 import { gradeOf, pensionStandardMonthly, roundPremium } from '@/lib/shaho-grades';
 import {
   EMPLOYMENT_RATE,
   HEALTH_RATE,
+  HOKENRYO_CHOSEI_SHARES,
+  HOKENRYO_CHOSEI_STARTS_ON,
   KAIGO_RATE,
   PENSION_RATE,
   SHIENKIN_RATE,
@@ -71,7 +82,38 @@ export {
   KAIGO_RATE,
   PENSION_RATE,
   SHIENKIN_RATE,
+  HOKENRYO_CHOSEI_EXCLUDED_NOTE,
+  HOKENRYO_CHOSEI_SHARES,
+  HOKENRYO_CHOSEI_STARTS_ON,
+  HOKENRYO_CHOSEI_YEARS,
 } from '@/lib/shaho-ryoritsu';
+
+/**
+ * 保険料調整制度（2026年10月1日〜）を、勤務先が何年目まで使っているか。
+ *
+ * 年数は**本人が加入してから**ではなく**事業所が制度の利用を申し出てから**数える。
+ * 途中で加入した人は自分の加入年数と一致せず、事業所の残り期間しか軽減されない
+ * （パンフレット Q4-1 の例：2027年8月加入の被保険者Bは2年2か月で終わる）。
+ *
+ * - `none`: 使っていない・わからない（労使折半のまま）
+ * - `y12`: 勤務先の利用開始から1〜2年目
+ * - `y3`: 勤務先の利用開始から3年目（軽減幅が半分になる）
+ */
+export type ChoseiStage = 'none' | 'y12' | 'y3';
+
+/**
+ * 標準報酬月額と年目から、本人負担の割合（保険料の全体に対する割合）を引く。
+ *
+ * 対象外なら null。折半は 0.5 なので、`share / 0.5` が「本来の本人負担に対する倍率」になる。
+ * 割合の表そのものは lib/shaho-ryoritsu.ts が持つ（このファイルは当てはめだけ）。
+ */
+export function choseiShare(standardMonthly: number, stage: ChoseiStage): number | null {
+  if (stage === 'none') return null;
+  const row = HOKENRYO_CHOSEI_SHARES.find((r) => standardMonthly <= r.standardMax);
+  // 標準報酬月額 12.6万円（月収13万円未満）を超える人は制度の対象外
+  if (!row) return null;
+  return stage === 'y3' ? row.y3 : row.y12;
+}
 
 /**
  * 老齢厚生年金（報酬比例部分）の給付乗率。平成15年4月以降の総報酬制で 5.481/1000。
@@ -154,6 +196,13 @@ export interface Premiums {
   employment: number;
   /** 合計（年額） */
   total: number;
+  /**
+   * 保険料調整制度で適用された本人負担の割合（保険料の全体に対する割合）。
+   * 制度を使っていない・対象外なら null
+   */
+  choseiShare: number | null;
+  /** 保険料調整制度で軽くなっている額（労使折半だった場合との差・年額）。適用が無ければ0 */
+  choseiSavings: number;
 }
 
 const NO_PREMIUMS: Premiums = {
@@ -164,6 +213,8 @@ const NO_PREMIUMS: Premiums = {
   pension: 0,
   employment: 0,
   total: 0,
+  choseiShare: null,
+  choseiSavings: 0,
 };
 
 /**
@@ -176,19 +227,34 @@ const NO_PREMIUMS: Premiums = {
  * 子ども・子育て支援金は給与明細でも健康保険料に含めて徴収されるため、別建てにせず
  * 健康保険料と同じ端数処理に入れる（先に月額を足してから丸める）。
  *
+ * **保険料調整制度（`chosei`）が効くのは健康保険料と厚生年金保険料の本体だけ。**
+ * 同じ行に足している子ども・子育て支援金と介護保険料、それに雇用保険料は制度の対象外で、
+ * 軽減されない（パンフレット Q5 の注記。2026-09-19 確認）。割合を健保の料率にだけ
+ * 掛けているのはこのため。**支援金まで巻き込むと軽減額が過大に出る。**
+ *
  * @param gross 年収（額面・円）
  * @param kaigo 40〜64歳（介護保険料がかかる）
+ * @param chosei 保険料調整制度を勤務先が使っている年目。既定は使っていない
  */
-export function calcPremiums(gross: number, kaigo = false): Premiums {
+export function calcPremiums(gross: number, kaigo = false, chosei: ChoseiStage = 'none'): Premiums {
   const income = Math.max(0, gross);
   const monthly = income / 12;
   const [grade, std] = gradeOf(monthly);
   const pensionStd = pensionStandardMonthly(monthly);
 
-  const health =
-    roundPremium(std * (HEALTH_RATE + SHIENKIN_RATE + (kaigo ? KAIGO_RATE : 0))) * 12;
-  const pension = roundPremium(pensionStd * PENSION_RATE) * 12;
+  // 折半（全体の50%）に対する倍率。制度を使わない・対象外なら等倍
+  const share = choseiShare(std, chosei);
+  const factor = share === null ? 1 : share / 0.5;
+
+  const otherHealthRate = SHIENKIN_RATE + (kaigo ? KAIGO_RATE : 0);
+  const health = roundPremium(std * (HEALTH_RATE * factor + otherHealthRate)) * 12;
+  const pension = roundPremium(pensionStd * PENSION_RATE * factor) * 12;
   const employment = Math.round(income * EMPLOYMENT_RATE);
+
+  // 軽減額は「折半だったら」との差。等倍のときは計算せず0にする
+  const fullHealth = roundPremium(std * (HEALTH_RATE + otherHealthRate)) * 12;
+  const fullPension = roundPremium(pensionStd * PENSION_RATE) * 12;
+  const choseiSavings = share === null ? 0 : fullHealth - health + (fullPension - pension);
 
   return {
     standardMonthly: std,
@@ -198,6 +264,8 @@ export function calcPremiums(gross: number, kaigo = false): Premiums {
     pension,
     employment,
     total: health + pension + employment,
+    choseiShare: share,
+    choseiSavings,
   };
 }
 
@@ -265,15 +333,17 @@ export interface TakeHome {
  * @param enrolled 勤務先の社会保険に加入しているか
  * @param kaigo 40〜64歳（介護保険料がかかる）
  * @param rules 年分ごとの控除。既定は令和8年分（手取り計算機だけが令和7年分を渡す）
+ * @param chosei 保険料調整制度の年目。加入していない場合は効かない
  */
 export function calcTakeHome(
   gross: number,
   enrolled: boolean,
   kaigo = false,
   rules: TaxYearRules = TAX_RULES_R8,
+  chosei: ChoseiStage = 'none',
 ): TakeHome {
   const income = Math.max(0, gross);
-  const premiums = enrolled ? calcPremiums(income, kaigo) : NO_PREMIUMS;
+  const premiums = enrolled ? calcPremiums(income, kaigo, chosei) : NO_PREMIUMS;
   const incomeTax = calcIncomeTax(income, premiums.total, rules);
   const residentTax = calcResidentTax(income, premiums.total, rules);
   return {
@@ -310,9 +380,18 @@ export interface Benefits {
  *
  * 老齢基礎年金は第3号被保険者（扶養内）でも満額の対象なので増えない。
  * 増えるのは老齢厚生年金の報酬比例部分だけで、そこだけを計算している。
+ *
+ * **保険料調整制度は「増える給付」を1円も動かさない。** 本人負担が減っても
+ * 標準報酬月額は同じなので、将来の年金額も傷病手当金の日額も変わらない
+ * （パンフレットも「被保険者が将来受け取る年金額への影響はありません」と明記）。
+ * 動くのは `pensionPremiumYearly`（実際に払う額）と、そこから出る
+ * `pensionPaybackYears`（払った保険料を年金で取り戻すまでの年数）だけで、
+ * **軽減されるぶん早く取り戻せる**。ここがこの制度の「得」の核心なので、
+ * 取り戻す年数は本人負担の実額で計算する。
+ * この取り違えがいちばん起きやすいところなので tests/hatarakizon.test.ts で固定している。
  */
-export function calcBenefits(gross: number, kaigo = false): Benefits {
-  const premiums = calcPremiums(gross, kaigo);
+export function calcBenefits(gross: number, kaigo = false, chosei: ChoseiStage = 'none'): Benefits {
+  const premiums = calcPremiums(gross, kaigo, chosei);
   const std = premiums.pensionStandardMonthly;
   const perYear = Math.round(std * PENSION_ACCRUAL_RATE * 12);
   return {
@@ -330,10 +409,17 @@ export interface HatarakizonInput {
   income: number;
   /** 立場。'none'（扶養に入っていない）はこのツールの対象外 */
   position: Position;
-  /** 勤務先の従業員数が51人以上 */
-  size51: boolean;
+  /** 勤務先が短時間労働者を社会保険に加入させる事業所か */
+  workplace: Workplace;
   /** 週の所定労働時間が20時間以上 */
   hours20: boolean;
+  /**
+   * 勤務先が保険料調整制度を使い始めてから何年目か。既定は使っていない。
+   *
+   * 対象外の勤務先（`workplace: 'over51'`）や施行日前は、値にかかわらず効かない
+   * （`calcHatarakizon()` が落とす）。
+   */
+  chosei?: ChoseiStage;
   /** 40〜64歳（介護保険料がかかる） */
   kaigo: boolean;
   /**
@@ -392,6 +478,12 @@ export type HatarakizonResult =
       curve: CurvePoint[];
       /** 加入して増える給付 */
       benefits: Benefits;
+      /** 保険料調整制度が実際に効いているか（勤務先が対象・施行後・標準報酬月額が12.6万円以下） */
+      choseiApplied: boolean;
+      /** 制度で軽くなっている額（労使折半だった場合との差・年額）。効いていなければ0 */
+      choseiSavings: number;
+      /** 画面に制度のセレクトを出してよいか（勤務先が対象で、かつ施行日以降） */
+      choseiSelectable: boolean;
     };
 
 /** 基準日にその年収で勤務先の社会保険に加入するか */
@@ -429,7 +521,7 @@ export function calcHatarakizon(input: HatarakizonInput): HatarakizonResult {
   const kabeInput: KabeInput = {
     income: Math.max(0, input.income),
     position: input.position,
-    size51: input.size51,
+    workplace: input.workplace,
     hours20: input.hours20,
     asOf,
   };
@@ -438,6 +530,12 @@ export function calcHatarakizon(input: HatarakizonInput): HatarakizonResult {
   if (shaho.kind === 'not-applicable') {
     return { kind: 'not-applicable', reason: shaho.reason, shaho };
   }
+
+  // 保険料調整制度は 2026年10月1日開始。勤務先が対象（50人以下で新たに加入対象になった
+  // 事業所）でなければ、セレクトに何が入っていても折半のまま。
+  // 施行日の判定は「画面を開いた日」で、賃金要件の撤廃と同じ仕組みに乗せる
+  const choseiSelectable = shaho.choseiEligible && toYmd(asOf) >= HOKENRYO_CHOSEI_STARTS_ON;
+  const chosei: ChoseiStage = choseiSelectable ? (input.chosei ?? 'none') : 'none';
 
   const ceiling = ceilingFor(input, shaho);
   // 扶養内の手取りは「上限ぎりぎりまで働いた場合」を既定にする。
@@ -449,12 +547,18 @@ export function calcHatarakizon(input: HatarakizonInput): HatarakizonResult {
   const baseline = calcTakeHome(baselineGross, false, input.kaigo);
 
   const income = Math.max(0, input.income);
-  const target = calcTakeHome(income, enrolledAt(income, shaho), input.kaigo);
+  const target = calcTakeHome(income, enrolledAt(income, shaho), input.kaigo, TAX_RULES_R8, chosei);
 
   const curve: CurvePoint[] = [];
   for (let g = CURVE_MIN; g <= CURVE_MAX; g += STEP) {
     const enrolled = enrolledAt(g, shaho);
-    curve.push({ gross: g, net: calcTakeHome(g, enrolled, input.kaigo).net, enrolled });
+    curve.push({
+      gross: g,
+      // 働き損ゾーンと損益分岐点も軽減後の保険料で引く。ここを折半のままにすると、
+      // 制度の対象者に「実際より広い働き損ゾーン」を見せることになる（この改修の主目的）
+      net: calcTakeHome(g, enrolled, input.kaigo, TAX_RULES_R8, chosei).net,
+      enrolled,
+    });
   }
 
   // 基準より年収が高いのに手取りが基準を下回る区間を、曲線から拾う
@@ -480,7 +584,10 @@ export function calcHatarakizon(input: HatarakizonInput): HatarakizonResult {
     lossZone,
     breakEven,
     curve,
-    benefits: calcBenefits(income, input.kaigo),
+    benefits: calcBenefits(income, input.kaigo, chosei),
+    choseiApplied: target.premiums.choseiShare !== null,
+    choseiSavings: target.premiums.choseiSavings,
+    choseiSelectable,
   };
 }
 
