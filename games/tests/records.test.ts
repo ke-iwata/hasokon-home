@@ -443,3 +443,105 @@ describe('各ゲームの組み込み', () => {
     }
   });
 });
+
+/**
+ * 連続日数（`lastClearedOn` / `streak`）。
+ *
+ * 仕様: docs/features/game-hoshioki-puzzle.md「連続日数を入れる器」・
+ * docs/features/game-records.md
+ *
+ * **全ゲーム共有の型に足した項目**なので、いちばん大事なのは
+ * 「この項目を持たない既存の記録を読んでも落ちない」こと。
+ */
+describe('連続日数', () => {
+  it('クリア日を渡すと連続日数が増える', () => {
+    const before = { wins: 2, lastClearedOn: '2026-09-18', streak: 3 };
+    const { entry } = applyResult(before, { outcome: 'win', timeMs: 1000, clearedOn: '2026-09-19' });
+    expect(entry.streak).toBe(4);
+    expect(entry.lastClearedOn).toBe('2026-09-19');
+    expect(entry.wins).toBe(3);
+  });
+
+  it('ローカル日付で1日空くと1に戻る', () => {
+    const before = { lastClearedOn: '2026-09-17', streak: 9 };
+    const { entry } = applyResult(before, { outcome: 'win', clearedOn: '2026-09-19' });
+    expect(entry.streak).toBe(1);
+  });
+
+  it('同じ日に2回クリアしても増えない', () => {
+    const before = { lastClearedOn: '2026-09-19', streak: 3 };
+    const { entry } = applyResult(before, { outcome: 'win', clearedOn: '2026-09-19' });
+    expect(entry.streak).toBe(3);
+  });
+
+  it('クリア日を渡さないゲームでは連続日数に触れない', () => {
+    const before = { lastClearedOn: '2026-09-18', streak: 3 };
+    const { entry } = applyResult(before, { outcome: 'win', timeMs: 5000 });
+    expect(entry.streak).toBe(3);
+    expect(entry.lastClearedOn).toBe('2026-09-18');
+  });
+
+  it('連続日数を持たない古い記録を読んでも落ちない（0とみなして数え直す）', () => {
+    // この項目より前に保存された記録（`streak` も `lastClearedOn` も無い）
+    const old = parseRecords(JSON.stringify({ daily: { plays: 12, wins: 5, bestTimeMs: 61000 } }));
+    const entry = entryOf(old, 'daily');
+    expect(entry.streak).toBeUndefined();
+    expect(entry.lastClearedOn).toBeUndefined();
+    expect(entry.wins).toBe(5);
+
+    const { entry: next } = applyResult(entry, { outcome: 'win', clearedOn: '2026-09-19' });
+    expect(next.streak).toBe(1);
+    expect(next.bestTimeMs).toBe(61000);
+  });
+
+  it('壊れた日付・負の連続日数は黙って捨てる', () => {
+    expect(sanitizeEntry({ lastClearedOn: '2026/09/19', streak: 3 }).lastClearedOn).toBeUndefined();
+    expect(sanitizeEntry({ lastClearedOn: 20260919 }).lastClearedOn).toBeUndefined();
+    expect(sanitizeEntry({ streak: -1 }).streak).toBeUndefined();
+    expect(sanitizeEntry({ streak: 'many' }).streak).toBeUndefined();
+    expect(sanitizeEntry({ lastClearedOn: '2026-09-19', streak: 4 })).toEqual({
+      lastClearedOn: '2026-09-19',
+      streak: 4,
+    });
+  });
+
+  it('まとめるときは日付と連続日数をセットで選ぶ（新しい日付のほうを残す）', () => {
+    const merged = mergeEntry(
+      { lastClearedOn: '2026-09-19', streak: 2 },
+      { lastClearedOn: '2026-09-12', streak: 8 },
+    );
+    // 別々に「大きいほう」を取ると、古い日付に新しい連続日数が付いてしまう
+    expect(merged.lastClearedOn).toBe('2026-09-19');
+    expect(merged.streak).toBe(2);
+    // 片方しか持っていなければ、持っているほうを使う
+    expect(mergeEntry({ wins: 1 }, { lastClearedOn: '2026-09-19', streak: 3 })).toMatchObject({
+      lastClearedOn: '2026-09-19',
+      streak: 3,
+    });
+    // 同じ日付なら大きいほう
+    expect(
+      mergeEntry({ lastClearedOn: '2026-09-19', streak: 2 }, { lastClearedOn: '2026-09-19', streak: 5 })
+        .streak,
+    ).toBe(5);
+  });
+
+  it('保存して読み直しても連続日数が残る', () => {
+    const storage = fakeStorage();
+    recordResult('hoshioki-puzzle', { outcome: 'win', timeMs: 90000, clearedOn: '2026-09-18' }, 'daily-v1', storage);
+    const second = recordResult(
+      'hoshioki-puzzle',
+      { outcome: 'win', timeMs: 80000, clearedOn: '2026-09-19' },
+      'daily-v1',
+      storage,
+    );
+    expect(second.entry.streak).toBe(2);
+    expect(entryOf(loadRecords('hoshioki-puzzle', storage), 'daily-v1')).toMatchObject({
+      streak: 2,
+      lastClearedOn: '2026-09-19',
+      wins: 2,
+      bestTimeMs: 80000,
+    });
+    // 難易度側の記録は連続日数を持たない（区分が分かれている）
+    expect(entryOf(loadRecords('hoshioki-puzzle', storage), 'easy')).toEqual({});
+  });
+});

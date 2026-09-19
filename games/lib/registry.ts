@@ -156,6 +156,25 @@ export const games: GameDef[] = [
     updatedAt: '2026-08-11',
   },
   {
+    // スターバトル系のルールは2003年の世界パズル選手権で公開された公知のもので、
+    // ルール自体に権利者はいない（問題は自前で生成していて、他サイトの転記はしていない）。
+    // **使わない名前**：「Queens」（LinkedIn）・「Meowdoku」（Oakever）・
+    // 「Two Not Touch」（NYT／krazydad）。「スターバトル」も英語圏の商標を追い切れないので
+    // name と slug には入れず、**ジャンル名として h1 と description にだけ併記する**
+    // （docs/features/game-hoshioki-puzzle.md の「権利関係は無害」）。
+    // **J-PlatPat での「星置き」「ほしおき」「スターバトル」の確認と、名前・slug の
+    // 運営者確認は `public` に上げる前のタスク**（仕様書の状態行。「星置」は
+    // 札幌市手稲区の地名でもあるため、記述的な別案も一緒に判断する）。
+    // ナンプレ・ノノグラムと同じ「盤を見て考える」型なので、一覧ではその隣に置く
+    slug: 'hoshioki-puzzle',
+    icon: 'Star',
+    name: '星置きパズル',
+    description:
+      '各行・各列・各ブロックに星を1つずつ。斜めも隣り合わない。5×5〜9×9の3段階と、毎日変わる今日の1問。',
+    stage: 'wip',
+    updatedAt: '2026-09-19',
+  },
+  {
     slug: 'reversi',
     icon: 'Stones',
     name: 'リバーシ',
