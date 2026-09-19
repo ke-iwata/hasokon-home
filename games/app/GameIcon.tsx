@@ -7,6 +7,7 @@ import {
   DiceFiveIcon,
   GridFourIcon,
   GridNineIcon,
+  KeyboardIcon,
   RacquetIcon,
   SpadeIcon,
   SquaresFourIcon,
@@ -592,6 +593,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Tubes: TubesIcon,
   DiceFive: DiceFiveIcon,
   BoulderingMerge: BoulderingMergeIcon,
+  Keyboard: KeyboardIcon,
   SlidingBlocks: SlidingBlocksIcon,
 };
 
