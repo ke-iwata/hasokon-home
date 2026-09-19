@@ -303,6 +303,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-18',
   },
   {
+    // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
+    slug: 'otc-ruijiyaku',
+    // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
+    // 同じ「お金・社会保険」の一覧で並ぶので、薬そのものを表す Pill にした
+    icon: 'Pill',
+    name: 'OTC類似薬「特別の料金」自己負担 計算機',
+    description:
+      '2027年3月から、市販薬と同じ成分の処方薬は薬剤料の4分の1が保険外の「特別の料金」になります。薬剤料の点数と負担割合を入れると、窓口で払う額が今までといくら変わるかを出します。18歳の年度末まで・湿布や保湿剤（2029年3月まで）など「かからない」場合は金額より先に判定します。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-19',
+  },
+  {
     slug: 'kogaku-ryoyohi',
     icon: 'Hospital',
     name: '高額療養費 自己負担限度額 計算機',
