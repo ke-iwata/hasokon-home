@@ -14,10 +14,15 @@
 // 仕様: docs/features/google-index-recovery.md
 // こちらを追うために coverageState 別の内訳も出す（.github/workflows/gsc-audit.yml で週1回）。
 //
-// あわせて「そのサイトマップを Google が読んだか」も数える。
+// あわせて「そのサイトマップが Google のサイトマップ レポートに出ているか」も数える。
 // 仕様: docs/features/sitemap-discovery-audit.md
-// index に並べただけの子が読まれないことがあり（2026-09-19 時点の /learn/sitemap.xml）、
+// index に並べただけの子がレポートに出ないことがあり（2026-09-19 時点の /learn/sitemap.xml）、
 // URL検査の結果だけ見ていても気づけなかった。
+//
+// このAPIが返すのは「レポートから送信したサイトマップ」と「送信済み index の子」だけで、
+// **robots.txt 経由で見つかったサイトマップは、Google が読んでいても出てこない**
+// （https://support.google.com/webmasters/answer/7451001）。
+// なので robots.txt に足した経路が効いたかどうかは、ここではなく coverageByState で見る。
 
 import { writeFile } from 'node:fs/promises';
 import process from 'node:process';
@@ -53,10 +58,12 @@ export function isStale(lastDownloaded, nowIso, days = STALE_DAYS) {
 /** 状態1行ぶんの表示。標準エラーに1本1行で出す。 */
 export function formatSitemapStatus(status, nowIso) {
   if (!status.known) {
-    return `${status.path}：Google は知らない（送信済みでも既知でもない）`;
+    // APIが言えるのは「このレポートに無い」まで。robots.txt 経由で発見されたものは
+    // 読まれていてもここに出ないので、「Google は知らない」とまでは言えない
+    return `${status.path}：サイトマップ レポートに無い（robots.txt 経由の発見はここに出ない）`;
   }
   if (!status.lastDownloaded) {
-    return `${status.path}：登録はあるが、まだ一度も読まれていない`;
+    return `${status.path}：レポートにはあるが、まだ一度も読まれていない`;
   }
   const count = (value) => (value === null ? '—' : String(value));
   const stale = isStale(status.lastDownloaded, nowIso) ? `（${STALE_DAYS}日より古い）` : '';
@@ -145,7 +152,8 @@ export async function main(argv, deps = {}) {
   const sitemapStatuses = [];
   for (const path of sitemaps) {
     const result = await fetchSitemapStatus({ siteUrl: options.siteUrl, feedpath: path, accessToken });
-    // 404 は「送信済みでも既知でもない」という答えなので、known: false に落として続ける。
+    // 404 は「このレポートに無い」という答えなので、known: false に落として続ける
+    // （robots.txt 経由で発見されたサイトマップは、読まれていても 404 で返る）。
     // それ以外の失敗（401/403/5xx）は再試行しても駄目だったということなので実行できていない
     if (!result.ok && !result.notFound) {
       log(`  サイトマップの状態を取れません: ${path}（${result.error}）`);
@@ -157,13 +165,14 @@ export async function main(argv, deps = {}) {
     log(`  ${formatSitemapStatus(status, measuredAt)}`);
   }
 
-  // 読まれていない／久しく読まれていない子は「未完了」と同じ扱いで知らせる。
-  // gsc-audit.yml は終了コード1では落ちないので、気づける場所はこのログと --out のJSON
-  const unreadSitemaps = sitemapStatuses.filter(
+  // レポートに無い／久しく読まれていない子は「未完了」と同じ扱いで知らせる。
+  // gsc-audit.yml は終了コード1では落ちないので、気づける場所はこのログと --out のJSON。
+  // 仕様書の C（画面からの個別送信）を済ませるまでは learn と home の2本が毎週ここに来る
+  const flaggedSitemaps = sitemapStatuses.filter(
     (status) => !status.known || !status.lastDownloaded || isStale(status.lastDownloaded, measuredAt),
   );
-  if (unreadSitemaps.length > 0) {
-    log(`  読まれていない／${STALE_DAYS}日より古いサイトマップ: ${unreadSitemaps.length} 本`);
+  if (flaggedSitemaps.length > 0) {
+    log(`  レポートに無い／${STALE_DAYS}日より古いサイトマップ: ${flaggedSitemaps.length} 本`);
   }
 
   log(`URL検査APIにかけます（同時 ${options.concurrency} 件）…`);
@@ -200,14 +209,14 @@ export async function main(argv, deps = {}) {
   }
 
   // 統合の報告は「完了」なのに 1 で終わる組み合わせがあるので、理由をログに残す
-  if (summary.complete && unreadSitemaps.length > 0) {
+  if (summary.complete && flaggedSitemaps.length > 0) {
     log(
-      `統合は完了していますが、読まれていない／${STALE_DAYS}日より古いサイトマップが ` +
-        `${unreadSitemaps.length} 本あるので終了コード 1 にします。`,
+      `統合は完了していますが、サイトマップ レポートに無い／${STALE_DAYS}日より古いものが ` +
+        `${flaggedSitemaps.length} 本あるので終了コード 1 にします。`,
     );
   }
 
-  return summary.complete && unreadSitemaps.length === 0 ? EXIT_COMPLETE : EXIT_INCOMPLETE;
+  return summary.complete && flaggedSitemaps.length === 0 ? EXIT_COMPLETE : EXIT_INCOMPLETE;
 }
 
 // テストから import しても走らないように、直接実行のときだけ動かす

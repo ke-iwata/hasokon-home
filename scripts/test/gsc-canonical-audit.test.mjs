@@ -37,7 +37,7 @@ const sitemapResponse = (lastDownloaded = '2026-08-08T00:00:00.000Z') => ({
   body: { lastDownloaded, contents: [{ type: 'web', submitted: '2', indexed: '0' }] },
 });
 
-/** Sitemaps API の 404（送信済みでも既知でもないサイトマップ）。 */
+/** Sitemaps API の 404（サイトマップ レポートに無い）。 */
 const notFoundResponse = { ok: false, status: 404, notFound: true, error: 'HTTP 404: notFound' };
 
 /** 出力を溜め、全部を差し替えた deps を作る。 */
@@ -232,9 +232,9 @@ describe('main', () => {
 });
 
 // docs/features/sitemap-discovery-audit.md の「B」
-// index に並べただけの子が Google に読まれないことがある（2026-09-19 の /learn/sitemap.xml）。
+// index に並べただけの子がサイトマップ レポートに出ないことがある（2026-09-19 の /learn/sitemap.xml）。
 // URL検査の結果は正常に見えるので、ここを数えないと気づけない。
-describe('サイトマップが読まれたか', () => {
+describe('サイトマップがレポートに出ているか', () => {
   /** 正規URLはすべて新URL（＝サイトマップの状態だけが終了コードを決める）。 */
   const allConsolidated = {
     inspect: async ({ url }) => ({
@@ -266,7 +266,7 @@ describe('サイトマップが読まれたか', () => {
     assert.deepEqual(new Set(seen.map((params) => params.accessToken)), new Set(['ya29.test']));
   });
 
-  it('読まれていない子が1本でもあれば 1（統合そのものは完了していても）', async () => {
+  it('レポートに無い子が1本でもあれば 1（統合そのものは完了していても）', async () => {
     const h = harness({
       ...allConsolidated,
       getSitemap: async ({ feedpath }) =>
@@ -274,8 +274,11 @@ describe('サイトマップが読まれたか', () => {
     });
 
     assert.equal(await main([], h.deps), EXIT_INCOMPLETE);
-    assert.match(h.stderr.join('\n'), /Google は知らない/);
-    assert.match(h.stderr.join('\n'), /読まれていない.*サイトマップ: 1 本/);
+    assert.match(h.stderr.join('\n'), /サイトマップ レポートに無い/);
+    // 「Google は知らない」とは言わない。robots.txt 経由で発見されたものは
+    // 読まれていてもレポートに出ないので、APIが言えるのは「レポートに無い」まで
+    assert.doesNotMatch(h.stderr.join('\n'), /Google は知らない/);
+    assert.match(h.stderr.join('\n'), /レポートに無い.*サイトマップ: 1 本/);
     // 報告は「統合完了」なので、1 で終わる理由が分かるようにしておく
     assert.match(h.out(), /統合完了/);
     assert.match(h.stderr.join('\n'), /終了コード 1 にします/);
@@ -285,7 +288,7 @@ describe('サイトマップが読まれたか', () => {
     const h = harness(allConsolidated);
 
     assert.equal(await main([], h.deps), EXIT_COMPLETE);
-    assert.doesNotMatch(h.stderr.join('\n'), /読まれていない/);
+    assert.doesNotMatch(h.stderr.join('\n'), /レポートに無い/);
   });
 
   it(`最終ダウンロードが ${STALE_DAYS} 日より古ければ 1`, async () => {
@@ -302,7 +305,7 @@ describe('サイトマップが読まれたか', () => {
     assert.match(h.stderr.join('\n'), new RegExp(`${STALE_DAYS}日より古い`));
   });
 
-  it('登録はあるが一度も読まれていない子も 1', async () => {
+  it('レポートにはあるが一度も読まれていない子も 1', async () => {
     const h = harness({
       ...allConsolidated,
       getSitemap: async () => ({ ok: true, body: { lastDownloaded: null } }),
@@ -425,11 +428,15 @@ describe('formatSitemapStatus', () => {
     assert.match(line, /送信 — \/ 登録 —/);
   });
 
-  it('知られていないサイトマップはそう書く', () => {
+  it('レポートに無いサイトマップは、APIが言える範囲で書く', () => {
     const line = formatSitemapStatus(
       { path: 'https://hasokon.com/learn/sitemap.xml', known: false, lastDownloaded: null, submitted: null, indexed: null },
       now,
     );
-    assert.match(line, /Google は知らない/);
+    assert.match(line, /サイトマップ レポートに無い/);
+    assert.match(line, /robots\.txt 経由の発見はここに出ない/);
+    // robots.txt 経由で読まれている可能性があるので、断定しない
+    assert.doesNotMatch(line, /Google は知らない/);
+    assert.doesNotMatch(line, /読まれていない/);
   });
 });

@@ -3,7 +3,10 @@
 // URL検査APIには1日あたりの上限（2000件）と1分あたりの上限（600件）がある。
 // 86URLなら上限には当たらないが、429 が返ることはあるので待って入れ直す。
 //
-// Sitemaps API は「Google がそのサイトマップを読んだか」を返す。
+// Sitemaps API は「Google のサイトマップ レポートにそのサイトマップが出ているか」を返す。
+// 出るのは**レポートから送信したもの**と**送信済み index の子**だけで、
+// robots.txt 経由で見つかったサイトマップは、読まれていても出てこない
+// （https://support.google.com/webmasters/answer/7451001）。
 // 仕様: docs/features/sitemap-discovery-audit.md の「B」
 
 export const INSPECTION_ENDPOINT = 'https://searchconsole.googleapis.com/v1/urlInspection/index:inspect';
@@ -78,7 +81,7 @@ export function sitemapsUrl(siteUrl, feedpath) {
  * GET を1本投げる。失敗したら maxAttempts まで投げ直す。
  *
  * 404 は投げ直さない（isRetryable() が false）。Sitemaps API の 404 は
- * 「送信済みでも既知でもないサイトマップ」という**答え**であって、待てば変わるものではない。
+ * 「このレポートに無い」という**答え**であって、待てば変わるものではない。
  */
 async function getJson(url, accessToken, options = {}) {
   const fetchImpl = options.fetchImpl ?? fetch;
@@ -125,8 +128,9 @@ async function getJson(url, accessToken, options = {}) {
 /**
  * プロパティに「送信済み」として登録されているサイトマップの一覧。
  *
- * index 経由でしか認識されていない子はここに出ないことがあるので、
- * 1本ずつの状態は getSitemap() で見る。
+ * 送信済み index の子はここに出ないことがあるので、1本ずつの状態は getSitemap() で見る。
+ * いまの監査は getSitemap() だけを使っていて、この関数は手で状況を見るとき用
+ * （`sitemapIndex` パラメータを足して子をまとめて引く案は仕様書の「やらないこと」の外側・未着手）。
  *
  * @param {{ siteUrl: string, accessToken: string }} params
  * @returns {Promise<{ok: true, sitemaps: object[]} | {ok: false, status: number|null, notFound: boolean, error: string}>}
@@ -140,8 +144,10 @@ export async function listSitemaps(params, options = {}) {
 /**
  * サイトマップ1本の状態。feedpath はサイトマップの絶対URL。
  *
- * 404（= 送信済みでも既知でもない）は失敗ではなく答えなので、
- * `notFound: true` を付けて返す。呼び出し側はこれを `known: false` に落とす。
+ * 404（= このレポートに無い）は失敗ではなく答えなので、`notFound: true` を付けて返す。
+ * 呼び出し側はこれを `known: false` に落とす。
+ * **「Google が読んでいない」という意味ではない**：robots.txt 経由で発見された
+ * サイトマップは、読まれていてもレポートに出ないので 404 で返る。
  *
  * @param {{ siteUrl: string, feedpath: string, accessToken: string }} params
  * @returns {Promise<{ok: true, body: object} | {ok: false, status: number|null, notFound: boolean, error: string}>}

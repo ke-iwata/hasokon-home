@@ -86,14 +86,14 @@ Search Console の画面と突き合わせるときはそのまま比べてく�
 `Crawled - currently not indexed` のまま**なら、仕様書の「原因1（サイト単位の品質判定）」が
 ほぼ確定、という見切りかたをします。
 
-### サイトマップが Google に読まれたか
+### サイトマップがサイトマップ レポートに出ているか
 
 仕様: [docs/features/sitemap-discovery-audit.md](../docs/features/sitemap-discovery-audit.md)
 
 `URL is unknown to Google` は「未発見」ですが、**サイトマップが読まれていれば
 起きないはず**のものです。2026-09-19 に Sitemaps API を手で叩いたところ、
-`/learn/sitemap.xml`（39 URL）は **Google に一度も読まれておらず**、
-index に並べただけの子が読まれないことがある、と分かりました。
+`/learn/sitemap.xml`（39 URL）は **Google のサイトマップ レポートに存在すらせず**、
+index に並べただけの子がレポートに出ないことがある、と分かりました。
 URL検査の結果だけ見ていても気づけないので、監査にも入れてあります。
 
 サイトマップ index を辿って見つけた1本ごとに Sitemaps API を叩き、
@@ -102,14 +102,14 @@ URL検査の結果だけ見ていても気づけないので、監査にも入�
 ```
 サイトマップが読まれたかを見ます（Sitemaps API）…
   https://hasokon.com/sitemap.xml：読まれた日 2026-09-14T00:00:00.000Z / 送信 — / 登録 —
-  https://hasokon.com/sitemap-home.xml：読まれた日 2026-09-08T19:37:21.507Z（14日より古い）/ 送信 2 / 登録 0
-  https://hasokon.com/learn/sitemap.xml：Google は知らない（送信済みでも既知でもない）
-  読まれていない／14日より古いサイトマップ: 2 本
+  https://hasokon.com/sitemap-home.xml：読まれた日 2026-09-08T19:37:21.507Z（14日より古い） / 送信 2 / 登録 0
+  https://hasokon.com/learn/sitemap.xml：サイトマップ レポートに無い（robots.txt 経由の発見はここに出ない）
+  レポートに無い／14日より古いサイトマップ: 2 本
 ```
 
-- 1本でも「知らない」「一度も読まれていない」「最終ダウンロードが **14日**より古い」なら
+- 1本でも「レポートに無い」「一度も読まれていない」「最終ダウンロードが **14日**より古い」なら
   **終了コード 1**（統合の未完了と同じ扱い。ジョブは落ちません）
-- Sitemaps API の **404 は「送信済みでも既知でもない」という答え**なので、
+- Sitemaps API の **404 は「このレポートに無い」という答え**なので、
   投げ直さずそのまま `known: false` にします。401/403/5xx は再試行し、
   それでも駄目なら終了コード 2（URL検査は始めません）
 - `--out` のJSONには `sitemaps` として1本ずつ残ります
@@ -120,6 +120,30 @@ URL検査の結果だけ見ていても気づけないので、監査にも入�
   { "path": "https://hasokon.com/sitemap-home.xml", "known": true, "lastDownloaded": "2026-09-08T19:37:21.507Z", "submitted": 2, "indexed": 0 }
 ]
 ```
+
+#### `known` で測れるもの・測れないもの
+
+**このAPIに出るのは「レポートから送信したサイトマップ」と「送信済み index の子」だけです。**
+
+> This report shows only sitemaps that were submitted using this report or the API.
+> It does not show any sitemaps discovered through a robots.txt reference or other discovery methods.
+> — [Sitemaps report - Search Console Help](https://support.google.com/webmasters/answer/7451001)
+
+つまり **`robots.txt` 経由で見つかったサイトマップは、Google が読んで使っていても
+ここには出てきません**。`known` を「Google が読んだか」と読むと間違えます。
+
+| 知りたいこと | 見るもの |
+|---|---|
+| `robots.txt` に足した経路が効いたか | `coverageByState` の `URL is unknown to Google` に占める **learn の件数が減るか**（`rows` にURLごとの `coverageState` があるので learn だけ数えられます） |
+| 仕様書の C（画面からの個別送信）が済んだか・効いたか | `sitemaps` の `known` と `lastDownloaded` |
+
+#### 終了コード 1 は、C を済ませるまで毎週立ちます
+
+**`learn` と `home` の2本**が恒常的に引っかかります。`/learn/sitemap.xml` は個別送信が
+無いのでレポートに出ず（`known: false`）、`/sitemap-home.xml` は送信済み index の子として
+出てはいるものの読み直しが遅く、最終ダウンロードが 14日より古くなるためです。
+仕様書の C をやって2本ともレポートに載れば収まります。
+**「1 はふつうの状態」の中身がこのぶん増えた**ことだけ、頭に入れておいてください。
 
 発見経路そのものは `home/robots.txt` に子サイトマップ4本を `Sitemap:` で
 直接書いて増やしてあります（index の処理と独立した経路）。
@@ -143,8 +167,8 @@ Name は `GOOGLE_SERVICE_ACCOUNT_JSON`、Secret にはサービスアカウン�
 登録したら **Actions → GSC audit → Run workflow** で1回手で回し、
 artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
 
-終了コード 1（統合が未完了・検査に失敗したURLがある・読まれていないサイトマップがある）
-ではジョブを落としません。
+終了コード 1（統合が未完了・検査に失敗したURLがある・サイトマップ レポートに
+出ていないサイトマップがある）ではジョブを落としません。
 いまは 1 がふつうの状態だからです。落とすのは 2（実行できなかった）のときだけです。
 
 ### 終了コード
@@ -152,7 +176,7 @@ artifact（`gsc-audit-<run_id>`）が残ることを確認してください。
 | コード | 意味 |
 |---|---|
 | 0 | 旧サブドメインを指すURLが0件（統合完了）。`--dry-run` の成功も0 |
-| 1 | 旧サブドメインを指すURLが残っている、検査に失敗したURLがある、またはGoogleに読まれていないサイトマップがある |
+| 1 | 旧サブドメインを指すURLが残っている、検査に失敗したURLがある、またはサイトマップ レポートに出ていない／14日より古いサイトマップがある（C を済ませるまでは learn と home の2本で毎週立ちます） |
 | 2 | 実行できなかった（認証の失敗、サイトマップを読めない、など） |
 
 「1件でも失敗したら完了とは言わない」ようにしてあります。
