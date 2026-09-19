@@ -26,7 +26,7 @@
 | `/sitemap.xml`（index） | 送信済み（09-14 に運営者が再送信） | 2026-09-14 | —（index なので数えない） | — |
 | `/tools/sitemap.xml` | 08-14 に個別送信済み | 2026-09-13 | 56 | **0** |
 | `/games/sitemap.xml` | 08-14 に個別送信済み | 2026-09-16 | 26 | **0** |
-| `/sitemap-home.xml` | 個別送信なし。**index 経由で認識** | 2026-09-08 | 2 | **0** |
+| `/sitemap-home.xml` | 個別送信なし。**index 経由で認識** | 2026-09-08 | 2（本番 v1.18.0 の実体と一致） | **0** |
 | `/learn/sitemap.xml` | **`404 notFound`：「送信済みでも既知でもないサイトマップ」** | **一度もない** | （実体は 39） | — |
 
 読み取れること：
@@ -37,9 +37,12 @@
    6,058 バイト、`<urlset>` の形式も tools / games と同じで、**ファイル側に違いは無い**
    （2026-09-19 に確認）。Google 側の index の処理が途中で止まっている、あるいは index の
    4 本目を後回しにしたまま再訪していない、のどちらか
-2. **index の子は再読込されていない。** `sitemap-home.xml` の送信 URL 数は **2** のままだが、
-   実体は 09-17 の `/about.html` 追加で **3** になっている。index を 09-14 に再送信しても、
-   子（09-08）は読み直されていない
+2. **index 経由の子は、個別送信した子より読まれにくい。** `sitemap-home.xml` の最終ダウンロードは
+   **09-08** で、個別送信した tools（09-13）・games（09-16）より古い。index 自体は 09-14 に
+   再送信されているが、その日に子まで読み直された形跡は無い。
+   （送信 URL 数 2 は本番 v1.18.0 の実体と一致している。`/about.html` を足した #219 は main に
+   あるだけで本番未反映なので、ここから「子が再読込されていない」とは言えない。
+   2026-09-19 の企画レビュー（#234）で訂正）
 3. この 39 は、09-16 の URL 検査 API の内訳（`URL is unknown to Google` **91** 件のうち learn **39**）と
    一致する。**learn の unknown はサイトの品質判定以前に、Google に URL を渡せていないことが原因**
 4. 3 本とも「登録 0」なのは既知の状態（[google-index-recovery.md](./google-index-recovery.md)）で、
@@ -92,6 +95,8 @@ Sitemap: https://hasokon.com/learn/sitemap.xml
   `scripts/lib/sitemap.mjs` の `parseLocs()` で検証する（子を増減したら両方直さないと落ちる）。
   既存の `scripts/test/indexnow-submit.test.mjs` が `robots.txt` の `Allow: /` を見ているので、
   その約束は壊さない
+- `home/robots.txt` は test.hasokon.com にも同じ内容で同期されるが、いまも `hasokon.com` の URL を
+  書いているので扱いは変わらない（Basic 認証の内側）。**テスト環境向けの分岐は作らない**
 
 ### B. 週次監査に「サイトマップが読まれたか」を足す
 
@@ -114,9 +119,13 @@ export async function getSitemap({ siteUrl, feedpath, accessToken }, options = {
 
 - 標準エラーに 1 本 1 行で「読まれた日・送信数・登録数」を出し、**`known: false` が 1 本でもあれば
   終了コード 1**（いまの「未完了」と同じ扱い。ジョブは落とさず、ログで分かる）
-- `lastDownloaded` が **14 日より古い**子も同じく 1 で知らせる（index を再送信しても子が
-  読み直されない、という上記 2 の症状を捕まえるため）
-- API の失敗（401/403/5xx）は既存の `isRetryable()`・`backoffDelay()` で再試行し、
+- `lastDownloaded` が **14 日より古い**子も同じく 1 で知らせる（「index 経由の子は個別送信の子より
+  読まれにくい」という上記 2 の傾向を見張るため。閾値は 14 日。終了コード 1 はいまのワークフローでは
+  落ちない）
+- `getSitemap()` の `feedpath` は **URL 全体を `encodeURIComponent()` でエンコード**する
+  （`sites/{site}` と同じ扱い）。**404 は `isRetryable()` の対象にせず、そのまま `known: false` に落とす**
+  （再試行で無駄に待たない）
+- それ以外の API の失敗（401/403/5xx）は既存の `isRetryable()`・`backoffDelay()` で再試行し、
   それでも駄目なら終了コード 2（既存の約束どおり）
 - `gsc-audit.yml` は変更なし（`--out` の JSON に列が増えるだけ）。artifact を開けば
   「learn が読まれたか」が毎週分かる
@@ -127,7 +136,22 @@ export async function getSitemap({ siteUrl, feedpath, accessToken }, options = {
 
 Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitemap-home.xml` を個別に送信**する
 （[google-index-recovery.md](./google-index-recovery.md) 09-17 の「次の手」と同じ。A・B とは独立に
-今すぐできる）。送信後 1 週間の監査で `known: true` と `lastDownloaded` が入れば効いている
+今すぐできる）。送信後 1 週間の監査で `known: true` と `lastDownloaded` が入れば効いている。
+実施したら、**本ファイルの「経過」と google-index-recovery.md の「経過」の両方に日付を残す**
+（二重管理で片方だけ更新されるのを避ける）
+
+## 実装者への申し送り
+
+- 実装 PR は `home/`・`scripts/` を触るので、**コミット・PR タイトルは `docs:` ではなく
+  `feat:`（B の監査拡張）／`chore:`（A の robots.txt）**にする（CLAUDE.md の約束。
+  google-index-recovery.md と同じ）
+- 実装後は本ファイルの `**状態**：` 行を「実装済み」に上げ、`docs/DECISIONS.md` の冒頭に
+  1 エントリ足す（union マージの約束どおり、既存エントリは触らない）
+
+## 経過
+
+- 2026-09-19：起票。企画レビュー（#234）で `sitemap-home.xml` の実体を main（3 URL）で数えていた
+  誤りを訂正（本番 v1.18.0 は 2 URL）
 
 ## 期待される効果
 
@@ -135,7 +159,8 @@ Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitem
   `URL is unknown to Google` が **91 → 52 以下**に減る（learn の 39 が `Crawled` か `Discovered` に
   移る）。登録されるかどうかはサイト単位の品質判定次第で、**この提案が約束するのは
   「渡す」ところまで**
-- index の子が読み直されない問題を、次に起きたときは手で API を叩かなくても月曜のログで気づける
+- index 経由の子が読まれていない・読まれにくい状態を、次からは手で API を叩かなくても
+  月曜のログで気づける
 - Bing にはすでに読まれているので、Bing 側の変化は期待しない（測っても差は出ないはず）
 
 ## 工数の見積り
