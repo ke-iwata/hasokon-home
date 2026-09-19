@@ -187,6 +187,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-15',
   },
   {
+    // 2027年4月の「飲食料品1%」は閣議決定済みで法案は未成立。
+    // 公開（`public`）への昇格は google-index-recovery.md の解除判断後。
+    // 仕様: docs/features/shohizei-keisan-shokuryohin-1percent.md
+    slug: 'shohizei-keisan',
+    // Receipt はインボイス納税額・医療費控除・割り勘が使っている。
+    // 同じ一覧でインボイスと並ぶと見分けがつかないので買い物かごにした
+    icon: 'ShoppingCart',
+    name: '消費税 計算機・軽減税率チェッカー',
+    description:
+      '税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を約50項目の一覧から引ける軽減税率チェッカーと、2027年4月からの食料品1%（予定）でいくら安くなるかの計算つき。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
+  },
+  {
     slug: 'shuzei-kaisei',
     icon: 'BeerStein',
     name: '酒税改正 早見表・負担額計算',
@@ -247,6 +262,28 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-19',
   },
   {
+    slug: 'ikuji-kyugyo-kyufu',
+    icon: 'BabyCarriage',
+    name: '育児休業給付金 計算機',
+    description:
+      '育休でいくらもらえるかを支給単位期間ごとの推移で計算。出生後休業支援給付（+13%）を足した最初の28日の80%から、67%・50%への段差までを出します。令和8年8月1日改定の上限額（賃金日額16,540円）に対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-10',
+  },
+  {
+    slug: 'taishokukin-tedori',
+    icon: 'Suitcase',
+    name: '退職金の税金・手取り計算機',
+    description:
+      '退職金にかかる所得税・住民税と手取りを計算。退職所得控除の式を「40万円 × 12年」の形で見せます。2026年からiDeCo一時金を先に受け取った場合の重複排除が5年→10年に延びた「10年ルール」に対応し、一時金が当時の控除額に満たないときの重複期間の短縮まで織り込みます。',
+    category: 'お金・社会保険',
+    // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
+    // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
+    stage: 'wip',
+    updatedAt: '2026-09-18',
+  },
+  {
     slug: 'shobyo-teate',
     icon: 'FirstAidKit',
     name: '傷病手当金 計算機',
@@ -254,6 +291,16 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-08-13',
+  },
+  {
+    slug: 'shussan-teate',
+    icon: 'CalendarHeart',
+    name: '出産手当金・出産育児一時金 計算機',
+    description:
+      '産休中にもらえる出産手当金と出産育児一時金を、出産予定日と月給から計算。産前42日（多胎98日）・産後56日の支給期間と、予定日より遅れた分の上乗せまで日付で出します。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
   },
   {
     slug: 'kogaku-ryoyohi',
@@ -284,6 +331,16 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-09-09',
+  },
+  {
+    slug: 'zangyodai-keisan',
+    icon: 'ClockCountdown',
+    name: '残業代（割増賃金）計算機',
+    description:
+      '月給と今月の残業時間から、法定どおりの残業代を計算。1時間あたりの賃金の出しかた（除外できる手当）・月60時間超の5割増・深夜・法定休日の内訳まで出します。時給換算が最低賃金を下回っていないかも同じ画面で判定。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-18',
   },
   {
     slug: 'jitensha-hansokukin',

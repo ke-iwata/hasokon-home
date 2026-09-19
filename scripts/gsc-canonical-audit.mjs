@@ -9,6 +9,10 @@
 //
 // アドレス変更ツールの実施前にベースラインとして1回、
 // 実施の1週間後・4週間後にもう一度回して、legacy の件数の減りを見る。
+//
+// 統合そのものは済んだが、統合先が Google に登録されないままになっている。
+// 仕様: docs/features/google-index-recovery.md
+// こちらを追うために coverageState 別の内訳も出す（.github/workflows/gsc-audit.yml で週1回）。
 
 import { writeFile } from 'node:fs/promises';
 import process from 'node:process';
@@ -119,6 +123,9 @@ export async function main(argv, deps = {}) {
       total: summary.total,
       counts: summary.counts,
       legacyByHost: summary.legacyByHost,
+      // 週ごとに並べて「登録が増えているか」を見るのはここ
+      // （docs/features/google-index-recovery.md「A. 監査スクリプトの内訳出力」）
+      coverageByState: summary.coverageByState,
       rows,
     };
     await writeSnapshot(options.out, `${JSON.stringify(snapshot, null, 2)}\n`);

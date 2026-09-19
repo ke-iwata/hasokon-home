@@ -2,6 +2,12 @@
 //
 // 判定の基準は docs/features/search-index-consolidation.md の「効果の測り方」。
 //   googleCanonical が旧サブドメインを指すURLの件数が 0 になったら統合完了。
+//
+// これに加えて、Google側の状態（coverageState）ごとの内訳も出す。
+// 仕様: docs/features/google-index-recovery.md の「A. 監査スクリプトの内訳出力」。
+// legacy / consolidated / unindexed の3区分だけだと
+// 「クロールしたうえで登録しない」と「そもそもURLを知らない」が同じ unindexed に潰れ、
+// 復旧が進んでいるのか悪化しているのかが読めないため。
 
 /** 統合前に使っていたサブドメイン。ここを指していたら、まだ移り終わっていない。 */
 export const LEGACY_HOSTS = Object.freeze([
@@ -28,6 +34,12 @@ export const STATUSES = Object.freeze([
   'foreign',
   'error',
 ]);
+
+/**
+ * coverageState が取れなかった行のまとめ先。
+ * 検査そのものが失敗した行（status: 'error'）がここに入る。
+ */
+export const UNKNOWN_COVERAGE = '(coverageState なし)';
 
 export function hostOf(url) {
   try {
@@ -88,6 +100,32 @@ export function classify(url, response, extra = {}) {
   return row;
 }
 
+/**
+ * Google側の状態（coverageState）ごとに件数とURLをまとめる。
+ *
+ * coverageState は Google がそのまま返す文字列で、プロパティの言語設定によって
+ * 英語（"Crawled - currently not indexed"）にも日本語（"検出 - インデックス未登録"）にもなる。
+ * こちらで訳したり束ねたりすると Search Console の画面と突き合わせられなくなるので、
+ * **返ってきた文字列のまま**数える。
+ *
+ * 件数の多い順、同数ならキーの辞書順（実行ごとに並びが変わらないように）。
+ *
+ * @param {object[]} rows classify() の結果
+ * @returns {{state: string, count: number, urls: string[]}[]}
+ */
+export function groupByCoverageState(rows) {
+  const groups = new Map();
+  for (const row of rows) {
+    const state = row.coverageState ?? UNKNOWN_COVERAGE;
+    if (!groups.has(state)) groups.set(state, []);
+    groups.get(state).push(row.url);
+  }
+
+  return [...groups.entries()]
+    .map(([state, urls]) => ({ state, count: urls.length, urls }))
+    .sort((a, b) => b.count - a.count || a.state.localeCompare(b.state));
+}
+
 /** 仕分け済みの行をまとめて、件数と内訳を返す。 */
 export function summarize(rows) {
   const counts = Object.fromEntries(STATUSES.map((status) => [status, 0]));
@@ -109,6 +147,9 @@ export function summarize(rows) {
       acc[host] = (acc[host] ?? 0) + 1;
       return acc;
     }, {}),
+    // Google側の状態の内訳。復旧を追うときはこちらを週ごとに並べる
+    // （docs/features/google-index-recovery.md「効果の測り方」）
+    coverageByState: groupByCoverageState(rows),
     // 検査が全部成功したうえで legacy が 0 なら統合完了
     complete: counts.legacy === 0 && counts.error === 0,
   };
@@ -124,6 +165,15 @@ export function formatReport(summary) {
   lines.push('  インデックス未登録 (unindexed)   : ' + summary.counts.unindexed);
   lines.push('  想定外のホスト (foreign)         : ' + summary.counts.foreign);
   lines.push('  検査に失敗 (error)               : ' + summary.counts.error);
+
+  if (summary.coverageByState.length > 0) {
+    lines.push('');
+    lines.push('Google側の状態 (coverageState) 別:');
+    for (const group of summary.coverageByState) {
+      lines.push(`  ${group.state}: ${group.count}`);
+      for (const url of group.urls) lines.push(`    ${url}`);
+    }
+  }
 
   if (summary.legacy.length > 0) {
     lines.push('');
