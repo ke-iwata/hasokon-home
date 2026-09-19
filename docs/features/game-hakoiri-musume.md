@@ -121,7 +121,8 @@ slug を `slide-out-puzzle` に変えてから着手する。
 
 - `app/hakoiri-musume/page.tsx`：`metadata` に `robots: robotsFor('hakoiri-musume')`。JSON-LD は
   `VideoGame` + `BreadcrumbList`（既存ゲームと同じ）
-- 解説（h2）：「箱入り娘とは（1900年代からの古典。Klotski・華容道と同じルール）」「遊びかた」
+- 解説（h2）：「箱入り娘とは（1900年代からの古典。中国では華容道と呼ばれる同じルール）」
+  ※**英語名は併記しない**（下の「やらないこと」が優先。2026-09-18 のレビューで確定）「遊びかた」
   「標準配置の最短手数（当サイトの数え方の値と、文献の 81手の定義を出典つきで併記）」「コツ（娘の下に横長を通す・小駒を角に集める）」
 - `lib/registry.ts`：`icon` は `GameIcon.tsx` に新しく足す（例：`SlidingBlocks`。4×5 の枡に 2×2 の駒を描く）、
   `stage: 'wip'`。ブロックパズル・色水ソート・2048 と相互リンク

@@ -554,6 +554,7 @@ function SlidingBlocksIcon({ size = 26 }: IconProps) {
       fill="none"
       stroke="currentColor"
       strokeWidth={16}
+      strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
     >

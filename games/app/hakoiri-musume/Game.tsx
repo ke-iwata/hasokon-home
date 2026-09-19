@@ -231,7 +231,7 @@ export default function Game() {
               aria-label={`${item.name}（最短${item.minMoves}手）`}
               onClick={() => begin(item)}
             >
-              {levelsOf(level.group).length === 1 ? LEVEL_GROUPS[level.group].label : `${i + 1}面`}
+              {levelsOf(level.group).length === 1 ? LEVEL_GROUPS[level.group].label : i + 1}
             </button>
           ))}
         </div>
