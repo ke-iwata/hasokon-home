@@ -261,7 +261,9 @@ export default function Page() {
         <Link href="/furusato-nozei/">ふるさと納税 控除額計算機</Link>
         （年末調整の対象外なので、こちらで別に計算してください）／
         <Link href="/nenshu-kabe/">年収の壁 計算機</Link>
-        （配偶者や子どもの年収がどの控除に効くかを判定します）
+        （配偶者や子どもの年収がどの控除に効くかを判定します）／
+        <Link href="/iryohi-kojo/">医療費控除・セルフメディケーション税制 計算機</Link>
+        （これも年末調整では戻らないので、確定申告でいくら戻るかをこちらで計算できます）
       </p>
 
       <ToolMeta slug="nenmatsu-chosei" ymyl>
