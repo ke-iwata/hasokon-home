@@ -536,6 +536,37 @@ function BoulderingMergeIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * 箱入り娘。**4×5の枡に2×2の駒が入っている**ところを描く。
+ *
+ * Phosphor には「箱の中で駒を滑らせる」に当たるアイコンが無く、近い格子系
+ * （SquaresFour・GridFour・GridNine）は既に2048・ナンプレ・ブロックパズルで
+ * 使っているので、縦長の枠と大きな駒で見分けが付くよう自前で描いている。
+ * 線の太さは Phosphor の regular（viewBox 256 に対して 16）に合わせる
+ */
+function SlidingBlocksIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 盤（縦長の箱）。下の中央が出口なので、そこだけ線を切る */}
+      <path d="M48 24 H208 V232 H160 M96 232 H48 V24" />
+      {/* 大きな駒（2×2）と、脇の縦長の駒 */}
+      <rect x="88" y="56" width="80" height="80" />
+      <path d="M88 168 H168" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -564,6 +595,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   DiceFive: DiceFiveIcon,
   BoulderingMerge: BoulderingMergeIcon,
   Keyboard: KeyboardIcon,
+  SlidingBlocks: SlidingBlocksIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

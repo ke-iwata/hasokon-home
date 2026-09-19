@@ -54,6 +54,13 @@
   /* 麻雀ソリティアの卓。牌は明暗どちらでも象牙色のままなので、
      地は暗い緑に固定して牌を浮かせる（明るい地だと牌の輪郭が沈む） */
   --mj-felt: #2f6b4c;
+
+  /* 箱入り娘の駒。**娘だけがアクセント色**で、ほかの3種類は
+     「形＋落ち着いた色」で見分ける（盤の地 --surface-2 から浮く明度にそろえる）。
+     娘以外に強い色を使うと、どれを出口へ運ぶのかが一目で分からなくなる */
+  --hm-tall: #ded5c6;
+  --hm-wide: #ccd7dc;
+  --hm-piece-border: #b9b2a8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -74,6 +81,10 @@
     --ok: #4ade80;
     --warn-bg: #2a2213;
     --warn-border: #b98a2a;
+
+    --hm-tall: #4a423a;
+    --hm-wide: #384750;
+    --hm-piece-border: #57504a;
 
     --cell-closed: #3f3a36;
     --cell-closed-hi: #524b46;
@@ -1372,6 +1383,158 @@ ol {
 
 .cs-game .btn:disabled:hover {
   border-color: var(--border);
+}
+
+/* ---- 箱入り娘 ----
+
+   **盤が縦長（4横 × 5縦）の唯一のゲーム**なので、「盤を画面の高さに合わせる」節の
+   共通指定（正方形が前提）には乗せられない。盤の高さを `100dvh - --chrome` に
+   収めたいので、**幅の上限はその 4/5** になる（縦横比から逆算する）。
+   `--chrome` は盤以外が使う高さの実測値、`--board-max` は広い画面での上限。
+   `Game.tsx` から幅をインラインで渡さないこと（渡すとこの制限ごと消える）。
+
+   下限の180pxは「1マス45px」（押す先の下限44pxを丸めで割り込まない大きさ）×4マス。
+   ここは譲らない（詰めるより盤が画面から少しはみ出すほうを選ぶ） */
+.hm-board {
+  --chrome: 475px;
+  --board-max: 400px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-width: min(var(--board-max), max(180px, calc((100dvh - var(--chrome)) * 4 / 5)));
+  margin: 0 auto;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* はらう操作をページのスクロールに取られない */
+  touch-action: none;
+}
+
+/* 空きマスの押し先。駒より先に置いて下に敷く（駒を選んでから行き先を押す操作）。
+   見た目は持たない（マス目の線を引くと、駒の隙間と二重の格子に見える） */
+.hm-cell {
+  position: absolute;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: default;
+}
+
+/* 駒。位置と大きさは `Game.tsx` が % で渡す（マス目そのもの）。
+   **動きは left / top の transition に任せる**。「動いている途中」という状態を
+   持たずに済み、ロジック（lib/）に演出が混ざらない（画面の約束9） */
+.hm-piece {
+  position: absolute;
+  padding: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  transition:
+    left 130ms ease-out,
+    top 130ms ease-out;
+}
+
+/* 駒の面。**文字が載るのは娘だけ**（同じ形の駒は遊ぶうえで区別する必要がない） */
+.hm-piece > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--hm-piece-border);
+  font-size: clamp(0.9rem, 5vw, 1.4rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hm-daughter > span {
+  background: var(--accent);
+  border-color: var(--accent-strong);
+  color: var(--on-accent);
+}
+
+.hm-tall > span {
+  background: var(--hm-tall);
+}
+
+.hm-wide > span {
+  background: var(--hm-wide);
+}
+
+.hm-small > span {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* 選んでいる駒。**輪郭と浮きの2つで示す**（色だけに頼らない） */
+.hm-piece.selected > span {
+  box-shadow: 0 0 0 3px var(--accent);
+  border-color: var(--accent);
+}
+
+/* 出口（下辺の中央2マス）。盤の下の縁に太い線で示す */
+.hm-exit {
+  position: absolute;
+  left: 25%;
+  width: 50%;
+  bottom: -2px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* レベル選び。**畳まない**（画面の約束5）。区分（3つ）と面（1〜6つ）の2つの `.seg` を並べる。
+   面のボタンは数字だけにしてある（「1面」と書くと幅が1.5倍になり、
+   狭くない画面でも「むずかしい」の6つで折り返す。読み上げ用の名前は `aria-label` にある）。
+   **狭い画面では折り返しに任せず縦に積む**（末尾の `@media` 参照）。
+   折り返しに任せると、面の数が変わったときだけ段が増えて盤が動く */
+.hm-levels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 0;
+}
+
+/* **字種でボタンの高さを変えない。** 区分（「標準」＝漢字）と面（数字）では
+   行の箱の高さが2px違い、切り替えるたびに盤がその分だけ動いていた（画面の約束1）。
+   行の高さを明示すると、どちらでも同じ高さになる */
+.hm-levels .seg button {
+  line-height: 1.5;
+}
+
+/* 状態の行は**1行で固定する**（画面の約束1）。最短手数が3桁になると320px幅で
+   2行に折り返し、盤が36px下がっていた。
+
+   **溢れを隠して高さを合わせてはいけない。** 一度 `overflow: hidden` で塞いだが、
+   320px幅で手数が3桁（むずかしい5・6は最短101手なので、解けば必ずそうなる）に
+   なると、**手数・最短・タイマーが丸ごと黙って消えていた**（レビュー指摘）。
+   いまは折り返させない（`nowrap`）ことで高さを一定にし、**レベル名をこの行から外して**
+   幅に余裕を作っている（レベル名は選択中のボタンで分かる）。
+   狭い画面ではさらに字を小さくする（末尾の `@media`） */
+.hm-game .status-bar {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  height: 1.6em;
+  line-height: 1.6;
+}
+
+/* 押せない局面でもボタンを消さない（消すと段が詰まって盤の位置が動く） */
+.hm-game .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.hm-game .btn:disabled:hover {
+  border-color: var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-piece {
+    transition: none;
+  }
 }
 
 /* ---- トランプ（ソリティア・スパイダー共通） ---- */
@@ -4377,6 +4540,34 @@ button.hf-card {
 
   .cs-pattern {
     font-size: 0.78rem;
+  }
+
+  /* ---- 箱入り娘 ----
+     狭い画面ではリード文が2行になり、レベルも2段（区分＋面）ぶん要るので、
+     盤以外が広い画面より増える（レベルは下のとおり必ず2段）。
+     390×844で実測した盤以外の合計は493px（パンくず・見出し・リード2行・
+     レベル2段・ボタン・記録の帯・状態・結果・見かた＋余白）。
+     少し余裕を見た534pxを入れると盤は248×310（1マス62px）、
+     カード下端802pxで1画面に収まる。
+     375×667・320×568ではこの式が「1マス45px」の下限に当たるので、
+     そこから先は詰めずにはみ出す側へ倒す（画面の約束4） */
+  .hm-board {
+    --chrome: 534px;
+  }
+
+  /* **区分と面を必ず別の段にする。** 1つの折り返し行に並べると、面が3つ（はじめて）なら
+     1行・6つ（むずかしい）なら2行になり、**区分を切り替えた瞬間に盤が39px下がっていた**
+     （画面の約束1）。縦に積めば面の数によらず段の高さが変わらない */
+  .hm-levels {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  /* 最短101手・「むずかしい 6」でも1行に収める（320px幅で折り返していた） */
+  .hm-game .status-bar {
+    font-size: 0.8rem;
   }
 
   /* ---- ヨット ----
