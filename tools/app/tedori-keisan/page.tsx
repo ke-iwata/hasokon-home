@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -123,7 +124,7 @@ export default function Page() {
         </li>
         <li>
           <strong>雇用保険料</strong> —
-          一般の事業で労働者負担0.55%。標準報酬月額ではなく実際に支払われた賃金にかかります
+          一般の事業で労働者負担{ratePercent(EMPLOYMENT_RATE)}。標準報酬月額ではなく実際に支払われた賃金にかかります
         </li>
         <li>
           <strong>所得税</strong> —

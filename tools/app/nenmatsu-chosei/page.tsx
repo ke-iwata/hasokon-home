@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -233,7 +234,7 @@ export default function Page() {
           源泉徴収税額を空欄にしたときは、「改正前（令和7年分）の控除額で、扶養控除等申告書に申告した控除だけが毎月反映されていた」という前提で推計します。実際の源泉徴収は月額表と賞与の算出率表で月ごとに計算されるため、賞与の割合が大きい人ほどずれます
         </li>
         <li>
-          社会保険料を入力しない場合は、健康保険4.99%・厚生年金9.15%・雇用保険0.55%（いずれも本人負担分）で概算します。厚生年金には上限があるため、年収が高いほど負担率は下がります
+          社会保険料を入力しない場合は、健康保険{ratePercent(HEALTH_RATE)}・厚生年金{ratePercent(PENSION_RATE)}・雇用保険{ratePercent(EMPLOYMENT_RATE)}（いずれも本人負担分）で概算します。厚生年金には上限があるため、年収が高いほど負担率は下がります
         </li>
         <li>
           障害者控除・寡婦控除・ひとり親控除・勤労学生控除には対応していません。該当する場合は実際の還付額がこの計算より多くなります

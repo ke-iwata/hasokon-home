@@ -6,6 +6,7 @@ import {
   type HousingLoanTier,
   type SpouseType,
 } from '@/lib/furusato-nozei';
+import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
 const manToYen = (v: string) => (Number(v) || 0) * 10_000;
@@ -489,7 +490,7 @@ export default function Calculator() {
         </table>
         {r.socialInsuranceEstimated && (
           <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: 8 }}>
-            社会保険料は健康保険4.99%・厚生年金9.15%・雇用保険0.55%（本人負担分）で概算しています。厚生年金には上限があるため、高収入ほど負担率は下がります。正確に出したい場合は源泉徴収票の「社会保険料等の金額」を入力してください。
+            社会保険料は健康保険{ratePercent(HEALTH_RATE)}・厚生年金{ratePercent(PENSION_RATE)}・雇用保険{ratePercent(EMPLOYMENT_RATE)}（本人負担分）で概算しています。厚生年金には上限があるため、高収入ほど負担率は下がります。正確に出したい場合は源泉徴収票の「社会保険料等の金額」を入力してください。
           </p>
         )}
       </details>
