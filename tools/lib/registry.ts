@@ -293,6 +293,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'shussan-yoteibi',
+    icon: 'CalendarPlus',
+    name: '出産予定日・妊娠週数 計算機',
+    description:
+      '最終月経開始日から出産予定日と「今日は妊娠何週何日」を計算。産前休業を請求できる日（予定日の6週間前・多胎14週間前）と産後休業が明ける日まで日付で出し、出産手当金の計算にそのまま引き継げます。',
+    category: '生活・健康',
+    // 公開の判断は docs/features/google-index-recovery.md の解除判断のあと。
+    // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
+    stage: 'wip',
+    updatedAt: '2026-09-19',
+  },
+  {
     slug: 'shussan-teate',
     icon: 'CalendarHeart',
     name: '出産手当金・出産育児一時金 計算機',

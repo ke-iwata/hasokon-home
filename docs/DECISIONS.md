@@ -30,6 +30,42 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 - **`RelatedTools` は `publicTools` を見ているので手当て不要だった。**
   手で足したのは、医療費控除の仕様書が名指ししていた
   `/tools/nenmatsu-chosei/` の関連ツール行へのリンク1本だけ
+## 2026-09-19：サイトマップを robots.txt から直接も見つけられるようにし、週次監査で「レポートに出ているか」を数えるようにした
+
+`/learn/sitemap.xml`（39 URL）が Google の**サイトマップ レポートに存在すらしない**ことが
+Sitemaps API で分かった。`/sitemap.xml`（index）には 4 本目として並んでいるのに、
+Google 側が index の処理を途中で止めているらしい。URL 検査の
+`URL is unknown to Google` 91 件のうち 39 件がこれで、
+サイトの品質判定以前に**URL を渡せていない**状態だった。
+仕様は [features/sitemap-discovery-audit.md](./features/sitemap-discovery-audit.md)。
+
+- **`home/robots.txt` に子サイトマップ 4 本を `Sitemap:` で直接書いた。** index の行は残す。
+  `robots.txt` の `Sitemap:` は複数行書けて、**index の処理と独立した発見経路**になる。
+  index をやめて 1 本にまとめる案は、home にビルド工程が無く、デプロイ時に 4 本を結合する
+  工程と IndexNow の `lastmod` 差分検出に手が入るので見送った
+- **子を増減したら `home/sitemap.xml` と `home/robots.txt` の両方を直す**。
+  片方だけ直しても誰も気づけないので、`scripts/test/robots-sitemaps.test.mjs` が
+  両者の集合を突き合わせて落とす
+- **週次監査（`gsc-canonical-audit.mjs`）に Sitemaps API を足した。** index を辿って見つけた
+  1 本ごとに「読まれた日・送信数・登録数」を出し、`--out` の JSON に `sitemaps` として残す。
+  レポートに無い・**14 日**より古い子があれば終了コード 1（`gsc-audit.yml` は 1 では落ちない）。
+  手で API を叩かないと分からなかったものを、月曜のログで気づけるようにするのが目的
+- **`known: false` は「Google が読んでいない」ではない。** サイトマップ レポートに出るのは
+  「レポートから送信したもの」と「送信済み index の子」だけで、**robots.txt 経由で
+  見つかったサイトマップは読まれていても出てこない**
+  （[公式ヘルプ](https://support.google.com/webmasters/answer/7451001)）。
+  だから **robots.txt を足した効果は `known` では測れない**。A の効果は
+  `coverageByState` の learn 39 件が減るかで見て、`known` は運営者の個別送信が
+  済んだかを見る、と役割を分けた。ログの文言も API が言える範囲までに弱めてある
+  （PR #237 のレビューで、当初「Google は知らない」と書いていたのを訂正）
+- **Sitemaps API の 404 は失敗ではなく答え**（「このレポートに無い」）なので、
+  `isRetryable()` の対象にせず `known: false` に落とす。401/403/5xx は再試行し、
+  それでも駄目なら終了コード 2 で、**URL 検査は始めない**（90 件の検査を無駄にしない）
+- **この変更が約束するのは「渡す」ところまで。** 登録されるかどうかはサイト単位の品質判定次第で、
+  Google 登録ゼロの根本原因（[features/google-index-recovery.md](./features/google-index-recovery.md)）は
+  これでは直らない。Bing はすでに index を正しく辿っているので、Bing 側の変化は期待しない
+
+---
 
 ## 2026-09-16：IndexNow を本番デプロイに組み込み、lastmod が動いたURLだけ通知するようにした
 
