@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 import { hayamihyo, hayamihyoNoBenefit, HAYAMIHYO_FAMILIES } from '@/lib/furusato-nozei';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
@@ -187,7 +188,7 @@ export default function Page() {
       </div>
       <p className="note">
         <strong>表の前提：</strong>
-        収入は額面の給与のみ（給与所得控除は令和8年分）。社会保険料は協会けんぽの全国平均・本人負担分（健康保険4.99%・厚生年金9.15%・雇用保険0.55%。厚生年金の標準報酬月額の上限を反映）で概算し、
+        収入は額面の給与のみ（給与所得控除は令和8年分）。社会保険料は協会けんぽの全国平均・本人負担分（健康保険{ratePercent(HEALTH_RATE)}・厚生年金{ratePercent(PENSION_RATE)}・雇用保険{ratePercent(EMPLOYMENT_RATE)}。厚生年金の標準報酬月額の上限を反映）で概算し、
         <strong>介護保険料は含めていません（40歳未満の方に相当）</strong>
         。生命保険料控除などその他の所得控除は0円、住宅ローン控除なし、
         <strong>ワンストップ特例を使う前提</strong>
@@ -291,7 +292,7 @@ export default function Page() {
       <ul>
         <li>給与収入のみ（事業所得・不動産所得・譲渡所得などがある場合は別途計算が必要です）</li>
         <li>
-          社会保険料は健康保険4.99%・厚生年金9.15%・雇用保険0.55%（いずれも本人負担分）で概算しています。厚生年金には上限があるため、年収が高いほど負担率は下がります。正確に計算したい場合は源泉徴収票の「社会保険料等の金額」を入力してください
+          社会保険料は健康保険{ratePercent(HEALTH_RATE)}・厚生年金{ratePercent(PENSION_RATE)}・雇用保険{ratePercent(EMPLOYMENT_RATE)}（いずれも本人負担分）で概算しています。厚生年金には上限があるため、年収が高いほど負担率は下がります。正確に計算したい場合は源泉徴収票の「社会保険料等の金額」を入力してください
         </li>
         <li>
           住宅ローン控除に対応しています（入力欄は計算機の中にあります）。配当控除など他の税額控除には対応していません

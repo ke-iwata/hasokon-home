@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
 
+# サイトマップは index（1本目）と、その子4本の両方を書く。
+# index 経由でしか辿れないと、Google が index の途中で止まったときに
+# 子が発見されない（2026-09-19 の時点で /learn/sitemap.xml が一度も読まれていない）。
+# 仕様: docs/features/sitemap-discovery-audit.md
+# 増減したら home/sitemap.xml と両方直すこと（scripts/test/robots-sitemaps.test.mjs が落ちる）。
 Sitemap: https://hasokon.com/sitemap.xml
+Sitemap: https://hasokon.com/sitemap-home.xml
+Sitemap: https://hasokon.com/tools/sitemap.xml
+Sitemap: https://hasokon.com/games/sitemap.xml
+Sitemap: https://hasokon.com/learn/sitemap.xml
