@@ -230,9 +230,10 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- ツール37本（ほかに公開前が6本：`iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
-  `shohizei-keisan`・`zangyodai-keisan`（`stage: 'wip'`）・`ikuji-kyugyo-kyufu`（`stage: 'preview'`））/
-  用途別ルーレット10本 / 使い方の記事6本 / テスト1918件
+- **ツール43本（全部 `public`。公開前のものは無い）** /
+  用途別ルーレット10本 / 使い方の記事6本
+  （2026-09-19に、公開前だった6本 — `iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
+  `shohizei-keisan`・`zangyodai-keisan`・`ikuji-kyugyo-kyufu` — をまとめて公開した）
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、

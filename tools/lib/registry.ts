@@ -198,7 +198,7 @@ export const tools: ToolDef[] = [
     description:
       '税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を約50項目の一覧から引ける軽減税率チェッカーと、2027年4月からの食料品1%（予定）でいくら安くなるかの計算つき。',
     category: 'お金・社会保険',
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-09-18',
   },
   {
@@ -268,7 +268,7 @@ export const tools: ToolDef[] = [
     description:
       '育休でいくらもらえるかを支給単位期間ごとの推移で計算。出生後休業支援給付（+13%）を足した最初の28日の80%から、67%・50%への段差までを出します。令和8年8月1日改定の上限額（賃金日額16,540円）に対応。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-09-10',
   },
   {
@@ -280,7 +280,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
     // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-09-18',
   },
   {
@@ -293,13 +293,25 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'shussan-yoteibi',
+    icon: 'CalendarPlus',
+    name: '出産予定日・妊娠週数 計算機',
+    description:
+      '最終月経開始日から出産予定日と「今日は妊娠何週何日」を計算。産前休業を請求できる日（予定日の6週間前・多胎14週間前）と産後休業が明ける日まで日付で出し、出産手当金の計算にそのまま引き継げます。',
+    category: '生活・健康',
+    // 公開の判断は docs/features/google-index-recovery.md の解除判断のあと。
+    // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
+    stage: 'wip',
+    updatedAt: '2026-09-19',
+  },
+  {
     slug: 'shussan-teate',
     icon: 'CalendarHeart',
     name: '出産手当金・出産育児一時金 計算機',
     description:
       '産休中にもらえる出産手当金と出産育児一時金を、出産予定日と月給から計算。産前42日（多胎98日）・産後56日の支給期間と、予定日より遅れた分の上乗せまで日付で出します。',
     category: 'お金・社会保険',
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-09-18',
   },
   {
@@ -319,7 +331,7 @@ export const tools: ToolDef[] = [
     description:
       '1年間に払った医療費から、控除額と実際に戻る額（所得税の還付＋翌年の住民税の軽減）を計算。セルフメディケーション税制と並べて、どちらが得かも判定します。医療費が10万円以下でも控除できる場合に対応。',
     category: 'お金・社会保険',
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-08-31',
   },
   {
@@ -339,7 +351,7 @@ export const tools: ToolDef[] = [
     description:
       '月給と今月の残業時間から、法定どおりの残業代を計算。1時間あたりの賃金の出しかた（除外できる手当）・月60時間超の5割増・深夜・法定休日の内訳まで出します。時給換算が最低賃金を下回っていないかも同じ画面で判定。',
     category: 'お金・社会保険',
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-09-18',
   },
   {
