@@ -39,6 +39,14 @@ export const BEFORE_DAYS_MULTIPLE = 98;
 export const AFTER_DAYS = 56;
 
 /**
+ * 産後、本人が請求しても就業させられない日数（労働基準法65条2項本文の6週間）。
+ *
+ * 出産日の**翌日**から数えるので、満了は出産日 + 42日。43日目以降は
+ * 「本人が請求し、医師が支障ないと認めた業務」に就くことができる（同項ただし書き）
+ */
+export const POSTPARTUM_ABSOLUTE_DAYS = 42;
+
+/**
  * 【データ更新箇所】出産育児一時金の額（1児あたり・円）。
  *
  * 産科医療補償制度に加入する医療機関等で妊娠週数22週以降に出産した場合は50万円
@@ -87,6 +95,77 @@ export const REFORM = {
 
 /** 制度データを最後に確認した日 */
 export const DATA_CHECKED_AT = '2026-09-18';
+
+// ------------------------------------------------------------ 産休の日程（予定日だけで決まる部分）
+
+/**
+ * 出産予定日と胎児数だけで決まる産前産後休業の日程。
+ *
+ * `calcLeaveSchedule()` の戻り値。**金額を出さない用途（出産予定日 計算機）でも
+ * 同じ数え方を使えるように切り出してある。**
+ */
+export interface LeaveSchedule {
+  /** 胎児数（1=単胎、2以上=多胎） */
+  fetusCount: number;
+  /** 多胎妊娠か */
+  multiple: boolean;
+  /** 産前の日数（単胎42日・多胎98日。予定日を含めて数える） */
+  beforeDays: number;
+  /** 産後の日数（56日） */
+  afterDays: number;
+  /**
+   * 産前休業を請求できる最初の日（予定日 − 41日。多胎は − 97日）。
+   * 予定日を含めて42日（98日）なので、引くのは日数 − 1。
+   */
+  leaveFrom: DateParts;
+  /** 産後休業の終了日（出産日＝予定日の翌日から56日目。予定日 + 56日） */
+  afterLeaveUntil: DateParts;
+  /**
+   * 産後6週間（42日）を過ぎて就業できるようになる最初の日（予定日 + 43日）。
+   *
+   * 産後休業は出産日の**翌日**から数えるので、6週間が満了するのは出産日 + 42日で、
+   * 就業できるのはその翌日。**本人が請求し、医師が支障ないと認めた場合に限られる**
+   * （労働基準法65条2項ただし書き）
+   */
+  workableFrom: DateParts;
+  /** 育児休業に入れる日（産後休業の終了日の翌日。予定日 + 57日） */
+  childcareLeaveFrom: DateParts;
+}
+
+/**
+ * 出産予定日から産前産後休業の日程を出す（金額は出さない）。
+ *
+ * **産休の日数と数え方をこの1か所に集める**ための関数。
+ * 定数だけを共有してもページごとに数え直すことになり、「予定日を含めて42日」の
+ * 1日ずれが繰り返し起きる（実際に起きた）。`calcShussanTeate()` の `leaveFromDue` も
+ * この関数から取っている。
+ *
+ * - 産前休業：出産予定日の6週間前（多胎は14週間前）から**請求できる**
+ *   （労働基準法65条1項。自動的に休みになるわけではない）
+ * - 産後休業：出産日の翌日から8週間（同条2項）
+ *
+ * @param dueDate 出産予定日
+ * @param fetusCount 胎児数（既定1。2以上が多胎で産前が98日になる）
+ */
+export function calcLeaveSchedule(dueDate: DateParts, fetusCount = 1): LeaveSchedule {
+  const count = Math.max(1, Math.floor(fetusCount));
+  const multiple = count >= 2;
+  const beforeDays = multiple ? BEFORE_DAYS_MULTIPLE : BEFORE_DAYS_SINGLE;
+  const afterLeaveUntil = addDays(dueDate, AFTER_DAYS);
+
+  return {
+    fetusCount: count,
+    multiple,
+    beforeDays,
+    afterDays: AFTER_DAYS,
+    // 起点（予定日）を含めて数えるので −(日数 − 1)
+    leaveFrom: addDays(dueDate, -(beforeDays - 1)),
+    afterLeaveUntil,
+    // 6週間（42日）の満了は出産日 + 42日。就業できるのはその翌日から
+    workableFrom: addDays(dueDate, POSTPARTUM_ABSOLUTE_DAYS + 1),
+    childcareLeaveFrom: addDays(afterLeaveUntil, 1),
+  };
+}
 
 // ------------------------------------------------------------ 入出力
 
@@ -216,9 +295,12 @@ export function calcShussanTeate(input: ShussanTeateInput): ShussanTeateResult |
   const overdueDays = Math.max(0, diff);
   const earlyDays = Math.max(0, -diff);
 
-  const baseBeforeDays = multiple ? BEFORE_DAYS_MULTIPLE : BEFORE_DAYS_SINGLE;
+  // 産休の日程（予定日だけで決まる部分）は calcLeaveSchedule と共有する。
+  // 産前の日数と「予定日を含めて数える」ことを2か所に書かないため
+  const schedule = calcLeaveSchedule(dueDate, fetusCount);
+  const baseBeforeDays = schedule.beforeDays;
   const beforeDays = baseBeforeDays + overdueDays;
-  const afterDays = AFTER_DAYS;
+  const afterDays = schedule.afterDays;
   const totalDays = beforeDays + afterDays;
 
   // 産前の起点は「出産日と予定日の早いほう」。起点の日を含めて数えるので −(日数−1)
@@ -229,7 +311,7 @@ export function calcShussanTeate(input: ShussanTeateInput): ShussanTeateResult |
 
   // 産前休業は出産予定日を基準に請求するので、早産のときは実際の休み始めが予定日基準になる。
   // そのぶん「出産日 − 41日」からの数日は出勤日で支給されないため、産前は earlyDays だけ短くなる
-  const leaveFromDue = addDays(dueDate, -(baseBeforeDays - 1));
+  const leaveFromDue = schedule.leaveFrom;
   const beforeDaysIfLeaveFromDue = beforeDays - earlyDays;
   const totalDaysIfLeaveFromDue = beforeDaysIfLeaveFromDue + afterDays;
 

@@ -1,10 +1,9 @@
 # 出産予定日・妊娠週数 計算機 — 最終月経日から予定日と「今日は妊娠何週何日」を出し、産休の開始日と出産手当金・育休給付へつなぐ
 
-**状態**：提案（2026-09-18 起票、未実装）。**2026-09-19 の企画レビュー（#233）の必須4点を反映済み**
+**状態**：**実装済み（`stage: 'wip'`。2026-09-19）**。2026-09-18 起票。**2026-09-19 の企画レビュー（#233）の必須4点を反映済み**
 （産前休業の起算を `shussan-teate.ts` と共有・医療情報にあたる節目の削除・クエリ読みの方式・アイコンの重複）。
 **2026-09-19 の追加レビュー2本（#233）の必須点も反映済み**：テスト例の1日ずれ・6週後の就業可能日の1日ずれ・
 日程関数の切り出しを工数に計上・`category` の値・免責と例外時の文言の確定。
-実装は `stage: 'wip'` から。
 **`public` への昇格は [google-index-recovery.md](./google-index-recovery.md) の解除判断後**（#218・#220・#223 と同じ運用）。
 `public` にする PR では `home/index.html` のカード・`home/404.html` の一覧・`home/llms.txt` の行も一緒に足す。
 **対象**：`tools/`（`hasokon.com/tools/shussan-yoteibi/` を想定）
@@ -214,3 +213,12 @@ GA4（プロパティ 548154955、2026-09-04〜09-17、2026-09-18 取得）で�
   - 検索需要の書き方を控えめにし、**3本の公開順序を決める必要**を「期待される効果」に追加。
     「保守負担ゼロ」を「小さい（ゼロではない）」に訂正
   - 実装時に `CalendarPlusIcon` という import 名が正しいかを確認する
+- 2026-09-19：**実装（`stage: 'wip'`）**。`lib/shussan-yoteibi.ts` ＋ テスト37件、
+  `app/shussan-yoteibi/`（page + Calculator）、registry・`ToolIcon.tsx`（`CalendarPlus`）。
+  `lib/shussan-teate.ts` から **`calcLeaveSchedule()` を切り出して共有**し、
+  `calcShussanTeate()` もそれを経由する形に直した（既存35件のテストは無変更で通る）。
+  `shussan-teate` 側は `useEffect` ＋ `window.location.search` ＋ `parseHandoffQuery()` で
+  `due` / `babies` を初期値に読む。**`CalendarPlusIcon` は import 名として正しいことを確認**
+  （`@phosphor-icons/react/dist/ssr` が `CalendarPlusIcon` で export。素の `CalendarPlus` は非推奨）。
+  スマホ（390×844）で横スクロールが出ないことを実測。
+  **`public` への昇格と、回遊先3本の公開順序はこのPRでは変えていない**

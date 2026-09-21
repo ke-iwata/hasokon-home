@@ -3,13 +3,16 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
+  HOKENRYO_CHOSEI_EXCLUDED_NOTE,
   STEP,
   calcHatarakizon,
+  ratePercent,
+  type ChoseiStage,
   type CurvePoint,
   type HatarakizonResult,
   type TakeHome,
 } from '@/lib/hatarakizon';
-import { DAYTIME_STUDENT_EXCLUSION_NOTE, type Position } from '@/lib/nenshu-kabe';
+import { DAYTIME_STUDENT_EXCLUSION_NOTE, type Position, type Workplace } from '@/lib/nenshu-kabe';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
 /** 円 → 「128.5万円」。比較の主役は万円単位なので小数第1位まで出す */
@@ -24,8 +27,34 @@ const POSITIONS: { value: Position; label: string }[] = [
   { value: 'none', label: '扶養には入っていない' },
 ];
 
+/**
+ * 勤務先の3択。もとは「51人以上」のチェックボックス1つだったが、それでは
+ * 「50人以下だが社会保険に加入することになった勤務先」を表現できず、保険料調整制度の
+ * 対象者（まさにその人たち）にセレクトを置く画面が存在しなかった。
+ */
+const WORKPLACES: { value: Workplace; label: string }[] = [
+  { value: 'over51', label: '従業員51人以上' },
+  { value: 'optional-covered', label: '50人以下だが、社会保険に加入することになった' },
+  { value: 'not-covered', label: '50人以下で、社会保険には加入しない' },
+];
+
+/**
+ * 年目の3択。
+ *
+ * **見分けがつく語を先頭に置くこと。** 「使っている（勤務先の利用開始から1〜2年目）」だと
+ * 320〜390px では `使っている（勤務先の利` までしか見えず、1〜2年目と3年目が
+ * 1文字も違わない（セレクトを開かないと自分の選択が分からない）。
+ * この選択で手取りが年1万円以上変わるので、切れる位置より前に年数を出す。
+ */
+const CHOSEI_STAGES: { value: ChoseiStage; label: string }[] = [
+  { value: 'none', label: '使っていない／わからない' },
+  { value: 'y12', label: '1〜2年目（勤務先の利用開始から）' },
+  { value: 'y3', label: '3年目（勤務先の利用開始から）' },
+];
+
 /** 手取りの内訳（扶養内・加入の2枚を並べる） */
 function Breakdown({ title, take, accent }: { title: string; take: TakeHome; accent: boolean }) {
+  const chosei = take.premiums.choseiShare;
   const rows: [string, number][] = [
     ['年収（額面）', take.gross],
     ['− 健康保険料（子ども・子育て支援金を含む）', take.premiums.health],
@@ -48,6 +77,23 @@ function Breakdown({ title, take, accent }: { title: string; take: TakeHome; acc
             <dd>{value === 0 ? '—' : yen(value)}</dd>
           </div>
         ))}
+        {/*
+          軽減は保険料の行に織り込み済みなので、ここは「いくら軽くなっているか」を
+          見せるだけの行。合計には足さない（二重に引くことになる）
+        */}
+        {chosei !== null && (
+          <div>
+            {/*
+              割合は 0.25 のような**小数**なので、百分率にするのは ratePercent() の仕事。
+              ここで Math.round(chosei * 100) / 100 と書いて「0.25%」と出していた
+              （3年目の 0.375 も 37.5% であって 0.38% ではない）。
+              軽減は保険料の行に織り込み済みなので、この行は合計に足さない
+            */}
+            <dt>保険料調整制度で軽くなっている分（本人負担 {ratePercent(chosei)}）</dt>
+            {/* 引かれる額ではなく「引かれずに済んだ額」なので、減算行と同じ − を付けない */}
+            <dd>{yen(take.premiums.choseiSavings)} 少なくなっています</dd>
+          </div>
+        )}
         <div>
           <dt>＝ 手取り</dt>
           <dd>{yen(take.net)}</dd>
@@ -181,7 +227,8 @@ function Chart({ r }: { r: Extract<HatarakizonResult, { kind: 'compare' }> }) {
 export default function Calculator({ buildDate }: { buildDate: string }) {
   const [incomeMan, setIncomeMan] = useState('130');
   const [position, setPosition] = useState<Position>('spouse');
-  const [size51, setSize51] = useState(true);
+  const [workplace, setWorkplace] = useState<Workplace>('over51');
+  const [chosei, setChosei] = useState<ChoseiStage>('none');
   const [hours20, setHours20] = useState(true);
   const [kaigo, setKaigo] = useState(false);
   const [autoBaseline, setAutoBaseline] = useState(true);
@@ -195,7 +242,8 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const r = calcHatarakizon({
     income: (Number(incomeMan) || 0) * 10_000,
     position,
-    size51,
+    workplace,
+    chosei,
     hours20,
     kaigo,
     baselineIncome: autoBaseline ? null : (Number(baselineMan) || 0) * 10_000,
@@ -229,16 +277,37 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             ))}
           </select>
         </label>
-        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
-          <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              checked={size51}
-              onChange={(e) => setSize51(e.target.checked)}
-              style={{ width: 'auto' }}
-            />
-            勤務先の従業員が51人以上
+        <label>
+          勤務先
+          <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
+            従業員50人以下でも、労使の合意で短時間労働者を社会保険に加入させている勤務先があります
+          </span>
+          <select value={workplace} onChange={(e) => setWorkplace(e.target.value as Workplace)}>
+            {WORKPLACES.map((w) => (
+              <option key={w.value} value={w.value}>
+                {w.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {r.kind === 'compare' && r.choseiSelectable && (
+          <label>
+            勤務先が保険料調整制度を使い始めてから何年目ですか？
+            <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
+              あなたが加入してからではなく、<strong>勤務先が制度を使い始めてから</strong>の年数です
+              （勤務先に確認してください）。
+              <strong>複数の勤務先で社会保険に加入している方は制度の対象外</strong>です。
+            </span>
+            <select value={chosei} onChange={(e) => setChosei(e.target.value as ChoseiStage)}>
+              {CHOSEI_STAGES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
           </label>
+        )}
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
           <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
             <input
               type="checkbox"
@@ -293,7 +362,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </div>
         </div>
       ) : (
-        <Results r={r} position={position} />
+        <Results r={r} position={position} chosei={chosei} />
       )}
     </div>
   );
@@ -302,9 +371,11 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 function Results({
   r,
   position,
+  chosei,
 }: {
   r: Extract<HatarakizonResult, { kind: 'compare' }>;
   position: Position;
+  chosei: ChoseiStage;
 }) {
   const losing = r.netDiff < 0;
 
@@ -326,7 +397,7 @@ function Results({
       {r.wageRequirementAbolished ? (
         <div className="note" style={{ marginTop: 10, lineHeight: 1.7 }}>
           <strong>2026年10月1日に賃金要件（月8.8万円＝年収106万円相当）が撤廃されました。</strong>
-          従業員51人以上の勤務先で週20時間以上働くと、年収がいくらでも勤務先の社会保険に加入します。
+          短時間労働者が加入対象の勤務先で週20時間以上働くと、年収がいくらでも勤務先の社会保険に加入します。
           扶養内に留まるには<strong>週の所定労働時間を20時間未満にする</strong>しかなく、
           そのうえで {r.ceiling.label} が年収の上限になります。
         </div>
@@ -339,9 +410,29 @@ function Results({
         </div>
       )}
 
+      {r.choseiApplied && (
+        <div className="note" style={{ marginTop: 10, lineHeight: 1.7 }}>
+          <strong>保険料調整制度で、厚生年金保険料・健康保険料の本人負担が年 {yen(r.choseiSavings)} 軽くなっています。</strong>
+          <div style={{ marginTop: 4 }}>
+            年数は<strong>勤務先が制度を使い始めてからの通算</strong>です。
+            3年目は軽減が半分になり、4年目からは労使折半（50%）に戻ります。
+            {HOKENRYO_CHOSEI_EXCLUDED_NOTE}
+            将来受け取る年金額は減りません（標準報酬月額は変わらないため）。
+          </div>
+        </div>
+      )}
+
+      {r.choseiSelectable && !r.choseiApplied && chosei !== 'none' && (
+        <div className="note" style={{ marginTop: 10, lineHeight: 1.7 }}>
+          この年収では<strong>標準報酬月額が12.6万円（月収13万円）を超える</strong>ため、
+          保険料調整制度の対象になりません。保険料は労使折半で計算しています。
+        </div>
+      )}
+
       {position === 'student' && (
         <div className="note" style={{ marginTop: 10, fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
           ※ {DAYTIME_STUDENT_EXCLUSION_NOTE}
+          保険料調整制度も学生は対象外です（夜間部・定時制・通信制、休学中の方は対象）。
         </div>
       )}
 
@@ -385,6 +476,13 @@ function Results({
         お住まいの都道府県により数%変わります。 健康保険料には子ども・子育て支援金（令和8年度は本人負担0.115%）を
         含めています。給与明細でも健康保険料と一体で天引きされるため、内訳を分けていません
         （支援金だけの金額は <Link href="/kosodate-shienkin/">子ども・子育て支援金 計算機</Link> で確認できます）。
+        {r.choseiApplied && (
+          <>
+            {' '}
+            なお保険料調整制度で軽減されるのは健康保険料と厚生年金保険料の本体だけで、
+            同じ行に含めている子ども・子育て支援金と介護保険料は軽減されません。
+          </>
+        )}
       </p>
 
       <h3 style={{ marginTop: 22 }}>手取り以外に増えるもの</h3>
