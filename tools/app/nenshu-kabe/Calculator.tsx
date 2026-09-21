@@ -8,9 +8,11 @@ import {
   evaluateKabe,
   evaluateShaho,
   nextWall,
+  toYmd,
   type Position,
   type Workplace,
 } from '@/lib/nenshu-kabe';
+import { HOKENRYO_CHOSEI_STARTS_ON } from '@/lib/shaho-ryoritsu';
 
 const fmtMan = (yen: number) => {
   const man = yen / 10_000;
@@ -29,9 +31,9 @@ const POSITIONS: { value: Position; label: string }[] = [
  * 勤務先（任意特定適用事業所）があるので、「51人以上か」だけでは足りない。
  */
 const WORKPLACES: { value: Workplace; label: string }[] = [
-  { value: 'not-covered', label: '50人以下で、社会保険には加入しない' },
   { value: 'over51', label: '従業員51人以上' },
   { value: 'optional-covered', label: '50人以下だが、社会保険に加入することになった' },
+  { value: 'not-covered', label: '50人以下で、社会保険には加入しない' },
 ];
 
 /**
@@ -60,6 +62,9 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   // 昼間部の学生は適用除外だが、この選択肢だけでは昼間部かどうかが分からないので
   // 判定は変えず、加入の可能性を出しているときに注記だけ添える（施行の前後どちらも）
   const showStudentNote = position === 'student' && shaho.kind !== 'not-applicable';
+  // 施行日前に「損得計算機で計算できます」と案内すると、あちらは年目のセレクトを
+  // 出さないので行き止まりになる。施行日の扱いを2ツールで揃える
+  const choseiStarted = toYmd(asOf) >= HOKENRYO_CHOSEI_STARTS_ON;
 
   return (
     <div className="card">
@@ -131,7 +136,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         金額は出さない。このファイルは保険料も手取りも計算しないので、
         「制度がある」ことだけ伝えて社会保険 損得計算機に送る（同じ計算を2か所に置かない）
       */}
-      {shaho.kind !== 'not-applicable' && shaho.choseiEligible && (
+      {shaho.kind !== 'not-applicable' && shaho.choseiEligible && choseiStarted && (
         <div
           className="note"
           style={{ margin: '10px 0 4px', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}

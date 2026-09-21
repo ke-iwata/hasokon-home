@@ -274,6 +274,9 @@ describe('保険料調整制度の注記（金額は持たない）', () => {
     expect(HOKENRYO_CHOSEI_NOTE).toContain('25〜48%');
     expect(HOKENRYO_CHOSEI_NOTE).toContain('3年');
     expect(HOKENRYO_CHOSEI_NOTE).toContain('事業主の申出制');
+    // 複数事業所で加入している人は掛け持ちの短時間労働者に普通にいて、
+    // 制度の対象外（パンフレット3頁）。金額は出さないが、対象外であることは伝える
+    expect(HOKENRYO_CHOSEI_NOTE).toContain('複数の勤務先で社会保険に加入している方');
   });
 });
 

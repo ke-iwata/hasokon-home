@@ -6,6 +6,7 @@ import {
   HOKENRYO_CHOSEI_EXCLUDED_NOTE,
   STEP,
   calcHatarakizon,
+  ratePercent,
   type ChoseiStage,
   type CurvePoint,
   type HatarakizonResult,
@@ -37,10 +38,18 @@ const WORKPLACES: { value: Workplace; label: string }[] = [
   { value: 'not-covered', label: '50人以下で、社会保険には加入しない' },
 ];
 
+/**
+ * 年目の3択。
+ *
+ * **見分けがつく語を先頭に置くこと。** 「使っている（勤務先の利用開始から1〜2年目）」だと
+ * 320〜390px では `使っている（勤務先の利` までしか見えず、1〜2年目と3年目が
+ * 1文字も違わない（セレクトを開かないと自分の選択が分からない）。
+ * この選択で手取りが年1万円以上変わるので、切れる位置より前に年数を出す。
+ */
 const CHOSEI_STAGES: { value: ChoseiStage; label: string }[] = [
   { value: 'none', label: '使っていない／わからない' },
-  { value: 'y12', label: '使っている（勤務先の利用開始から1〜2年目）' },
-  { value: 'y3', label: '使っている（勤務先の利用開始から3年目）' },
+  { value: 'y12', label: '1〜2年目（勤務先の利用開始から）' },
+  { value: 'y3', label: '3年目（勤務先の利用開始から）' },
 ];
 
 /** 手取りの内訳（扶養内・加入の2枚を並べる） */
@@ -74,8 +83,15 @@ function Breakdown({ title, take, accent }: { title: string; take: TakeHome; acc
         */}
         {chosei !== null && (
           <div>
-            <dt>うち 保険料調整制度による軽減（本人負担 {Math.round(chosei * 100) / 100}%）</dt>
-            <dd>−{yen(take.premiums.choseiSavings)}</dd>
+            {/*
+              割合は 0.25 のような**小数**なので、百分率にするのは ratePercent() の仕事。
+              ここで Math.round(chosei * 100) / 100 と書いて「0.25%」と出していた
+              （3年目の 0.375 も 37.5% であって 0.38% ではない）。
+              軽減は保険料の行に織り込み済みなので、この行は合計に足さない
+            */}
+            <dt>保険料調整制度で軽くなっている分（本人負担 {ratePercent(chosei)}）</dt>
+            {/* 引かれる額ではなく「引かれずに済んだ額」なので、減算行と同じ − を付けない */}
+            <dd>{yen(take.premiums.choseiSavings)} 少なくなっています</dd>
           </div>
         )}
         <div>
@@ -279,7 +295,8 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             勤務先が保険料調整制度を使い始めてから何年目ですか？
             <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
               あなたが加入してからではなく、<strong>勤務先が制度を使い始めてから</strong>の年数です
-              （勤務先に確認してください）
+              （勤務先に確認してください）。
+              <strong>複数の勤務先で社会保険に加入している方は制度の対象外</strong>です。
             </span>
             <select value={chosei} onChange={(e) => setChosei(e.target.value as ChoseiStage)}>
               {CHOSEI_STAGES.map((c) => (

@@ -3,6 +3,7 @@ import {
   HOKENRYO_CHOSEI_SHARES,
   HOKENRYO_CHOSEI_STARTS_ON,
   choseiShare,
+  ratePercent,
   DEPENDENT_LIMIT,
   DEPENDENT_LIMIT_STUDENT,
   EMPLOYMENT_RATE,
@@ -479,6 +480,38 @@ describe('保険料調整制度（本人負担の軽減）', () => {
       expect(choseiShare(134_000, 'y3')).toBeNull();
     });
 
+    /**
+     * 画面に出す文字列。**割合は 0.25 のような小数なので、そのまま % を付けると
+     * 100分の1で出る**（レビューで実際に「本人負担 0.25%」が出ていた。#239）。
+     * 整形は lib/shaho-ryoritsu.ts の ratePercent() に通す約束なので、
+     * 9通りすべてが解説の表と同じ文字列になることを固定しておく。
+     */
+    it('画面に出す割合が解説の表と同じ文字列になる（0.25 → 25%、0.375 → 37.5%）', () => {
+      const expected: [number, string][] = [
+        [88_000, '25%'],
+        [98_000, '30%'],
+        [104_000, '36%'],
+        [110_000, '41%'],
+        [118_000, '45%'],
+        [126_000, '48%'],
+      ];
+      for (const [std, label] of expected) {
+        expect(ratePercent(choseiShare(std, 'y12')!)).toBe(label);
+      }
+      // 3年目は0.5桁が残る。小数第1位を落とすと原典の値と合わなくなる
+      const expectedY3: [number, string][] = [
+        [88_000, '37.5%'],
+        [98_000, '40%'],
+        [104_000, '43%'],
+        [110_000, '45.5%'],
+        [118_000, '47.5%'],
+        [126_000, '49%'],
+      ];
+      for (const [std, label] of expectedY3) {
+        expect(ratePercent(choseiShare(std, 'y3')!)).toBe(label);
+      }
+    });
+
     it('3年目は軽減幅がちょうど1〜2年目の半分になる', () => {
       // 折半50%からの下げ幅が半分。例: 25% は 50 − 25 = 25pt 下げ → 3年目は 12.5pt 下げ
       for (const row of HOKENRYO_CHOSEI_SHARES) {
@@ -526,8 +559,9 @@ describe('保険料調整制度（本人負担の軽減）', () => {
     });
 
     it('介護保険料・子ども・子育て支援金・雇用保険料は軽減されない', () => {
-      // パンフレット Q5「賞与に関する保険料や、介護保険料、子ども・子育て支援金は、
-      // 制度の対象外です」。支援金まで巻き込むと軽減額が過大に出る
+      // パンフレット5頁 Q5/A5 の注記「賞与に関する保険料や、介護保険料、
+      // 子ども・子育て支援金は、制度の対象外です」（対象の列挙は1頁 ※1）。
+      // 支援金まで巻き込むと軽減額が過大に出る
       const income = incomeFor(88_000);
       const cut = calcPremiums(income, true, 'y12');
       const kaigoAndShienkin = roundPremium(88_000 * (SHIENKIN_RATE + KAIGO_RATE)) * 12;
