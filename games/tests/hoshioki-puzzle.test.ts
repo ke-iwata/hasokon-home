@@ -190,12 +190,57 @@ describe('生成', () => {
     }
   });
 
-  it('推論だけで最後まで解ける盤面を出す（当てずっぽうを強いない）', () => {
-    for (const mode of MODE_ORDER.filter((m) => m !== 'daily')) {
-      const rng = mulberry32(300);
-      for (let i = 0; i < 5; i++) {
-        const { puzzle } = generateFor(mode, rng);
-        expect(analyze(puzzle.regions, puzzle.size).solved).toBe(true);
+  /**
+   * **推論エンジンの番人**（#242 のレビュー指摘を受けて強化した）。
+   *
+   * 以前はモードごとに5面しか見ておらず、しかも `generate()` は
+   * `solved: false` の盤面を「範囲外」より後回しにするだけで**弾いてはいない**ため、
+   * 推論が壊れていてもこのテストは通ってしまった。
+   *
+   * ここで固定するのは2つ。
+   *
+   * 1. **出題に使う `generateFor` は、必ず推論だけで解ける盤面を返す**（これが約束）
+   * 2. 難易度の条件を付けずに作った素の盤面も、**ほとんどが推論だけで解ける**
+   *
+   * 2 のしきい値は実測（5×5 100/100・7×7 100/100・9×9 19/20）に対して余裕を取った値。
+   * 直す前の実装ではここが 5×5 で 89%・7×7 で 49% まで落ちていたので、
+   * 同じ壊れ方をすれば落ちる。種は固定なので、偶然で落ちることはない。
+   */
+  for (const [size, count, least] of [
+    [5, 100, 95],
+    [7, 100, 95],
+    [9, 20, 17],
+  ] as const) {
+    it(`${size}×${size} の素の盤面 ${count} 件のうち、${least} 件以上が当てずっぽう無しで解ける`, () => {
+      const rng = mulberry32(600 + size);
+      let solvable = 0;
+      for (let i = 0; i < count; i++) {
+        const { puzzle } = generate(size, rng, { maxAttempts: 1 });
+        const result = analyze(puzzle.regions, size);
+        expect(result.score).toBe(puzzle.score);
+        if (result.solved) solvable++;
+      }
+      expect(solvable).toBeGreaterThanOrEqual(least);
+    });
+  }
+
+  /**
+   * **出題に使うほうは1件の例外もなく解ける。**
+   * `generate` は難易度の範囲に入る盤面を探すときに
+   * 「推論だけで解けない盤面」を後回し（+1000）にするので、
+   * 打ち切りに当たらないかぎり解ける盤面だけが出る。
+   * `relaxed` が立っていないことも一緒に見て、**緩めずに条件を満たせている**ことを示す。
+   */
+  it('モードごとの出題は、緩めることなく当てずっぽう無しで解ける', () => {
+    for (const mode of MODE_ORDER) {
+      const rng = mulberry32(700);
+      const count = mode === 'hard' ? 20 : 60;
+      for (let i = 0; i < count; i++) {
+        const { puzzle, relaxed } = generateFor(mode, rng);
+        expect(relaxed, `${mode} の ${i} 件目で難易度を緩めた`).toBe(false);
+        expect(analyze(puzzle.regions, puzzle.size).solved, `${mode} の ${i} 件目が解けない`).toBe(
+          true,
+        );
       }
     }
   });
@@ -400,5 +445,55 @@ describe('結果の共有', () => {
     expect(text).toContain('むずかしい');
     expect(text).not.toContain('連続');
     expect(text.split('\n')).toHaveLength(3);
+  });
+});
+
+/**
+ * 推論（`analyze`）の落とし穴。
+ *
+ * **星が確定済みの単位を「行・列と領域の対応」の組に数えてはいけない**
+ * （#242 のレビュー指摘）。確定済みの領域は候補マスを1つも持たないので
+ * 行を1本も使わないが、それでも k には数えられてしまい、
+ * 「k 本の行を k 個の領域が占める」が成り立っていないのに成立と見なして、
+ * **真の解の星を候補から消していた**。
+ *
+ * ここに置いてある盤面は、**どれも直す前の実装が `solved: false` を返した実物**
+ * （解はいずれも1通り）。推論が退化したらここが落ちる。
+ */
+describe('推論の退化よけ（#242）', () => {
+  const cases = [
+    {
+      size: 5,
+      regions: [1, 1, 1, 0, 0, 1, 1, 2, 2, 3, 1, 2, 2, 2, 3, 1, 4, 2, 2, 3, 1, 4, 4, 4, 3],
+      solution: [3, 5, 12, 19, 21],
+    },
+    {
+      size: 5,
+      regions: [2, 0, 1, 1, 1, 2, 2, 1, 1, 1, 2, 2, 2, 3, 3, 4, 2, 2, 3, 3, 4, 4, 4, 4, 3],
+      solution: [1, 8, 10, 19, 22],
+    },
+    {
+      size: 7,
+      regions: [
+        4, 1, 1, 1, 1, 0, 0, 4, 4, 1, 2, 0, 0, 5, 4, 4, 4, 2, 2, 2, 5, 4, 3, 3, 3, 5, 5, 5, 4, 6,
+        6, 5, 5, 5, 5, 6, 6, 6, 5, 5, 5, 5, 6, 6, 6, 5, 5, 5, 5,
+      ],
+      solution: [6, 9, 19, 24, 28, 39, 43],
+    },
+    {
+      size: 7,
+      regions: [
+        1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 2, 2, 0, 0, 1, 1, 1, 1, 2, 2, 0, 4, 1, 2, 2, 2, 5, 3, 4, 4,
+        5, 2, 2, 5, 3, 5, 5, 5, 5, 5, 5, 3, 6, 5, 5, 5, 5, 5, 5,
+      ],
+      solution: [5, 9, 18, 27, 29, 38, 42],
+    },
+  ];
+
+  it.each(cases)('$size×$size：解は1通りで、推論だけで解ける', ({ size, regions, solution }) => {
+    const found = findSolutions(regions, size, 3);
+    expect(found).toHaveLength(1);
+    expect([...found[0]].sort((a, b) => a - b)).toEqual([...solution].sort((a, b) => a - b));
+    expect(analyze(regions, size).solved).toBe(true);
   });
 });

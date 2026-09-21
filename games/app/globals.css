@@ -639,16 +639,24 @@ ol {
 /* ---- 星置きパズル ----
    盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
    （ここで max-width を書き直さないこと）。
+
+   **`--chrome` / `--board-max` は盤ではなく入れ物（`.hp-game`）に置く。**
+   生成中の幕（`.hp-loading`）は盤の**兄弟**なので、盤に書くと幕が値を継承できず、
+   幕と盤の大きさがずれる（375×667 で 35px ずれていた。#242 のレビュー指摘）。
+
    `--chrome` は盤以外が使う高さの実測値（パンくず・見出し・リード文・段・記録の帯・
-   ボタンの行・チェックの1行まで含む）。
+   ボタンの行・チェックの1行まで含めて 455px）。
    領域の区別は**太線が本体で、色は補助**（色覚に配慮して線だけでも分かるようにする） */
+.hp-game {
+  --chrome: 455px;
+  --board-max: 440px;
+}
+
 .hp-board {
   display: grid;
   grid-template-columns: repeat(var(--hp-cols, 7), 1fr);
   aspect-ratio: 1;
   width: 100%;
-  --chrome: 420px;
-  --board-max: 440px;
   border: 2px solid var(--muted);
   border-radius: 6px;
   overflow: hidden;
@@ -692,20 +700,25 @@ ol {
 .hp-cell.edge-b { border-bottom-color: var(--muted); border-bottom-width: 3px; }
 .hp-cell.edge-l { border-left-color: var(--muted); border-left-width: 3px; }
 
-/* 矛盾している星。**どこが間違いかは教えず、ルール違反だけを示す** */
+/* 矛盾している星。**どこが間違いかは教えず、ルール違反だけを示す**。
+   領域の区別と同じく**色だけに頼らない**（#242 のレビュー指摘）。
+   内側に枠を1本入れて、色が読めなくても「このマス」と分かるようにする */
 .hp-cell.conflict {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 16%, var(--hp-region, var(--surface)));
+  box-shadow: inset 0 0 0 2px var(--danger);
 }
 
-/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない） */
+/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない）。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること。**
+   変数は `.hp-game` から継承するので、盤と必ず同じ値になる */
 .hp-loading {
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 1;
   width: 100%;
-  max-width: min(var(--board-max, 440px), max(200px, calc(100dvh - var(--chrome, 420px))));
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
   color: var(--muted);
   border: 1px dashed var(--border);
@@ -4788,10 +4801,18 @@ button.hf-card {
     padding: 8px 10px;
   }
 
-  /* 狭い画面では盤以外が使う高さが増える（ボタンが2段になる）。
-     実測（390×844 / 320×568）で --chrome を積み増す */
-  .hp-board {
-    --chrome: 455px;
+  /* **狭い画面では高さから盤を縮めない。**
+     実測の `--chrome`（455px）をそのまま使うと、表示高さ 667px 以下の端末で
+     `100dvh - 455px` が幅より小さくなり、盤が下限の 200px まで潰れていた
+     （375×667 で 9×9 が1マス 23px。#242 のレビュー指摘）。
+     **しかも潰しても操作の行は画面に収まらない**（実測：320×568 で下端 699px）。
+     この高さの端末では「1画面に収める」がそもそも成り立たないので、
+     **少しスクロールさせてでも盤を大きく取る**。
+     300px は「幅のほうが先に効く」ための値（320×568 で 568 - 300 = 268px ＞ 幅 266px）で、
+     これにより盤の大きさは同じ9×9のナンプレと同じ「使える幅いっぱい」になる。
+     横長で極端に低い画面（landscape）では、これでも高さが効いて盤が縮む */
+  .hp-game {
+    --chrome: 300px;
     --board-max: 380px;
   }
 

@@ -69,13 +69,27 @@ export interface ModeDef {
   maxAttempts: number;
 }
 
+/**
+ * しきい値は **`analyze` を直したあと（#242 のレビュー指摘）に測り直した値**。
+ * 実測の分布（各サイズ 200面・9×9 は 40面。`generate` に難易度の条件を付けずに作った）：
+ *
+ * | | 最小 | p10 | p25 | p50 | p75 | p90 | 最大 |
+ * |---|---|---|---|---|---|---|---|
+ * | 5×5 | 3 | 10 | 13 | 16 | 18 | 19 | 24 |
+ * | 7×7 | 2 | 10 | 15 | 19 | 23 | 26 | 31 |
+ * | 9×9 | 9 | 14 | 20 | 24 | 27 | 30 | 46 |
+ *
+ * **点数はサイズをまたいで比べられない**（盤が大きいほど段数が増える）。
+ * モードの差はまず大きさが作っていて、ここで削っているのは各サイズの両端だけ。
+ * 狭くしすぎると作り直しの回数が増えるので、**採用率がおおむね半分以上**になる幅にしてある。
+ */
 export const MODES: Record<Mode, ModeDef> = {
-  easy: { label: 'かんたん', size: 5, minScore: 0, maxScore: 12, maxAttempts: 30 },
-  normal: { label: 'ふつう', size: 7, minScore: 6, maxScore: 26, maxAttempts: 30 },
+  easy: { label: 'かんたん', size: 5, minScore: 0, maxScore: 15, maxAttempts: 30 },
+  normal: { label: 'ふつう', size: 7, minScore: 10, maxScore: 26, maxAttempts: 30 },
   // 9×9 は大きさそのものが難しさなので、点数の下限だけを置いて上は開けてある
-  // （上を締めると、推論だけで解ける盤面が見つかるまで作り直し続けることになる）
-  hard: { label: 'むずかしい', size: 9, minScore: 8, maxScore: Infinity, maxAttempts: 30 },
-  daily: { label: '今日の1問', size: 7, minScore: 6, maxScore: 26, maxAttempts: 30 },
+  // （上を締めると、条件に合う盤面が見つかるまで作り直し続けることになる）
+  hard: { label: 'むずかしい', size: 9, minScore: 14, maxScore: Infinity, maxAttempts: 30 },
+  daily: { label: '今日の1問', size: 7, minScore: 10, maxScore: 26, maxAttempts: 30 },
 };
 
 /** モードの並び順（画面のボタンもこの順に出す） */
@@ -454,15 +468,15 @@ function basicFill(
   }
 }
 
-/** 指定した大きさの組み合わせをすべて作る（k は 3 までしか使わない） */
-function combinations(n: number, k: number): number[][] {
-  const out: number[][] = [];
-  const build = (start: number, current: number[]) => {
+/** 渡した並びから k 個を選ぶ組み合わせをすべて作る（k は 3 までしか使わない） */
+function combinations<T>(items: T[], k: number): T[][] {
+  const out: T[][] = [];
+  const build = (start: number, current: T[]) => {
     if (current.length === k) {
       out.push([...current]);
       return;
     }
-    for (let i = start; i < n; i++) build(i + 1, [...current, i]);
+    for (let i = start; i < items.length; i++) build(i + 1, [...current, items[i]]);
   };
   build(0, []);
   return out;
@@ -475,6 +489,12 @@ function combinations(n: number, k: number): number[][] {
  * **その k 本の行の星はすべてその領域のどれか**なので、
  * 行に残った他の領域のマスは候補から消える（逆向きも同じ）。
  * k = 1 は「領域が1行に収まっている」場合で、人がいちばんよく使う形。
+ *
+ * **星が確定済みの単位は組に入れない。** 確定済みの領域は候補マスを1つも持たない
+ * （`placeStar` が同じ領域の候補を落とす）ので、**行を1本も使わないのに k には数えられる**。
+ * すると「k 本の行を k 個の領域が占める」が成り立っていないのに成立と見なし、
+ * **真の解の星を候補から消してしまう**（#242 のレビュー指摘。5×5・7×7 で約11%の盤面が該当した）。
+ * ここで弾いているのは、そのまま「まだ星を置いていない単位だけで数える」という意味。
  */
 function eliminateByPairing(
   board: Board,
@@ -496,19 +516,23 @@ function eliminateByPairing(
     }
   };
 
+  /** まだ星を置いていない（＝候補マスを持っている）領域だけ */
+  const liveRegions = [...new Set(open.map((i) => puzzleRegions[i]))];
+
   for (const lineOf of [rowOf, colOf]) {
+    /** まだ星を置いていない行（列）だけ */
+    const liveLines = [...new Set(open.map((i) => lineOf(i, size)))];
+
     // 領域 → 行（列）の向き
-    for (const ids of combinations(size, k)) {
+    for (const ids of combinations(liveRegions, k)) {
       const cells = open.filter((i) => ids.includes(puzzleRegions[i]));
-      if (cells.length === 0) continue;
       const lines = new Set(cells.map((i) => lineOf(i, size)));
       if (lines.size !== k) continue;
       drop(open.filter((i) => lines.has(lineOf(i, size)) && !ids.includes(puzzleRegions[i])));
     }
     // 行（列）→ 領域の向き
-    for (const lines of combinations(size, k)) {
+    for (const lines of combinations(liveLines, k)) {
       const cells = open.filter((i) => lines.includes(lineOf(i, size)));
-      if (cells.length === 0) continue;
       const ids = new Set(cells.map((i) => puzzleRegions[i]));
       if (ids.size !== k) continue;
       drop(open.filter((i) => ids.has(puzzleRegions[i]) && !lines.includes(lineOf(i, size))));

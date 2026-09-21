@@ -244,7 +244,9 @@ export default function Game() {
   const remaining = puzzle ? puzzle.size - starCount(marks) : 0;
 
   return (
-    <div className="card">
+    // 盤の大きさを決める変数（--chrome / --board-max）はこの入れ物に置いてある。
+    // 盤と「生成中」の幕が同じ値を継承するようにするため（app/globals.css の .hp-game）
+    <div className="card hp-game">
       <div className="btn-row">
         <div className="seg" role="group" aria-label="難易度">
           {MODE_ORDER.map((m) => (
