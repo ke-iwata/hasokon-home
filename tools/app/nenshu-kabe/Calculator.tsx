@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
   DAYTIME_STUDENT_EXCLUSION_NOTE,
+  HOKENRYO_CHOSEI_NOTE,
   evaluateKabe,
   evaluateShaho,
   nextWall,
+  toYmd,
   type Position,
+  type Workplace,
 } from '@/lib/nenshu-kabe';
+import { HOKENRYO_CHOSEI_STARTS_ON } from '@/lib/shaho-ryoritsu';
 
 const fmtMan = (yen: number) => {
   const man = yen / 10_000;
@@ -22,6 +27,16 @@ const POSITIONS: { value: Position; label: string }[] = [
 ];
 
 /**
+ * 勤務先の3択。従業員50人以下でも、労使の合意で短時間労働者を加入対象にしている
+ * 勤務先（任意特定適用事業所）があるので、「51人以上か」だけでは足りない。
+ */
+const WORKPLACES: { value: Workplace; label: string }[] = [
+  { value: 'over51', label: '従業員51人以上' },
+  { value: 'optional-covered', label: '50人以下だが、社会保険に加入することになった' },
+  { value: 'not-covered', label: '50人以下で、社会保険には加入しない' },
+];
+
+/**
  * @param buildDate ビルド時刻（ISO文字列）。静的書き出しなので、サーバ描画と
  *   ハイドレーション直後はこの固定値で判定し（両者が一致しないとReactが警告を出す）、
  *   マウント後に実際の「画面を開いた日」で評価し直す。こうしないと、8月にビルドした
@@ -30,7 +45,7 @@ const POSITIONS: { value: Position; label: string }[] = [
 export default function Calculator({ buildDate }: { buildDate: string }) {
   const [incomeMan, setIncomeMan] = useState('120');
   const [position, setPosition] = useState<Position>('spouse');
-  const [size51, setSize51] = useState(false);
+  const [workplace, setWorkplace] = useState<Workplace>('not-covered');
   const [hours20, setHours20] = useState(false);
   const [asOf, setAsOf] = useState(() => new Date(buildDate));
 
@@ -39,7 +54,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   }, []);
 
   const income = (Number(incomeMan) || 0) * 10_000;
-  const input = { income, position, size51, hours20, asOf };
+  const input = { income, position, workplace, hours20, asOf };
   const results = evaluateKabe(input);
   const next = nextWall(results);
   const shaho = evaluateShaho(input);
@@ -47,6 +62,9 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   // 昼間部の学生は適用除外だが、この選択肢だけでは昼間部かどうかが分からないので
   // 判定は変えず、加入の可能性を出しているときに注記だけ添える（施行の前後どちらも）
   const showStudentNote = position === 'student' && shaho.kind !== 'not-applicable';
+  // 施行日前に「損得計算機で計算できます」と案内すると、あちらは年目のセレクトを
+  // 出さないので行き止まりになる。施行日の扱いを2ツールで揃える
+  const choseiStarted = toYmd(asOf) >= HOKENRYO_CHOSEI_STARTS_ON;
 
   return (
     <div className="card">
@@ -73,16 +91,19 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </select>
         </label>
         {showShahoInputs && (
+          <label>
+            勤務先
+            <select value={workplace} onChange={(e) => setWorkplace(e.target.value as Workplace)}>
+              {WORKPLACES.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {showShahoInputs && (
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
-            <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                type="checkbox"
-                checked={size51}
-                onChange={(e) => setSize51(e.target.checked)}
-                style={{ width: 'auto' }}
-              />
-              勤務先の従業員が51人以上
-            </label>
             <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
               <input
                 type="checkbox"
@@ -105,8 +126,25 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           <strong>勤務先の社会保険に加入します（年収の多少にかかわらず）。</strong>
           <div style={{ marginTop: 4, lineHeight: 1.6 }}>
             2026年10月1日に賃金要件（月8.8万円＝年収106万円相当）が撤廃されました。
-            従業員51人以上の勤務先で週20時間以上働く方は、年収がいくらでも厚生年金・健康保険に加入します。
+            短時間労働者が加入対象の勤務先で週20時間以上働く方は、年収がいくらでも厚生年金・健康保険に加入します。
             手取りを気にするなら、調整すべきは年収ではなく<strong>週の所定労働時間</strong>です。
+          </div>
+        </div>
+      )}
+
+      {/*
+        金額は出さない。このファイルは保険料も手取りも計算しないので、
+        「制度がある」ことだけ伝えて社会保険 損得計算機に送る（同じ計算を2か所に置かない）
+      */}
+      {shaho.kind !== 'not-applicable' && shaho.choseiEligible && choseiStarted && (
+        <div
+          className="note"
+          style={{ margin: '10px 0 4px', fontSize: 'var(--fs-sm)', lineHeight: 1.6 }}
+        >
+          ※ {HOKENRYO_CHOSEI_NOTE}
+          <div style={{ marginTop: 4 }}>
+            軽減後の保険料と手取りは{' '}
+            <Link href="/hatarakizon/">社会保険 損得計算機</Link> で計算できます。
           </div>
         </div>
       )}

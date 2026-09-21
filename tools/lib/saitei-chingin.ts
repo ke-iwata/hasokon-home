@@ -1306,7 +1306,9 @@ export function wallsFor(annualYen: number, options: WallOptions): KabeResult[] 
   return evaluateKabe({
     income: annualYen,
     position: 'spouse',
-    size51: options.size51 ?? false,
+    // このツールは「51人以上か」しか聞いていない。50人以下でも短時間労働者を
+    // 加入させる勤務先（任意特定適用事業所）は年収の壁ツールで選ぶ
+    workplace: (options.size51 ?? false) ? 'over51' : 'not-covered',
     hours20: options.hoursPerWeek >= 20,
     asOf: options.asOf,
   });
