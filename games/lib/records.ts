@@ -22,6 +22,8 @@
  * 勝率ではなく「プレイ数とクリア数」を並べて出す。
  */
 
+import { isDateKey, nextStreak, type DateKey } from './daily';
+
 /** 保存形式のバージョン。壊す変更をするときだけ上げる（旧キーは移行して捨てる） */
 export const RECORDS_VERSION = 1;
 
@@ -69,6 +71,26 @@ export interface RecordEntry {
    * （出題の制御に使う値だが、実質「解いた問題の記録」なので同じキーに同居させる）
    */
   clearedIds?: string[];
+  /**
+   * 日替わり（今日の1問）を最後にクリアした**端末のローカル日付**（`'2026-09-18'`）。
+   *
+   * 連続日数の判定に使う。日付の作り方は `lib/daily.ts` の `localDateKey` に
+   * そろえること（UTCを経由すると日本時間の0〜9時に前日として数えてしまう）。
+   */
+  lastClearedOn?: string;
+  /**
+   * 連続日数（`lastClearedOn` の時点の値）。
+   *
+   * **`clearedIds` に日付を積む案を採らなかったのは、配列が無限に伸びるため。**
+   * 日替わりはこの先ナンプレ・ノノグラムにも足したくなる仕組みなので、
+   * 共有の型のほうに器を置いてある
+   * （docs/features/game-hoshioki-puzzle.md「連続日数を入れる器」）。
+   *
+   * **無い記録（この項目より前の保存）は 0 として扱う。**
+   * 2日以上空いた `streak` は「切れている」ので、表示は
+   * `lib/daily.ts` の `currentStreak` を通すこと。
+   */
+  streak?: number;
 }
 
 /** ゲーム1本ぶんの記録。キーは区分（難易度・レベル）、区分なしは `DEFAULT_VARIANT` */
@@ -86,6 +108,12 @@ export interface PlayResult {
   accuracy?: number;
   /** 手数。勝ったときだけ渡す */
   moves?: number;
+  /**
+   * 日替わり（今日の1問）をクリアした**ローカル日付**（`lib/daily.ts` の `localDateKey`）。
+   * 渡すと連続日数（`streak` / `lastClearedOn`）が更新される。
+   * 日替わり以外のゲームは渡さない（渡さなければ連続日数には触れない）。
+   */
+  clearedOn?: DateKey;
 }
 
 /** どのベストが更新されたか（クリア画面で「ベスト更新！」を出すのに使う） */
@@ -128,6 +156,11 @@ function count(value: unknown): number | undefined {
   return Math.floor(value);
 }
 
+/** `YYYY-MM-DD` として読めるなら返す。それ以外（別形式・数値・壊れた値）は undefined */
+function dateKey(value: unknown): string | undefined {
+  return isDateKey(value) ? value : undefined;
+}
+
 /** 正の数として読めるなら返す（タイム・スコアなど、0や負数は記録として無意味） */
 function positive(value: unknown): number | undefined {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return undefined;
@@ -164,6 +197,8 @@ export function sanitizeEntry(value: unknown): RecordEntry {
     bestMoves: positive(v.bestMoves),
     scoreSum: count(v.scoreSum),
     clearedIds: ids && ids.length > 0 ? ids : undefined,
+    lastClearedOn: dateKey(v.lastClearedOn),
+    streak: count(v.streak),
   });
 }
 
@@ -198,6 +233,26 @@ export function entryOf(records: GameRecords, variant: string = DEFAULT_VARIANT)
   return records[variant] ?? {};
 }
 
+/**
+ * 連続日数を2つの記録からまとめる。
+ *
+ * **日付と連続日数はセットで選ぶ。** 別々に「大きいほう」を取ると、
+ * 古い日付に新しい連続日数が付いた、ありえない組み合わせができてしまう。
+ * 同じ日付なら大きいほうを残す。
+ */
+function mergeStreak(base: RecordEntry, extra: RecordEntry): Pick<RecordEntry, 'lastClearedOn' | 'streak'> {
+  if (base.lastClearedOn === undefined) return { lastClearedOn: extra.lastClearedOn, streak: extra.streak };
+  if (extra.lastClearedOn === undefined) return { lastClearedOn: base.lastClearedOn, streak: base.streak };
+  if (base.lastClearedOn === extra.lastClearedOn) {
+    return {
+      lastClearedOn: base.lastClearedOn,
+      streak: Math.max(base.streak ?? 0, extra.streak ?? 0) || undefined,
+    };
+  }
+  const newer = base.lastClearedOn > extra.lastClearedOn ? base : extra;
+  return { lastClearedOn: newer.lastClearedOn, streak: newer.streak };
+}
+
 /** 2つの記録を「良いほうを残して」まとめる（旧キーの移行と、同時更新の取りこぼし対策） */
 export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
   const best = (
@@ -222,6 +277,9 @@ export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
     // 同じ記録を2つ読んだときで、足すと同じゲームを二重に数えてしまう
     scoreSum: best(base.scoreSum, extra.scoreSum, Math.max),
     clearedIds: ids,
+    // **連続日数は「日付とセット」で選ぶ。** 別々に大きいほうを取ると、
+    // 古い日付に新しい連続日数が付いた、ありえない組み合わせができる
+    ...mergeStreak(base, extra),
   });
 }
 
@@ -248,6 +306,14 @@ export function applyResult(
     score: score !== undefined && (entry.bestScore === undefined || score > entry.bestScore),
     moves: moves !== undefined && (entry.bestMoves === undefined || moves < entry.bestMoves),
   };
+  // 日替わりのクリア日を渡されたときだけ連続日数を数え直す。
+  // 渡されなければ（＝日替わり以外のゲーム）既存の値に触れない
+  const clearedOn = isDateKey(result.clearedOn) ? result.clearedOn : undefined;
+  const streak =
+    clearedOn === undefined
+      ? entry.streak
+      : nextStreak(entry.lastClearedOn, clearedOn, entry.streak);
+
   return {
     entry: compact({
       ...entry,
@@ -264,6 +330,8 @@ export function applyResult(
           : entry.bestAccuracy,
       // 平均を出すための合計。スコアを渡さないゲームでは増えない
       scoreSum: score === undefined ? entry.scoreSum : (entry.scoreSum ?? 0) + score,
+      lastClearedOn: clearedOn ?? entry.lastClearedOn,
+      streak,
     }),
     improved,
   };

@@ -61,6 +61,19 @@
   --hm-tall: #ded5c6;
   --hm-wide: #ccd7dc;
   --hm-piece-border: #b9b2a8;
+
+  /* 星置きパズルの領域。9色ぶん要るのでアクセント1色ルールの例外
+     （マインスイーパーの数字と同じ扱い）。**色は補助で、区別の本体は太線**なので
+     どれも淡く、文字（★・×）が読める明度に寄せてある */
+  --hp-r0: #eef2f7;
+  --hp-r1: #f3eef7;
+  --hp-r2: #eef7f0;
+  --hp-r3: #f7f2ea;
+  --hp-r4: #eaf4f7;
+  --hp-r5: #f7eeee;
+  --hp-r6: #f1f7ea;
+  --hp-r7: #efeff7;
+  --hp-r8: #f7f4ea;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -85,6 +98,16 @@
     --hm-tall: #4a423a;
     --hm-wide: #384750;
     --hm-piece-border: #57504a;
+
+    --hp-r0: #262c34;
+    --hp-r1: #2e2836;
+    --hp-r2: #24332a;
+    --hp-r3: #342f25;
+    --hp-r4: #223138;
+    --hp-r5: #352727;
+    --hp-r6: #2a3324;
+    --hp-r7: #2a2a38;
+    --hp-r8: #343024;
 
     --cell-closed: #3f3a36;
     --cell-closed-hi: #524b46;
@@ -424,6 +447,7 @@ ol {
 .rv-board,
 .gm-board,
 .ms-board,
+.hp-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -610,6 +634,135 @@ ol {
 .np-pad button:active {
   background: var(--brand);
   color: var(--on-accent);
+}
+
+/* ---- 星置きパズル ----
+   盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。
+
+   **`--chrome` / `--board-max` は盤ではなく入れ物（`.hp-game`）に置く。**
+   生成中の幕（`.hp-loading`）は盤の**兄弟**なので、盤に書くと幕が値を継承できず、
+   幕と盤の大きさがずれる（375×667 で 35px ずれていた。#242 のレビュー指摘）。
+
+   `--chrome` は盤以外が使う高さの実測値（パンくず・見出し・リード文・段・記録の帯・
+   ボタンの行・チェックの1行まで含めて 455px）。
+   領域の区別は**太線が本体で、色は補助**（色覚に配慮して線だけでも分かるようにする） */
+.hp-game {
+  --chrome: 455px;
+  --board-max: 440px;
+}
+
+.hp-board {
+  display: grid;
+  grid-template-columns: repeat(var(--hp-cols, 7), 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  border: 2px solid var(--muted);
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  /* 長押しで iOS の文脈メニュー・コピー吹き出しが出るのを止める */
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.hp-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* マスは 9×9 でも読める大きさに。上限は盤の大きさが決める */
+  font-size: clamp(0.8rem, 4.2vw, 1.4rem);
+  line-height: 1;
+  font-weight: 700;
+  background: var(--hp-region, var(--surface));
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  padding: 0;
+  /* grid の 1fr は min-content より縮まないので、マス自身にも下限を外させる */
+  min-width: 0;
+}
+
+.hp-r0 { --hp-region: var(--hp-r0); }
+.hp-r1 { --hp-region: var(--hp-r1); }
+.hp-r2 { --hp-region: var(--hp-r2); }
+.hp-r3 { --hp-region: var(--hp-r3); }
+.hp-r4 { --hp-region: var(--hp-r4); }
+.hp-r5 { --hp-region: var(--hp-r5); }
+.hp-r6 { --hp-region: var(--hp-r6); }
+.hp-r7 { --hp-region: var(--hp-r7); }
+.hp-r8 { --hp-region: var(--hp-r8); }
+
+/* 領域の境目は太線。盤の外周にも引く（`borderOf` が判定している） */
+.hp-cell.edge-t { border-top-color: var(--muted); border-top-width: 3px; }
+.hp-cell.edge-r { border-right-color: var(--muted); border-right-width: 3px; }
+.hp-cell.edge-b { border-bottom-color: var(--muted); border-bottom-width: 3px; }
+.hp-cell.edge-l { border-left-color: var(--muted); border-left-width: 3px; }
+
+/* 矛盾している星。**どこが間違いかは教えず、ルール違反だけを示す**。
+   領域の区別と同じく**色だけに頼らない**（#242 のレビュー指摘）。
+   内側に枠を1本入れて、色が読めなくても「このマス」と分かるようにする */
+.hp-cell.conflict {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 16%, var(--hp-region, var(--surface)));
+  box-shadow: inset 0 0 0 2px var(--danger);
+}
+
+/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない）。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること。**
+   変数は `.hp-game` から継承するので、盤と必ず同じ値になる */
+.hp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.hp-actions {
+  margin-top: 12px;
+}
+
+.hp-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* 押す先は44pxを割らない（画面の約束4） */
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* チェックの結果。**空でも枠は置く**（1行ぶんの高さを確保して盤を動かさない） */
+.hp-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.hp-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+
+.hp-share-note {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 /* ---- ブロック崩し ---- */
@@ -4646,5 +4799,24 @@ button.hf-card {
 
   .tp-guide .game-card {
     padding: 8px 10px;
+  }
+
+  /* **狭い画面では高さから盤を縮めない。**
+     実測の `--chrome`（455px）をそのまま使うと、表示高さ 667px 以下の端末で
+     `100dvh - 455px` が幅より小さくなり、盤が下限の 200px まで潰れていた
+     （375×667 で 9×9 が1マス 23px。#242 のレビュー指摘）。
+     **しかも潰しても操作の行は画面に収まらない**（実測：320×568 で下端 699px）。
+     この高さの端末では「1画面に収める」がそもそも成り立たないので、
+     **少しスクロールさせてでも盤を大きく取る**。
+     300px は「幅のほうが先に効く」ための値（320×568 で 568 - 300 = 268px ＞ 幅 266px）で、
+     これにより盤の大きさは同じ9×9のナンプレと同じ「使える幅いっぱい」になる。
+     横長で極端に低い画面（landscape）では、これでも高さが効いて盤が縮む */
+  .hp-game {
+    --chrome: 300px;
+    --board-max: 380px;
+  }
+
+  .hp-toggle {
+    font-size: 0.85rem;
   }
 }

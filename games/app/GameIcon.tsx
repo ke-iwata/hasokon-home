@@ -11,6 +11,7 @@ import {
   RacquetIcon,
   SpadeIcon,
   SquaresFourIcon,
+  StarIcon,
 } from '@phosphor-icons/react/dist/ssr';
 
 /**
@@ -596,6 +597,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   BoulderingMerge: BoulderingMergeIcon,
   Keyboard: KeyboardIcon,
   SlidingBlocks: SlidingBlocksIcon,
+  // 星置きパズル。猫や動物の絵柄は先行アプリの模倣に見えるので使わず、星で通す
+  Star: StarIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
