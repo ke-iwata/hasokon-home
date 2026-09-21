@@ -9,11 +9,13 @@ import {
   EXCLUSIONS,
   LOOKUP_TABLE,
   TRANSITION_LABEL,
+  TRANSITION_NOTE,
   UNCONFIRMED,
   calculate,
-  effectiveBurdenRate,
+  effectiveBurdenRateWithTax,
   exemptMessage,
   formatPercent,
+  parseAmountInput,
   formatYen,
   toIsoDate,
   yenToPoints,
@@ -21,12 +23,10 @@ import {
   type ExclusionId,
 } from '@/lib/otc-ruijiyaku';
 import {
-  CATEGORIES_WITHOUT_ITEMS,
-  ITEMS_ARE_PARTIAL,
   ITEM_CATEGORY_LABEL,
   ITEM_COUNT,
-  TOTAL_INGREDIENTS,
   TOTAL_LABEL,
+  isTransitionNamed,
   itemGroups,
   searchItems,
   type OtcItem,
@@ -43,7 +43,7 @@ const FREQUENCY_PRESETS = [
   { label: '年1回', timesPerYear: 1 },
 ] as const;
 
-export default function Calculator() {
+export default function Calculator({ buildDate }: { buildDate: string }) {
   /* ---- 入力 ---- */
   // 調剤明細書・領収証には「薬剤料 ○○点」と出るので、既定は点数
   const [mode, setMode] = useState<AmountMode>('points');
@@ -55,17 +55,21 @@ export default function Calculator() {
   const [timesPerYear, setTimesPerYear] = useState(12);
 
   /**
-   * 処方を受ける日の既定値は「画面を開いた日」。
-   * 静的書き出しなのでビルド時刻で描画してから、マウント後に差し替える
-   * （サーバ描画とハイドレーションの食い違いを避けるため。shuzei-kaisei と同じ作法）。
+   * 処方を受ける日の既定値。
+   *
+   * **`useState(() => new Date())` にしないこと。** 初期化関数はハイドレーション時の
+   * クライアントでも走るので、静的書き出しのHTML（ビルド日）と食い違い、
+   * デプロイ日と閲覧日がずれた瞬間に React のハイドレーションエラーになる。
+   * ビルド日を props で受けて初期値にし、マウント後に「開いた日」へ差し替える
+   * （`ideco` / `nenshu-kabe` / `hatarakizon` / `nenrei-keisan` と同じ作法）。
    */
-  const [prescribedOn, setPrescribedOn] = useState(() => toIsoDate(new Date()));
+  const [prescribedOn, setPrescribedOn] = useState(() => buildDate);
   useEffect(() => setPrescribedOn(toIsoDate(new Date())), []);
 
   const parsedPoints =
     mode === 'points'
-      ? Number(points.replace(/[,\s]/g, ''))
-      : (yenToPoints(Number(yen.replace(/[,\s]/g, ''))) ?? NaN);
+      ? parseAmountInput(points)
+      : (yenToPoints(parseAmountInput(yen)) ?? Number.NaN);
 
   const result = calculate({
     points: parsedPoints,
@@ -75,6 +79,15 @@ export default function Calculator() {
     prescribedOn,
     timesPerYear,
   });
+
+  /**
+   * 「いまはまだ増えない」だけの人に、施行後の金額を見せるための計算。
+   * 施行前が唯一の理由のときだけ使う（除外・経過措置のときは増えないので出さない）。
+   */
+  const futureResult =
+    result !== null && result.reasons.length === 1 && result.reasons[0] === 'before-enforcement'
+      ? calculate({ points: parsedPoints, copayPercent, prescribedOn: '2027-03-31', timesPerYear })
+      : null;
 
   const toggleExclusion = (id: ExclusionId) => {
     setChecked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -89,9 +102,9 @@ export default function Calculator() {
 
   const selectItem = (item: OtcItem) => {
     setSelected(item);
-    // 早見表で選んだものが経過措置なら、計算側のチェックも合わせる
-    // （別々に触らせると「湿布なのに＋175円」の画面を作れてしまう）
-    setTransitionItem(item.transition);
+    // 経過措置が名指ししている薬効分類のときだけ、計算側のチェックも合わせる。
+    // それ以外は外用かどうかが用途の列から分からないので、利用者の入力に委ねる
+    if (isTransitionNamed(item)) setTransitionItem(true);
     trackToolUse('otc-ruijiyaku', 'check-item');
   };
 
@@ -201,7 +214,8 @@ export default function Calculator() {
               onChange={(e) => setTransitionItem(e.target.checked)}
               style={{ width: 'auto', marginTop: 3 }}
             />
-            湿布（外用鎮痛消炎剤）・皮膚の保湿剤（{TRANSITION_LABEL}まで対象外）
+            湿布・貼り薬・塗り薬の鎮痛消炎剤、または皮膚の保湿剤・保護剤（
+            {TRANSITION_LABEL}までの経過措置）
           </label>
         </div>
 
@@ -228,9 +242,6 @@ export default function Calculator() {
               {def.label}
             </label>
           ))}
-          <p className="hint">
-            「低所得者」の項目は置いていません。2025年12月の政府決定には挙がっていましたが、中間とりまとめの類型には独立して出てこないためです（告示で類型が立てば足します）。
-          </p>
         </div>
 
         <div className="field">
@@ -289,14 +300,34 @@ export default function Calculator() {
                   <dd>変わりません（±0円）</dd>
                 </div>
               </dl>
+              {/* 施行前が唯一の理由なら、知りたいのは「3月からいくらになるか」なので併記する。
+                  除外・経過措置のときは増えないので出さない */}
+              {futureResult !== null && (
+                <p className="hint" style={{ marginTop: 6 }}>
+                  {ENFORCEMENT_LABEL}からは{' '}
+                  <strong>
+                    {formatYen(futureResult.before)} → {formatYen(futureResult.afterWithTax)}（＋
+                    {formatYen(futureResult.increaseWithTax)}）
+                  </strong>{' '}
+                  になる見込みです（除外にも経過措置にも当たらない場合）。
+                </p>
+              )}
             </div>
           </>
         ) : (
           <>
-            <div className="panel">
+            {/* 「かかります」は良い知らせではないので、
+                「かかりません」と同じ緑にしない（色だけ見る人に逆の合図を出さない） */}
+            <div
+              className="panel"
+              style={{ background: 'var(--warn-bg)', borderColor: 'var(--warn-border)' }}
+            >
               <div className="metric">
                 <span className="label">「特別の料金」は</span>
-                <span className="value" style={{ fontSize: 'var(--fs-lg)' }}>
+                <span
+                  className="value"
+                  style={{ fontSize: 'var(--fs-lg)', color: 'var(--danger-fg)' }}
+                >
                   かかります
                 </span>
               </div>
@@ -308,16 +339,25 @@ export default function Calculator() {
                 <div>
                   <dt>{ENFORCEMENT_LABEL}から</dt>
                   <dd>
-                    <strong>{formatYen(result.after)}</strong>
+                    <strong>{formatYen(result.afterWithTax)}</strong>
                   </dd>
                 </div>
                 <div>
                   <dt>増える額</dt>
                   <dd>
-                    <strong>＋{formatYen(result.increase)}</strong>
+                    <strong>＋{formatYen(result.increaseWithTax)}</strong>
                   </dd>
                 </div>
               </dl>
+              {/* 施行日の「日」が未確定なので、3月中の日付では断定しない */}
+              {result.enforcementDayUncertain && (
+                <p className="hint" style={{ marginTop: 6 }}>
+                  <strong>ただし、この日付では判定を断定できません。</strong>
+                  公表されているのは「{ENFORCEMENT_LABEL}施行を想定」までで、
+                  <strong>何日から始まるかは決まっていません</strong>
+                  。2027年3月中の処方は、告示で決まる施行日より前ならかかりません。
+                </p>
+              )}
             </div>
 
             <div className="panel quiet">
@@ -332,23 +372,22 @@ export default function Calculator() {
                   <dd>{formatYen(result.specialCharge)}</dd>
                 </div>
                 <div>
+                  <dt>特別の料金にかかる消費税（{formatPercent(CONSUMPTION_TAX_RATE, 0)}）</dt>
+                  <dd>{formatYen(result.consumptionTax)}</dd>
+                </div>
+                <div>
                   <dt>保険がきく4分の3の分（{copayPercent}%）</dt>
                   <dd>{formatYen(result.insuredCopay)}</dd>
                 </div>
                 <div>
                   <dt>薬剤料に対する実質の負担率</dt>
-                  <dd>{formatPercent(result.effectiveRate)}</dd>
+                  <dd>{formatPercent(result.effectiveRateWithTax)}</dd>
                 </div>
               </dl>
-              {UNCONFIRMED.consumptionTax && (
-                <p className="hint" style={{ marginTop: 6 }}>
-                  特別の料金は保険外なので、{formatPercent(CONSUMPTION_TAX_RATE, 0)}
-                  の消費税が上乗せされる見込みです。乗る場合は{' '}
-                  <strong>＋{formatYen(result.consumptionTax)}</strong>（合計{' '}
-                  {formatYen(result.afterWithTax)}）になります。
-                  <strong>告示で確認できていないため、上の金額には含めていません。</strong>
-                </p>
-              )}
+              <p className="hint" style={{ marginTop: 6 }}>
+                消費税を含めない額なら{formatYen(result.after)}（＋{formatYen(result.increase)}・
+                {formatPercent(result.effectiveRate)}）です。厚生労働省の資料に載っている試算表は、この消費税を含めない基準で作られています。
+              </p>
             </div>
 
             <div className="panel quiet">
@@ -357,7 +396,9 @@ export default function Calculator() {
                   <dt>1年で増える額（この処方を{timesPerYear}回受けた場合）</dt>
                   <dd>
                     <strong>
-                      {result.yearlyIncrease === null ? '—' : formatYen(result.yearlyIncrease)}
+                      {result.yearlyIncreaseWithTax === null
+                        ? '—'
+                        : formatYen(result.yearlyIncreaseWithTax)}
                     </strong>
                   </dd>
                 </div>
@@ -377,18 +418,9 @@ export default function Calculator() {
 
       {/* ================= 対象成分の早見表 ================= */}
       <div className="card" style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: '1.1rem', marginTop: 0 }}>対象になる成分（早見表）</h2>
+        <h2 style={{ fontSize: '1.1rem', marginTop: 0 }}>対象になる成分（全{ITEM_COUNT}成分）</h2>
         <p className="hint">
-          厚生労働省の対象品目一覧は{TOTAL_LABEL}です。
-          {ITEMS_ARE_PARTIAL && (
-            <>
-              {' '}
-              <strong>
-                このうち、一次情報と報道で成分名が確認できた{ITEM_COUNT}成分だけを載せています。
-              </strong>
-              ここに無い成分が対象外とは限りません（残りは告示の公表後に足します）。
-            </>
-          )}
+          厚生労働省の対象品目一覧（{TOTAL_LABEL}）の成分表を、そのまま載せています。成分名と用途は資料の表記のままです。
         </p>
 
         <div className="field">
@@ -398,28 +430,32 @@ export default function Calculator() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ロキソプロフェン、湿布、花粉症 …"
+            placeholder="ロキソプロフェン、花粉症、水虫 …"
           />
         </div>
 
         {selected !== null && (
           <div className="panel">
             <div className="metric">
-              <span className="label">{selected.name}</span>
+              <span className="label">
+                {selected.no}. {selected.name}
+              </span>
               <span className="value" style={{ fontSize: 'var(--fs-lg)' }}>
-                {selected.transition ? `${TRANSITION_LABEL}まで対象外` : '対象'}
+                {isTransitionNamed(selected) ? `${TRANSITION_LABEL}まで対象外` : '対象'}
               </span>
             </div>
             <p className="hint" style={{ marginTop: 4 }}>
-              {ITEM_CATEGORY_LABEL[selected.category]}
-              {selected.otcNote && ` ／ ${selected.otcNote}`}
+              用途（資料の表記）：{selected.use}
             </p>
-            {selected.transition && (
+            {isTransitionNamed(selected) && (
               <p className="hint" style={{ marginTop: 4 }}>
-                一定の重症患者の長期使用の実態を踏まえた経過措置で、{TRANSITION_LABEL}
-                までは「特別の料金」はかかりません。上の計算にも反映しました。
+                経過措置が名指ししている薬効分類です。上の計算にも反映しました。
               </p>
             )}
+            <p className="hint" style={{ marginTop: 4 }}>
+              <strong>成分が載っている＝必ずかかる、ではありません。</strong>
+              市販薬にない効能効果で処方された場合は対象外です。
+            </p>
           </div>
         )}
 
@@ -432,23 +468,21 @@ export default function Calculator() {
             <div key={group.category} style={{ marginTop: 16 }}>
               <h3 style={{ fontSize: '0.95rem', margin: '0 0 6px' }}>
                 {ITEM_CATEGORY_LABEL[group.category]}
-                {group.items[0].transition && (
-                  <span className="chip">{TRANSITION_LABEL}まで対象外</span>
-                )}
               </h3>
               <div className="field-row" style={{ flexWrap: 'wrap', gap: 8 }}>
                 {group.items.map((item) => (
                   <button
-                    key={item.id}
+                    key={item.no}
                     type="button"
                     onClick={() => selectItem(item)}
-                    aria-pressed={selected?.id === item.id}
+                    aria-pressed={selected?.no === item.no}
                     style={{
                       fontSize: 'var(--fs-sm)',
-                      fontWeight: selected?.id === item.id ? 700 : 400,
+                      fontWeight: selected?.no === item.no ? 700 : 400,
                     }}
                   >
                     {item.name}
+                    {isTransitionNamed(item) && <span className="chip">経過措置</span>}
                   </button>
                 ))}
               </div>
@@ -456,17 +490,19 @@ export default function Calculator() {
           ))
         )}
 
-        {CATEGORIES_WITHOUT_ITEMS.length > 0 && (
-          <p className="hint" style={{ marginTop: 16 }}>
-            次の種類も対象に挙がっていますが、成分名を一次情報から写せていないため載せていません：
-            {CATEGORIES_WITHOUT_ITEMS.map((c) => ITEM_CATEGORY_LABEL[c]).join('、')}。
-          </p>
-        )}
-
         <div className="note">
-          <strong>どの薬を使うかは医師・薬剤師の判断です。</strong>
-          このページは制度の計算と対象成分の一覧だけを出すもので、市販薬に切り替えるべきかどうかは扱いません。全{TOTAL_INGREDIENTS}
-          成分の一覧は厚生労働省の公表資料でご確認ください。
+          <strong>この一覧は「対象になりうる成分」です。</strong>
+          同じ成分でも、市販薬にない効能効果で処方された場合は対象外になります（たとえばヘパリン類似物質は、血栓性静脈炎や血行障害に基づく疼痛と炎症性疾患では対象外です）。どの薬を使うかも、対象かどうかの最終的な判断も、医師・薬剤師によります。
+          {UNCONFIRMED.transitionScope && (
+            <>
+              <br />
+              <strong>「経過措置」の印について：</strong>
+              {TRANSITION_NOTE}
+              なお、ジクロフェナクナトリウムやロキソプロフェンナトリウム水和物のように
+              <strong>飲み薬と貼り薬の両方がある成分</strong>
+              は、資料の「用途」の列からどちらか分からないため、印を付けていません。湿布・塗り薬なら上のチェックを入れてください。
+            </>
+          )}
         </div>
       </div>
 
@@ -474,7 +510,7 @@ export default function Calculator() {
       <div className="card" style={{ marginTop: 24 }}>
         <h2 style={{ fontSize: '1.1rem', marginTop: 0 }}>薬剤料別の早見表</h2>
         <p className="hint">
-          除外にも経過措置にも当たらず、{ENFORCEMENT_LABEL}以後に処方された場合の額です（消費税を含みません）。
+          除外にも経過措置にも当たらず、{ENFORCEMENT_LABEL}以後に処方された場合の額です（特別の料金にかかる消費税を含みます）。
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table>
@@ -497,9 +533,11 @@ export default function Calculator() {
                   {row.cells.map((cell) => (
                     <td key={cell.copayPercent}>
                       {cell.before.toLocaleString('ja-JP')} →{' '}
-                      <strong>{cell.after.toLocaleString('ja-JP')}円</strong>
+                      <strong>{cell.afterWithTax.toLocaleString('ja-JP')}円</strong>
                       <br />
-                      <span className="hint">＋{cell.increase.toLocaleString('ja-JP')}円</span>
+                      <span className="hint">
+                        ＋{cell.increaseWithTax.toLocaleString('ja-JP')}円
+                      </span>
                     </td>
                   ))}
                 </tr>
@@ -510,13 +548,13 @@ export default function Calculator() {
         <p className="hint">
           実質の負担率は
           {COPAY_OPTIONS.map(
-            (o) => `${o.label}が${formatPercent(effectiveBurdenRate(o.value))}`,
+            (o) => `${o.label}が${formatPercent(effectiveBurdenRateWithTax(o.value))}`,
           ).join('、')}
-          です。
+          です（消費税を含む）。
         </p>
         {UNCONFIRMED.rounding && (
           <p className="hint">
-            円未満の端数は切り捨てで計算しています（薬剤料は10円単位なので、4分の1を取ると2.5円のような端数が出ます）。
+            円未満の端数は四捨五入で計算しています（薬剤料は10円単位なので、4分の1を取ると2.5円のような端数が出ます）。
             <strong>端数の扱いは告示で確認できていません。</strong>
           </p>
         )}

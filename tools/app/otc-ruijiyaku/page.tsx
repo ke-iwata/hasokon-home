@@ -16,13 +16,15 @@ import {
   SOURCE_MHLW_LAW,
   SOURCE_MHLW_TORIMATOME,
   TRANSITION_LABEL,
+  TRANSITION_NOTE,
   calculate,
   effectiveBurdenRate,
+  effectiveBurdenRateWithTax,
   formatDate,
   formatPercent,
   formatYen,
 } from '@/lib/otc-ruijiyaku';
-import { ITEM_COUNT, ITEMS_ARE_PARTIAL, TOTAL_LABEL } from '@/lib/otc-ruijiyaku-items';
+import { ITEM_COUNT, ITEMS_CHECKED_AT, TOTAL_LABEL } from '@/lib/otc-ruijiyaku-items';
 import Calculator from './Calculator';
 
 /**
@@ -47,6 +49,13 @@ export const metadata: Metadata = {
 /** 本文で使う代表例（静的HTMLに焼き込む。開いた日に依存しない） */
 const example = calculate({ points: 100, copayPercent: 30, prescribedOn: '2027-03-01' })!;
 
+/**
+ * ビルドした日。`Calculator` の「処方を受ける日」の初期値に渡す。
+ * **クライアント側で `new Date()` を初期値にするとハイドレーションが食い違う**
+ * （静的書き出しなので、HTMLはビルド日・閲覧はその後の日になる）。
+ */
+const buildDate = new Date().toISOString().slice(0, 10);
+
 const faq = [
   {
     q: '2027年3月から、処方薬は保険が効かなくなるのですか？',
@@ -66,11 +75,11 @@ const faq = [
   },
   {
     q: '低所得者は対象外になりますか？',
-    a: '2025年12月の政府決定には「低所得者」への配慮が挙がっていましたが、2026年8月の中間とりまとめの類型には独立して出てきません（公費負担医療の対象かどうかで線を引く整理になったとみられます）。確定していないため、このツールのチェック項目には入れていません。告示で独立の類型が立てば追加します。',
+    a: '「低所得者」として対象外とされているのは、いまのところ生活保護を受けている方（医療扶助）です。厚生労働省の資料では「低所得者」の欄に「生活保護受給者」と書かれています。ただし、2026年9月の医療保険部会では「生活保護受給者以外の低所得者についても負担能力に配慮すべき」という意見が出ており、範囲が広がる可能性は残っています。告示で類型が増えればチェック項目に追加します。',
   },
   {
     q: '「特別の料金」に消費税はかかりますか？',
-    a: '保険外の料金なので消費税が上乗せされるという解説が多いのですが、告示で確認できていません。このツールでは本体の金額と分けて「乗る場合はいくらか」を出し、合計には含めていません。',
+    a: 'かかります。厚生労働省の資料（第213回 社会保障審議会医療保険部会 資料1）に「選定療養に係る『特別の料金』には別途消費税がかかっている」と明記されています。このツールは消費税を含めた額を「窓口で払う額」として出しています。薬剤料100点・3割負担なら、特別の料金250円に消費税25円が乗って、窓口は300円から500円になります。なお同じ資料の試算表は消費税を含めない基準で作られているので、突き合わせやすいように税抜の額も併記しています。',
   },
   {
     q: '高額療養費の計算に入りますか？',
@@ -82,7 +91,15 @@ const faq = [
   },
   {
     q: '領収証の金額と合いません',
-    a: `このツールが出すのは薬剤料の分だけです。実際の窓口では調剤技術料・薬学管理料などが加わり、一部負担金は明細の合計に対して10円未満を四捨五入するため、領収証の額とは一致しません。また円未満の端数処理は告示で決まっていないため、切り捨てを暫定で使っています（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
+    a: `このツールが出すのは薬剤料の分だけです。実際の窓口では調剤技術料・薬学管理料などが加わり、一部負担金は明細の合計に対して10円未満を四捨五入するため、領収証の額とは一致しません。また円未満の端数処理は告示で決まっていないため、四捨五入を暫定で使っています（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
+  },
+  {
+    q: '成分の一覧に載っていれば、必ず「特別の料金」がかかりますか？',
+    a: 'いいえ。同じ成分でも、市販薬にない効能効果で処方された場合は対象外です。たとえばヘパリン類似物質は、皮脂欠乏症や肥厚性瘢痕・ケロイドの治療と予防では対象になりますが、血栓性静脈炎、血行障害に基づく疼痛と炎症性疾患、筋性斜頸（乳児期）では対象外です。処方の目的で決まるので、成分名だけでは判断できません。',
+  },
+  {
+    q: '妊娠中・授乳中でも「特別の料金」がかかりますか？',
+    a: '市販薬の添付文書で「服用しないこと」とされている成分（例：イトプリド塩酸塩）については、妊娠中の方・妊娠している可能性がある方・授乳中の方への処方は対象外とされています。医師が有益性を判断して例外的に処方するものだからです。すべての成分に当てはまるわけではありません。',
   },
 ];
 
@@ -136,10 +153,10 @@ export default function Page() {
 
       <div className="note">
         <strong>まだ告示・省令が出ていません。</strong>
-        このページは2026年8月6日の中間とりまとめまでの内容にもとづく試算です。施行日の「日」・消費税の扱い・円未満の端数処理は確定していません。
+        このページは2026年8月6日の中間とりまとめと、その後の社会保障審議会医療保険部会の資料にもとづく試算です。施行日の「日」・円未満の端数処理・経過措置がどの薬効分類まで及ぶかは、まだ確定していません。
       </div>
 
-      <Calculator />
+      <Calculator buildDate={buildDate} />
 
       <AdUnit position="below-tool" />
 
@@ -157,11 +174,17 @@ export default function Page() {
       <p>
         薬剤料100点（{formatYen(example.drugCost)}）・3割負担で計算すると、窓口で払う薬剤料の分は
         <strong>
-          {formatYen(example.before)}から{formatYen(example.after)}（＋
-          {formatYen(example.increase)}）
+          {formatYen(example.before)}から{formatYen(example.afterWithTax)}（＋
+          {formatYen(example.increaseWithTax)}）
         </strong>
-        になります。内訳は特別の料金{formatYen(example.specialCharge)}と、保険がきく4分の3の分
+        になります。内訳は特別の料金{formatYen(example.specialCharge)}、それにかかる消費税
+        {formatYen(example.consumptionTax)}、保険がきく4分の3の分
         {formatYen(example.insuredCopay)}です。
+      </p>
+      <p>
+        <strong>特別の料金には消費税がかかります。</strong>
+        厚生労働省の資料に「選定療養に係る『特別の料金』には別途消費税がかかっている」と明記されています。同じ資料に載っている負担額の試算表は消費税を含めない基準で作られているため、このページでは税を含めない額（
+        {formatYen(example.after)}・＋{formatYen(example.increase)}）も併記しています。
       </p>
 
       <h2>実質の負担率</h2>
@@ -173,7 +196,8 @@ export default function Page() {
           <tr>
             <th>窓口負担の割合</th>
             <th>いままで</th>
-            <th>{ENFORCEMENT_LABEL}から</th>
+            <th>{ENFORCEMENT_LABEL}から（消費税込み）</th>
+            <th>同（消費税を除く）</th>
           </tr>
         </thead>
         <tbody>
@@ -182,24 +206,28 @@ export default function Page() {
               <th scope="row">{option.label}</th>
               <td>{option.value}%</td>
               <td>
-                <strong>{formatPercent(effectiveBurdenRate(option.value))}</strong>
+                <strong>{formatPercent(effectiveBurdenRateWithTax(option.value))}</strong>
               </td>
+              <td>{formatPercent(effectiveBurdenRate(option.value))}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <p>
-        消費税は含めていません。保険外の料金なので上乗せされるという解説が多いのですが、告示で確認できていないためです。
+        消費税がかかるのは特別の料金（薬剤料の25%）の部分だけで、保険がきく部分には乗りません。右端の列は、厚生労働省の資料の試算表と同じ「消費税を含めない」基準です。
       </p>
 
       <h2>かからない場合（ここを先に確かめてください）</h2>
       <p>
         <strong>
-          湿布（外用鎮痛消炎剤）と皮膚の保湿剤は、経過措置で{TRANSITION_LABEL}
-          までは「特別の料金」の対象外です。
+          湿布・塗り薬の鎮痛消炎剤と皮膚の保湿剤・保護剤は、経過措置で{TRANSITION_LABEL}
+          までは「特別の料金」の対象外とされています。
         </strong>
-        一定の重症患者の長期使用の実態を踏まえたもので、この期間は窓口で払う額が変わりません。「湿布も1.5倍になる」と書く解説がありますが、少なくとも{TRANSITION_LABEL}
-        までは増えません。
+        一定の重症患者の長期使用の実態を踏まえたものです。「湿布も1.5倍になる」と書く解説がありますが、経過措置に当たる処方であれば増えません。
+      </p>
+      <p className="note">
+        <strong>ただし、経過措置がどこまで及ぶかは確定していません。</strong>
+        {TRANSITION_NOTE}
       </p>
       <p>そのほか、次の場合も対象外とされています。</p>
       <ul>
@@ -220,15 +248,13 @@ export default function Page() {
       <h2>対象になる薬</h2>
       <p>
         厚生労働省が公表した対象品目一覧は<strong>{TOTAL_LABEL}</strong>
-        （2026年8月時点）です。解熱鎮痛薬・湿布・抗アレルギー薬・皮膚の保湿剤・ステロイドの塗り薬・抗真菌薬・胃薬・便秘薬・去痰薬などが挙がっています。
-        {ITEMS_ARE_PARTIAL && (
-          <>
-            {' '}
-            上の早見表には、<strong>一次情報と報道で成分名が確認できた{ITEM_COUNT}成分</strong>
-            だけを載せています。厚生労働省のPDFは画像として作られていて成分名を機械的に取り出せないため、全件は告示の公表後に足します。
-            <strong>早見表に無い成分が対象外とは限りません。</strong>
-          </>
-        )}
+        （2026年8月1日時点）です。上の早見表には
+        <strong>この{ITEM_COUNT}成分すべて</strong>
+        を載せています。成分名と用途は、第213回 社会保障審議会医療保険部会 資料1の成分表の表記をそのまま写したものです（{formatDate(ITEMS_CHECKED_AT)}に突き合わせ）。解熱鎮痛薬・湿布・抗アレルギー薬・皮膚の保湿剤・ステロイドの塗り薬・抗真菌薬・胃薬・便秘薬・去痰薬・消毒薬などが含まれます。
+      </p>
+      <p>
+        <strong>ただし、成分が載っている＝必ず「特別の料金」がかかる、ではありません。</strong>
+        同じ成分でも、市販薬にない効能効果で処方された場合は対象外です。厚生労働省は成分ごとに医療用医薬品と市販薬の効能効果の対応関係を整理していて、対応しない使い方は「特別の料金」の対象から外れます。たとえばヘパリン類似物質は、皮脂欠乏症や肥厚性瘢痕・ケロイドの治療と予防では対象ですが、血栓性静脈炎、血行障害に基づく疼痛と炎症性疾患、筋性斜頸（乳児期）では対象外です。
       </p>
       <p>
         品目名（商品名）は載せていません。対象は成分で決まり、品目単位の一覧は2027年4月の薬価改定で中身が動くためです。
