@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { formatJa, parseDate, addDays } from '@/lib/date-parts';
+import { useEffect, useState } from 'react';
+import { formatDate, formatJa, parseDate, addDays } from '@/lib/date-parts';
+import { parseHandoffQuery } from '@/lib/shussan-yoteibi';
 import { trackToolUse } from '@/lib/analytics';
 import {
   AFTER_DAYS,
@@ -28,6 +29,19 @@ export default function Calculator() {
   const [under12Months, setUnder12Months] = useState(false);
   const [salary, setSalary] = useState('');
   const [obstetricCompensation, setObstetricCompensation] = useState(true);
+
+  /**
+   * 出産予定日 計算機からの引き継ぎ（`?due=YYYY-MM-DD&babies=1`）を初期値として読む。
+   *
+   * **`useSearchParams` は使わない。** 静的エクスポートでは Suspense 境界とページの
+   * CSR 化を招くため、マウント後に `window.location.search` を読む。
+   * 不正な値は `parseHandoffQuery()` が捨てるので、その場合は既定値のまま動く
+   */
+  useEffect(() => {
+    const handoff = parseHandoffQuery(window.location.search);
+    if (handoff.dueDate) setDueDate(formatDate(handoff.dueDate));
+    if (handoff.fetusCount) setFetusCount(String(Math.min(3, handoff.fetusCount)));
+  }, []);
 
   const due = parseDate(dueDate);
   const birth = parseDate(birthDate);
