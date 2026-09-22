@@ -146,10 +146,10 @@ Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitem
 A（`home/robots.txt`）は main へのマージでは test.hasokon.com（Basic 認証の内側）にしか出ず、
 Google に見えるのは `v*` タグの本番リリース後なので、**C はその本番リリースの日に合わせて打つ**。
 C を先に打って 1 週間待てば「どちらが効いたか」を切り分けられるが、learn の 39 URL を渡すのが
-1 週間遅れるので、切り分けより速さを採る。効いたかは B の監査で見る：**`known: true` は C だけでも立つ**
-（robots.txt 経由の発見はレポートに出ない。下記「期待される効果」）ので、C の完了は送信後 1 週間の
-監査で `known: true` と `lastDownloaded` が入ることで確認し、**A が効いているかは 2 回目以降の監査で
-`lastDownloaded` が更新され続けるか**と、learn の `coverageState` が `unknown` から動くかで見る。
+1 週間遅れるので、切り分けより速さを採る。効いたかは B の監査で見る：**`known: true` が立つのは C をやったとき**
+（robots.txt 経由の発見はレポートに出ない。下記「期待される効果」）なので、C の完了は送信後 1 週間の
+監査で `known: true` と `lastDownloaded` が入ることで確認し、**A の効果は `coverageByState` の
+learn 39 件が `unknown` から動くかで見る**（同時に打つので、A と C のどちらが効いたかは区別しない）。
 実施したら、**本ファイルの「経過」と google-index-recovery.md の「経過」の両方に日付を残す**
 （二重管理で片方だけ更新されるのを避ける）
 
