@@ -37,9 +37,10 @@
    6,058 バイト、`<urlset>` の形式も tools / games と同じで、**ファイル側に違いは無い**
    （2026-09-19 に確認）。Google 側の index の処理が途中で止まっている、あるいは index の
    4 本目を後回しにしたまま再訪していない、のどちらか
-2. **index 経由の子は、個別送信した子より読まれにくい。** `sitemap-home.xml` の最終ダウンロードは
+2. **仮説：index 経由の子は、個別送信した子より読まれにくい。** `sitemap-home.xml` の最終ダウンロードは
    **09-08** で、個別送信した tools（09-13）・games（09-16）より古い。index 自体は 09-14 に
-   再送信されているが、その日に子まで読み直された形跡は無い。
+   再送信されているが、その日に子まで読み直された形跡は無い。**根拠はこの比較 1 件だけ**なので
+   観測（日付）と仮説（読まれにくい）を分けて扱い、B の監査を数週間回して確かめる。
    （送信 URL 数 2 は本番 v1.18.0 の実体と一致している。`/about.html` を足した #219 は main に
    あるだけで本番未反映なので、ここから「子が再読込されていない」とは言えない。
    起票時の自己点検で訂正。当初は main の 3 URL で数えていた）
@@ -123,8 +124,8 @@ export async function getSitemap({ siteUrl, feedpath, accessToken }, options = {
   robots.txt 経由で発見されたサイトマップはレポートに出ないので、A が効いても `false` のまま。
   ログの文言もそこまでしか言わない（2026-09-19 の #237 レビューで訂正。「経過」参照）
 - `lastDownloaded` が **14 日より古い**子も同じく 1 で知らせる（「index 経由の子は個別送信の子より
-  読まれにくい」という上記 2 の傾向を見張るため。閾値は 14 日。終了コード 1 はいまのワークフローでは
-  落ちない）
+  読まれにくい」という上記 2 の**仮説**を見張るため。**閾値 14 日は暫定**で、監査を数週間回して
+  子ごとの読まれ方が分かったら見直す。終了コード 1 はいまのワークフローでは落ちない）
 - `getSitemap()` の `feedpath` は **URL 全体を `encodeURIComponent()` でエンコード**する
   （`sites/{site}` と同じ扱い）。**404 は `isRetryable()` の対象にせず、そのまま `known: false` に落とす**
   （再試行で無駄に待たない）
@@ -139,7 +140,16 @@ export async function getSitemap({ siteUrl, feedpath, accessToken }, options = {
 
 Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitemap-home.xml` を個別に送信**する
 （[google-index-recovery.md](./google-index-recovery.md) 09-17 の「次の手」と同じ。A・B とは独立に
-今すぐできる）。送信後 1 週間の監査で `known: true` と `lastDownloaded` が入れば効いている。
+今すぐできる）。
+
+**順序は「C と A を同時」に決める。基準日は本番リリース**（2026-09-19 マージ後レビューの推奨 1）。
+A（`home/robots.txt`）は main へのマージでは test.hasokon.com（Basic 認証の内側）にしか出ず、
+Google に見えるのは `v*` タグの本番リリース後なので、**C はその本番リリースの日に合わせて打つ**。
+C を先に打って 1 週間待てば「どちらが効いたか」を切り分けられるが、learn の 39 URL を渡すのが
+1 週間遅れるので、切り分けより速さを採る。効いたかは B の監査で見る：**`known: true` が立つのは C をやったとき**
+（robots.txt 経由の発見はレポートに出ない。下記「期待される効果」）なので、C の完了は送信後 1 週間の
+監査で `known: true` と `lastDownloaded` が入ることで確認し、**A の効果は `coverageByState` の
+learn 39 件が `unknown` から動くかで見る**（同時に打つので、A と C のどちらが効いたかは区別しない）。
 実施したら、**本ファイルの「経過」と google-index-recovery.md の「経過」の両方に日付を残す**
 （二重管理で片方だけ更新されるのを避ける）
 
@@ -153,8 +163,15 @@ Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitem
 
 ## 経過
 
-- 2026-09-19：起票（#234）。同じ PR の中の自己点検で、`sitemap-home.xml` の実体を
-  main（3 URL）で数えていた誤りを訂正（本番 v1.18.0 は 2 URL）
+- 2026-09-19：起票（#234）。同じ PR の 1 件目の企画レビュー
+  （[#234 のコメント](https://github.com/ke-iwata/hasokon-home/pull/234#issuecomment-5737748558)、
+  レビュアー `session_012CB1PpSavg5FWrhoEA5RKK`）で、`sitemap-home.xml` の実体を
+  main（3 URL）で数えていた誤りを訂正（本番 v1.18.0 は 2 URL）。同日マージ
+- 2026-09-19：マージ後に付いた 2 件目のレビュー
+  （[#234 のコメント](https://github.com/ke-iwata/hasokon-home/pull/234#issuecomment-5738006272)、
+  レビュアー `session_015RdWAewxmB3VNfiRUTGS6e`）を #238 で反映：この「経過」の出どころを明記、
+  C と A は同時（基準日は本番リリース）と決定、「読まれにくい」は仮説・14 日は暫定と明記、
+  測り方の 91 → 52 は上限ケースに弱めた（主指標は「unknown が減る方向」。`known` は C の進捗）
 - 2026-09-19：**A・B を実装（#237）。** `home/robots.txt` に子サイトマップ 4 本を `Sitemap:` で追加し、
   `scripts/lib/search-console.mjs` に `listSitemaps()` / `getSitemap()` / `toSitemapStatus()` を足して
   週次監査が 1 本ずつの「読まれた日・送信数・登録数」を出すようにした。
@@ -171,9 +188,10 @@ Search Console の「サイトマップ」で **`/learn/sitemap.xml` と `/sitem
 
 ## 期待される効果
 
-- **learn の 39 URL が「Google が存在を知らない」から先へ進む。** 測り方：週次監査の
-  `URL is unknown to Google` が **91 → 52 以下**に減る（learn の 39 が `Crawled` か `Discovered` に
-  移る）。`--out` の `rows` に URL ごとの `coverageState` があるので learn だけ数えられる。
+- **learn の 39 URL が「Google が存在を知らない」から先へ進む。** 主の指標は、週次監査の
+  `URL is unknown to Google` が **減る方向に動く**こと（`--out` の `rows` に URL ごとの
+  `coverageState` があるので learn だけ数えられる。上限ケースは learn の 39 が全部 `Crawled` か
+  `Discovered` に移って 91 → 52）。渡しても Google が取りに来ない可能性はあり、
   登録されるかどうかはサイト単位の品質判定次第で、**この提案が約束するのは「渡す」ところまで**
 - **A の効果を B（`sitemaps` の `known`）で測ってはいけない。** サイトマップ レポートは
   「レポートから送信したもの」と「送信済み index の子」しか出さず、
