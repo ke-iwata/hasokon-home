@@ -1,7 +1,7 @@
 # AIアシスタント経由の流入が 1 → 68 セッションに増えた — 本命チャネルとして計測し、llms.txt を実測に合わせて直す
 
-**状態**：提案（2026-09-24 起票）。コード変更は `home/llms.txt` と `scripts/` に閉じる
-**対象**：`home/llms.txt`・`scripts/`（週次レポートへの計測追加）・`learn/`（llms.txt に載せる章の出しかた）
+**状態**：提案（2026-09-24 起票／2026-09-25 レビュー反映）。コード変更は `home/llms.txt`・各アプリの `app/llms.txt/route.ts`（新規）・`scripts/` に閉じる
+**対象**：`home/llms.txt`・`tools/` `games/` `learn/` の `app/llms.txt/route.ts`（新規）・`scripts/`（週次レポートへの計測追加）・`learn/tests/compliance.test.ts`（B-4）
 **起票**：2026-09-24
 **緊急度**：中〜高。**落ちているチャネルの立て直しではなく、いま伸びているチャネルへの投資**。
 Google 登録が 128 URL 中 1 件で止まっている（[google-index-recovery.md](./google-index-recovery.md)）あいだ、
@@ -103,18 +103,99 @@ llms.txt を書き直す余地がある。
 
 ### B. llms.txt を実測に合わせて書き直す
 
-1. **ゲームの行に「対応ルール・難易度・操作方法」を入れる。** AI が
-   「大富豪 オンライン 無料 革命あり」のような問いに答えるとき、
-   その語が llms.txt に無ければ候補に挙がらない。各ゲームページの
-   `<h2>ルール</h2>` 配下に既にある語を llms.txt 側へ出すだけで、新しい文章は要らない
-2. **`## Optional` でセクション別のファイルを指す。**
-   `/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` を各 Next.js アプリの
-   ルートハンドラで生成し、`home/llms.txt` からはそれを参照する。
-   **registry / curriculum から生成するので、ツールを増やしたときの書き忘れが構造的に消える**
-   （いまは `scripts/test/llms-txt.test.mjs` が食い違いを検知しているが、
-   検知ではなく生成にできる）
-3. **各行に最終更新日を添える。** registry の `updatedAt` から出す
-4. **learn は章の見出しを `/learn/llms.txt` に全部出す**（37章）
+**方針：`home/llms.txt` は入口だけの案内板にし、詳細はセクションごとの子ファイルを
+registry / curriculum から生成する。** 二重管理を作らないための線引きを先に決めておく。
+
+| | 持つもの | 作りかた |
+|---|---|---|
+| `home/llms.txt` | サイトの説明・各セクションへの入口・`## Optional`（運営者情報・プライバシー） | **手書き**。日付は持たない |
+| `/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` | 個々のツール・ゲーム・章の行（説明・最終更新日） | **生成**（registry / curriculum） |
+
+#### B-2（🔴 最重要）生成は必ず `publicTools` / `publicGames` / `publicChapters` を通す
+
+CLAUDE.md の約束：
+
+> 一覧を出すときは `publicGames` / `publicTools` / `publicSubjects` / `publicChapters` を通す。
+> `games` / `tools` / `subjects` / `chapters` を直に `filter` しない（書き忘れが公開事故になる）
+
+いま現物を数えると、**公開前のものが 8 件ある**：
+
+| | 件数 | 例 |
+|---|---:|---|
+| `tools` の `wip` | 2 | 出産予定日・OTC類似薬「特別の料金」計算機（#240） |
+| `games` の `wip` | 4 | 星置きパズル（#242）・箱入り娘・ボルダリングマージ・タイピング |
+| `games` の `preview` | 2 | 二角取り・ピンボール |
+
+素直に `registry` を舐めて生成すると、**この 8 件が llms.txt に載って AI アシスタントに
+配られる**。`stage` は `noindex` を付けるが、**llms.txt は robots と別経路なので止まらない**。
+
+`publicTools`（`tools/lib/registry.ts:550`）・`publicGames`（`games/lib/registry.ts:417`）・
+`publicChapters`（`learn/lib/curriculum.ts:657`）を通すこと。
+
+**現行の `scripts/test/llms-txt.test.mjs` は「手書きの `home/llms.txt` と registry の
+食い違いを検知する」ためのもの**で、生成に切り替えると役目が変わる。
+**守りを検知側から生成側へ移すところまでが B-2 の仕事**：
+
+- 生成関数に `stage !== 'public'` が 1 件も混ざらないことのテスト
+  （`wip` / `preview` の実物を入れて 0 件になることを確かめる）
+- `llms-txt.test.mjs` は **`home/llms.txt` が入口だけになっていること**
+  （個々のツール行を持たない・子ファイル 3 本を指している）の検証に書き換える
+
+#### B-2b（🟡）セクションは `## Optional` ではなく通常セクションから指す
+
+llmstxt.org の `## Optional` は「**短い文脈が必要なら飛ばしてよい URL**」という意味。
+子ファイルはサイトの中身そのものへの入口なので、そこに置くと
+**いちばん読ませたいものを自分で降格させる**ことになる。
+
+**決定：`## ツール` / `## ゲーム` / `## 学ぶ` という通常セクションから子ファイルを指す。
+`## Optional` には本当に副次的なもの（運営者情報・プライバシー）を置く。**
+
+#### B-2c（🟡）静的エクスポートの制約
+
+`tools` / `games` / `learn` は Next.js の **静的エクスポート**（`output: 'export'` ＋
+`trailingSlash: true`）。`/tools/llms.txt` を Route Handler で出すなら
+**動的関数を使わない静的な `GET` に限る**（`app/sitemap.ts` と同じ扱い）。
+ここを外すとビルドが通らない。
+
+また `sitemap.ts` は Next.js の規約ルートなので**出力先の前例にならない**。
+`app/llms.txt/route.ts` の形で `out/llms.txt` に出るか、ディレクトリが挟まるかは
+設定次第なので、**実装時に `out/` の現物を確認すること**。
+
+#### B-1（🟡）ゲーム行の加筆は `/games/llms.txt` 側に入れる
+
+AI 経由の 1 位が大富豪なのに、llms.txt のゲーム行はツール行より短い。
+「どのルールに対応しているか（都落ち・革命・8切り など）」はページ本文の
+`<h2>ルール</h2>` 配下にあるので、**その語を出すだけ**でよい（新しい文章は書かない）。
+
+**入れる先は `/games/llms.txt`**。`home/llms.txt` に書くと B-2 のあとで書き直しになるので、
+**B-2 を先にやる**。
+
+#### B-3（🟡）`updatedAt` は生成される子ファイルにだけ置く
+
+**`home/` にはビルド工程が無い**（CLAUDE.md の「ここだけは運用で守る」）。
+`home/llms.txt` の行に日付を手書きすると、**同日の
+[sitemap-lastmod-guardrail.md](./sitemap-lastmod-guardrail.md) が見つけたのと
+まったく同じ腐りかた**（中身が変わったのに日付が据え置かれる）をする。
+しかも今度は CI で検知する仕組みすら無い。
+
+**決定：`updatedAt` は `/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` にだけ置き、
+`home/llms.txt` は日付を持たない案内板に徹する。**
+`home/` の固定ページ（`/about.html` 等）には registry が無いので、**日付を付けない**。
+
+#### B-4（🔴）learn 37章を出すなら、コンプライアンス検査の網を広げる
+
+`learn/tests/compliance.test.ts` の検査対象は **`app/**/page.tsx` のソース**だけ
+（`writtenChapters` の各章ページ＋学ぶトップ＋投資の目次。同ファイル 22・24・25 行）。
+**`lib/curriculum.ts` の `description` は読んでいない。**
+
+つまり 37章の `description` を `/learn/llms.txt` に出すと、
+**コンプライアンス検査を一度も通っていない 37 行が公開される**。
+いま `description` が使われている場所（一覧カード・meta description）でも同じ穴は開いているが、
+**llms.txt は「AI に引用させるために出す」ものなので露出のしかたが変わる**。
+
+投資助言・代理業の登録をしていない以上、ここは形式の話では済まない。
+**B-4 をやるなら `compliance.test.ts` の検査対象に `curriculum.ts` の `description` を足すこと。**
+作業としては小さいはずで、**B-4 と同じ PR に入れる**。
 
 ### C. AI クローラーが実際に取れているかを確かめる
 
@@ -141,13 +222,14 @@ User-Agent 別に「実際に来ているか・何を取ったか」を数えら
 | 作業 | 目安 |
 |---|---|
 | A：週次レポートに GA4 のチャネル計測を追加 ＋ テスト | 約 30k トークン |
-| B-1：ゲーム行の加筆（29件） | 約 25k トークン |
-| B-2：セクション別 llms.txt の生成（3アプリ ＋ テスト） | 約 60k トークン |
-| B-3・B-4：更新日・learn 37章 | 約 20k トークン |
+| B-2：セクション別 llms.txt の生成（3アプリ）＋ `public` フィルタのテスト ＋ `llms-txt.test.mjs` の書き換え | 約 75k トークン |
+| B-1：ゲーム行の加筆（29件・`/games/llms.txt` 側） | 約 25k トークン |
+| B-3：`updatedAt`（子ファイルのみ） | 約 10k トークン |
+| B-4：learn 37章 ＋ `compliance.test.ts` の検査対象拡張 | 約 30k トークン |
 | C：ログが入ってからの集計（#15 依存） | 約 15k トークン |
-| 合計 | **約 150k トークン**（A だけなら 30k） |
+| 合計 | **約 185k トークン**（A だけなら 30k） |
 
-**A → B-2 → B-1 → B-3/4 の順で、A を先に入れること。**
+**A → B-2 → B-1 → B-3 → B-4 の順で、A を先に入れること。**
 測る手段が無いまま llms.txt を触ると、効いたかどうかが永久に分からなくなる。
 
 ## やらないこと
@@ -156,6 +238,9 @@ User-Agent 別に「実際に来ているか・何を取ったか」を数えら
   検索エンジンのガイドライン違反で、Bing からの流入という現在の生命線を失う
 - **llms.txt にツール・ゲームの計算ロジックを書く**：出典と結論はページ本文にあり、
   llms.txt は案内板。ここに数字を写すと二重管理になり、法改正のたびに 2 か所直すことになる
+- **`registry` / `chapters` を直に `filter` して llms.txt を生成する**：B-2 のとおり
+  公開前 8 件が漏れる。`publicTools` / `publicGames` / `publicChapters` を通す
+- **`home/llms.txt` に個々のツール行や日付を残す**：B-3 のとおり腐る。入口だけにする
 - **AI 経由が増えたことを根拠に、検索向けの手当て（サイトマップ・インデックス復旧）を
   止める**：68 セッションはまだ小さく、Bing 経由 240 の内訳を崩す理由にはならない
 - **`sessionSource: google` の 119 を「Google 検索が回復した」と読む**：Search Console の
