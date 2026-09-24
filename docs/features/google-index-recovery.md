@@ -1,7 +1,7 @@
 # Google検索のインデックスが「123件中1件」に落ちている — 調査結果と復旧計画
 
 **状態**：提案（2026-09-16 起票）。**運営者作業 1〜3 は 2026-09-17 に実施済み**（手動対策なし。
-結果は末尾「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
+結果は末尾「経過」）。**2 回目（サイトマップ個別送信・登録リクエスト 10 件）は 2026-09-24**（同じく「経過」）。**4（Bing Webmaster Tools）は進行中：運営者がサインインし、所有権確認ファイルを #249 で `home/` に設置、v1.20.0 で本番へ（2026-09-25）。確認完了とサイトマップ送信はそのあと。5（`public` 停止）は
 運営者の最終判断待ち。** コード側は **A を #211 で・C を 2026-09-17 に（#219）実施済み**、B・D はこれから。
 **対象**：hasokon.com 全体（tools / games / learn / home）。運用作業が中心、コード変更は小さい
 **起票**：2026-09-16
@@ -313,3 +313,53 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     ファイル側の問題ではない。**次の手：Search Console から `/learn/sitemap.xml` と
     `/sitemap-home.xml` を個別に送信する**（運営者の判断待ち。送信するだけで戻せる）。
     A の週次監査には、index の子サイトマップが読まれているかの確認も足す
+- 2026-09-24：**サイトマップ 2 本の個別送信と、登録リクエスト 2 回目 10 件を実施**
+  （運営者の承認のもと、Chrome の Search Console 画面、プロパティ `https://hasokon.com/`）。
+  - **計測**：検索パフォーマンスの直近 7 日（09-15〜09-21）は **クリック 0・表示 0**。
+    09-17 の登録リクエストから 1 週間で、表示はまだ戻っていない
+  - **サイトマップ**：`/learn/sitemap.xml` を送信 → 即日「成功しました」**検出 39**。
+    `/sitemap-home.xml` を送信 → 「成功しました」検出 2（最終読み込みは 09/09 の古い版。
+    `/about.html` を含む現行 3 URL は次回読み込みで反映される見込み）。
+    **learn の 39 URL が初めて Google に届いた**
+  - **登録リクエスト 10 件**（送信時の URL 検査の状態）：
+
+    | URL | 状態 | 前回のクロール |
+    |---|---|---|
+    | `/learn/` | 認識されていません | — |
+    | `/about.html` | 検出 - インデックス未登録（参照元 `sitemap-home.xml`） | — |
+    | `/tools/nenshu-kabe/` | クロール済み - 未登録（サイトマップ欄「一時的な処理エラー」） | 08/18 |
+    | `/tools/nenmatsu-chosei/` | 認識されていません | — |
+    | `/tools/tedori-keisan/` | 認識されていません | — |
+    | `/tools/furusato-nozei/` | クロール済み - 未登録（参照元 `/tools/group/`） | 08/22 |
+    | `/tools/ideco/` | 認識されていません | — |
+    | `/tools/kogaku-ryoyohi/` | 認識されていません | — |
+    | `/tools/zangyodai-keisan/` | 認識されていません | — |
+    | `/tools/nenrei-keisan/` | クロール済み - 未登録（参照元 `/tools/`） | 08/22 |
+
+    `/tools/nenmatsu-chosei/` は操作の都合で 2 回送信になった（害はない）。
+    **`/tools/sitemap.xml` に載っているのに「参照元サイトマップが検出されませんでした」の URL が多い**
+    （Google は tools のサイトマップを 09/13 に読んでいるのに、個々の URL と結び付いていない）。
+    10-01 ごろの再計測で、09-17 の 13 件と合わせて 23 件を見る
+  - **4. Bing Webmaster Tools**：09-24 の時点では AI エージェントの Chrome は未サインイン
+    （`/webmasters/home` が紹介ページへ転送）。**2026-09-25、運営者がサインインして所有権確認ファイル
+    `BingSiteAuth.xml` を取得し、#249 で `home/` に設置した。** `home/` はビルド工程が無く、
+    本番に出るのは `v*` タグのリリースなので、**v1.20.0（2026-09-25 起動）で本番反映**。
+    そのあと運営者が Bing Webmaster Tools の画面で確認を完了し、`https://hasokon.com/sitemap.xml` を送信する
+  - **サイトマップ送信は [sitemap-discovery-audit.md](./sitemap-discovery-audit.md) の C そのもの。**
+    同ファイルの状態行と「経過」も更新した。C の完了は **09-28（月）の週次監査で最初に確認し、10-05（月）で確定**（送信後 1 週間の基準）。見るのは
+    `/learn/sitemap.xml`・`/sitemap-home.xml` に `known: true` と `lastDownloaded` が入り、
+    終了コード 1 が消えるかで見る。A（robots.txt）は 09-19 に単独で本番に出ていて
+    その 5 日間の効果はほぼゼロ（#245 の計測で learn の unknown 39 → 38）なので、
+    **10-01 以降に learn の unknown が動いたら C に帰属できる**
+  - **この送信で、#245 の B の指標はベースラインを失った。** #245 は B（サイトマップ index に
+    `lastmod` を入れる）の効果を「`/sitemap-home.xml` の `lastDownloaded` が 09-08 から動くか」で
+    測る約束だったが、09-24 に手で送信したので、以後 `lastDownloaded` が動いても送信のせいか
+    `lastmod` のせいか区別できない。#245 側で測りかたを差し替える
+  - **降り口（10-01 の再計測で決める）**：09-17 の 13 件と 09-24 の 10 件、計 23 件を URL 検査 API で
+    再計測し、**`unknown` と `Crawled - currently not indexed` がどちらも動かなければ、
+    登録リクエストの 3 回目はやらない。** 以降はサイトマップ・送信系の手当てを止め、次のどれかに移る
+    （**どれに移るかは運営者判断待ち**）：
+    ① 品質判定側（B の 16 ページ `noindex`、「見切り」に書いた各ツールの本文を厚くする別仕様書）／
+    ② 4 の Bing Webmaster Tools（GA4 の 90 日・`sessionSource` で最大の流入元：bing 240 セッション＝全体 約 672 の約 36%、検索エンジン経由〔bing 240・google 119・search.google.com 11〕に絞ると約 65%。#246 の実測）／③ 5 の `public` 昇格停止の最終判断。
+    ここまでの実績：登録リクエストは 2 回（計 23 件）、Search Console の表示は 0 → 0、
+    `Submitted and indexed` は 1 → 1、`Crawled - currently not indexed` は 30 → 36
