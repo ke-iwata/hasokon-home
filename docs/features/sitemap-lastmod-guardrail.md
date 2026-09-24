@@ -1,7 +1,10 @@
 # トップページの更新が Bing に通知されていない — `lastmod` の据え置きを CI で落とし、サイトマップ index にも `lastmod` を入れる
 
-**状態**：提案（2026-09-24 起票／2026-09-25 レビュー反映）。**1 は実害が出ている**ので先に直す。
-**A と B は別PR・別リリースに分ける**（下記「A と B を分ける理由」）
+**状態**：**A は実装済み（2026-09-25）。B・C は未着手。**
+`/` を 2026-09-19・`/privacy.html` を 2026-09-17 に直し、据え置きの再発は
+`scripts/test/sitemap-home-lastmod.test.mjs` が落とすようにした（`test.yml` は `fetch-depth: 0`）。
+**Bing への通知が起きるのは運営者が次の `v*` タグを打った時点**（下記「A の効果が出るのは…」）。
+**B は A の効果を観測してから別PR・別リリースで**（下記「A と B を分ける理由」）
 **対象**：
 - A … `home/sitemap-home.xml`・`scripts/test/`（新規テスト1本）・**`.github/workflows/test.yml`**（`fetch-depth`）
 - B … `home/sitemap.xml`・`scripts/build-sitemap-index.mjs`（新規）・`.github/workflows/deploy.yml`・`scripts/test/`

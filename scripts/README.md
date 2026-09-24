@@ -289,7 +289,7 @@ node --test "scripts/test/*.test.mjs"
 **`home/` の鍵ファイル**（1枚あるか・中身がファイル名と一致するか・`deploy.yml` が
 それを指しているか）を見ています。用途の分からない1枚は消されやすいためです。
 
-次の4つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
+次の5つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
 生成物はビルド工程を持たず npm も vitest も無いので、
 リポジトリ唯一の `node --test` にここで相乗りしています。
 
@@ -305,3 +305,12 @@ node --test "scripts/test/*.test.mjs"
   生成スクリプト。仕様は
   [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)、
   生成スクリプトは [design/manifest-icons/](../design/manifest-icons/)
+- `test/sitemap-home-lastmod.test.mjs` … **`home/sitemap-home.xml` の `lastmod` が
+  据え置かれていないか**。`git log` で各HTMLの最終変更日を見て、それより古ければ落とします。
+  IndexNow は `lastmod` が動いたURLだけを Bing へ送るので、据え置きは黙った不送信になります。
+  仕様は [docs/features/sitemap-lastmod-guardrail.md](../docs/features/sitemap-lastmod-guardrail.md)
+
+  **このテストだけは git の履歴を必要とします。** 浅いクローン（`--depth 1`）では
+  「全ファイルが今日変更された」ことになるため、判定できないと明示して落とします。
+  `.github/workflows/test.yml` の checkout は `fetch-depth: 0`、手元で落ちたら
+  `git fetch --unshallow` を。
