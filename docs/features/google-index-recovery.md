@@ -313,3 +313,32 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     ファイル側の問題ではない。**次の手：Search Console から `/learn/sitemap.xml` と
     `/sitemap-home.xml` を個別に送信する**（運営者の判断待ち。送信するだけで戻せる）。
     A の週次監査には、index の子サイトマップが読まれているかの確認も足す
+- 2026-09-24：**サイトマップ 2 本の個別送信と、登録リクエスト 2 回目 10 件を実施**
+  （運営者の承認のもと、Chrome の Search Console 画面、プロパティ `https://hasokon.com/`）。
+  - **計測**：検索パフォーマンスの直近 7 日（09-15〜09-21）は **クリック 0・表示 0**。
+    09-17 の登録リクエストから 1 週間で、表示はまだ戻っていない
+  - **サイトマップ**：`/learn/sitemap.xml` を送信 → 即日「成功しました」**検出 39**。
+    `/sitemap-home.xml` を送信 → 「成功しました」検出 2（最終読み込みは 09/09 の古い版。
+    `/about.html` を含む現行 3 URL は次回読み込みで反映される見込み）。
+    **learn の 39 URL が初めて Google に届いた**
+  - **登録リクエスト 10 件**（送信時の URL 検査の状態）：
+
+    | URL | 状態 | 前回のクロール |
+    |---|---|---|
+    | `/learn/` | 認識されていません | — |
+    | `/about.html` | 検出 - インデックス未登録（参照元 `sitemap-home.xml`） | — |
+    | `/tools/nenshu-kabe/` | クロール済み - 未登録（サイトマップ欄「一時的な処理エラー」） | 08/18 |
+    | `/tools/nenmatsu-chosei/` | 認識されていません | — |
+    | `/tools/tedori-keisan/` | 認識されていません | — |
+    | `/tools/furusato-nozei/` | クロール済み - 未登録（参照元 `/tools/group/`） | 08/22 |
+    | `/tools/ideco/` | 認識されていません | — |
+    | `/tools/kogaku-ryoyohi/` | 認識されていません | — |
+    | `/tools/zangyodai-keisan/` | 認識されていません | — |
+    | `/tools/nenrei-keisan/` | クロール済み - 未登録（参照元 `/tools/`） | 08/22 |
+
+    `/tools/nenmatsu-chosei/` は操作の都合で 2 回送信になった（害はない）。
+    **`/tools/sitemap.xml` に載っているのに「参照元サイトマップが検出されませんでした」の URL が多い**
+    （Google は tools のサイトマップを 09/13 に読んでいるのに、個々の URL と結び付いていない）。
+    10-01 ごろの再計測で、09-17 の 13 件と合わせて 23 件を見る
+  - **4. Bing Webmaster Tools**：Chrome は未サインインのまま（`/webmasters/home` が紹介ページへ転送）。
+    引き続き運営者作業
