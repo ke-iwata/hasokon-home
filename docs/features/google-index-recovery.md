@@ -1,7 +1,7 @@
 # Google検索のインデックスが「123件中1件」に落ちている — 調査結果と復旧計画
 
 **状態**：提案（2026-09-16 起票）。**運営者作業 1〜3 は 2026-09-17 に実施済み**（手動対策なし。
-結果は末尾「経過」）。**2 回目（サイトマップ個別送信・登録リクエスト 10 件）は 2026-09-24**（同じく「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
+結果は末尾「経過」）。**2 回目（サイトマップ個別送信・登録リクエスト 10 件）は 2026-09-24**（同じく「経過」）。**4（Bing Webmaster Tools）は進行中：運営者がサインインし、所有権確認ファイルを #249 で `home/` に設置、v1.20.0 で本番へ（2026-09-25）。確認完了とサイトマップ送信はそのあと。5（`public` 停止）は
 運営者の最終判断待ち。** コード側は **A を #211 で・C を 2026-09-17 に（#219）実施済み**、B・D はこれから。
 **対象**：hasokon.com 全体（tools / games / learn / home）。運用作業が中心、コード変更は小さい
 **起票**：2026-09-16
@@ -340,10 +340,13 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     **`/tools/sitemap.xml` に載っているのに「参照元サイトマップが検出されませんでした」の URL が多い**
     （Google は tools のサイトマップを 09/13 に読んでいるのに、個々の URL と結び付いていない）。
     10-01 ごろの再計測で、09-17 の 13 件と合わせて 23 件を見る
-  - **4. Bing Webmaster Tools**：Chrome は未サインインのまま（`/webmasters/home` が紹介ページへ転送）。
-    引き続き運営者作業
+  - **4. Bing Webmaster Tools**：09-24 の時点では AI エージェントの Chrome は未サインイン
+    （`/webmasters/home` が紹介ページへ転送）。**2026-09-25、運営者がサインインして所有権確認ファイル
+    `BingSiteAuth.xml` を取得し、#249 で `home/` に設置した。** `home/` はビルド工程が無く、
+    本番に出るのは `v*` タグのリリースなので、**v1.20.0（2026-09-25 起動）で本番反映**。
+    そのあと運営者が Bing Webmaster Tools の画面で確認を完了し、`https://hasokon.com/sitemap.xml` を送信する
   - **サイトマップ送信は [sitemap-discovery-audit.md](./sitemap-discovery-audit.md) の C そのもの。**
-    同ファイルの状態行と「経過」も更新した。C の完了は **09-29 の週次監査**で
+    同ファイルの状態行と「経過」も更新した。C の完了は **09-28（月）の週次監査で最初に確認し、10-05（月）で確定**（送信後 1 週間の基準）。見るのは
     `/learn/sitemap.xml`・`/sitemap-home.xml` に `known: true` と `lastDownloaded` が入り、
     終了コード 1 が消えるかで見る。A（robots.txt）は 09-19 に単独で本番に出ていて
     その 5 日間の効果はほぼゼロ（#245 の計測で learn の unknown 39 → 38）なので、
@@ -357,6 +360,6 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     登録リクエストの 3 回目はやらない。** 以降はサイトマップ・送信系の手当てを止め、次のどれかに移る
     （**どれに移るかは運営者判断待ち**）：
     ① 品質判定側（B の 16 ページ `noindex`、「見切り」に書いた各ツールの本文を厚くする別仕様書）／
-    ② 4 の Bing Webmaster Tools（いまの流入の 8 割）／③ 5 の `public` 昇格停止の最終判断。
+    ② 4 の Bing Webmaster Tools（GA4 の 90 日・`sessionSource` で最大の流入元：bing 240 セッション＝全体 約 672 の約 36%、検索エンジン経由〔bing 240・google 119・search.google.com 11〕に絞ると約 65%。#246 の実測）／③ 5 の `public` 昇格停止の最終判断。
     ここまでの実績：登録リクエストは 2 回（計 23 件）、Search Console の表示は 0 → 0、
     `Submitted and indexed` は 1 → 1、`Crawled - currently not indexed` は 30 → 36
