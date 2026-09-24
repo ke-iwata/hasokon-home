@@ -8,6 +8,32 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-25：トップの `lastmod` 据え置きを直し、再発を CI で止めるようにした
+
+[sitemap-lastmod-guardrail.md](./features/sitemap-lastmod-guardrail.md) の **A** を実装した（B・C は未着手）。
+
+- **実害があった。** #243（2026-09-19）でトップにツール6本のカードが増えたのに、
+  `home/sitemap-home.xml` の `/` の `lastmod` は 2026-09-09 のままだった。
+  `indexnow-submit.mjs` は「新規か `lastmod` が動いたURLだけ」を送るので、
+  **その更新は Bing に通知されていない。** `/privacy.html` も同様（2026-08-19 のまま／変更は 09-17）
+- `/` を 2026-09-19、`/privacy.html` を 2026-09-17 に直した。
+  **Bing に届くのは運営者が次の `v*` タグを打った時点**（`deploy.yml` の IndexNow は
+  3ステップとも `if: startsWith(github.ref, 'refs/tags/')`）。main へのマージでは動かない
+- 再発は `scripts/test/sitemap-home-lastmod.test.mjs` が落とす。`git log -1 --format=%ad`
+  で各HTMLの最終変更日を見て、`lastmod` がそれより古ければ赤。
+  **`%cd` にしない**（squash マージで committer date がマージ日に動き、誤検知する）
+- **浅いクローンでは「黙って飛ばす」をやめた。** `--depth 1` だと tip の1コミットが
+  全ファイルを作成した扱いになり、全URLが「今日変更された」ことになる。
+  安全弁が一度も発動せず main まで赤になるので、**判定できないと明示して落とす**方にした。
+  そのため `.github/workflows/test.yml` の checkout に `fetch-depth: 0` を入れた
+  （`deploy.yml` の4か所は `scripts/test` を回さないので据え置き）
+- **整形だけの変更での空振りは許容する**と決めた（仕様書 A-3）。内容ハッシュは作らない。
+  空振りの送信が最大3URL増えるだけで、判定の作り込みのほうが高くつく
+- 対象は `index.html` / `about.html` / `privacy.html` の3枚。同梱アセット（`find.js` ほか）と
+  `404.html` は対象外（サイトマップに載るのはHTMLページのURLだけ）
+- **B（index への `lastmod`）は同じリリースに載せない。** 子が読み直されたときに
+  A と B のどちらが効いたのか区別できなくなる（#238 のレビューと同じ型の取りこぼし）
+
 ## 2026-09-19：社保の料率を本文にも定数から出すようにした（表示と計算が食い違っていた）
 
 v1.19.0 の本番確認で見つけた。**画面に「雇用保険0.55%で概算します」と書いてあるのに、
