@@ -222,6 +222,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-19',
   },
   {
+    slug: 'jutaku-loan-kojo',
+    icon: 'House',
+    name: '住宅ローン控除 計算機',
+    description:
+      '令和8年度税制改正で2030年末入居まで5年延長された住宅ローン控除を計算。入居年・住宅の種類・省エネ区分・子育て世帯かどうかから借入限度額と控除期間を出し、「控除額」と「実際に戻る額（所得税＋住民税）」を分けて表示します。改正前との比較と早見表つき。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-09-24',
+  },
+  {
     slug: 'invoice-nozeigaku',
     icon: 'Receipt',
     name: 'インボイス 納税額 比較計算機',
