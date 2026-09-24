@@ -18,7 +18,7 @@ const chapters = chaptersOfSubject(subject.slug);
 export const metadata: Metadata = {
   title: `${subject.name}｜体系的に学ぶ投資の基礎から実践まで`,
   description:
-    '株式・債券・投資信託から暗号資産・デイトレードまで、投資を体系的に学べる無料の教科書。全35章。出典はすべて一次資料へのリンクつきで明示しています。',
+    '株式・債券・投資信託から暗号資産・デイトレードまで、投資を体系的に学べる無料の教科書。全37章。出典はすべて一次資料へのリンクつきで明示しています。',
   alternates: { canonical: subjectUrl(subject.slug) },
   // 分野の公開は subjects の stage で決まる。sitemap も同じ判断を見る
   robots: subject.stage === 'public' ? undefined : { index: false, follow: false },

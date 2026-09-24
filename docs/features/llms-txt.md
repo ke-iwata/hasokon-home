@@ -1,7 +1,10 @@
 # llms.txt を置く（AIアシスタント経由の流入への備え）
 
-**状態**：実装済み（2026-08-14。本番反映はタグリリース待ち）
-**対象**：`home/`（`hasokon.com/llms.txt`）
+**状態**：実装済み（2026-08-14）。**2026-09-24に構成を変えた**——
+`home/llms.txt` は入口だけの案内板になり、個々のツール・ゲーム・章の行は
+`/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` が registry / curriculum から生成する。
+経緯と決定は [ai-assistant-channel.md](./ai-assistant-channel.md) の B
+**対象**：`home/`（`hasokon.com/llms.txt`）・`{tools,games,learn}/lib/llms.ts`
 **起票**：2026-08-14
 
 ---
@@ -70,6 +73,13 @@ Markdown）で、ドメイン直下 `https://hasokon.com/llms.txt` に置く：
 - ツール・ゲームを追加したら `index.html` / `404.html` / sitemap と同様に
   llms.txt にも1行足す（CLAUDE.md の「home/ の注意」に1行追記する）
 - 大きくなりすぎたら `llms-full.txt` への分割を検討（v1では不要）
+
+> **2026-09-24 追記：この2点は差し替わった。**
+> 111項目が1枚に平らに並んで大きくなりすぎたので、セクションごとの子ファイルに分け、
+> registry / curriculum から**生成する**ようにした（[ai-assistant-channel.md](./ai-assistant-channel.md) の B-2）。
+> いまは**ツール・ゲーム・章を追加しても llms.txt に手で足すものは無い**。
+> `home/llms.txt` に個々の行や日付を書き戻さないこと（`home/` にはビルド工程が無く、
+> 手書きの日付は据え置かれて嘘になる。B-3）。
 
 ## 期待される効果
 

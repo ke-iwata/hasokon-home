@@ -7,6 +7,7 @@ import {
   parts,
   publicChapters,
   robotsFor,
+  subjects,
   writtenChapters,
   type PartId,
 } from '@/lib/curriculum';
@@ -77,9 +78,26 @@ describe('公開の段階（feature flags）', () => {
     for (const c of publicChapters) expect(c.stage).toBe('public');
   });
 
-  it('全35章が公開されている', () => {
+  it('全37章が公開されている', () => {
     // 2026-09-07 に公開した。章を足したら、その章も public にするか決めること
     expect(publicChapters).toHaveLength(chapters.length);
+  });
+
+  it('分野の説明・導入文の「全◯章」が実際の章数と合っている', () => {
+    // 2章足したときに 35 のまま据え置かれていた。
+    // `/learn/llms.txt` でAIにも配るようになったので、機械で見張る
+    // （docs/features/ai-assistant-channel.md の B-4）
+    for (const s of subjects) {
+      const count = chapters.filter((c) => c.subject === s.slug).length;
+      for (const [label, text] of [
+        ['説明', s.description],
+        ['導入文', s.lead],
+      ] as const) {
+        for (const found of text.match(/全(\d+)章/g) ?? []) {
+          expect(found, `${s.slug} の${label}の章数が実際（${count}章）と違う`).toBe(`全${count}章`);
+        }
+      }
+    }
   });
 
   it('公開したものを preview / wip に戻していない', () => {

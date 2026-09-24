@@ -65,8 +65,10 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   `games` / `tools` / `subjects` / `chapters` を直に `filter` しない（書き忘れが公開事故になる）
 - **ページの `metadata` に `robots: robotsFor('<slug>')` を書く**
   （書き忘れは `{games,tools,learn}/tests/stage.test.ts` が落とす）
-- **`home/index.html` のカードと `home/llms.txt` の行は、`public` にするPRで足す。**
+- **`home/index.html` のカードは、`public` にするPRで足す。**
   `home/` にはビルド工程が無いので `stage` が効かない。ここだけは運用で守る
+  （`home/llms.txt` は2026-09-24から入口だけの案内板で、**行を足す必要は無い**。
+  個々の行は各アプリの `/llms.txt` が registry / curriculum から生成する）
 - **テスト環境のトップにだけは、公開前のものも「本番未公開」の印つきで並ぶ**
   （`scripts/build-test-home.mjs` がデプロイ時に差し込む。本番のデプロイは通らない）。
   仕様は [docs/features/test-home-unreleased.md](./docs/features/test-home-unreleased.md)。
@@ -98,9 +100,11 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   **`learn/tests/compliance.test.ts` が本文を検査して落とす**
 - **出典のない章を作らない。** `learn/tests/sources.test.ts` が落とす
 - **2026-09-07に「投資の教科書」を公開した（いまは全37章）。** ホームからのリンク
-  （`index.html` のヒーローと学ぶの節・`404.html` のカード）、`llms.txt` の39行、
-  `sitemap.xml` の4本目が入っている。
-  章を増やしたら**ホームの「全◯章」も直す**（`scripts/test/home-nav.test.mjs` が落とす）
+  （`index.html` のヒーローと学ぶの節・`404.html` のカード）、`llms.txt` の入口の行、
+  `sitemap.xml` の4本目が入っている（章ごとの行は `/learn/llms.txt` が生成する）。
+  章を増やしたら**ホームの「全◯章」も直す**（`scripts/test/home-nav.test.mjs` が落とす）。
+  `lib/curriculum.ts` の分野の説明・導入文にある「全◯章」も
+  `learn/tests/curriculum.test.ts` が見張っている
 
 ## リリースの約束
 
@@ -127,9 +131,16 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   **読み物（learn）は1ページ1機能の一覧ではないので、カードの並びにせず入口を1つ置いている。**
   `.quicknav` はカード一覧への近道なので載せていない（`scripts/test/home-nav.test.mjs` 参照）
 - `llms.txt` は AIアシスタント向けのサイト案内（[llmstxt.org](https://llmstxt.org/) 形式）。
-  ツールやゲームを増やしたら、`index.html` / sitemap と同じように1行足す
-  （`scripts/test/llms-txt.test.mjs` が registry との食い違いを検知する）。
-  仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md)
+  **`home/llms.txt` は入口だけの案内板**で、個々のツール・ゲーム・章の行と最終更新日は
+  `/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` が持つ。
+  子ファイルは各アプリの `lib/llms.ts` が registry / curriculum から**生成する**ので、
+  **ツールやゲームを増やしても手で足すものは無い**
+  （`scripts/test/llms-txt.test.mjs` が「入口が入口のままか」を、
+  `{tools,games,learn}/tests/llms.test.ts` が「公開前のものが混ざらないか」を見張る）。
+  **`home/llms.txt` に個々の行や日付を書き戻さないこと**（`home/` にはビルド工程が無く、
+  手書きの日付は据え置かれて嘘になる）。
+  仕様は [docs/features/llms-txt.md](./docs/features/llms-txt.md) と
+  [docs/features/ai-assistant-channel.md](./docs/features/ai-assistant-channel.md)
 - `sitemap.xml` はインデックス形式で home / tools / games / learn の4本を指す。
   home のページを**増やしたら**`sitemap-home.xml` に足し、**中身を変えたら**
   そのページの `lastmod` を変更日に上げる。IndexNow の差分送信は `lastmod` を見ていて、

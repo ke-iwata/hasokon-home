@@ -96,6 +96,9 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
    `page.tsx` の `metadata` には `robots: robotsFor('{slug}')` を書く
    （書き忘れは `tests/stage.test.ts` が落とす）。
    一覧は `tools` ではなく **`publicTools`** を通す。
+   `/tools/llms.txt`（AIアシスタント向けの一覧）も `lib/llms.ts` が `publicTools` から
+   生成するので、**`home/llms.txt` に手で足すものは無い**
+   （[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
 6. `npm test && npm run build` が通ることを確認
 

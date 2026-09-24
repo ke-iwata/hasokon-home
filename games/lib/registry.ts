@@ -26,6 +26,18 @@ export interface GameDef {
   name: string;
   description: string;
   icon: string;
+  /**
+   * `/games/llms.txt` にだけ出す、ルール・設定の手がかり。
+   *
+   * 仕様: [docs/features/ai-assistant-channel.md](../../docs/features/ai-assistant-channel.md) の B-1。
+   * AI経由の流入1位が大富豪なのに、llms.txt のゲーム行がツール行より短く、
+   * 「どのルールに対応しているか（都落ち・革命・8切り など）」が本文にしか無かった。
+   *
+   * **ここに新しい説明を書かない。ページ本文にある語を並べるだけ**にする
+   * （`tests/llms.test.ts` が、各語がそのゲームの `page.tsx` にあるかを検査する）。
+   * 一覧カードや meta description には出ない。
+   */
+  keywords?: readonly string[];
   /** 公開の段階。`public` 以外は一覧にも sitemap にも出さない */
   stage: Stage;
   /** 内容を最後に更新した日（sitemap の lastmod。ビルド日ではない） */
@@ -64,6 +76,7 @@ export const games: GameDef[] = [
     icon: 'Cards',
     name: 'ソリティア',
     description: '定番のクロンダイク。タップで自動移動の簡単操作。もどす機能つき。',
+    keywords: ['クロンダイク', '自動で移動', 'もどす'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -72,6 +85,7 @@ export const games: GameDef[] = [
     icon: 'Spade',
     name: 'スパイダーソリティア',
     description: '1スート〜4スートの3段階。KからAまで揃えて8組完成を目指します。',
+    keywords: ['1スート', '2スート', '4スート', '8組'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -80,6 +94,7 @@ export const games: GameDef[] = [
     icon: 'Club',
     name: 'フリーセル',
     description: '全部の札が最初から見えている実力型のトランプパズル。まとめて移動にも対応。',
+    keywords: ['表向き', 'まとめて移動'],
     stage: 'public',
     updatedAt: '2026-08-11',
   },
@@ -93,6 +108,7 @@ export const games: GameDef[] = [
     name: 'ピラミッドソリティア',
     description:
       '足して13になる2枚を取り除いてピラミッドを崩すソリティア。Kは1枚で取れます。タップだけの簡単操作。',
+    keywords: ['足して13', 'Kは1枚', '引き直し'],
     stage: 'public',
     updatedAt: '2026-08-17',
   },
@@ -106,6 +122,7 @@ export const games: GameDef[] = [
     name: 'トライピークス',
     description:
       '捨て札と1つ違いの札を取り除いて3つの山を崩すソリティア。AはKにも2にもつながります。連鎖を伸ばすほど高得点。',
+    keywords: ['1つ違い', '連鎖', '引き直し'],
     stage: 'public',
     updatedAt: '2026-08-18',
   },
@@ -120,6 +137,7 @@ export const games: GameDef[] = [
     name: 'ゴルフソリティア',
     description:
       '捨て札と1つ違いの札を手前から取り除くソリティア。取り切れなくても「残り何枚か」が成績になります。KとAをつなぐルールにも切り替え可能。',
+    keywords: ['1つ違い', 'KとA', '残り何枚'],
     stage: 'public',
     updatedAt: '2026-09-05',
   },
@@ -128,6 +146,7 @@ export const games: GameDef[] = [
     icon: 'Bomb',
     name: 'マインスイーパー',
     description: '数字をヒントに地雷を避ける定番パズル。初手は必ず安全。初級〜上級。',
+    keywords: ['初級', '中級', '上級', '旗モード', '爆発しない'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -136,6 +155,7 @@ export const games: GameDef[] = [
     icon: 'SquaresFour',
     name: '2048',
     description: 'スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコア保存。',
+    keywords: ['スワイプ', '合体', 'ベストスコア'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -144,6 +164,7 @@ export const games: GameDef[] = [
     icon: 'GridNine',
     name: 'ナンプレ',
     description: '定番の数字パズル。かんたん・ふつう・むずかしいの3段階。答えは必ず1通りです。',
+    keywords: ['かんたん', 'ふつう', 'むずかしい', '答えは必ず1通り'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -152,6 +173,7 @@ export const games: GameDef[] = [
     icon: 'GridFour',
     name: 'ノノグラム',
     description: '数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問。答えは必ず1通りです。',
+    keywords: ['5×5', '10×10', '15×15', '全30問'],
     stage: 'public',
     updatedAt: '2026-08-11',
   },
@@ -179,6 +201,7 @@ export const games: GameDef[] = [
     icon: 'Stones',
     name: 'リバーシ',
     description: '挟んで裏返す定番の対戦ゲーム。CPUは かんたん・ふつう・つよい の3段階。先手・後手も選べます。',
+    keywords: ['8×8', '先手', '後手', 'もどす'],
     stage: 'public',
     updatedAt: '2026-08-12',
   },
@@ -191,6 +214,7 @@ export const games: GameDef[] = [
     name: '五目並べ',
     description:
       '13×13の盤に先に5つ並べたほうが勝ちの定番ボードゲーム。CPUは かんたん・ふつう・つよい の3段階。禁じ手なし。',
+    keywords: ['13×13', '5つ並べ', '待った', '投了'],
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -203,6 +227,17 @@ export const games: GameDef[] = [
     name: '大富豪',
     description:
       'CPU3人と5回戦を戦うトランプの定番。8切り・革命・縛りに対応し、都落ち・11バック・スペ3返しも切り替えられます。',
+    keywords: [
+      '8切り',
+      '革命',
+      '縛り',
+      '階段',
+      '11バック',
+      '5飛ばし',
+      '9リバース',
+      'スペ3返し',
+      '都落ち',
+    ],
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -215,6 +250,7 @@ export const games: GameDef[] = [
     name: '七並べ',
     description:
       'CPU3人と5回戦を戦うトランプの定番。パスは3回まで、4回目で失格して手札が場に開きます。トンネルも切り替え可能。',
+    keywords: ['パスは3回まで', '失格', 'トンネル'],
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -227,6 +263,7 @@ export const games: GameDef[] = [
     name: '神経衰弱',
     description:
       'めくった2枚が同じ数字ならもらえる定番のカードゲーム。ひとりでタイムアタック、CPU対戦は強さ3段階。12〜52枚から選べます。',
+    keywords: ['タイムアタック', '12枚', '20枚', '28枚', '52枚'],
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -239,6 +276,7 @@ export const games: GameDef[] = [
     name: 'スピード',
     description:
       '台札と1つ違いの数字を、手番を待たずに出し合うトランプの定番。CPU対戦は反応の速さで強さ3段階。1ゲーム1〜2分。',
+    keywords: ['台札', '強さ3段階', 'ベストタイム'],
     stage: 'public',
     updatedAt: '2026-08-15',
   },
@@ -252,6 +290,7 @@ export const games: GameDef[] = [
     name: '花札 こいこい',
     description:
       '日本の伝統札で遊ぶ2人用の定番。CPU対戦は強さ3段階で、6ヶ月戦と12ヶ月戦を選べます。役の一覧と、あと何枚で役になるかの案内つき。',
+    keywords: ['こいこい', '五光', '赤短', '猪鹿蝶', '6ヶ月戦', '12ヶ月戦'],
     stage: 'public',
     updatedAt: '2026-08-15',
   },
@@ -264,6 +303,7 @@ export const games: GameDef[] = [
     name: '麻雀ソリティア',
     description:
       '亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配ります。',
+    keywords: ['144枚', '亀の形', 'ヒント', '並べ替え'],
     stage: 'public',
     updatedAt: '2026-08-13',
   },
@@ -290,6 +330,7 @@ export const games: GameDef[] = [
     name: 'ブロックパズル',
     description:
       '8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べます。',
+    keywords: ['8×8', '行と列', '時間制限なし'],
     stage: 'public',
     updatedAt: '2026-08-13',
   },
@@ -305,6 +346,7 @@ export const games: GameDef[] = [
     name: '色水ソート',
     description:
       '色水を試験管に注ぎ分けて同じ色を1本にそろえるパズル。かんたん・ふつう・むずかしいの3段階。時間制限なしでのんびり遊べます。',
+    keywords: ['試験管', '同じ色で4段', 'かんたん', 'むずかしい'],
     stage: 'public',
     updatedAt: '2026-08-19',
   },
@@ -332,6 +374,7 @@ export const games: GameDef[] = [
     icon: 'Racquet',
     name: 'ブロック崩し',
     description: 'マウスやタッチで操作する定番アクション。面が進むごとに速くなります。',
+    keywords: ['パドル', 'ブロック', '速く'],
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -345,6 +388,7 @@ export const games: GameDef[] = [
     name: 'スネーク',
     description:
       '餌を食べるほど長くなるヘビを操作する定番アーケード。壁と自分の体をよけてハイスコアを狙います。スワイプと矢印キーに対応。',
+    keywords: ['スワイプ', '矢印キー', '壁と自分の体'],
     stage: 'public',
     updatedAt: '2026-08-18',
   },
@@ -358,6 +402,7 @@ export const games: GameDef[] = [
     name: 'ヨット',
     description:
       '5個のサイコロを3回まで振って役を作る定番のダイスゲーム。フルハウスやストレートなど12の役を埋めて、合計点の高さを競います。CPU対戦は強さ2段階。',
+    keywords: ['フルハウス', 'ストレート', '上段', 'ボーナス'],
     stage: 'public',
     updatedAt: '2026-08-21',
   },

@@ -51,3 +51,24 @@ describe('gsc-audit.yml', () => {
     assert.match(yaml, /if \[ "\$code" -ge 2 \]/);
   });
 });
+
+describe('AIチャネルの計測（相乗り）', () => {
+  // 仕様: docs/features/ai-assistant-channel.md の A。
+  // ジョブもSecretも増やさず、同じサービスアカウントで GA4 を引く
+  it('同じジョブで ga4-ai-channel.mjs を --out つきで呼ぶ', () => {
+    assert.match(yaml, /node scripts\/ga4-ai-channel\.mjs .*--out /);
+  });
+
+  it('GA4 の失敗で GSC の結果まで落とさない（警告どまり）', () => {
+    const step = yaml.slice(yaml.indexOf('AIアシスタント経由の流入を数える'));
+    assert.match(step, /\|\| code=\$\?/);
+    assert.match(step, /::warning::/);
+    // exit を書くと、権限待ちのあいだ毎週ジョブが赤くなる
+    assert.doesNotMatch(step.slice(0, step.indexOf('- name: 結果を artifact')), /exit "\$code"/);
+  });
+
+  it('Secret が未設定のときは飛ばす（GSC 側と同じ判定に乗る）', () => {
+    const step = yaml.slice(yaml.indexOf('AIアシスタント経由の流入を数える'));
+    assert.match(step, /if: steps\.audit\.outputs\.skipped == 'false'/);
+  });
+});

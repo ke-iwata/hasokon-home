@@ -11,6 +11,12 @@ const GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:jwt-bearer';
 
 export const READONLY_SCOPE = 'https://www.googleapis.com/auth/webmasters.readonly';
 
+/**
+ * GA4 Data API 用のスコープ。同じサービスアカウントが既に持っている
+ * （docs/features/ai-assistant-channel.md の A。新しい権限は要らない）。
+ */
+export const ANALYTICS_READONLY_SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
+
 export function base64url(input) {
   return Buffer.from(input).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }

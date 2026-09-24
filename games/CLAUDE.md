@@ -99,7 +99,11 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
    仕様は [docs/features/feature-flags.md](../docs/features/feature-flags.md)）。
    `page.tsx` の `metadata` には `robots: robotsFor('{slug}')` を書く
    （書き忘れは `tests/stage.test.ts` が落とす）。
-   トップの一覧は `games` ではなく **`publicGames`** を通す
+   トップの一覧は `games` ではなく **`publicGames`** を通す。
+   `/games/llms.txt`（AIアシスタント向けの一覧）も `lib/llms.ts` が `publicGames` から
+   生成するので、**`home/llms.txt` に手で足すものは無い**。
+   `keywords` にページ本文のルール名を並べると、その行に出る
+   （[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）
 5. 記録（ベスト・勝敗・クリアタイム）を付ける。`lib/records.ts` と
    `app/_records/Records.tsx`（`useRecords` / `useStopwatch` / `RecordStrip`）を使い、
    **ゲームごとに個別の localStorage キーを作らない**

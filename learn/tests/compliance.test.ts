@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { writtenChapters } from '@/lib/curriculum';
+import { chapters, subjects, writtenChapters } from '@/lib/curriculum';
 
 /**
  * 編集方針を機械で見張るテスト。
@@ -15,6 +15,25 @@ import { writtenChapters } from '@/lib/curriculum';
  */
 
 const appDir = fileURLToPath(new URL('../app/', import.meta.url));
+
+/**
+ * **`lib/curriculum.ts` の地の文も検査に入れる。**
+ *
+ * 仕様: docs/features/ai-assistant-channel.md の B-4。
+ * ここに書いた `description` は一覧カード・meta description に出るだけだったが、
+ * `/learn/llms.txt` で**AIに引用させるために**配るようになった。
+ * 本文（page.tsx）だけ見ていると、37章ぶんの description が
+ * 一度も検査を通らないまま公開される。
+ *
+ * 分野の `lead` も目次の冒頭に出る地の文なので同じ扱いにする。
+ */
+const curriculumTexts = [
+  ...chapters.map((c) => ({ name: `curriculum: ${c.slug} の説明`, src: c.description })),
+  ...subjects.flatMap((s) => [
+    { name: `curriculum: ${s.slug} の説明`, src: s.description },
+    { name: `curriculum: ${s.slug} の導入文`, src: s.lead },
+  ]),
+];
 
 const pages = [
   ...writtenChapters.map((c) => ({
@@ -43,59 +62,62 @@ function proseOf(src: string): string {
     .replace(/\s+/g, ' ');
 }
 
-describe('断定的判断を提供しない（金商法38条2号）', () => {
-  // 「必ず儲かる」の類。将来の成果を約束する言い回しを置かない
-  const banned = [
-    '必ず儲か',
-    '確実に儲か',
-    '絶対に儲か',
-    '損はしません',
-    '元本は保証',
-    '元本保証です',
-    '必ず値上がり',
-    '確実に増えます',
-    '間違いなく上がり',
-  ];
+/** 「必ず儲かる」の類。将来の成果を約束する言い回しを置かない */
+const BANNED_ASSERTIONS = [
+  '必ず儲か',
+  '確実に儲か',
+  '絶対に儲か',
+  '損はしません',
+  '元本は保証',
+  '元本保証です',
+  '必ず値上がり',
+  '確実に増えます',
+  '間違いなく上がり',
+];
 
+/** 買い時・売り時の助言に読める言い回し */
+const BANNED_TIMING = ['いま買うべき', '今が買い時', '買い時です', '売り時です', '狙い目です'];
+
+/**
+ * 運営者の判断で、公的なもの・指数は実名、民間の個別商品は出さない。
+ * 実在の商品名・金融機関名が入り込んだら落とす
+ */
+const BANNED_PRODUCTS = [
+  'eMAXIS',
+  'ニッセイ',
+  'たわらノーロード',
+  'SBI証券',
+  'SBI・',
+  '楽天証券',
+  '楽天・',
+  'マネックス',
+  'auカブコム',
+  '松井証券',
+  'GMOクリック',
+  'ひふみ',
+  'セゾン投信',
+];
+
+describe('断定的判断を提供しない（金商法38条2号）', () => {
   it.each(pages)('$name に断定的な言い回しが無い', ({ src }) => {
     const prose = proseOf(src);
-    for (const phrase of banned) {
+    for (const phrase of BANNED_ASSERTIONS) {
       expect(prose.includes(phrase), `「${phrase}」が本文にある`).toBe(false);
     }
   });
 });
 
 describe('個別の推奨をしない', () => {
-  // 買い時・売り時の助言に読める言い回し
-  const banned = ['いま買うべき', '今が買い時', '買い時です', '売り時です', '狙い目です'];
-
   it.each(pages)('$name に売買時期の助言が無い', ({ src }) => {
     const prose = proseOf(src);
-    for (const phrase of banned) {
+    for (const phrase of BANNED_TIMING) {
       expect(prose.includes(phrase), `「${phrase}」が本文にある`).toBe(false);
     }
   });
 
   it.each(pages)('$name に民間の個別商品名・証券会社名が無い', ({ src }) => {
-    // 運営者の判断で、公的なもの・指数は実名、民間の個別商品は出さない。
-    // 実在の商品名・金融機関名が入り込んだら落とす
     const prose = proseOf(src);
-    const banned = [
-      'eMAXIS',
-      'ニッセイ',
-      'たわらノーロード',
-      'SBI証券',
-      'SBI・',
-      '楽天証券',
-      '楽天・',
-      'マネックス',
-      'auカブコム',
-      '松井証券',
-      'GMOクリック',
-      'ひふみ',
-      'セゾン投信',
-    ];
-    for (const phrase of banned) {
+    for (const phrase of BANNED_PRODUCTS) {
       expect(prose.includes(phrase), `「${phrase}」が本文にある`).toBe(false);
     }
   });
@@ -145,6 +167,29 @@ describe('本文の体裁', () => {
   });
 
   it.each(pages)('$name に書きかけの目印が残っていない', ({ src }) => {
+    for (const marker of ['TODO', 'FIXME', 'あとで書く', 'XXX']) {
+      expect(src.includes(marker), `「${marker}」が残っている`).toBe(false);
+    }
+  });
+});
+
+describe('curriculum.ts の地の文（llms.txt でAIに配る）', () => {
+  it('検査対象が章の数だけある（走査そのものが壊れていないこと）', () => {
+    expect(curriculumTexts.length).toBeGreaterThanOrEqual(chapters.length);
+    for (const { name, src } of curriculumTexts) {
+      expect(src.length, `${name} が空`).toBeGreaterThan(0);
+    }
+  });
+
+  it.each(curriculumTexts)('$name に禁じた言い回しが無い', ({ src }) => {
+    const prose = proseOf(src);
+    for (const phrase of [...BANNED_ASSERTIONS, ...BANNED_TIMING, ...BANNED_PRODUCTS]) {
+      expect(prose.includes(phrase), `「${phrase}」が説明文にある`).toBe(false);
+    }
+  });
+
+  it.each(curriculumTexts)('$name にハングル・キリル文字や書きかけの目印が無い', ({ src }) => {
+    expect(src).not.toMatch(/[가-힯ᄀ-ᇿЀ-ӿ]/);
     for (const marker of ['TODO', 'FIXME', 'あとで書く', 'XXX']) {
       expect(src.includes(marker), `「${marker}」が残っている`).toBe(false);
     }

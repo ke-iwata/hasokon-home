@@ -15,7 +15,7 @@ import {
 export const metadata: Metadata = {
   title: `${SITE_NAME}｜hasokon.com`,
   description:
-    'hasokon.com の学習ページ。いまは投資を体系的に学べる全35章の教科書があります。記述の根拠は各章の末尾に、一次資料へのリンクつきで並べています。',
+    'hasokon.com の学習ページ。いまは投資を体系的に学べる全37章の教科書があります。記述の根拠は各章の末尾に、一次資料へのリンクつきで並べています。',
   alternates: { canonical: `${SITE_URL}/` },
 };
 
