@@ -1,7 +1,7 @@
 # Google検索のインデックスが「123件中1件」に落ちている — 調査結果と復旧計画
 
 **状態**：提案（2026-09-16 起票）。**運営者作業 1〜3 は 2026-09-17 に実施済み**（手動対策なし。
-結果は末尾「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
+結果は末尾「経過」）。**2 回目（サイトマップ個別送信・登録リクエスト 10 件）は 2026-09-24**（同じく「経過」）。**4（Bing Webmaster Tools）は運営者のサインインが要るため未実施。5（`public` 停止）は
 運営者の最終判断待ち。** コード側は **A を #211 で・C を 2026-09-17 に（#219）実施済み**、B・D はこれから。
 **対象**：hasokon.com 全体（tools / games / learn / home）。運用作業が中心、コード変更は小さい
 **起票**：2026-09-16
@@ -342,3 +342,21 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     10-01 ごろの再計測で、09-17 の 13 件と合わせて 23 件を見る
   - **4. Bing Webmaster Tools**：Chrome は未サインインのまま（`/webmasters/home` が紹介ページへ転送）。
     引き続き運営者作業
+  - **サイトマップ送信は [sitemap-discovery-audit.md](./sitemap-discovery-audit.md) の C そのもの。**
+    同ファイルの状態行と「経過」も更新した。C の完了は **09-29 の週次監査**で
+    `/learn/sitemap.xml`・`/sitemap-home.xml` に `known: true` と `lastDownloaded` が入り、
+    終了コード 1 が消えるかで見る。A（robots.txt）は 09-19 に単独で本番に出ていて
+    その 5 日間の効果はほぼゼロ（#245 の計測で learn の unknown 39 → 38）なので、
+    **10-01 以降に learn の unknown が動いたら C に帰属できる**
+  - **この送信で、#245 の B の指標はベースラインを失った。** #245 は B（サイトマップ index に
+    `lastmod` を入れる）の効果を「`/sitemap-home.xml` の `lastDownloaded` が 09-08 から動くか」で
+    測る約束だったが、09-24 に手で送信したので、以後 `lastDownloaded` が動いても送信のせいか
+    `lastmod` のせいか区別できない。#245 側で測りかたを差し替える
+  - **降り口（10-01 の再計測で決める）**：09-17 の 13 件と 09-24 の 10 件、計 23 件を URL 検査 API で
+    再計測し、**`unknown` と `Crawled - currently not indexed` がどちらも動かなければ、
+    登録リクエストの 3 回目はやらない。** 以降はサイトマップ・送信系の手当てを止め、次のどれかに移る
+    （**どれに移るかは運営者判断待ち**）：
+    ① 品質判定側（B の 16 ページ `noindex`、「見切り」に書いた各ツールの本文を厚くする別仕様書）／
+    ② 4 の Bing Webmaster Tools（いまの流入の 8 割）／③ 5 の `public` 昇格停止の最終判断。
+    ここまでの実績：登録リクエストは 2 回（計 23 件）、Search Console の表示は 0 → 0、
+    `Submitted and indexed` は 1 → 1、`Crawled - currently not indexed` は 30 → 36
