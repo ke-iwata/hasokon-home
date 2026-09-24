@@ -138,6 +138,8 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
 - `bd59c05dafed335478f48aefb1c0ec57.txt` は IndexNow（Bing ほかへの更新通知）の鍵ファイル。
   **消さない**。中身とファイル名が一致していないと全送信が 403 になる。
   仕様は [docs/features/indexnow.md](./docs/features/indexnow.md)
+- `BingSiteAuth.xml` は Bing Webmaster Tools の所有権確認ファイル（2026-09-25 追加）。
+  **消さない**。消すと Bing Webmaster Tools の確認が外れる
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
 - SNS共有時のサムネイル（`ogp.png`）は home / tools / games / learn に1枚ずつあり、
