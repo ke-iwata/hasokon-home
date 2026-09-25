@@ -87,7 +87,13 @@ export function parseRows(body) {
   });
 }
 
-/** 前の28日ぶんの行か。`dateRange` 次元は期間を2つ渡したときだけ付く */
+/**
+ * 前の28日ぶんの行か。`dateRange` 次元は期間を2つ渡したときだけ付く。
+ *
+ * **`dateRanges()` の `name` を変えたら、ここも直すこと。**
+ * 一致しなかった行は current 側に寄るので、**黙って直近28日に混ざる**
+ * （落ちないので気づけない）。
+ */
 function isPrevious(row) {
   return row.dateRange === 'previous' || row.dateRange === 'date_range_1';
 }

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   chapterBySlug,
@@ -96,6 +98,29 @@ describe('公開の段階（feature flags）', () => {
         for (const found of text.match(/全(\d+)章/g) ?? []) {
           expect(found, `${s.slug} の${label}の章数が実際（${count}章）と違う`).toBe(`全${count}章`);
         }
+      }
+    }
+  });
+
+  it('学ぶトップ・分野の目次の meta description の「全◯章」も実際の章数と合っている', () => {
+    // **ここは検索結果のスニペットに出る文字列**で、`curriculum.ts` の説明より人目に触れる。
+    // 35 のまま据え置かれたときは4か所が揃って腐ったので、curriculum.ts だけ見張ると
+    // 次に章を足したとき半分だけ腐る（#253 のレビュー指摘）
+    const appDir = fileURLToPath(new URL('../app/', import.meta.url));
+    const targets = [
+      // 学ぶトップは分野が増えると「全◯章」の意味が変わる。
+      // そのときここが落ちて考え直せるのは、むしろ望ましい挙動
+      { name: '学ぶトップ', path: `${appDir}page.tsx`, count: chapters.length },
+      ...subjects.map((s) => ({
+        name: `${s.slug} の目次`,
+        path: `${appDir}${s.slug}/page.tsx`,
+        count: chapters.filter((c) => c.subject === s.slug).length,
+      })),
+    ];
+    for (const t of targets) {
+      const src = readFileSync(t.path, 'utf8');
+      for (const found of src.match(/全(\d+)章/g) ?? []) {
+        expect(found, `${t.name} の章数が実際（${t.count}章）と違う`).toBe(`全${t.count}章`);
       }
     }
   });

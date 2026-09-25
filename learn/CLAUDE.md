@@ -192,11 +192,16 @@ tools / games と同じ設定（`lib/adsense.ts` / `lib/analytics.ts`）。
 
 ルートの CLAUDE.md を参照。**本番タグは運営者の承認必須**（mainへのpushまでが自律範囲）。
 
-**章を増やしたときは、`home/` 側も手で直すこと**（ビルド工程が無く `stage` が効かない）:
+**章を増やしたときは、「全◯章」と書いてある次の6か所を直すこと。**
+どれもテストが落とすので、目視で守らなくてよい:
 
-- `home/index.html` と `home/404.html` の「全◯章」を直す
-  （`scripts/test/home-nav.test.mjs` が落とす）
-- `lib/curriculum.ts` の分野の説明・導入文にある「全◯章」も直す
-  （`tests/curriculum.test.ts` が落とす。`/learn/llms.txt` でAIにも配られる）
-- **`home/llms.txt` には足さない。** 章の行は `/learn/llms.txt` が生成する
-  （[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）
+- `home/index.html` と `home/404.html`（`scripts/test/home-nav.test.mjs`）。
+  `home/` にはビルド工程が無く `stage` が効かないので、ここは手で直す
+- `lib/curriculum.ts` の分野の説明・導入文（`tests/curriculum.test.ts`）。
+  `/learn/llms.txt` でAIにも配られる
+- `app/page.tsx` と `app/{subject}/page.tsx` の `metadata.description`
+  （`tests/curriculum.test.ts`）。**検索結果のスニペットに出る**。
+  35のまま据え置かれたときは、`home/` 以外のこの4か所が揃って腐った
+
+**`home/llms.txt` には足さない。** 章の行は `/learn/llms.txt` が生成する
+（[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）
