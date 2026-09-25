@@ -11,7 +11,7 @@
  * 合計・人数は EXAMPLE で共通にしている（比べられるようにするため）。
  */
 
-import { calcWarikan, type KanjiMode } from '@/lib/warikan';
+import { calcWarikan, ROUND_UNITS, type KanjiMode } from '@/lib/warikan';
 
 /** 2つの表で共通に使う会計の例 */
 export const EXAMPLE = {
@@ -32,8 +32,8 @@ export const MODE_LABELS: { mode: KanjiMode; label: string; how: string }[] = [
   { mode: 'equal', label: '均等（1円単位）', how: '余りだけ幹事が負担' },
 ];
 
-/** 丸め単位の候補（Calculator の UNITS と同じ並び） */
-export const UNITS = [1, 10, 100, 500, 1000] as const;
+/** 丸め単位の候補。計算機の選択肢と同じものを lib から引く（二重に持たない） */
+export const UNITS = ROUND_UNITS;
 
 export interface ExampleRow {
   /** 参加者（幹事以外）1人の支払額（円） */

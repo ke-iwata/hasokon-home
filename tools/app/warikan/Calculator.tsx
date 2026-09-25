@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { calcWarikan, type KanjiMode } from '@/lib/warikan';
+import { calcWarikan, ROUND_UNITS, type KanjiMode } from '@/lib/warikan';
 
 const fmtYen = (yen: number) => `${yen.toLocaleString('ja-JP')}円`;
-
-const UNITS = [1, 10, 100, 500, 1000];
 
 const MODES: { value: KanjiMode; label: string }[] = [
   { value: 'kanji-more', label: '幹事が端数を負担（参加者は切り捨て）' },
@@ -58,7 +56,7 @@ export default function Calculator() {
             onChange={(e) => setRoundUnit(Number(e.target.value))}
             disabled={mode === 'equal'}
           >
-            {UNITS.map((u) => (
+            {ROUND_UNITS.map((u) => (
               <option key={u} value={u}>
                 {u}円単位
               </option>

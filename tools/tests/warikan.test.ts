@@ -10,7 +10,7 @@ import {
   UNITS,
   UNIT_ROWS,
 } from '@/app/warikan/tables';
-import { calcWarikan, type WarikanInput } from '@/lib/warikan';
+import { calcWarikan, ROUND_UNITS, type WarikanInput } from '@/lib/warikan';
 
 const base: WarikanInput = {
   total: 25000,
@@ -151,6 +151,8 @@ describe('本文の例（幹事の扱い・丸め単位）', () => {
 
   it('丸め単位の表は Calculator と同じ5種で、額は calcWarikan() と一致する', () => {
     expect([...UNITS]).toEqual([1, 10, 100, 500, 1000]);
+    // 本文の表も計算機も lib の ROUND_UNITS を見ている（同じ並びを二重に持たない）
+    expect(UNITS).toBe(ROUND_UNITS);
     expect(UNIT_ROWS.map((r) => r.unit)).toEqual([...UNITS]);
     for (const row of UNIT_ROWS) {
       const expected = calcWarikan({
@@ -232,6 +234,30 @@ describe('本文の例（幹事の扱い・丸め単位）', () => {
     ]) {
       const formatted = Math.abs(n).toLocaleString('ja-JP');
       if (formatted.includes(',')) expect(source).not.toContain(formatted);
+    }
+  });
+});
+
+describe('丸め単位の情報源（運営者依頼: lib/warikan.ts の ROUND_UNITS に集約）', () => {
+  it('Calculator.tsx は自前の単位リストを持たず ROUND_UNITS を使う', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../app/warikan/Calculator.tsx', import.meta.url)),
+      'utf8',
+    );
+    // 片方だけに単位を足すと、表にある単位が計算機で選べない（逆も同じ）
+    expect(src, 'Calculator.tsx が自前の単位リストを持っている').not.toMatch(
+      /const\s+UNITS\s*=\s*\[/,
+    );
+    expect(src).toContain('ROUND_UNITS');
+  });
+
+  it('本文にサービス名を書かない（仕様の「やらないこと」）', () => {
+    const src = readFileSync(
+      fileURLToPath(new URL('../app/warikan/page.tsx', import.meta.url)),
+      'utf8',
+    );
+    for (const name of ['PayPay', 'LINE Pay', '楽天ペイ', 'd払い']) {
+      expect(src, `page.tsx に個別のサービス名「${name}」がある`).not.toContain(name);
     }
   });
 });
