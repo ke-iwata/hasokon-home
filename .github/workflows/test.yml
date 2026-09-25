@@ -18,6 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # test/sitemap-home-lastmod.test.mjs が `git log` で home/ のHTMLの
+          # 最終変更日を見るため、履歴を全部持ってくる。既定の fetch-depth: 1 では
+          # 1コミットが全ファイルを作成した扱いになり、全URLが「今日変更された」
+          # ことになって常に落ちる（仕様: docs/features/sitemap-lastmod-guardrail.md の A-1）
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
