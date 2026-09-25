@@ -377,6 +377,38 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   ただし**この送信は流入を増やすためではなく発見経路を通すためのもの**なので、
   セッションが増えなくても失敗ではない。IndexNow の受信状況は Bing Webmaster Tools の
   画面では確認できなかった（紹介ページのみ）
+- 2026-09-25：**Search Console の画面を一通り確認**（運営者の承認のもと AI エージェントが Chrome で操作）。
+  **登録リクエストは今回は出していない**（理由は 1 つ目）。
+  - **09-17 に登録リクエストした URL は、同日（09-17）に Google がクロールしたうえで
+    「クロール済み - インデックス未登録」になっている。** 「ページのインデックス登録」→
+    「クロール済み - インデックス未登録」（30 件）の例に、`/tools/saitei-chingin/`・`tabako-zei-neage`・
+    `yoikuhi-keisan`・`shuzei-kaisei`・`hankaku-zenkaku`・`hatarakizon`・`/tools/`・`/games/`・
+    `/games/2048/`・`/learn/toshi/` が並び、前回のクロールはすべて 2026/09/17。
+    **リクエストは効いていて Google は取りに来るが、取ったうえで載せない。** 原因 1（サイト単位の
+    品質判定）をさらに強く裏づける。登録リクエストを増やしても「クロール済み - 未登録」が増えるだけなので、
+    **3 回目は 10-01 の再計測を待たずに見送る**（上の「降り口」を前倒しで適用）
+  - この 30 件の「修正を検証」は 08-27 に開始、**09-05 に「失敗しました」**。
+    「検出 - インデックス未登録」（47 件、前回のクロールはすべて「該当なし」）の検証は 09-05 開始で「開始」のまま。
+    **内容を変えないまま検証をやり直しても同じ結果になる**ので、再検証は B など中身を変えたあとに回す
+  - サイトマップ：`/sitemap-home.xml` が 09-24 に読み直されて**検出 3**（`/about.html` 入り）、
+    `/learn/sitemap.xml` は 09-24 に読まれて**検出 39**。C は効いている
+  - **クロールの統計情報（90 日）**：リクエスト 964 件、200 が 96%、平均応答 272 ms、
+    ホストの問題なし。目的別は「更新」95%・「検出」5%。**技術的なクロールの障害は無い**
+  - **新しい発見：404 の中身（21 件）に、`/tools/`・`/games/` の抜けた URL がある。**
+    `https://hasokon.com/yoikuhi-keisan/`・`/hatarakizon/`・`/shobyo-teate/`・`/kosodate-shienkin/`・
+    `/bosai-bichiku-keisan/`・`/hebon-romaji/`・`/interval-timer/`・`/speed/` など、
+    **08-11〜08-17 に集中**（ほかに `/games/favicon.ico`・`/tools/favicon.ico`）。
+    旧サブドメインの 301 は正しく `/tools/…`・`/games/…` を指している（curl で確認）ので、
+    これは **アドレス変更ツール（08-12）が「`tool.hasokon.com/X` → `hasokon.com/X`」と
+    同じパスを推測した結果**と見るのが自然
+  - **アドレス変更は 3 本とも「このサイトは現在移行中です」**（`tool.`・`game.`・`roulette.` → `hasokon.com`）。
+    公式ヘルプ（[アドレス変更ツール](https://support.google.com/webmasters/answer/9370220)）は
+    **「複数のサイトを 1 か所にまとめる移転は避ける。A・B・C をすべて D に移すと、混乱して
+    トラフィックを失うことがある」**としており、hasokon.com はまさにこの形。
+    申請は **180 日以内なら取り消せる**（08-12 申請なので 2027-02 上旬まで）。
+    **取り消すかは運営者判断待ち**（301 はそのまま残すので、取り消しても転送は失われない。
+    ただし旧 URL の評価の引き継ぎはすでに消えているので、取り消しで戻るものも期待しにくい）。
+    原因 3 はこれで「単独では説明しきれない」から「**設定が公式の推奨から外れている**」に格上げ
 - 2026-09-26：**B を実装。** 用途別ルーレット（`/tools/r/*` 10 本）と使い方の記事（`/tools/guide/*` 6 本）を
   `robots: { index: false, follow: true }` にし、`tools/app/sitemap.ts` から外した
   （`tools/lib/roulette/indexing.ts` の `THIN_PAGE_ROBOTS`、見張りは `tools/tests/thin-pages-noindex.test.ts`）。
