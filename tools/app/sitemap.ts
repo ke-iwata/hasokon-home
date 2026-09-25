@@ -1,7 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { publicTools, SITE_UPDATED_AT, SITE_URL, tools } from '@/lib/registry';
-import GUIDES from '@/lib/roulette/guides.json';
-import PRESETS from '@/lib/roulette/presets.json';
+import { publicTools, SITE_UPDATED_AT, SITE_URL } from '@/lib/registry';
 
 // output: 'export' では静的生成であることの明示が必要
 export const dynamic = 'force-static';
@@ -41,25 +39,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  // 用途別ルーレット（/r/<slug>/）と使い方の記事（/guide/<slug>/）。
-  // registry には載せない（トップの一覧はツール単位にしたいため）が、
-  // 検索からの入口になるので sitemap には含める
-  const rouletteUpdatedAt =
-    tools.find((t) => t.slug === 'roulette')?.updatedAt ?? SITE_UPDATED_AT;
+  // 用途別ルーレット（/r/<slug>/）と使い方の記事（/guide/<slug>/）は載せない。
+  // 同じアプリに短い本文を足した近い作りのページが16本あり、サイト全体の品質判定を
+  // 下げうるので、Google の登録が戻るまで noindex にしてある（lib/roulette/indexing.ts、
+  // docs/features/google-index-recovery.md 提案 B）。戻すときはここと robots を一緒に戻す
 
-  const presetPages: MetadataRoute.Sitemap = (PRESETS as { slug: string }[]).map((p) => ({
-    url: `${SITE_URL}/r/${p.slug}/`,
-    lastModified: rouletteUpdatedAt,
-    changeFrequency: 'monthly' as const,
-    priority: 0.6,
-  }));
-
-  const guidePages: MetadataRoute.Sitemap = (GUIDES as { slug: string }[]).map((g) => ({
-    url: `${SITE_URL}/guide/${g.slug}/`,
-    lastModified: rouletteUpdatedAt,
-    changeFrequency: 'yearly' as const,
-    priority: 0.5,
-  }));
-
-  return [...staticPages, ...toolPages, ...presetPages, ...guidePages];
+  return [...staticPages, ...toolPages];
 }

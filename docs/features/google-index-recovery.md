@@ -377,3 +377,9 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
   ただし**この送信は流入を増やすためではなく発見経路を通すためのもの**なので、
   セッションが増えなくても失敗ではない。IndexNow の受信状況は Bing Webmaster Tools の
   画面では確認できなかった（紹介ページのみ）
+- 2026-09-26：**B を実装。** 用途別ルーレット（`/tools/r/*` 10 本）と使い方の記事（`/tools/guide/*` 6 本）を
+  `robots: { index: false, follow: true }` にし、`tools/app/sitemap.ts` から外した
+  （`tools/lib/roulette/indexing.ts` の `THIN_PAGE_ROBOTS`、見張りは `tools/tests/thin-pages-noindex.test.ts`）。
+  ページとルーレット本体からのリンクは残す。canonical は自己参照のまま。
+  **本番に出るのは次の `v*` リリース**。本文を厚くする別仕様（「見切り」の切り替え先）と合わせて出したあと、
+  Search Console で「クロール済み - インデックス未登録」の「修正を検証」をやり直す
