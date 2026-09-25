@@ -138,8 +138,9 @@ export default function Page() {
         の等級に上がるため、暗算の{yen(GRADE_GAP.naiveDaily)}に対して実際の日額は
         {yen(GRADE_GAP.actualDaily)}です。上の式にあてはめると、標準報酬月額{yen(300_000)}なら
         標準報酬日額は{yen(kenpoDailyAmount(300_000).standardDaily)}、日額は
-        {yen(kenpoDailyAmount(300_000).dailyAmount)}になります（÷30 と ×2/3
-        の四捨五入による差は数円ほどです）。
+        {yen(kenpoDailyAmount(300_000).dailyAmount)}です。
+        <strong>ずれるのは等級に当てはめる段階</strong>で、÷30 と ×2/3
+        の四捨五入そのものによる差は、出ても数円にとどまります。
       </p>
       <p>
         <strong>加入して12ヶ月たっていない場合は、日額に上限がつきます。</strong>
