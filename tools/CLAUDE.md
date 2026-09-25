@@ -43,6 +43,8 @@ app/
   {slug}/
     page.tsx          サーバーコンポーネント（metadata / JSON-LD / 解説 / FAQ）
     Calculator.tsx    'use client' のUI。ロジックは持たせない
+    tables.ts         （あるページだけ）本文の早見表・例の行データ。lib の関数を呼んで作る。
+                      本文に額を手で書かないため。docs/features/thin-tool-content.md
   _roulette/          ルーレット系ツールのUI（'use client'）
   r/[slug]/           用途別ルーレット。lib/roulette/presets.json から生成（noindex・sitemap 外）
   guide/[slug]/       使い方の記事。lib/roulette/guides.json から生成（noindex・sitemap 外）

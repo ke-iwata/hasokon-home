@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { codePoints, OPTION_SCOPES, PITFALLS } from '@/app/hankaku-zenkaku/tables';
 import {
   convertWidth,
   countChars,
@@ -176,5 +179,77 @@ describe('countChars', () => {
 
   it('空文字は0件', () => {
     expect(countChars('')).toEqual({ total: 0, full: 0, half: 0 });
+  });
+});
+
+/**
+ * 「全角と半角は何が違うのか」「変換で起きやすい失敗」
+ * （docs/features/thin-tool-content.md）のテスト。
+ *
+ * 「この文字は変換される／されない」は本文の主張ではなく convertWidth() の挙動なので、
+ * 表の行が実際の挙動と一致することを見る。説明だけが嘘になったら落ちる。
+ */
+describe('変換の範囲と起きやすい失敗（本文）', () => {
+  it('変換の対象の4種類は DEFAULT_OPTIONS と1対1で対応する', () => {
+    expect(OPTION_SCOPES.map((s) => s.key).sort()).toEqual(
+      (Object.keys(DEFAULT_OPTIONS) as (keyof WidthOptions)[]).sort(),
+    );
+    for (const scope of OPTION_SCOPES) {
+      expect(scope.defaultOn).toBe(DEFAULT_OPTIONS[scope.key]);
+    }
+  });
+
+  it('各行の「扱い」は convertWidth() を通した結果と一致する', () => {
+    expect(PITFALLS.length).toBeGreaterThan(0);
+    for (const row of PITFALLS) {
+      const actual = convertWidth(row.sample, row.direction);
+      expect(row.converted).toBe(actual);
+      expect(row.changed).toBe(actual !== row.sample);
+      expect(row.lengthChanged).toBe([...actual].length !== [...row.sample].length);
+    }
+  });
+
+  it('コード位置の表記は実際のコードポイントと一致する', () => {
+    for (const row of PITFALLS) {
+      expect(row.sampleCode).toBe(codePoints(row.sample));
+      expect(row.convertedCode).toBe(codePoints(row.converted));
+    }
+    expect(codePoints('Ａ')).toBe('U+FF21');
+    expect(codePoints('ｶﾞ')).toBe('U+FF76 U+FF9E');
+  });
+
+  it('「変換されない文字」と「変換される文字」が両方入っている（片方だけだと表の意味がない）', () => {
+    expect(PITFALLS.some((r) => r.changed)).toBe(true);
+    expect(PITFALLS.some((r) => !r.changed)).toBe(true);
+  });
+
+  it('文字数が変わる例が入っている（濁点の分解・合成）', () => {
+    const changed = PITFALLS.filter((r) => r.lengthChanged);
+    expect(changed.length).toBeGreaterThanOrEqual(2);
+    // 分解（1→2文字）と合成（2→1文字）の両方
+    expect(changed.some((r) => [...r.converted].length > [...r.sample].length)).toBe(true);
+    expect(changed.some((r) => [...r.converted].length < [...r.sample].length)).toBe(true);
+  });
+
+  it('見た目が似ていて扱いが分かれる組が入っている（全角形かどうかで変わる）', () => {
+    const find = (sample: string) => PITFALLS.find((r) => r.sample === sample);
+    // 全角チルダは変換され、波ダッシュは残る
+    expect(find('～')?.changed).toBe(true);
+    expect(find('〜')?.changed).toBe(false);
+    // 全角ハイフンマイナスは変換され、マイナス記号は残る
+    expect(find('－')?.changed).toBe(true);
+    expect(find('−')?.changed).toBe(false);
+    // 全角形ブロックでも U+FFE0〜U+FFE6 は対象外
+    expect(find('￥')?.changed).toBe(false);
+  });
+
+  it('page.tsx は挙動を手で書かず tables.ts から描いている', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../app/hankaku-zenkaku/page.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(source).toContain("from './tables'");
+    expect(source).toContain('PITFALLS.map(');
+    expect(source).toContain('OPTION_SCOPES.map(');
   });
 });

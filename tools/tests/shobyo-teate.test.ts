@@ -1,5 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { MAX_PAYABLE_DAYS, TAIKI_DAYS, calcShobyoTeate, SHORT_TENURE_CAP } from '@/lib/shobyo-teate';
+import { kenpoDailyAmount } from '@/lib/kenpo-daily-amount';
+import { standardMonthly } from '@/lib/shaho-grades';
+import {
+  CAPPED_DAILY_AMOUNT,
+  DAILY_ROWS,
+  GRADE_GAP,
+  TABLE_STANDARD_MONTHLY,
+} from '@/app/shobyo-teate/tables';
 
 describe('calcShobyoTeate（日額の計算）', () => {
   it('標準報酬月額30万円 → 標準報酬日額10,000円 → 日額6,667円', () => {
@@ -156,5 +166,84 @@ describe('calcShobyoTeate（被保険者期間が12ヶ月未満）', () => {
     const r = calcShobyoTeate({ monthlyIncome: 320_000, restDays: 33, under12Months: true });
     expect(r.standardMonthly).toBe(SHORT_TENURE_CAP);
     expect(r.capped).toBe(false);
+  });
+});
+
+/**
+ * 「月収別の支給額の早見表」（docs/features/thin-tool-content.md）のテスト。
+ *
+ * 本文の額を手で書き戻したら落ちるように、行データが kenpoDailyAmount() の
+ * 結果と一致することと、page.tsx が額を持たずに tables.ts から描画していることを見る。
+ */
+describe('月収別の支給額の早見表（本文）', () => {
+  it('行は等級表にある標準報酬月額で、丸めが起きない', () => {
+    for (const std of TABLE_STANDARD_MONTHLY) {
+      expect(standardMonthly(std)).toBe(std);
+    }
+  });
+
+  it('スマホで長大にならない行数（8行前後）に絞ってある', () => {
+    expect(DAILY_ROWS.length).toBeGreaterThanOrEqual(6);
+    expect(DAILY_ROWS.length).toBeLessThanOrEqual(10);
+  });
+
+  it('各行の日額・30日分が kenpoDailyAmount() の結果と一致する', () => {
+    expect(DAILY_ROWS).toHaveLength(TABLE_STANDARD_MONTHLY.length);
+    DAILY_ROWS.forEach((row, i) => {
+      const expected = kenpoDailyAmount(TABLE_STANDARD_MONTHLY[i]);
+      expect(row.standardMonthly).toBe(TABLE_STANDARD_MONTHLY[i]);
+      expect(row.dailyAmount).toBe(expected.dailyAmount);
+      expect(row.monthly30).toBe(expected.dailyAmount * 30);
+    });
+  });
+
+  it('12ヶ月未満の上限の日額も SHORT_TENURE_CAP から出している', () => {
+    expect(CAPPED_DAILY_AMOUNT).toBe(kenpoDailyAmount(SHORT_TENURE_CAP, true).dailyAmount);
+  });
+
+  it('page.tsx は早見表の額を手で書いていない', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../app/shobyo-teate/page.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(source).toContain("from './tables'");
+    // 行は map で描く（行を手で並べ直したら落ちる）
+    expect(source).toContain('DAILY_ROWS.map(');
+    // 3桁区切りになる額（誤検知しにくい形）が本文に書かれていないこと
+    for (const n of [
+      ...DAILY_ROWS.map((r) => r.dailyAmount),
+      ...DAILY_ROWS.map((r) => r.monthly30),
+      CAPPED_DAILY_AMOUNT,
+    ]) {
+      const formatted = n.toLocaleString('ja-JP');
+      if (formatted.includes(',')) expect(source).not.toContain(formatted);
+    }
+  });
+});
+
+describe('本文の「暗算した額とは数百円ずれる」の根拠（GRADE_GAP）', () => {
+  /**
+   * もとの本文は「丸めが2回入るため数百円ずれる」と書いたうえで、
+   * ずれが0円になる例（標準報酬月額300,000円）を並べていた。
+   * ずれの主因は等級への丸めなので、例のほうが主張を否定していた。
+   * 同じ取り違えに戻らないよう、両方を数字で縛る。
+   */
+  it('例の月収は等級に上がる（等級への丸めが効いている）', () => {
+    expect(GRADE_GAP.standardMonthly).not.toBe(GRADE_GAP.income);
+    expect(GRADE_GAP.standardMonthly).toBe(kenpoDailyAmount(GRADE_GAP.income).standardMonthly);
+  });
+
+  it('暗算との差が実際に「数百円」ある', () => {
+    const gap = Math.abs(GRADE_GAP.actualDaily - GRADE_GAP.naiveDaily);
+    expect(gap).toBeGreaterThanOrEqual(100);
+    expect(gap).toBeLessThan(1_000);
+  });
+
+  it('等級に一致する月収なら、丸め2回の差は数円にとどまる（本文の但し書きどおり）', () => {
+    for (const std of [260_000, 300_000, 410_000, 650_000]) {
+      const naive = Math.round((std * 2) / 3 / 30);
+      const actual = kenpoDailyAmount(std).dailyAmount;
+      expect(Math.abs(actual - naive), `標準報酬月額${std}`).toBeLessThan(10);
+    }
   });
 });

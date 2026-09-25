@@ -114,7 +114,7 @@ export const tools: ToolDef[] = [
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-09-26',
   },
   {
     slug: 'furusato-nozei',
@@ -300,7 +300,7 @@ export const tools: ToolDef[] = [
     description: '病気やケガで休職したときにもらえる傷病手当金の日額・総額を計算。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-13',
+    updatedAt: '2026-09-26',
   },
   {
     slug: 'shussan-yoteibi',
@@ -433,7 +433,7 @@ export const tools: ToolDef[] = [
     description: '飲み会の合計金額と人数から一人あたりの支払額を計算。傾斜配分にも対応。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-09-26',
   },
   {
     slug: 'waribiki-percent',
@@ -512,7 +512,7 @@ export const tools: ToolDef[] = [
       '半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選べます。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-02',
+    updatedAt: '2026-09-26',
   },
   {
     slug: 'gazo-resize',

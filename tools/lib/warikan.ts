@@ -68,3 +68,13 @@ export function calcWarikan(input: WarikanInput): WarikanResult {
     collected: perPerson * (people - 1) + kanji,
   };
 }
+
+/**
+ * 端数の丸め単位の候補（円）。
+ *
+ * 計算機の選択肢（app/warikan/Calculator.tsx）と、本文の「丸め単位の選び方」の表
+ * （app/warikan/tables.ts）が**同じ並びを二重に持たない**ようにここへ集約している。
+ * 片方だけに単位を足すと、表にある単位が計算機で選べない（逆も同じ）という
+ * 食い違いが起きるため（docs/features/thin-tool-content.md 共通の約束 1 の趣旨）。
+ */
+export const ROUND_UNITS = [1, 10, 100, 500, 1000] as const;
