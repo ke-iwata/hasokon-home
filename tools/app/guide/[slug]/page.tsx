@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AdUnit from '@/app/AdUnit';
 import { SITE_URL } from '@/lib/registry';
+import { THIN_PAGE_ROBOTS } from '@/lib/roulette/indexing';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
 import ToolMeta from '@/app/ToolMeta';
@@ -44,6 +45,10 @@ export async function generateMetadata({
     title: g.title,
     description: g.description,
     alternates: { canonical: `${SITE_URL}/guide/${g.slug}/` },
+    // サイト全体の Google 登録が戻るまで検索対象から外す（ページとリンクは残す）。
+    // registry に無いので robotsFor() は通らない。tests/thin-pages-noindex.test.ts が見張る
+    // （docs/features/google-index-recovery.md 提案 B）
+    robots: THIN_PAGE_ROBOTS,
   };
 }
 

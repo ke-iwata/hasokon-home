@@ -409,3 +409,9 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     **取り消すかは運営者判断待ち**（301 はそのまま残すので、取り消しても転送は失われない。
     ただし旧 URL の評価の引き継ぎはすでに消えているので、取り消しで戻るものも期待しにくい）。
     原因 3 はこれで「単独では説明しきれない」から「**設定が公式の推奨から外れている**」に格上げ
+- 2026-09-26：**B を実装。** 用途別ルーレット（`/tools/r/*` 10 本）と使い方の記事（`/tools/guide/*` 6 本）を
+  `robots: { index: false, follow: true }` にし、`tools/app/sitemap.ts` から外した
+  （`tools/lib/roulette/indexing.ts` の `THIN_PAGE_ROBOTS`、見張りは `tools/tests/thin-pages-noindex.test.ts`）。
+  ページとルーレット本体からのリンクは残す。canonical は自己参照のまま。
+  **本番に出るのは次の `v*` リリース**。本文を厚くする別仕様（「見切り」の切り替え先）と合わせて出したあと、
+  Search Console で「クロール済み - インデックス未登録」の「修正を検証」をやり直す
