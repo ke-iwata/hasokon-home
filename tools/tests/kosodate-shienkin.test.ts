@@ -1,4 +1,16 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
+import {
+  CONFIRMED_ROWS,
+  CONFIRMED_YEAR,
+  HAS_UNCONFIRMED_TREND,
+  TABLE_MONTHLY_INCOMES,
+  TOP_STANDARD_MONTHLY,
+  TREND_MONTHLY_INCOME,
+  TREND_ROWS,
+} from '@/app/kosodate-shienkin/tables';
 import {
   BONUS_CAP_YEARLY,
   GRADES,
@@ -90,5 +102,92 @@ describe('calcShienkin（本人負担額）', () => {
     expect(rs).toHaveLength(3);
     expect(rs[0].monthly).toBeLessThan(rs[1].monthly);
     expect(rs[1].monthly).toBeLessThan(rs[2].monthly);
+  });
+});
+
+/**
+ * 「年収別の負担額の早見表」「年度ごとの負担額の推移」
+ * （docs/features/thin-tool-content.md）のテスト。
+ *
+ * 料率が未確定の年度を含むので、表の額が calcShienkin() の結果と一致すること、
+ * 確定・未確定の区別が表に出ること、page.tsx が額を持たないことを見る。
+ */
+describe('負担額の早見表（本文）', () => {
+  it('表Aは確定した年度を使う', () => {
+    expect(CONFIRMED_YEAR.status).toBe('確定');
+    // 確定年度が複数あるときは、最も新しいものを使う
+    const confirmed = FISCAL_YEARS.filter((y) => y.status === '確定');
+    expect(CONFIRMED_YEAR.fiscalYear).toBe(confirmed[confirmed.length - 1].fiscalYear);
+  });
+
+  it('表Aは4列に収まる行数（8行前後）', () => {
+    expect(CONFIRMED_ROWS.length).toBeGreaterThanOrEqual(6);
+    expect(CONFIRMED_ROWS.length).toBeLessThanOrEqual(10);
+  });
+
+  it('表Aの各行が calcShienkin() の結果と一致する', () => {
+    expect(CONFIRMED_ROWS).toHaveLength(TABLE_MONTHLY_INCOMES.length);
+    CONFIRMED_ROWS.forEach((row, i) => {
+      const income = TABLE_MONTHLY_INCOMES[i];
+      const expected = calcShienkin(income).find(
+        (r) => r.fiscalYear === CONFIRMED_YEAR.fiscalYear,
+      );
+      expect(expected).toBeDefined();
+      expect(row.yearlyIncome).toBe(income * 12);
+      expect(row.standardMonthly).toBe(standardMonthly(income));
+      expect(row.monthly).toBe(expected!.monthly);
+      // 賞与なしなので年額は月額×12
+      expect(row.yearly).toBe(expected!.monthly * 12);
+    });
+  });
+
+  it('最高等級は GRADES から出す（表の最後の行を上限と書かないため）', () => {
+    expect(TOP_STANDARD_MONTHLY).toBe(GRADES[GRADES.length - 1][1]);
+    // 表は代表的な等級に絞っているので、最後の行は最高等級ではない
+    const last = CONFIRMED_ROWS[CONFIRMED_ROWS.length - 1];
+    expect(last.standardMonthly).toBeLessThan(TOP_STANDARD_MONTHLY);
+  });
+
+  it('表Bは年度の数だけ行があり、額は calcShienkin() と一致する', () => {
+    expect(TREND_ROWS).toHaveLength(FISCAL_YEARS.length);
+    const expected = calcShienkin(TREND_MONTHLY_INCOME);
+    TREND_ROWS.forEach((row, i) => {
+      expect(row.fiscalYear).toBe(expected[i].fiscalYear);
+      expect(row.ratePercent).toBe(expected[i].ratePercent);
+      expect(row.status).toBe(expected[i].status);
+      expect(row.monthly).toBe(expected[i].monthly);
+    });
+  });
+
+  it('未確定の年度があれば、表Bのセルに「見込み」「政府試算」が出て注記も出る', () => {
+    const unconfirmed = TREND_ROWS.filter((r) => r.status !== '確定');
+    expect(HAS_UNCONFIRMED_TREND).toBe(unconfirmed.length > 0);
+    for (const row of unconfirmed) {
+      expect(['見込み', '政府試算']).toContain(row.status);
+    }
+  });
+
+  it('page.tsx は早見表の額を手で書いていない', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../app/kosodate-shienkin/page.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(source).toContain("from './tables'");
+    // 行は map で描く（行を手で並べ直したら落ちる）
+    expect(source).toContain('CONFIRMED_ROWS.map(');
+    expect(source).toContain('TREND_ROWS.map(');
+    // 3桁区切りになる額（誤検知しにくい形）が本文に書かれていないこと
+    for (const n of [
+      ...CONFIRMED_ROWS.map((r) => r.monthly),
+      ...CONFIRMED_ROWS.map((r) => r.yearly),
+      ...TREND_ROWS.map((r) => r.monthly),
+    ]) {
+      const formatted = n.toLocaleString('ja-JP');
+      if (formatted.includes(',')) expect(source).not.toContain(formatted);
+    }
+    // 料率も FISCAL_YEARS から描画する（0.23% などを書かない）
+    for (const row of TREND_ROWS) {
+      expect(source).not.toContain(`${row.ratePercent.toFixed(2)}%`);
+    }
   });
 });
