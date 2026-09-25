@@ -158,3 +158,34 @@ describe('calcShobyoTeate（被保険者期間が12ヶ月未満）', () => {
     expect(r.capped).toBe(false);
   });
 });
+
+describe('本文の月収別早見表（docs/features/thin-tool-content.md）', () => {
+  it('8行で、どの行も等級表にある標準報酬月額', async () => {
+    const { GRADES } = await import('@/lib/shaho-grades');
+    const { shobyoHayamihyo } = await import('@/lib/shobyo-teate');
+    const rows = shobyoHayamihyo();
+    expect(rows).toHaveLength(8);
+    const grades = new Set(GRADES.map((g) => g[1]));
+    for (const r of rows) expect(grades.has(r.standardMonthly)).toBe(true);
+  });
+
+  it('日額と30日分は計算機と同じ kenpoDailyAmount() の結果', async () => {
+    const { kenpoDailyAmount } = await import('@/lib/kenpo-daily-amount');
+    const { shobyoHayamihyo } = await import('@/lib/shobyo-teate');
+    for (const r of shobyoHayamihyo()) {
+      const d = kenpoDailyAmount(r.standardMonthly).dailyAmount;
+      expect(r.dailyAmount).toBe(d);
+      expect(r.thirtyDays).toBe(d * 30);
+    }
+    // 標準報酬月額30万円の行は日額6,667円（300,000÷30=10,000 → ×2/3）
+    expect(shobyoHayamihyo().find((r) => r.standardMonthly === 300_000)?.dailyAmount).toBe(6_667);
+  });
+
+  it('本文に上限額・日額の数字を手で書いていない（改定で本文だけ古くならないように）', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/shobyo-teate/page.tsx', import.meta.url), 'utf8');
+    for (const hard of ['7,113', '7113', '6,667', '32万円', '320,000']) {
+      expect(src, `page.tsx に「${hard}」が直書きされている`).not.toContain(hard);
+    }
+  });
+});

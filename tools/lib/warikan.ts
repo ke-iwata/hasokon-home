@@ -68,3 +68,28 @@ export function calcWarikan(input: WarikanInput): WarikanResult {
     collected: perPerson * (people - 1) + kanji,
   };
 }
+
+/**
+ * 本文の比較表に使う例（docs/features/thin-tool-content.md）。
+ * 割り切れない合計にして、モードと丸め単位の差が表に出るようにしてある。
+ */
+export const WARIKAN_EXAMPLE = { total: 23_456, people: 6, roundUnit: 100 } as const;
+
+/** 本文の「丸め単位の選び方」に並べる単位（計算機の選択肢と同じ） */
+export const ROUND_UNITS = [1, 10, 100, 500, 1000] as const;
+
+/** 本文の「幹事の扱いは3通り」の表。同じ例を3つのモードで計算する */
+export function modeComparison(): { mode: KanjiMode; result: WarikanResult }[] {
+  return (['kanji-more', 'kanji-less', 'equal'] as const).map((mode) => ({
+    mode,
+    result: calcWarikan({ ...WARIKAN_EXAMPLE, mode }),
+  }));
+}
+
+/** 本文の「丸め単位の選び方」の表。幹事が端数を負担するモードで、単位だけを変える */
+export function unitComparison(): { roundUnit: number; result: WarikanResult }[] {
+  return ROUND_UNITS.map((roundUnit) => ({
+    roundUnit,
+    result: calcWarikan({ ...WARIKAN_EXAMPLE, roundUnit, mode: 'kanji-more' }),
+  }));
+}

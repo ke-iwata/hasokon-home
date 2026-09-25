@@ -103,3 +103,32 @@ export function calcShobyoTeate(input: ShobyoTeateInput): ShobyoTeateResult {
     monthlyEstimate: dailyAmount * 30,
   };
 }
+
+/**
+ * 本文の「月収別の早見表」に出す標準報酬月額（`lib/shaho-grades.ts` の GRADES にある値だけ）。
+ * 50等級すべてはスマホで長大になるので、月収15万〜65万円の代表的な8等級に絞る
+ * （docs/features/thin-tool-content.md 共通の約束 8）。
+ */
+export const HAYAMIHYO_STANDARD_MONTHLY = [
+  150_000, 200_000, 260_000, 300_000, 360_000, 410_000, 500_000, 650_000,
+] as const;
+
+export interface ShobyoHayamihyoRow {
+  /** 標準報酬月額（円） */
+  standardMonthly: number;
+  /** 1日あたりの支給額（円） */
+  dailyAmount: number;
+  /** 30日分の目安（円） */
+  thirtyDays: number;
+}
+
+/**
+ * 月収別の早見表。本文に手で数字を書かないために、計算機と同じ `kenpoDailyAmount()` から作る
+ * （被保険者期間12ヶ月以上の場合）。
+ */
+export function shobyoHayamihyo(): ShobyoHayamihyoRow[] {
+  return HAYAMIHYO_STANDARD_MONTHLY.map((std) => {
+    const { standardMonthly, dailyAmount } = kenpoDailyAmount(std);
+    return { standardMonthly, dailyAmount, thirtyDays: dailyAmount * 30 };
+  });
+}

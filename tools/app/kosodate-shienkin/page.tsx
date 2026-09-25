@@ -1,5 +1,10 @@
 import type { Metadata } from 'next';
-import { FISCAL_YEARS } from '@/lib/kosodate-shienkin';
+import {
+  calcShienkin,
+  EXAMPLE_STANDARD_MONTHLY,
+  FISCAL_YEARS,
+  shienkinHayamihyo,
+} from '@/lib/kosodate-shienkin';
 import { robotsFor, SITE_URL } from '@/lib/registry';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
@@ -7,6 +12,15 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
+
+const yen = (n: number) => `${n.toLocaleString('ja-JP')}円`;
+const man = (n: number) => `${(n / 10_000).toLocaleString('ja-JP')}万円`;
+
+// 本文とFAQの金額・率は計算機と同じデータから出す（手で書くと率の改定で本文だけ古くなる）
+const hayamihyo = shienkinHayamihyo();
+const example = calcShienkin(EXAMPLE_STANDARD_MONTHLY);
+const current = FISCAL_YEARS.find((y) => y.fiscalYear === hayamihyo.fiscalYear)!;
+const pct = (rate: number, digits: number) => `${(rate * 100).toFixed(digits)}%`;
 
 const title = '子ども・子育て支援金 計算機｜月いくら引かれる？【2026年】';
 const description =
@@ -26,7 +40,7 @@ const faq = [
   },
   {
     q: '支援金の計算方法は？',
-    a: '被用者保険（会社員・公務員）の場合、「標準報酬月額 × 支援金率」で計算されます。2026年度の支援金率は全国一律0.23%で、労使折半のため本人負担はその半分（0.115%）です。賞与からも「標準賞与額 × 支援金率」の半分が徴収されます。',
+    a: `会社員・公務員は「標準報酬月額 × 支援金率 ÷ 2」で、${hayamihyo.fiscalYear}年度の本人負担は${pct(current.rate / 2, 3)}です。賞与からも同じ率で引かれます。式と年収別の早見表は、このページの「計算の仕組み」にまとめています。`,
   },
   {
     q: 'なぜ「独身税」と呼ばれているのですか？',
@@ -34,7 +48,11 @@ const faq = [
   },
   {
     q: '今後、負担額は増えますか？',
-    a: '増えます。支援金の総額は2026年度6,000億円 → 2027年度8,000億円 → 2028年度1兆円と段階的に引き上げられる計画で、政府試算では2028年度の支援金率は0.4%（本人負担0.2%）程度になる見込みです。',
+    a: '増える見込みです。支援金の総額は2028年度まで段階的に引き上げられる計画で、年度ごとの率と月額の例は「計算の仕組み」の表にあります。2027年度以降の率はまだ確定していません。',
+  },
+  {
+    q: '扶養家族がいると、その分も支援金が増えますか？',
+    a: '会社員・公務員の健康保険では増えません。支援金は本人の標準報酬月額と賞与だけで決まり、扶養家族（被扶養者）の人数は計算に入らないためです。国民健康保険は世帯や個人の所得などで決まるので、仕組みが異なります。',
   },
   {
     q: '支払わない・免除される方法はありますか？',
@@ -105,31 +123,91 @@ export default function Page() {
       >
         標準報酬月額 × 支援金率 ÷ 2（労使折半） ＝ 毎月の本人負担額
       </p>
+
+      <h3>年収別の早見表（{hayamihyo.era}・確定）</h3>
+      <p>賞与なしの場合の本人負担です。賞与がある人は、賞与からも同じ率で引かれます。</p>
+      <table>
+        <thead>
+          <tr>
+            <th>年収の目安</th>
+            <th>標準報酬月額</th>
+            <th>月額</th>
+            <th>年額</th>
+          </tr>
+        </thead>
+        <tbody>
+          {hayamihyo.rows.map((row) => (
+            <tr key={row.standardMonthly}>
+              <th scope="row">{man(row.standardMonthly * 12)}</th>
+              <td>{man(row.standardMonthly)}</td>
+              <td>{yen(row.monthly)}</td>
+              <td>{yen(row.yearly)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h3>年度ごとの率と、標準報酬月額{man(EXAMPLE_STANDARD_MONTHLY)}の人の月額</h3>
       <table>
         <thead>
           <tr>
             <th>年度</th>
             <th>支援金率</th>
             <th>本人負担率</th>
-            <th>状態</th>
+            <th>月額の例</th>
           </tr>
         </thead>
         <tbody>
           {FISCAL_YEARS.map((y) => (
             <tr key={y.fiscalYear}>
-              <td>
+              <th scope="row">
                 {y.era}（{y.fiscalYear}年度）
+              </th>
+              <td>
+                {pct(y.rate, 2)}
+                {y.status !== '確定' && `（${y.status}）`}
               </td>
-              <td>{(y.rate * 100).toFixed(2)}%</td>
-              <td>{((y.rate / 2) * 100).toFixed(3)}%</td>
-              <td>{y.status}</td>
+              <td>{pct(y.rate / 2, 3)}</td>
+              <td>{yen(example.find((r) => r.fiscalYear === y.fiscalYear)!.monthly)}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <div className="note">
-        2027年度・2028年度の率は政府の計画・試算にもとづく見込み値です。確定次第、本ページのデータを更新します。実際の給与では健康保険料と合算して端数処理されるため、表示額と±1円程度の差が出ることがあります。
+        確定しているのは{hayamihyo.era}の率だけです。「見込み」「政府試算」の年度は、政府の計画・試算にもとづく
+        <strong>未確定の推計</strong>で、確定次第このページのデータを更新します。実際の給与では健康保険料と合算して端数処理されるため、表示額と±1円程度の差が出ることがあります。
       </div>
+
+      <h2>加入している保険で決まり方が違う</h2>
+      <p>支援金は医療保険の保険料と一緒に集められるので、どの医療保険に入っているかで決まり方が変わります。</p>
+      <ul>
+        <li>
+          <strong>会社員・公務員（被用者保険）</strong>：標準報酬月額と賞与に全国一律の率をかけ、会社と半分ずつ負担します。
+          このページの計算機と早見表はこの場合です
+        </li>
+        <li>
+          <strong>自営業・フリーランスなど（国民健康保険）</strong>：お住まいの市区町村が条例で決め、世帯や個人の所得などに応じて変わります。
+          <strong>このツールでは計算できません</strong>。額は市区町村から届く保険料の通知や、市区町村の案内で確かめてください
+        </li>
+        <li>
+          <strong>75歳以上（後期高齢者医療制度）</strong>：都道府県ごとの後期高齢者医療広域連合が条例で決め、個人の所得などに応じて変わります。
+          こちらも<strong>このツールでは計算できません</strong>
+        </li>
+      </ul>
+
+      <h2>集めたお金の使い道</h2>
+      <p>こども家庭庁は、支援金で拡充する子育て施策として次のものを挙げています。</p>
+      <ul>
+        <li>児童手当の拡充</li>
+        <li>妊婦のための支援給付</li>
+        <li>こども誰でも通園制度</li>
+        <li>雇用保険の出生後休業支援給付と育児時短就業給付</li>
+        <li>育児期間中の国民年金保険料の免除</li>
+      </ul>
+      <p>
+        支援金を負担していても、受けられる給付は子どもの年齢や働き方によって変わります。
+        たとえば出生後休業支援給付と育児時短就業給付は、雇用保険に入って働く親が対象です。
+      </p>
 
       <h2>よくある質問</h2>
       {faq.map((f) => (
@@ -151,6 +229,14 @@ export default function Page() {
           rel="nofollow noopener noreferrer"
         >
           こども家庭庁「子ども・子育て支援金制度について」
+        </a>
+        、
+        <a
+          href="https://www.cfa.go.jp/policies/kodomokosodateshienkin"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          同「支援金により拡充される子育て施策」
         </a>
         ほか公的資料にもとづき作成。
       </ToolMeta>

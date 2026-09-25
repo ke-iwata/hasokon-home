@@ -92,3 +92,33 @@ describe('calcShienkin（本人負担額）', () => {
     expect(rs[1].monthly).toBeLessThan(rs[2].monthly);
   });
 });
+
+describe('本文の早見表（docs/features/thin-tool-content.md）', () => {
+  it('表Aは「確定」の最新年度の率で作る', async () => {
+    const { FISCAL_YEARS, shienkinHayamihyo } = await import('@/lib/kosodate-shienkin');
+    const latestConfirmed = FISCAL_YEARS.filter((y) => y.status === '確定').at(-1)!;
+    expect(shienkinHayamihyo().fiscalYear).toBe(latestConfirmed.fiscalYear);
+  });
+
+  it('表Aの月額は計算機と同じ calcShienkin() の結果、年額は月額×12', async () => {
+    const { calcShienkin, shienkinHayamihyo, HAYAMIHYO_STANDARD_MONTHLY } = await import('@/lib/kosodate-shienkin');
+    const { GRADES } = await import('@/lib/shaho-grades');
+    const table = shienkinHayamihyo();
+    expect(table.rows.map((r) => r.standardMonthly)).toEqual([...HAYAMIHYO_STANDARD_MONTHLY]);
+    const grades = new Set(GRADES.map((g) => g[1]));
+    for (const r of table.rows) {
+      expect(grades.has(r.standardMonthly)).toBe(true);
+      const expected = calcShienkin(r.standardMonthly).find((x) => x.fiscalYear === table.fiscalYear)!.monthly;
+      expect(r.monthly).toBe(expected);
+      expect(r.yearly).toBe(expected * 12);
+    }
+  });
+
+  it('本文に率を手で書いていない（改定で本文だけ古くならないように）', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/kosodate-shienkin/page.tsx', import.meta.url), 'utf8');
+    for (const hard of ['0.23%', '0.115%', '0.4%', '0.2%', '6,000億', '8,000億', '1兆円']) {
+      expect(src, `page.tsx に「${hard}」が直書きされている`).not.toContain(hard);
+    }
+  });
+});

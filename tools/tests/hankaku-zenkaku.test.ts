@@ -178,3 +178,51 @@ describe('countChars', () => {
     expect(countChars('')).toEqual({ total: 0, full: 0, half: 0 });
   });
 });
+
+describe('本文「変換で起きやすい失敗」に書いた挙動（docs/features/thin-tool-content.md）', () => {
+  const half = (s: string) => convertWidth(s, 'toHalf', DEFAULT_OPTIONS);
+  const full = (s: string) => convertWidth(s, 'toFull', DEFAULT_OPTIONS);
+
+  it('濁点・半濁点付きのカナは半角で2文字になり、全角で1文字に戻る', () => {
+    expect(half('ガ')).toBe('ｶﾞ');
+    expect(half('パ')).toBe('ﾊﾟ');
+    expect(full('ｶﾞﾊﾟ')).toBe('ガパ');
+  });
+
+  it('波ダッシュ「〜」は変換しない。全角チルダ「～」は「~」と相互に変換する', () => {
+    expect(half('〜')).toBe('〜');
+    expect(full('〜')).toBe('〜');
+    expect(half('～')).toBe('~');
+    expect(full('~')).toBe('～');
+  });
+
+  it('「¥」「￥」は変換しない。「＼」は「\\」と相互に変換する', () => {
+    for (const c of ['¥', '￥']) {
+      expect(half(c)).toBe(c);
+      expect(full(c)).toBe(c);
+    }
+    expect(half('＼')).toBe('\\');
+    expect(full('\\')).toBe('＼');
+  });
+
+  it('全角ハイフンは「-」、長音は「ｰ」になる。マイナス記号とハイフン（U+2010）は変換しない', () => {
+    expect(half('－')).toBe('-');
+    expect(half('ー')).toBe('ｰ');
+    for (const c of ['−', '‐']) {
+      expect(half(c)).toBe(c);
+      expect(full(c)).toBe(c);
+    }
+  });
+
+  it('全角スペースと半角スペースを相互に変換する', () => {
+    expect(half('　')).toBe(' ');
+    expect(full(' ')).toBe('　');
+  });
+
+  it('全角英数字は半角の「!」〜「~」と同じ並び順（差が一定）', () => {
+    for (let code = 0x21; code <= 0x7e; code++) {
+      if (code === 0x5c) continue; // 「\」も同じ規則だが、¥の話と混ざらないよう個別に見ている
+      expect(full(String.fromCharCode(code)).codePointAt(0)).toBe(code + 0xfee0);
+    }
+  });
+});

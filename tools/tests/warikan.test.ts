@@ -97,3 +97,31 @@ describe('calcWarikan（エッジケース）', () => {
     expect(r.collected).toBe(1000);
   });
 });
+
+describe('本文の比較表（docs/features/thin-tool-content.md）', () => {
+  it('3つの扱いすべてで「参加者×(人数−1)+幹事＝合計」が成り立つ', async () => {
+    const { modeComparison, WARIKAN_EXAMPLE } = await import('@/lib/warikan');
+    const rows = modeComparison();
+    expect(rows.map((r) => r.mode)).toEqual(['kanji-more', 'kanji-less', 'equal']);
+    for (const { result } of rows) {
+      expect(result.perPerson * (WARIKAN_EXAMPLE.people - 1) + result.kanji).toBe(WARIKAN_EXAMPLE.total);
+    }
+  });
+
+  it('例の数字（23,456円を6人・100円単位）', async () => {
+    const { modeComparison } = await import('@/lib/warikan');
+    const byMode = Object.fromEntries(modeComparison().map((r) => [r.mode, r.result]));
+    expect(byMode['kanji-more']).toMatchObject({ perPerson: 3_900, kanji: 3_956 });
+    expect(byMode['kanji-less']).toMatchObject({ perPerson: 4_000, kanji: 3_456 });
+    expect(byMode.equal).toMatchObject({ perPerson: 3_909, kanji: 3_911 });
+  });
+
+  it('丸め単位の表は計算機の選択肢と同じ単位で、単位が大きいほど幹事の支払いが増える', async () => {
+    const { unitComparison, ROUND_UNITS } = await import('@/lib/warikan');
+    const rows = unitComparison();
+    expect(rows.map((r) => r.roundUnit)).toEqual([...ROUND_UNITS]);
+    for (let i = 1; i < rows.length; i++) {
+      expect(rows[i].result.kanji).toBeGreaterThanOrEqual(rows[i - 1].result.kanji);
+    }
+  });
+});

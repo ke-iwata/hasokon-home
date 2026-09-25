@@ -105,3 +105,37 @@ export function calcShienkin(monthlyIncome: number, bonusYearly = 0): ShienkinRe
     };
   });
 }
+
+/**
+ * 本文の早見表に出す標準報酬月額（`lib/shaho-grades.ts` の GRADES にある値だけ）。
+ * 傷病手当金の早見表と同じ8等級にそろえる（docs/features/thin-tool-content.md 共通の約束 8）。
+ */
+export const HAYAMIHYO_STANDARD_MONTHLY = [
+  150_000, 200_000, 260_000, 300_000, 360_000, 410_000, 500_000, 650_000,
+] as const;
+
+/** 年度推移の表（表B）で使う例の標準報酬月額 */
+export const EXAMPLE_STANDARD_MONTHLY = 300_000;
+
+export interface ShienkinHayamihyoRow {
+  /** 標準報酬月額（円） */
+  standardMonthly: number;
+  /** 毎月の本人負担額（円） */
+  monthly: number;
+  /** 年額（賞与なし・月額×12、円） */
+  yearly: number;
+}
+
+/**
+ * 年収別の早見表（表A）。`status` が「確定」の最新年度の率で、賞与なしの場合。
+ * 本文に手で数字を書かないために、計算機と同じ `calcShienkin()` から作る。
+ */
+export function shienkinHayamihyo(): { fiscalYear: number; era: string; rows: ShienkinHayamihyoRow[] } {
+  const confirmed = FISCAL_YEARS.filter((y) => y.status === '確定').at(-1);
+  if (!confirmed) throw new Error('FISCAL_YEARS に確定の年度がありません');
+  const rows = HAYAMIHYO_STANDARD_MONTHLY.map((std) => {
+    const r = calcShienkin(std).find((x) => x.fiscalYear === confirmed.fiscalYear)!;
+    return { standardMonthly: r.standardMonthly, monthly: r.monthly, yearly: r.monthly * 12 };
+  });
+  return { fiscalYear: confirmed.fiscalYear, era: confirmed.era, rows };
+}
