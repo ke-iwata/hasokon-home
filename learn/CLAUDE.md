@@ -30,7 +30,7 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 - **前後ナビは分野の中で閉じる**（`neighborsOf`）。分野をまたいで「次の章」へ送らない
 
 **現状：2026-09-07に「投資の教科書」を公開し、2026-09-08に暗号資産まわりを2章足して全37章になりました。**
-全章 `stage: 'public'` で、sitemap にも llms.txt にも載り、ホームからリンクしています。
+全章 `stage: 'public'` で、sitemap にも `/learn/llms.txt` にも載り、ホームからリンクしています。
 
 **一度公開したものを引っ込めるのは別の作業です**（URLがインデックスされるので、
 消すと404になる。ルートの CLAUDE.md「フラグは『まだ公開していない』ためのもの」）。
@@ -145,8 +145,9 @@ tools / games と技術構成・運用方針は共通です。**迷ったら too
 1. `lib/curriculum.ts` の `subjects` に1件足す（`stage` は決まるまで `'preview'`）
 2. その分野の `parts` と `chapters` を書く（`subject` に分野の slug を入れる）
 3. `app/{subject}/page.tsx`（目次）と `app/{subject}/{slug}/page.tsx`（章）を作る
-4. 公開するときは `home/llms.txt` に分野の行と章の行を足し、
-   `home/index.html` の学ぶの節の文言を直す
+4. 公開するときは `home/index.html` の学ぶの節の文言を直す
+   （`/learn/llms.txt` は `lib/llms.ts` が `publicSubjects` / `publicChapters` から
+   生成するので、llms.txt に手で足すものは無い）
 
 ## 数字を書くときの約束
 
@@ -191,8 +192,16 @@ tools / games と同じ設定（`lib/adsense.ts` / `lib/analytics.ts`）。
 
 ルートの CLAUDE.md を参照。**本番タグは運営者の承認必須**（mainへのpushまでが自律範囲）。
 
-**章を増やしたときは、`home/` 側も手で直すこと**（ビルド工程が無く `stage` が効かない）:
+**章を増やしたときは、「全◯章」と書いてある次の6か所を直すこと。**
+どれもテストが落とすので、目視で守らなくてよい:
 
-- `home/llms.txt` に1行足す（`scripts/test/llms-txt.test.mjs` が落とす）
-- `home/index.html` と `home/404.html` の「全◯章」を直す
-  （`scripts/test/home-nav.test.mjs` が落とす）
+- `home/index.html` と `home/404.html`（`scripts/test/home-nav.test.mjs`）。
+  `home/` にはビルド工程が無く `stage` が効かないので、ここは手で直す
+- `lib/curriculum.ts` の分野の説明・導入文（`tests/curriculum.test.ts`）。
+  `/learn/llms.txt` でAIにも配られる
+- `app/page.tsx` と `app/{subject}/page.tsx` の `metadata.description`
+  （`tests/curriculum.test.ts`）。**検索結果のスニペットに出る**。
+  35のまま据え置かれたときは、`home/` 以外のこの4か所が揃って腐った
+
+**`home/llms.txt` には足さない。** 章の行は `/learn/llms.txt` が生成する
+（[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）

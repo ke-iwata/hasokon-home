@@ -207,6 +207,48 @@ URL検査APIには **1日2000件 / 1分600件** の上限があります。
 手で何度も回すときは日をまたいでください。
 `--concurrency` の既定値（4）は上限に当てないための値です。
 
+## ga4-ai-channel.mjs
+
+AIアシスタント経由の流入（GA4 の `AI Assistant` チャネル）を週1回数えます。
+
+仕様: [docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)
+
+2026-09-24 の計測で 1 → 68 セッションに増えていて、**直近28日で2番目に大きいチャネル**
+（全体の約17%）でした。**落ちているチャネルの立て直しではなく、
+いま伸びているチャネルへの投資**なので、llms.txt を書き換える前に
+「効いたかどうかを毎週見られる場所」を先に作ってあります。
+
+```bash
+# 何を投げるかだけ見る（APIを叩かない）
+node scripts/ga4-ai-channel.mjs --dry-run
+
+# 計測して結果を残す
+GOOGLE_SERVICE_ACCOUNT_JSON="$(cat sa.json)" \
+  node scripts/ga4-ai-channel.mjs --out ga4-ai-$(date -u +%Y-%m-%d).json
+```
+
+出すのは次の3つです。
+
+- `AI Assistant` のセッション数（直近28日と、その前の28日・増減・全体に占める割合）
+- チャネル別・参照元別（上位）の内訳
+- **AI 経由のランディング上位5件。** AI に選ばれているページと検索で読まれているページは
+  別物（2026-09 時点の1位は大富豪、2位はインターバルタイマー）なので、
+  ここが動いたら llms.txt の書き方を見直す材料になります
+
+認証は `gsc-canonical-audit.mjs` と同じサービスアカウント（`GOOGLE_SERVICE_ACCOUNT_JSON`）で、
+スコープだけ `analytics.readonly` に替えています。**新しい権限は要りません。**
+週1回の実行は `.github/workflows/gsc-audit.yml` に相乗りしています
+（GA4 側が失敗しても Search Console の計測は落としません）。
+
+終了コードは 0（計測できた）と 2（実行できなかった）だけです。
+**権限が無いときに「AI経由0セッション」と読めてしまわないよう、失敗は必ず2で返します。**
+
+### 読むときの注意
+
+`sessionSource: google` を「Google 検索が回復した」根拠にしないでください。
+Search Console の表示回数がほぼゼロなのと食い違っており、Discover や
+アプリ内ブラウザが混ざっているとみられます。判断には Search Console の実数を使います。
+
 ## indexnow-submit.mjs
 
 **更新したURLを IndexNow に通知する**スクリプトです。本番デプロイ（`v*` タグ）の
@@ -299,8 +341,12 @@ node --test "scripts/test/*.test.mjs"
   仕様は [docs/features/ogp-image.md](../docs/features/ogp-image.md)、
   生成スクリプトは [design/ogp/](../design/ogp/)
 - `test/llms-txt.test.mjs` … **`home/llms.txt`（AIアシスタント向けのサイト案内）**。
-  tools / games の registry と突き合わせて、載せ忘れとリンク切れを見張ります。
-  仕様は [docs/features/llms-txt.md](../docs/features/llms-txt.md)
+  個々のツール・ゲーム・章の行は各アプリ（`{tools,games,learn}/lib/llms.ts`）が
+  registry / curriculum から生成するので、ここで見張るのは
+  **`home/llms.txt` が入口だけの案内板であり続けること**です
+  （個々の行と日付を持たない・子ファイル3本を指している）。
+  仕様は [docs/features/llms-txt.md](../docs/features/llms-txt.md) と
+  [docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)
 - `test/manifest-icons.test.mjs` … **「ホーム画面に追加」用アイコンの実ファイル**と
   生成スクリプト。仕様は
   [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)、

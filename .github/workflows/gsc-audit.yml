@@ -3,6 +3,11 @@ name: GSC audit
 # Search Console の URL検査APIで、サイトマップ全URLの登録状況を週1回数える。
 # 仕様: docs/features/google-index-recovery.md の「A. 監査スクリプトの内訳出力」
 #
+# あわせて、AIアシスタント経由の流入（GA4 の AI Assistant チャネル）も同じ枠で数える。
+# 仕様: docs/features/ai-assistant-channel.md の「A. 週次レポートに AI チャネルを足す」
+# 同じサービスアカウント（analytics.readonly を既に持っている）で取れるので、
+# ジョブもSecretも増やさない。
+#
 # 見るのは coverageState 別の内訳で、判定は「登録（Submitted and indexed）が
 # 4週連続で増えているか」。結果は Actions のログと artifact に残すだけで、
 # **リポジトリにはcommitしない**（生成物を履歴に混ぜないため）。
@@ -52,6 +57,20 @@ jobs:
             exit "$code"
           fi
           echo "skipped=false" >> "$GITHUB_OUTPUT"
+
+      - name: AIアシスタント経由の流入を数える
+        if: steps.audit.outputs.skipped == 'false'
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # GA4 は Search Console とは別のAPIなので、権限が足りないと2で落ちる。
+          # **こちらの失敗で GSC の結果まで落とさない**（主目的は上のステップ）。
+          # 気づける場所は Actions の警告と、下の artifact に無いこと
+          code=0
+          node scripts/ga4-ai-channel.mjs --out "audit-out/ga4-ai-$(date -u +%Y-%m-%d).json" || code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::AIチャネルの計測に失敗しました（終了コード $code）。サービスアカウントに GA4 プロパティの閲覧権限があるか確認してください。docs/features/ai-assistant-channel.md を参照"
+          fi
 
       - name: 結果を artifact に残す
         if: steps.audit.outputs.skipped == 'false'

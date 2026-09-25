@@ -1,6 +1,10 @@
 # AIアシスタント経由の流入が 1 → 68 セッションに増えた — 本命チャネルとして計測し、llms.txt を実測に合わせて直す
 
-**状態**：提案（2026-09-24 起票／2026-09-25 レビュー反映）。コード変更は `home/llms.txt`・各アプリの `app/llms.txt/route.ts`（新規）・`scripts/` に閉じる
+**状態**：**A・B（B-1／B-2／B-2b／B-2c／B-3／B-4）を実装済み**（2026-09-24。本番反映はタグリリース待ち）。
+C（AIクローラーが実際に取れているかの集計）は [hasokon-infra #15](https://github.com/ke-iwata/hasokon-infra/pull/15)
+のマージ待ちで**未着手**。起票は2026-09-24／2026-09-25 レビュー反映。
+コード変更は `home/llms.txt`・各アプリの `lib/llms.ts` と `app/llms.txt/route.ts`（新規）・
+`scripts/`（`ga4-ai-channel.mjs`・`lib/ga4.mjs`）・`learn/tests/compliance.test.ts` に閉じている
 **対象**：`home/llms.txt`・`tools/` `games/` `learn/` の `app/llms.txt/route.ts`（新規）・`scripts/`（週次レポートへの計測追加）・`learn/tests/compliance.test.ts`（B-4）
 **起票**：2026-09-24
 **緊急度**：中〜高。**落ちているチャネルの立て直しではなく、いま伸びているチャネルへの投資**。
@@ -245,3 +249,63 @@ User-Agent 別に「実際に来ているか・何を取ったか」を数えら
   止める**：68 セッションはまだ小さく、Bing 経由 240 の内訳を崩す理由にはならない
 - **`sessionSource: google` の 119 を「Google 検索が回復した」と読む**：Search Console の
   表示回数がほぼゼロなので食い違っている。判断には Search Console の実数を使う
+
+---
+
+## 実装メモ（2026-09-24）
+
+提案の順（A → B-2 → B-1 → B-3 → B-4）どおりに入れた。**C は別作業**。
+
+### A（測れるようにする）
+
+- `scripts/ga4-ai-channel.mjs` ＋ `scripts/lib/ga4.mjs`。直近28日とその前の28日を
+  1回の `runReport` で取り、AI Assistant のセッション数・増減・全体に占める割合と、
+  AI に絞ったランディング上位5件を出す
+- 週1回の実行は `.github/workflows/gsc-audit.yml` に**相乗り**させた。
+  ジョブもSecretも増やしていない（同じサービスアカウントで `analytics.readonly`）。
+  **GA4 側が失敗しても Search Console の計測は落とさない**（`::warning` どまり）
+- 権限が無いときに「AI経由0セッション」と読めてしまわないよう、**失敗は必ず終了コード2**にした
+
+### B（llms.txt を実測に合わせる）
+
+| | 持つもの | 作りかた |
+|---|---|---|
+| `home/llms.txt` | サイトの説明・3セクションへの入口・`## Optional` | 手書き・**日付を持たない**（26行） |
+| `/tools/llms.txt`・`/games/llms.txt`・`/learn/llms.txt` | 個々の行（説明・最終更新日） | `lib/llms.ts` が registry / curriculum から生成 |
+
+- **B-2**：生成は `publicTools` / `publicGames` / `publicChapters` / `publicSubjects` を通す。
+  公開前の8件（tools 2・games 6）が出ないことを各アプリの `tests/llms.test.ts` で確かめている。
+  **見張りが空振りしないよう、公開前が0件になったらテストが落ちる**ようにもした。
+  `scripts/test/llms-txt.test.mjs` は「`home/llms.txt` が入口のままか」の検査に書き換えた
+- **B-2b**：子ファイルは `## ツール` / `## ゲーム` / `## 学ぶ` から指す。
+  `## Optional` に置いていないことをテストで固定した
+- **B-2c**：`app/llms.txt/route.ts`（`dynamic = 'force-static'` の引数なし `GET`）で、
+  3アプリとも `out/llms.txt` に出ることをビルドで確認した（ディレクトリは挟まらない）
+- **B-1**：ゲーム行に `keywords`（`lib/registry.ts` の新しい項目）を並べる。
+  大富豪なら「8切り・革命・縛り・階段・11バック・5飛ばし・9リバース・スペ3返し・都落ち」。
+  **新しい文章は書かない**という約束は、`tests/llms.test.ts` が
+  「各語がそのゲームの `page.tsx` にあるか」を検査して守る
+- **B-3**：`updatedAt` は子ファイルにだけ置いた。`home/llms.txt` に日付が入ったら
+  `scripts/test/llms-txt.test.mjs` が落とす
+- **B-4**：`learn/tests/compliance.test.ts` の検査対象に `curriculum.ts` の
+  `description`（37章）と分野の `description` / `lead` を足した。
+  あわせて、分野の説明が「全35章」のまま据え置かれていたのを37章に直し、
+  **実際の章数とずれたら落ちるテスト**を `tests/curriculum.test.ts` に足した
+  （llms.txt でAIに配るようになったので、目視では守れない）
+
+### 測り直すときと、降りる条件
+
+`node scripts/ga4-ai-channel.mjs --out ...` の結果を週ごとに並べる。
+**本番反映（タグリリース）前後で比べること。** main へのマージはテスト環境までで、
+AI アシスタントが読むのは本番の `hasokon.com/llms.txt` のほう。
+
+**降り方を先に決めておく**（#253 のレビュー指摘。フラグと同じで、書いておかないと腐る）。
+入口を111項目から6項目に減らしたので、**子ファイルを辿らないアシスタントがいた場合、
+伸ばそうとしているチャネルを自分で細らせる**向きのリスクがある。
+
+- 判定は**本番反映後の4週**。`AI Assistant` のセッション数が、反映前の4週平均を
+  **下回ったまま4週続いたら**、`home/llms.txt` に主要ページの行を戻す
+  （子ファイルは残す。生成をやめる理由にはならない）
+- **上振れ・横ばいなら何もしない。** 母数が小さいので週単位の上下では動かない
+- 4週待てるのは、llms.txt が「読まれなくなる」種類の変更ではないため
+  （URLも Content-Type も変わっていない）

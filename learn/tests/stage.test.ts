@@ -32,6 +32,9 @@ describe('ページと curriculum の対応', () => {
     const fixed = new Set(['privacy', 'contact', 'about']);
     const dirs = readdirSync(appDir, { withFileTypes: true })
       .filter((d) => d.isDirectory() && !d.name.startsWith('_') && !fixed.has(d.name))
+      // ルートハンドラ（app/llms.txt/route.ts）は分野ではない。
+      // ページを持たないディレクトリなので、page.tsx の有無で外す
+      .filter((d) => existsSync(`${appDir}${d.name}/page.tsx`))
       .map((d) => d.name);
     for (const d of dirs) {
       expect(known.has(d), `app/${d}/ が subjects に未登録`).toBe(true);
