@@ -8,7 +8,7 @@ import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import { kenpoDailyAmount, SHORT_TENURE_CAP } from '@/lib/kenpo-daily-amount';
 import Calculator from './Calculator';
-import { CAPPED_DAILY_AMOUNT, DAILY_ROWS } from './tables';
+import { CAPPED_DAILY_AMOUNT, DAILY_ROWS, GRADE_GAP } from './tables';
 
 const title = '傷病手当金 計算機｜月収からいくらもらえるかを自動計算';
 const description =
@@ -132,10 +132,14 @@ export default function Page() {
       </p>
       <p>
         月収ではなく<strong>標準報酬月額</strong>で計算するのがポイントです。標準報酬月額は
-        報酬月額を等級表のきりのよい額に当てはめたもので、たとえば月収31万円は標準報酬月額32万円の等級になります。
-        丸めが2回入るため「月収 × 2/3 ÷ 30」で暗算した額とは数百円ずれます。たとえば標準報酬月額
-        {yen(300_000)}なら、標準報酬日額は{yen(kenpoDailyAmount(300_000).standardDaily)}、
-        日額は{yen(kenpoDailyAmount(300_000).dailyAmount)}です。
+        報酬月額を等級表のきりのよい額に当てはめたものなので、
+        <strong>月収をそのまま「× 2/3 ÷ 30」で暗算した額とは数百円ずれることがあります</strong>。
+        たとえば月収{yen(GRADE_GAP.income)}は標準報酬月額{yen(GRADE_GAP.standardMonthly)}
+        の等級に上がるため、暗算の{yen(GRADE_GAP.naiveDaily)}に対して実際の日額は
+        {yen(GRADE_GAP.actualDaily)}です。上の式にあてはめると、標準報酬月額{yen(300_000)}なら
+        標準報酬日額は{yen(kenpoDailyAmount(300_000).standardDaily)}、日額は
+        {yen(kenpoDailyAmount(300_000).dailyAmount)}になります（÷30 と ×2/3
+        の四捨五入による差は数円ほどです）。
       </p>
       <p>
         <strong>加入して12ヶ月たっていない場合は、日額に上限がつきます。</strong>

@@ -89,7 +89,7 @@ export const CHANGE_ROW = calcWarikan(CHANGE_EXAMPLE);
 /**
  * 人数だけを変えた場合の比較。
  *
- * 幹事の上乗せは「切り捨てた端数 ×（人数−1）」なので人数に比例せず飛ぶ。
+ * 幹事の上乗せは「切り捨てた端数 × 人数」なので人数に比例せず飛ぶ。
  * その説明に使う3点で、表にはせず本文の中で並べる（表を増やさないため）。
  */
 export const PEOPLE_SHIFT = [EXAMPLE.people - 1, EXAMPLE.people, EXAMPLE.people + 1].map(

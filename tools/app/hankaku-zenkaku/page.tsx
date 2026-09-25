@@ -177,18 +177,18 @@ export default function Page() {
       <table>
         <thead>
           <tr>
-            <th>文字</th>
-            <th>コード位置</th>
+            <th>文字とコード位置</th>
             <th>このツールの扱い</th>
           </tr>
         </thead>
         <tbody>
           {PITFALLS.map((row) => (
             <tr key={`${row.sample}-${row.direction}`}>
-              <td>
+              <td style={{ textAlign: 'left' }}>
                 {row.sample}（{row.name}）
+                <br />
+                {row.sampleCode}
               </td>
-              <td>{row.sampleCode}</td>
               <td style={{ textAlign: 'left' }}>
                 {row.changed ? (
                   <>

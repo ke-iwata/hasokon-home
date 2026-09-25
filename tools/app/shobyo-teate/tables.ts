@@ -42,3 +42,24 @@ export const DAILY_ROWS: DailyRow[] = TABLE_STANDARD_MONTHLY.map((standardMonthl
  * SHORT_TENURE_CAP を同じ計算に通して出すので、上限額が改定されても本文が追随する。
  */
 export const CAPPED_DAILY_AMOUNT = kenpoDailyAmount(SHORT_TENURE_CAP, true).dailyAmount;
+
+/**
+ * 「月収をそのまま暗算した額」と「等級を通した実際の日額」がずれる例。
+ *
+ * 本文で「暗算した額とは数百円ずれる」と書くための根拠。
+ * **ずれの主因は等級への丸めであって、÷30 と ×2/3 の四捨五入ではない**
+ * （後者の差は数円にしかならない）。等級が1つ上がる月収を選んでいる。
+ * 「数百円」と呼べる差が実際に出ているかは tests/shobyo-teate.test.ts が見張る
+ */
+const GRADE_GAP_INCOME = 310_000;
+
+export const GRADE_GAP = {
+  /** 例に使う月収（額面・円） */
+  income: GRADE_GAP_INCOME,
+  /** 等級表に当てはめた標準報酬月額（円） */
+  standardMonthly: kenpoDailyAmount(GRADE_GAP_INCOME).standardMonthly,
+  /** 月収をそのまま「× 2/3 ÷ 30」で暗算した額（円） */
+  naiveDaily: Math.round((GRADE_GAP_INCOME * 2) / 3 / 30),
+  /** 等級を通した実際の日額（円） */
+  actualDaily: kenpoDailyAmount(GRADE_GAP_INCOME).dailyAmount,
+} as const;
