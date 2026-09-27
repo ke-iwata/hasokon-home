@@ -106,4 +106,8 @@ describe('公開の段階（stage）', () => {
       expect(pages.get(slug)).toContain('<PublicToolLink slug="kokunen-ikuji-menjo">');
     }
   });
+
+  it('退職金から贈与税へのリンクは PublicToolLink を通している（docs/features/zoyozei-keisan.md「ページ構成」）', () => {
+    expect(pages.get('taishokukin-tedori')).toContain('<PublicToolLink slug="zoyozei-keisan">');
+  });
 });
