@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   AFTER_DAYS,
   BEFORE_DAYS_MULTIPLE,
@@ -222,6 +223,11 @@ export default function Page() {
         <li>
           <strong>国民健康保険</strong>
           ：出産手当金の給付がありません（出産育児一時金は同額で受けられます）
+          <PublicToolLink slug="kokunen-ikuji-menjo">
+            。自営業・フリーランスなど国民年金の第1号被保険者なら、
+            <ToolLink slug="kokunen-ikuji-menjo">国民年金保険料の産前産後・育児期間の免除</ToolLink>
+            が受けられます
+          </PublicToolLink>
         </li>
         <li>
           <strong>被扶養者（配偶者の扶養に入っている方）</strong>

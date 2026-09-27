@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   HIGH_RATE_DAYS,
   LIMIT_LABEL,
@@ -299,6 +300,11 @@ export default function Page() {
         <li>
           <strong>雇用保険の被保険者であること。</strong>
           自営業・フリーランス・雇用保険に入っていない人は対象外です
+          <PublicToolLink slug="kokunen-ikuji-menjo">
+            （国民年金の第1号被保険者なら、2026年10月から
+            <ToolLink slug="kokunen-ikuji-menjo">育児期間の国民年金保険料の免除</ToolLink>
+            があります）
+          </PublicToolLink>
         </li>
         <li>
           休業開始日前2年間に、賃金支払基礎日数が11日以上ある（ない場合は賃金の支払いの

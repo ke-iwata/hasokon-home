@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { isPublicTool, robotsFor, SITE_URL } from '@/lib/registry';
+import { robotsFor, SITE_URL } from '@/lib/registry';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
@@ -232,12 +233,10 @@ export default function Page() {
         <li>給与収入のみ（事業所得・不動産所得・副業の所得などがある場合は確定申告が必要です）</li>
         <li>
           給与収入は源泉徴収票の「支払金額」です。通勤手当のうち非課税限度額を超えた分は、ここに含まれています
-          {isPublicTool('tsukin-teate-hikazei') && (
-            <>
+          <PublicToolLink slug="tsukin-teate-hikazei">
               （超えた額は
-              <Link href="/tsukin-teate-hikazei/">通勤手当 非課税限度額チェッカー</Link>で確かめられます）
-            </>
-          )}
+              <ToolLink slug="tsukin-teate-hikazei">通勤手当 非課税限度額チェッカー</ToolLink>で確かめられます）
+          </PublicToolLink>
         </li>
         <li>
           源泉徴収税額を空欄にしたときは、「改正前（令和7年分）の控除額で、扶養控除等申告書に申告した控除だけが毎月反映されていた」という前提で推計します。実際の源泉徴収は月額表と賞与の算出率表で月ごとに計算されるため、賞与の割合が大きい人ほどずれます

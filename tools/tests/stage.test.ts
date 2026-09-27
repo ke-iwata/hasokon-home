@@ -81,4 +81,29 @@ describe('公開の段階（stage）', () => {
   it('registry に無い slug は既定のまま（特設ページを巻き込まない）', () => {
     expect(robotsFor('registry-ni-nai-slug')).toBeUndefined();
   });
+
+  /**
+   * 公開中のページから公開前のページへ本文で直にリンクすると、一覧・sitemap から
+   * 外している意味が無くなる。公開前の相手へは `app/PublicToolLink.tsx` を通す
+   * （相手が public になった時点でリンクが現れる）
+   */
+  it('公開中のページは、公開前のツールへ直にリンクしない', () => {
+    const hidden = tools.filter((t) => t.stage !== 'public').map((t) => t.slug);
+    const leaks = publicTools.flatMap((t) => {
+      const src = pages.get(t.slug) ?? '';
+      return hidden.filter((slug) => src.includes(`href="/${slug}/"`)).map((slug) => `${t.slug} → ${slug}`);
+    });
+    expect(leaks).toEqual([]);
+  });
+
+  it('ページは isPublicTool を直に呼ばず PublicToolLink を通す（守り方を1つにそろえる）', () => {
+    const direct = [...pages].filter(([, src]) => src.includes('isPublicTool(')).map(([slug]) => slug);
+    expect(direct).toEqual([]);
+  });
+
+  it('育児免除 計算機へのリンク元3本は PublicToolLink を通している（仕様書「ページ構成」）', () => {
+    for (const slug of ['shussan-teate', 'ikuji-kyugyo-kyufu', 'kosodate-shienkin']) {
+      expect(pages.get(slug)).toContain('<PublicToolLink slug="kokunen-ikuji-menjo">');
+    }
+  });
 });

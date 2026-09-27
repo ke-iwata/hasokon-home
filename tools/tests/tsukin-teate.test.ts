@@ -306,15 +306,17 @@ describe('既存ページからのリンク（公開前は出さない）', () =
     expect(isPublicTool('registry-ni-nai-slug')).toBe(false);
   });
 
-  it('残業代・手取り・年末調整の本文のリンクは isPublicTool で囲まれている', async () => {
+  it('残業代・手取り・年末調整の本文のリンクは PublicToolLink で囲まれている', async () => {
     const { readFileSync } = await import('node:fs');
     const { fileURLToPath } = await import('node:url');
     for (const slug of ['zangyodai-keisan', 'tedori-keisan', 'nenmatsu-chosei']) {
       const src = readFileSync(fileURLToPath(new URL(`../app/${slug}/page.tsx`, import.meta.url)), 'utf8');
-      const links = src.split('href="/tsukin-teate-hikazei/"').length - 1;
-      const guards = src.split("isPublicTool('tsukin-teate-hikazei')").length - 1;
+      const links = src.split('<ToolLink slug="tsukin-teate-hikazei">').length - 1;
+      const guards = src.split('<PublicToolLink slug="tsukin-teate-hikazei">').length - 1;
       expect(links, slug).toBeGreaterThan(0);
       expect(guards, slug).toBe(links);
+      // 公開前のページへの直リンクは書かない（tests/stage.test.ts でも見ている）
+      expect(src, slug).not.toContain('href="/tsukin-teate-hikazei/"');
     }
   });
 });
