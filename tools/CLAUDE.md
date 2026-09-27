@@ -201,6 +201,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 頻度 | 作業 |
 |---|---|
 | 毎年2〜3月（翌年分の祝日が公示されたら） | `lib/nissu-keisan.ts` の `HOLIDAYS` に翌年分を内閣府CSVから写して足し、`HOLIDAY_LAST_YEAR` と `HOLIDAY_UPDATED_AT` を直す（写し間違いは `tests/nissu-keisan.test.ts` が祝日法からの導出と突き合わせて落とす） |
+| 毎年1〜6月（翌年分の源泉徴収税額表が出たら・遅くとも夏賞与の前） | `lib/shoyo-gensen-table.ts` の算出率の表（甲欄・乙欄）と `TABLE_YEAR_LABEL` を国税庁「令和◯年分 源泉徴収税額表」の「賞与に対する源泉徴収税額の算出率の表」から差し替え、`tests/shoyo-tedori.test.ts` の突き合わせも新しい PDF で書き直す（令和9年分は公開済み。2027年6〜7月の夏賞与の前に差し替える） |
 | 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新（**支援金・働き損の2ツールに効く**。`hatarakizon.ts` は `status: '確定'` の最新年度を自動で拾うので、あちらは触らない） |
 | 毎年3月 | 協会けんぽの料率改定を `lib/shaho-ryoritsu.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照）。**保険料率の定義は `lib/shaho-ryoritsu.ts` の1か所だけ**で、`lib/hatarakizon.ts` は同名で re-export しているだけ。**働き損・手取り・ふるさと納税・年末調整・iDeCo・医療費控除の6ツールに効く** |
 | 毎年4月 | 雇用保険料率（労働者負担・一般の事業）を `lib/shaho-ryoritsu.ts` の `EMPLOYMENT_RATE` に反映。厚生労働省が毎年出す「令和◯年度の雇用保険料率」のPDF（[令和8年度](https://www.mhlw.go.jp/content/001692566.pdf)）を正とする（令和8年度は 5/1,000。**①労働者負担の欄を見る**。合計の 13.5/1,000 や事業主負担と取り違えないこと）。`tests/hatarakizon.test.ts` が率そのものを固定しているので、直し忘れではなく「直したこと」が差分に出る |
@@ -237,8 +238,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール45本（`tsukin-teate-hikazei` と `boei-tokubetsu-shotokuzei` が `preview`。ほかは `public`。
-  防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」）** /
+- **ツール46本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori` が `preview`。ほかは `public`。
+  防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」、
+  `shoyo-tedori` は 2026-11-20 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
