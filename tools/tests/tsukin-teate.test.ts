@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   DISTANCE_BANDS,
@@ -315,5 +316,21 @@ describe('既存ページからのリンク（公開前は出さない）', () =
       expect(links, slug).toBeGreaterThan(0);
       expect(guards, slug).toBe(links);
     }
+  });
+});
+
+describe('計算機の入力欄（Calculator.tsx）', () => {
+  const src = () =>
+    readFileSync(new URL('../app/tsukin-teate-hikazei/Calculator.tsx', import.meta.url), 'utf8');
+
+  it('定期代の欄は折りたたみの外にあり、交通機関のみ・併用の両方で出る（#270 レビュー）', () => {
+    const s = src();
+    expect(s.split('id="fare"').length - 1).toBe(1);
+    expect(s.indexOf('id="fare"')).toBeLessThan(s.indexOf('<details'));
+    expect(s).toMatch(/\{usesTransit && \(\s*<div className="field">\s*<label htmlFor="fare">/);
+  });
+
+  it('ヒントに3桁区切りの額を手で書いていない', () => {
+    expect(src().match(/\d{1,3}(,\d{3})+円/g) ?? []).toEqual([]);
   });
 });

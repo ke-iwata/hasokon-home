@@ -10,11 +10,13 @@ import {
   TOTAL_CAP,
   bandLabel,
   calcTsukinTeate,
+  distanceLimit,
   type CommuteMode,
   type ParkingExclusion,
   type ParkingFee,
   type Period,
 } from '@/lib/tsukin-teate';
+import { BEFORE_MAX } from './tables';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
 
@@ -128,12 +130,12 @@ export default function Calculator() {
             onChange={(e) => setDistance(e.target.value)}
           />
           <p className="hint">
-            区分の境目（10km・15km…）ちょうどは上の区分に入ります（10.0kmは7,300円）。片道2km未満は全額課税です。
+            区分の境目（10km・15km…）ちょうどは上の区分に入ります（10.0kmは{yen(distanceLimit(10, period))}）。片道2km未満は全額課税です。
           </p>
         </div>
       )}
 
-      {mode === 'transit' && (
+      {usesTransit && (
         <div className="field">
           <label htmlFor="fare">定期代など交通機関の運賃（月額。有料道路の料金を含む）</label>
           <input
@@ -169,7 +171,7 @@ export default function Calculator() {
       </div>
 
       <details className="field">
-        <summary style={{ cursor: 'pointer' }}>駐車場・定期代・計算する月</summary>
+        <summary style={{ cursor: 'pointer' }}>{usesVehicle ? '駐車場・計算する月' : '計算する月'}</summary>
 
         {usesVehicle && (
           <>
@@ -233,21 +235,6 @@ export default function Calculator() {
           </>
         )}
 
-        {mode === 'both' && (
-          <div className="field">
-            <label htmlFor="fare-both">定期代など交通機関の運賃（月額。有料道路の料金を含む）</label>
-            <input
-              id="fare-both"
-              type="number"
-              inputMode="numeric"
-              min={0}
-              step={1000}
-              value={fare}
-              onChange={(e) => setFare(e.target.value)}
-            />
-          </div>
-        )}
-
         <div className="field">
           <label htmlFor="period">計算する月</label>
           <select
@@ -262,7 +249,7 @@ export default function Calculator() {
             <option value="before-2026-04">令和8年3月以前に支払われた分（改正前）</option>
           </select>
           <p className="hint">
-            改正前の表は55km以上が一律38,700円で、駐車場代の加算がありません。年末調整で1〜3月分を確かめるときに使います。
+            改正前の表は55km以上が一律{yen(BEFORE_MAX)}で、駐車場代の加算がありません。年末調整で1〜3月分を確かめるときに使います。
           </p>
         </div>
       </details>
