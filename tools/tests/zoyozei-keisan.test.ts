@@ -292,3 +292,17 @@ describe('早見表（贈与日を固定して相続開始年を動かす）', (
     expect(hayamiTable(d('2028-04-01'))[0].segments[0].from).toEqual(d('2028-04-01'));
   });
 });
+
+describe('画面の文言（#280 レビュー）', () => {
+  it('贈与額の注記は「全員分の合計」を案内し、「同じ人から」に戻らない（B の贈与税が過少に出るため）', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/zoyozei-keisan/Calculator.tsx', import.meta.url), 'utf8');
+    expect(src).not.toContain('同じ人から');
+    expect(src).toContain('複数の人から受けた場合は全員分の合計');
+  });
+
+  it('父200万円・母200万円は合計400万円で計算する（1人分の200万円で計算すると過少）', () => {
+    expect(giftTax(4_000_000, { lineal: true, adultOn0101: true }).tax).toBe(335_000);
+    expect(giftTax(2_000_000, { lineal: true, adultOn0101: true }).tax).toBe(90_000);
+  });
+});

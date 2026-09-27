@@ -117,7 +117,10 @@ export default function Calculator() {
           onChange={(e) => setAmount(e.target.value)}
           onBlur={() => trackToolUse('zoyozei-keisan', 'amount')}
         />
-        <p className="hint">同じ人から1月1日〜12月31日に受けた贈与の合計。下の「B. 贈与税」もこの額で計算します。</p>
+        <p className="hint">
+          1月1日〜12月31日に受けた贈与の合計（複数の人から受けた場合は全員分の合計）。下の「B. 贈与税」はこの額で計算します。
+          A の加算の判定は、このうち亡くなった人（贈与者）から受けた分に当てはまります。
+        </p>
       </div>
 
       <div className="field-row">
@@ -385,12 +388,12 @@ function CheckResult({ gift, inheritance, amount }: { gift: DateParts; inheritan
         <ClassChip cls={cls} />
         {cls === 'within-3y' && (
           <p className="hint" style={{ margin: '6px 0 0' }}>
-            {yen(range.max)}の全額が加算されます（110万円以下の贈与や、贈与税を払った贈与も加算されます）。
+            亡くなった人から受けた分の全額が加算されます（上の額がすべてその人からなら{yen(range.max)}。110万円以下の贈与や、贈与税を払った贈与も加算されます）。
           </p>
         )}
         {cls === 'extended-4y' && (
           <p className="hint" style={{ margin: '6px 0 0' }}>
-            加算される額は{yen(range.min)}〜{yen(range.max)}（延長4年分の贈与の合計から100万円までは加算されません）。
+            上の額がすべて亡くなった人からなら、加算される額は{yen(range.min)}〜{yen(range.max)}（延長4年分の贈与の合計から100万円までは加算されません）。
           </p>
         )}
       </div>
