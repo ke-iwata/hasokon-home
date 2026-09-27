@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import Calculator from './Calculator';
 import {
   CONFIRMED_ROWS,
@@ -239,6 +240,13 @@ export default function Page() {
         <li>妊娠・出産時の経済的支援（出産・子育て応援給付金）</li>
         <li>こども誰でも通園制度</li>
         <li>育児期の働き方の支援（育児時短就業給付、出生後休業支援給付）</li>
+        <li>
+          育児期間中の国民年金保険料免除（自営業・フリーランスなど第1号被保険者の親。2026年10月〜）
+          <PublicToolLink slug="kokunen-ikuji-menjo">
+            。免除される月と額は
+            <ToolLink slug="kokunen-ikuji-menjo">国民年金 育児免除 計算機</ToolLink>で出せます
+          </PublicToolLink>
+        </li>
       </ul>
       <p>
         使い道は資料に書かれている範囲を並べたものです。個々の給付の要件や金額は、それぞれの制度の一次情報をご確認ください。

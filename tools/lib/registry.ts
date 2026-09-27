@@ -114,7 +114,7 @@ export const tools: ToolDef[] = [
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-26',
+    updatedAt: '2026-09-27',
   },
   {
     slug: 'furusato-nozei',
@@ -323,6 +323,18 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-09-18',
+  },
+  {
+    // 仕様: docs/features/kokunen-ikuji-menjo.md
+    slug: 'kokunen-ikuji-menjo',
+    // Baby・BabyCarriage は出産予定日・育休給付が使っている。免除の届出（印）から Stamp にした
+    icon: 'Stamp',
+    name: '国民年金 産前産後・育児期間の保険料免除 計算機',
+    description:
+      '2026年10月から、自営業・フリーランスなど国民年金第1号被保険者の親は、子が1歳になるまでの保険料が所得に関係なく免除されます。子の生年月日（予定日）と実母・実父を選ぶと、産前産後免除と育児免除の月と免除額を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-27',
   },
   {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
@@ -558,6 +570,14 @@ export const categories: ToolCategory[] = [
  * `tools` を直に filter しないこと（見落としが公開事故になる）
  */
 export const publicTools = tools.filter((t) => t.stage === 'public');
+
+/**
+ * そのツールが公開中か。**公開中のページから公開前のページへ本文でリンクするとき**に使う
+ * （`app/PublicToolLink.tsx`）。公開前はリンクを出さず、`stage` を上げた時点で自動で張られる
+ */
+export function isPublicTool(slug: string): boolean {
+  return publicTools.some((t) => t.slug === slug);
+}
 
 /**
  * `stage` から検索避けを決める規則。**`robotsFor` と分けてあるのは、

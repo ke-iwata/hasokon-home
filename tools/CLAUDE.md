@@ -215,6 +215,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
+| 毎年1月（国民年金保険料の翌年度額が公表されたら） | `lib/kokunen-ikuji-menjo.ts` の `MONTHLY_PREMIUM` に翌年度の月額を1行足し、`DATA_CHECKED_AT` を直す（日本年金機構「国民年金保険料」を正とする）。足すまでは未公表の年度を最新年度の額で概算し、画面に「概算」と出る |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
@@ -235,7 +236,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール43本（全部 `public`。公開前のものは無い）** /
+- **ツール43本が `public`**（ほかに `wip` 3本、`preview` 1本 — `kokunen-ikuji-menjo`。2026-10-01 の施行後に `public` へ） /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
