@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import { HAYAMIHYO_YEARS, hayamihyo } from '@/lib/taishokukin';
 import Calculator from './Calculator';
 
@@ -312,6 +313,9 @@ export default function Page() {
         <Link href="/shitsugyo-hoken/">失業保険（基本手当）計算機</Link>／
         <Link href="/zaishoku-rorei-nenkin/">在職老齢年金 計算機</Link>／
         <Link href="/tedori-keisan/">手取り計算機</Link>
+        <PublicToolLink slug="zoyozei-keisan">
+          ／<ToolLink slug="zoyozei-keisan">贈与税 計算機・生前贈与加算チェッカー</ToolLink>
+        </PublicToolLink>
       </p>
 
       <ToolMeta slug="taishokukin-tedori" ymyl>

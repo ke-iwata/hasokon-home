@@ -361,6 +361,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/zoyozei-keisan.md
+    slug: 'zoyozei-keisan',
+    // Gift はふるさと納税、HandCoins は年末調整、HandHeart は養育費が使っている。「手渡す」の絵で HandArrowDown
+    icon: 'HandArrowDown',
+    name: '贈与税 計算機・生前贈与加算チェッカー',
+    description:
+      '2027年1月1日以後の相続から、相続税に足し戻す生前贈与の期間が3年から段階的に7年へ延びます。贈与日と相続開始日（想定）を入れると、その贈与が加算されるか・延長4年分（100万円の枠）に当たるかを判定。暦年課税の贈与税（一般・特例税率）と相続時精算課税の税額も計算します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-27',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
