@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { initAnalytics, shouldTrack, trackPageView } from '@/lib/analytics';
+import { initAnalytics, reportWebVitals, shouldTrack, trackPageView } from '@/lib/analytics';
 
 /**
  * ページビューの送信。
@@ -21,6 +21,9 @@ export default function Analytics() {
     if (!shouldTrack()) return;
     // 初回だけ gtag を初期化する（2回目以降は何もしない）
     initAnalytics();
+    // 表示速度（Core Web Vitals）の計測も初回だけ登録する
+    // （docs/features/mobile-lighthouse-third-party.md の E）
+    reportWebVitals();
     // pathname は「移動が起きたこと」の検知にだけ使い、値は渡さない。
     // usePathname() は basePath（/tools）を取り除いたパスを返すため、
     // GA4に渡すと実際のURLと食い違う（docs/features/ga4-page-path.md）。

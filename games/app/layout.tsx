@@ -53,6 +53,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ja">
       <head>
         {/*
+          広告・計測スクリプトの接続を先に張っておく（DNS・TLS の往復を初回描画と重ねる）。
+          Lighthouse の推定で約 300 ms。crossorigin は adsbygoogle.js が CORS で取られるため。
+          3 本目以降は足さない（preconnect は多いほど効かなくなる）。
+          docs/features/mobile-lighthouse-third-party.md の A
+        */}
+        {isAdsEnabled() && (
+          <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossOrigin="anonymous" />
+        )}
+        {isAnalyticsEnabled() && <link rel="preconnect" href="https://www.googletagmanager.com" />}
+
+        {/*
           AdSense本体。next/script ではなく生のscriptタグをheadに置く
           （afterInteractive だと静的HTMLにpreloadしか出ず、審査で検出されない可能性がある。
           hasokon-tools と同じ判断）。lib/adsense.ts が未設定の間は出力しない。
