@@ -22,6 +22,7 @@ import {
   isBroke,
   newSession,
   nextRound,
+  restart,
   setBet,
   setRules,
   split,
@@ -392,6 +393,21 @@ describe('賭け金と設定', () => {
     s = dealerPlay(stand(s));
     expect(s.chips).toBe(0);
     expect(isBroke(s)).toBe(true);
+  });
+
+  it('「はじめから」でチップは 1,000 に戻り、局の番号は数え直さない（記録が止まらないように）', () => {
+    let s = dealt([10, 10, 6, 10], { chips: 10, hitSoft17: true });
+    s = dealerPlay(stand(s));
+    expect(isBroke(s)).toBe(true);
+    const before = s.round;
+    s = restart(s);
+    expect(s.phase).toBe('betting');
+    expect(s.chips).toBe(START_CHIPS);
+    expect(s.rules.hitSoft17).toBe(true);
+    expect(s.round).toBe(before);
+    // 次に配る局は、尽きた局と別の番号になる
+    s = dealFrom(s, deckOf([10, 9, 7, 8]));
+    expect(s.round).toBe(before + 1);
   });
 
   it('記録の区分はソフト 17 の設定で分ける', () => {

@@ -186,6 +186,16 @@ export function newSession(rules: Rules = DEFAULT_RULES): BlackjackState {
   };
 }
 
+/**
+ * 「はじめから」。所持チップと賭け金を最初に戻す。
+ *
+ * **`round` は引き継ぐ。** 画面は「記録済みの局」を `round` で覚えているので、
+ * 0 から数え直すと、前のセッションで尽きた局と同じ番号の局が記録されなくなる（#275 のレビュー指摘）
+ */
+export function restart(state: BlackjackState): BlackjackState {
+  return { ...newSession(state.rules), round: state.round };
+}
+
 /** 次の局を配れるだけのチップがあるか（最小の賭け金に届かなければ「はじめから」） */
 export function isBroke(state: BlackjackState): boolean {
   return state.chips < BETS[0];

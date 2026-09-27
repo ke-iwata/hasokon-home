@@ -18,6 +18,7 @@ import {
   isBroke,
   newSession,
   nextRound,
+  restart,
   setBet,
   setRules,
   split,
@@ -112,13 +113,13 @@ function HandFrame({ cards, active = false, label }: { cards: Card[]; active?: b
 
 /**
  * 手の上に出す 1 行。**枠の幅（6 枚ぶん）に収まる長さにする**（行は折り返さない）。
- * スプリットの 2 手は枠が狭いので、賭け金を出さず「手1 17」だけにする（賭け金は 2 手とも同じ）
+ * 合計（とバースト）だけを出し、賭け金とダブルはステータスバーに寄せる
+ * （1 手でも「24 バースト 賭け 10」は枠に収まらず、省略されていた。#275 のレビュー指摘）
  */
 function handLine(hand: Hand, index: number, count: number): string {
   const v = handValue(hand.cards);
   const total = v.isBust ? `${v.hard} バースト` : totalLabel(hand.cards);
-  if (count > 1) return `手${index + 1}　${total}`;
-  return `${total}　賭け ${formatChips(hand.bet)}${hand.doubled ? '（ダブル）' : ''}`;
+  return count > 1 ? `手${index + 1}　${total}` : total;
 }
 
 export default function Game() {
@@ -171,7 +172,7 @@ export default function Game() {
   const onRestart = () => {
     setImproved(null);
     trackToolUse(SLUG, 'restart');
-    setState((s) => newSession(s.rules));
+    setState((s) => restart(s));
   };
 
   const changeRules = (rules: Rules) => {
@@ -252,7 +253,7 @@ export default function Game() {
               title="ディーラーがソフト17（Aを11と数えた17）で止まるか引くか"
               onClick={() => changeRules({ hitSoft17 })}
             >
-              {hitSoft17 ? 'S17で引く' : 'S17で止まる'}
+              {hitSoft17 ? 'ソフト17で引く' : 'ソフト17で止まる'}
             </button>
           ))}
         </div>
@@ -271,6 +272,7 @@ export default function Game() {
         </span>
         <span>
           賭け <strong>{formatChips(inRound || state.phase === 'settled' ? onTable : state.bet)}</strong>
+          {state.hands.some((h) => h.doubled) && <strong>（ダブル）</strong>}
         </span>
       </div>
 
