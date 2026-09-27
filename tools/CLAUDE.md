@@ -221,6 +221,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 毎年12月（税制改正大綱が出たら） | セルフメディケーション税制の適用期限を `lib/iryohi-kojo.ts` の `SELF_MED_EXPIRES_AT` / `SELF_MED_CHECKED_AT` に反映（現行の期限は2026年12月31日。延長は令和9年度税制改正待ち）。**画面では「今年で終わり」と断定せず「現時点の期限は〜」と書く**（延長された瞬間に嘘になる文言を置かない）。足切り・上限が変わったら `MEDICAL_THRESHOLD_FIXED` / `MEDICAL_CAP` / `SELF_MED_THRESHOLD` / `SELF_MED_CAP` |
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
+| 防衛特別所得税・復興特別所得税の税率・課税期間の改正時 | `lib/boei-tokubetsu-shotokuzei.ts` の `SURTAX_PERIODS`（税率は千分率の整数）。区切りの年（`DEFENSE_START_YEAR` / `RECONSTRUCTION_LAST_YEAR_*`）も同じ場所。**合計2.1%が改正前後で同じ**ことは `tests/boei-tokubetsu-shotokuzei.test.ts` が令和9年分 源泉徴収税額表の別表第四と突き合わせて見張っている。控除額は `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあり、ここには持たない |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
 | 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞の扱いも条文で確認し、確認できるまで `rate2027For()` は `'newspaper-unconfirmed'` を返したままにする |
 | 軽減税率Q&Aが改訂されたとき | `lib/shohizei-items.ts` の `ITEMS` の `qa`（設問番号）を国税庁「消費税の軽減税率制度に関するQ&A（個別事例編）」と突き合わせ直し、`QA_REVISION` / `ITEMS_CHECKED_AT` を直す。**改訂で設問番号がずれる**ので番号だけ信じないこと。有料老人ホーム等の金額基準（令和8年6月1日から一食730円以下・1日2,190円まで）も同じQ&Aにある |
@@ -236,7 +237,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール44本（`tsukin-teate-hikazei` だけ `preview`。ほかは `public`）** /
+- **ツール45本（`tsukin-teate-hikazei` と `boei-tokubetsu-shotokuzei` が `preview`。ほかは `public`。
+  防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
