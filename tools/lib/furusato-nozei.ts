@@ -161,7 +161,7 @@ interface PersonalDeduction {
 
 /**
  * 配偶者控除。本人の合計所得金額900万円超で段階的に減る。
- * 【データ更新箇所】金額が変わったら `shaho-grades.ts` / `kosodate-shienkin.ts`。
+ * 【データ更新箇所】金額が変わったらここ。
  */
 function spouseDeduction(type: SpouseType, totalIncome: number): PersonalDeduction {
   if (type === 'none' || totalIncome > 10_000_000) {
@@ -248,7 +248,7 @@ const HEALTH_CAP = GRADES[GRADES.length - 1][1] * 12 + BONUS_CAP_YEARLY;
  *
  * 【データ更新箇所】**料率はここに持たない。** lib/shaho-ryoritsu.ts が唯一の定義で、
  * 料率改定はあちらだけを直せばこの概算も追随する。上限額（`HEALTH_CAP` / `PENSION_CAP`）が
- * 変わったらここ。
+ * 変わったら `shaho-grades.ts` / `kosodate-shienkin.ts`（上限の数字はここに持たない）。
  */
 export function estimateSocialInsurance(income: number, kaigo = false): number {
   if (income <= 0) return 0;
