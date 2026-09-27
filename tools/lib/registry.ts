@@ -134,7 +134,7 @@ export const tools: ToolDef[] = [
       '年末調整でいくら戻るかを計算。給与明細の源泉徴収税額を入れるだけで差額が出ます。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなったかも表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-12',
+    updatedAt: '2026-09-27',
   },
   {
     slug: 'zaishoku-rorei-nenkin',
@@ -249,7 +249,7 @@ export const tools: ToolDef[] = [
       '年収（額面）から手取りを計算。月あたりの手取りと、健康保険・厚生年金・雇用保険・所得税・住民税の内訳が出ます。2026年（令和8年分）の基礎控除引上げで手取りがいくら増えるかを併記し、年収100万〜1,000万円の早見表つき。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-05',
+    updatedAt: '2026-09-27',
   },
   {
     slug: 'hatarakizon',
@@ -376,6 +376,16 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-09-18',
+  },
+  {
+    slug: 'tsukin-teate-hikazei',
+    icon: 'Car',
+    name: '通勤手当 非課税限度額チェッカー',
+    description:
+      '片道の通勤距離と支給額から、通勤手当のうち非課税になる額と課税される額を計算。2026年4月改正の65km以上の新区分と、勤務先・駅周辺の駐車場代（月5,000円まで）の加算に対応。定期代との併用・150,000円の上限も。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-27',
   },
   {
     slug: 'jitensha-hansokukin',
@@ -558,6 +568,15 @@ export const categories: ToolCategory[] = [
  * `tools` を直に filter しないこと（見落としが公開事故になる）
  */
 export const publicTools = tools.filter((t) => t.stage === 'public');
+
+/**
+ * そのツールが公開中か。公開中のページの本文から、まだ公開していないツールへ
+ * リンクを出さないために使う（`noindex` のページへ内部リンクを張らない）。
+ * `public` にした時点でリンクが自動で出る
+ */
+export function isPublicTool(slug: string): boolean {
+  return publicTools.some((t) => t.slug === slug);
+}
 
 /**
  * `stage` から検索避けを決める規則。**`robotsFor` と分けてあるのは、

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { robotsFor, SITE_URL } from '@/lib/registry';
+import { isPublicTool, robotsFor, SITE_URL } from '@/lib/registry';
 import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
@@ -115,7 +115,13 @@ export default function Page() {
       <ul>
         <li>
           <strong>健康保険料</strong> —
-          標準報酬月額に料率をかけた額の半分（労使折半）を負担します。協会けんぽの全国平均は令和8年度9.9%で、都道府県ごとに少し違います。令和8年4月分からは子ども・子育て支援金が健康保険料に加算されています
+          標準報酬月額に料率をかけた額の半分（労使折半）を負担します。協会けんぽの全国平均は令和8年度9.9%で、都道府県ごとに少し違います。令和8年4月分からは子ども・子育て支援金が健康保険料に加算されています。標準報酬月額には、所得税では非課税の通勤手当も<strong>全額</strong>入ります
+          {isPublicTool('tsukin-teate-hikazei') && (
+            <>
+              （所得税で非課税になる額は
+              <Link href="/tsukin-teate-hikazei/">通勤手当 非課税限度額チェッカー</Link>）
+            </>
+          )}
         </li>
         <li>
           <strong>厚生年金保険料</strong> — 料率18.3%の半分。
