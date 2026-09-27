@@ -19,6 +19,13 @@ export const AGENT_RULES = Object.freeze([
   { kind: 'claudebot', pattern: /ClaudeBot|Claude-Web|anthropic-ai/i, asn: null },
   { kind: 'perplexitybot', pattern: /PerplexityBot/i, asn: null },
   { kind: 'applebot', pattern: /Applebot/i, asn: null },
+  // SNS・チャットのリンクプレビュー取得。人ではないが検索クローラーでもないので別に数える
+  // （#281 レビューの指摘 3。共有された回数の目安になる）
+  {
+    kind: 'social-preview',
+    pattern: /facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|LinkedInBot|Line\/|LINE-Parts|Pinterestbot|WhatsApp|TelegramBot|Iframely|Embedly/i,
+    asn: null,
+  },
   { kind: 'yandex', pattern: /YandexBot/i, asn: null },
   { kind: 'duckduckbot', pattern: /DuckDuckBot/i, asn: null },
   { kind: 'ahrefs', pattern: /AhrefsBot/i, asn: null },
@@ -27,6 +34,13 @@ export const AGENT_RULES = Object.freeze([
 
 /** 上の表に無い「何かのボット」を拾う。人間のブラウザに現れない語だけ */
 const GENERIC_BOT = /bot\b|bot\/|crawler|spider|slurp|fetch|python-requests|curl\/|wget\/|Go-http-client|HeadlessChrome|Scrapy|httpx|axios/i;
+
+/**
+ * `bot\b` に引っかかる人間の端末名。Android の UA は機種名を含み、
+ * CUBOT（メーカー名）が "CUBOT X30" のように入る（#281 レビューの指摘 1）。
+ * ここに載った語を含む UA は GENERIC_BOT の判定から外して human にする
+ */
+const HUMAN_DEVICE_NAMES = /\bCUBOT\b/i;
 
 /** クローラーの種類の並び順（表に出すとき） */
 export const KIND_ORDER = Object.freeze([
@@ -40,6 +54,7 @@ export const KIND_ORDER = Object.freeze([
   'claudebot',
   'perplexitybot',
   'applebot',
+  'social-preview',
   'yandex',
   'duckduckbot',
   'ahrefs',
@@ -68,7 +83,7 @@ export function classifyAgent(userAgent, asn) {
     return { kind: `${rule.kind}-spoof`, verified: false };
   }
 
-  if (GENERIC_BOT.test(ua)) return { kind: 'other-bot', verified: null };
+  if (GENERIC_BOT.test(ua) && !HUMAN_DEVICE_NAMES.test(ua)) return { kind: 'other-bot', verified: null };
   return { kind: 'human', verified: null };
 }
 
@@ -151,6 +166,15 @@ export function isHtmlPath(path) {
 /** 旧サブドメイン。ここに来た要求は 301 で hasokon.com へ寄せている */
 export const LEGACY_HOSTS = Object.freeze(['tool.hasokon.com', 'game.hasokon.com', 'roulette.hasokon.com']);
 
+/**
+ * 自サイトのホストか。`hasokon.com` そのものと、そのサブドメインだけ。
+ * `endsWith('hasokon.com')` だと `evilhasokon.com` も自サイト扱いになる（#281 レビューの指摘 2）
+ */
+export function isOwnHost(host) {
+  const h = String(host).toLowerCase().replace(/:\d+$/, '');
+  return h === 'hasokon.com' || h.endsWith('.hasokon.com');
+}
+
 /** google-index-recovery.md の B で「近い作りのページ」とした2ルート */
 export const THIN_PATH_PREFIXES = Object.freeze(['/tools/r/', '/tools/guide/']);
 
@@ -229,7 +253,7 @@ export function aggregate(records, options = {}) {
         } catch {
           // そのまま
         }
-        if (!refHost.endsWith('hasokon.com')) bump(legacyReferers, refHost);
+        if (!isOwnHost(refHost)) bump(legacyReferers, refHost);
       }
     }
 

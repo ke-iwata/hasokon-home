@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { gzipSync } from 'node:zlib';
 
-import { aggregate, classifyAgent, formatReport, isHtmlPath, parseLogText } from '../lib/cf-logs.mjs';
+import { aggregate, classifyAgent, formatReport, isHtmlPath, isOwnHost, parseLogText } from '../lib/cf-logs.mjs';
 import { DEFAULTS, EXIT_FAILED, EXIT_OK, decodeLogFile, main, parseArgs, sinceFor } from '../cf-logs-crawlers.mjs';
 
 const GOOGLEBOT_UA =
@@ -57,6 +57,22 @@ describe('classifyAgent', () => {
     assert.deepEqual(classifyAgent('Mozilla/5.0; GPTBot/1.2', 20473), { kind: 'gptbot', verified: null });
     assert.equal(classifyAgent('ChatGPT-User/1.0', null).kind, 'chatgpt-user');
     assert.equal(classifyAgent('OAI-SearchBot/1.0', null).kind, 'oai-searchbot');
+  });
+
+  it('端末名に CUBOT を含む Android のブラウザは human（bot\\b に引っかけない）', () => {
+    const cubot =
+      'Mozilla/5.0 (Linux; Android 10; CUBOT X30) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
+    assert.equal(classifyAgent(cubot, 2516).kind, 'human');
+    // 本物のボット名は引き続き other-bot
+    assert.equal(classifyAgent('Mozilla/5.0 (compatible; DotBot/1.2; +https://opensiteexplorer.org/dotbot)', 1).kind, 'other-bot');
+    assert.equal(classifyAgent('MJ12bot/v1.4.8', 1).kind, 'other-bot');
+  });
+
+  it('SNS・チャットのリンクプレビューは social-preview', () => {
+    assert.equal(classifyAgent('facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)', 1).kind, 'social-preview');
+    assert.equal(classifyAgent('Twitterbot/1.0', 1).kind, 'social-preview');
+    assert.equal(classifyAgent('Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)', 1).kind, 'social-preview');
+    assert.equal(classifyAgent('Mozilla/5.0 (Linux; Android 14) Line/14.0.0', 1).kind, 'social-preview');
   });
 
   it('知らないボットは other-bot、ブラウザは human', () => {
@@ -142,6 +158,18 @@ describe('aggregate', () => {
     const s = aggregate(records);
     assert.equal(s.legacy.hosts['tool.hasokon.com'], 2);
     assert.deepEqual(s.legacy.topReferers, [['example.jp', 1]]);
+  });
+
+  it('自サイト判定は hasokon.com とそのサブドメインだけ（evilhasokon.com は外部）', () => {
+    assert.equal(isOwnHost('hasokon.com'), true);
+    assert.equal(isOwnHost('test.hasokon.com'), true);
+    assert.equal(isOwnHost('Tool.Hasokon.com:443'), true);
+    assert.equal(isOwnHost('evilhasokon.com'), false);
+    assert.equal(isOwnHost('hasokon.com.example.net'), false);
+    const s = aggregate([
+      record({ 'x-host-header': 'tool.hasokon.com', 'sc-status': '301', 'cs(Referer)': 'https://evilhasokon.com/x' }),
+    ]);
+    assert.deepEqual(s.legacy.topReferers, [['evilhasokon.com', 1]]);
   });
 
   it('404 と HTML の result type は hasokon.com だけで数える', () => {
