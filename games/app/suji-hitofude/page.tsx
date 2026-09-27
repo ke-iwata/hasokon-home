@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import AdUnit from '@/app/AdUnit';
 import Game from './Game';
 import GameIcon from '@/app/GameIcon';
-import { MODES } from '@/lib/hitofude-number';
+import { MODES } from '@/lib/suji-hitofude';
 
 /**
  * 盤の大きさは**設定から引く**（ページの文言に数字を書き写さない）。
@@ -15,16 +15,16 @@ import { MODES } from '@/lib/hitofude-number';
 const sizes = `${MODES.easy.size}×${MODES.easy.size}〜${MODES.hard.size}×${MODES.hard.size}`;
 const dailySize = `${MODES.daily.size}×${MODES.daily.size}`;
 
-const title = 'ひとふでナンバー — 数字を順につないで全マスを一筆書き。毎日変わる今日の1問つき';
+const title = '数字つなぎ一筆書き — 数字を順につないで全マスを一筆書き。毎日変わる今日の1問つき';
 // 「LinkedIn の Zip と同じルール」への言及は description の1回にとどめる（仕様書の「名称と権利」。
 // 名称の使用ではなく言及。ページ本文・見出しには書かない）
-const description = `無料の一筆書きパズル「ひとふでナンバー」。1から順に数字をたどり、全マスを1本の道で通ります（LinkedInのZipと同じルール）。${sizes}の3段階と、毎日変わる「今日の1問」（${dailySize}）つき。答えは必ず1通り。インストール不要でスマホからもすぐ遊べます。`;
+const description = `無料の一筆書きパズル「数字つなぎ一筆書き」。1から順に数字をたどり、全マスを1本の道で通ります（LinkedInのZipと同じルール）。${sizes}の3段階と、毎日変わる「今日の1問」（${dailySize}）つき。答えは必ず1通り。インストール不要でスマホからもすぐ遊べます。`;
 
 export const metadata: Metadata = {
   title,
   description,
-  alternates: { canonical: `${SITE_URL}/hitofude-number/` },
-  robots: robotsFor('hitofude-number'),
+  alternates: { canonical: `${SITE_URL}/suji-hitofude/` },
+  robots: robotsFor('suji-hitofude'),
 };
 
 const faq = [
@@ -62,15 +62,15 @@ const faq = [
   },
 ];
 
-const trail = breadcrumbFor('hitofude-number');
+const trail = breadcrumbFor('suji-hitofude');
 
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': [
     {
       '@type': 'VideoGame',
-      name: 'ひとふでナンバー',
-      url: `${SITE_URL}/hitofude-number/`,
+      name: '数字つなぎ一筆書き',
+      url: `${SITE_URL}/suji-hitofude/`,
       gamePlatform: 'Web Browser',
       applicationCategory: 'Game',
       operatingSystem: 'Web',
@@ -99,7 +99,7 @@ export default function Page() {
 
       <Breadcrumb trail={trail} />
 
-      <h1>ひとふでナンバー</h1>
+      <h1>数字つなぎ一筆書き</h1>
       {/* リード文は2行に収める（3行にすると盤が画面の外へ出る） */}
       <p className="lead">
         1から<strong>数字を順に</strong>たどり、<strong>全マスを一筆書き</strong>。
@@ -136,7 +136,7 @@ export default function Page() {
         ベストタイムとクリア回数は難易度ごとに保存されます。
       </p>
 
-      <h2>ひとふでナンバーとは</h2>
+      <h2>数字つなぎ一筆書きとは</h2>
       <p>
         番号をヒントに、盤のすべてのマスを1本の道で通る<strong>数字つなぎ</strong>の一筆書きパズルです。
         計算はいっさい要らず、「このマスはこの向きからしか入れない」という
@@ -190,7 +190,7 @@ export default function Page() {
       <h2>他のゲーム</h2>
       <div className="game-grid">
         {publicGames
-          .filter((g) => g.slug !== 'hitofude-number')
+          .filter((g) => g.slug !== 'suji-hitofude')
           .map((g) => (
             <Link key={g.slug} className="game-card" href={`/${g.slug}/`}>
               <div className="icon" aria-hidden="true">

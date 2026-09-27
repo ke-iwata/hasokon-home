@@ -1,22 +1,33 @@
-# 新ゲーム「ひとふでナンバー」（数字を順にたどって全マスを一筆書きする純ロジックパズル。LinkedIn「Zip」と同型）— 日替わり基盤（#242）の 2 本目
+# 新ゲーム「数字つなぎ一筆書き」（数字を順にたどって全マスを一筆書きする純ロジックパズル。LinkedIn「Zip」と同型）— 日替わり基盤（#242）の 2 本目
+
+**状態**：**公開済み**（2026-09-27、`stage: 'public'`）。名称は
+**「数字つなぎ一筆書き」**、slug は **`suji-hitofude`**。
+**J-PlatPat を引かずに公開する代わりに、造語をやめて説明的な名称に寄せた**（運営者の判断）。
+当初案の「数字つなぎ一筆書き」は造語なので確認なしでは出せず、
+確認は運営者にしか行えない（この環境から J-PlatPat を引けない）。
+**旧 slug `suji-hitofude` は本番に一度も出ていない**ので、改名に redirect は要らなかった。
+
+<details><summary>公開前の状態メモ</summary>
 
 **状態**：実装済み・`stage: 'wip'`（2026-09-27 起票、同日実装。同日の企画レビュー（#269）の必須 1 点 — 日替わりの記録キーと版の上げ方を
 星置きの実装（`DAILY_VARIANT`）に揃える — を反映済み）。
-**名称と slug（`hitofude-number`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある**（箱入り娘と同じ扱い）。
+**名称と slug（`suji-hitofude`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある**（箱入り娘と同じ扱い）。
 確認が済んだら `preview` へ上げる（登録があれば、その前に名称・slug を下記のとおり切り替える）。
 実装の判断は [games/docs/DECISIONS.md](../../games/docs/DECISIONS.md) の 2026-09-27 の項。
 **着手条件**：日替わり基盤（`games/lib/daily.ts`・`records.ts` の `lastClearedOn` / `streak`）は
 #242（星置きパズル、`stage: 'wip'`）で **main に入っている**ので、星置きが `public` になるのを待たずに着手できる。
-**実装着手前に、運営者が J-PlatPat（第9類・第28類・第41類）で「ひとふでナンバー」「一筆ナンバー」を確認し、
+**実装着手前に、運営者が J-PlatPat（第9類・第28類・第41類）で「数字つなぎ一筆書き」「一筆ナンバー」を確認し、
 名称と slug を確定させる**（[game-binary-puzzle.md](./game-binary-puzzle.md)・[game-hakoiri-musume.md](./game-hakoiri-musume.md) と同じ
 「運営者の名称確認 → 名称・slug 確定 → 実装着手」の順序。slug は公開後に動かせない）。
-問題なければ slug は `hitofude-number`。登録があれば「数字つなぎ一筆書き」`suji-hitofude` に変えてから着手する。
+問題なければ slug は `suji-hitofude`。登録があれば「数字つなぎ一筆書き」`suji-hitofude` に変えてから着手する。
 実装したら `stage: 'wip'` から始め、生成器の一意解テストがそろったら `preview` へ。
 **`public` への昇格は運営者の判断**（2026-09-19 の「新規ゲームはまたあとで」以降、ゲームの `public` は止まっている。
 [google-index-recovery.md](./google-index-recovery.md) の解除判断と同じタイミングで見る）。
 `public` にする PR では `home/index.html` のカード・`home/404.html` の一覧も足す。
-**対象**：`games/`（`hasokon.com/games/hitofude-number/` を想定）
+**対象**：`games/`（`hasokon.com/games/suji-hitofude/` を想定）
 **起票**：2026-09-27（セッション `session_01Px7TmVujB78wiWtPvWSNfZ`）
+
+</details>
 
 ---
 
@@ -59,7 +70,7 @@
 - **ゲームのルール・遊び方それ自体に著作権は及ばない**（#236 で整理した考え方と同じ）。名称と盤面データを自前にする
 - **使わない名称**：「Zip」（LinkedIn が 2025 年に商標出願。trademarkia の報道）・「Hidato」（登録商標）・
   「Numbrix」（Parade 誌のパズル名）・「ナンバーリンク」（ニコリの登録商標。ルールも別物）
-- 主名称は **「ひとふでナンバー」**、説明に「一筆書き」「数字をつなぐ」を回す。検索意図（「一筆書き パズル 無料」「数字 一筆書き」）に
+- 主名称は **「数字つなぎ一筆書き」**、説明に「一筆書き」「数字をつなぐ」を回す。検索意図（「一筆書き パズル 無料」「数字 一筆書き」）に
   日本語の一般語で当たり、既存ゲームと紛れない。「LinkedIn の Zip と同じルール」への言及は**ページ本文ではなく説明文（description）の 1 回にとどめる**（名称の使用ではなく言及。控えめに）
 - 盤面は自前の生成器で作る。他サイトの問題の転載はしない
 
@@ -101,7 +112,7 @@
 - 壁は太線。ライト／ダークの両方でコントラストを確保（`prefers-color-scheme` のトークン）
 - クリア画面：タイム・ベスト・今日の 1 問なら連続日数と「結果をコピー」（**答え（道の形）を含めない**。#232 の約束）
 
-### 生成（`games/lib/hitofude-number.ts`。純関数。`daily.ts` の PRNG を受け取る）
+### 生成（`games/lib/suji-hitofude.ts`。純関数。`daily.ts` の PRNG を受け取る）
 
 1. **ハミルトン路を作る**：N×N を蛇行（ブストロフェドン）で埋めた道を初期解にし、**バックビット法**
    （道の端を隣接マスへつなぎ替えて経路をランダム化する標準手法）を数百回回す。全マスを通る道が常に得られ、
@@ -125,7 +136,7 @@
   ベストタイム・クリア回数。日替わりは `lastClearedOn` / `streak`
 - 結果コピー：「ひとふでナンバー 今日の 1 問（2026-09-27）2:41 ／ 連続 5 日」＋ URL。**盤面や道の形は入れない**
 
-### テスト（`games/tests/hitofude-number.test.ts`）
+### テスト（`games/tests/suji-hitofude.test.ts`）
 
 - 生成 100 盤 × 3 サイズがすべて一意解で、道が全マスを 1 回ずつ通り、番号が昇順に並ぶ
 - 同じ日付キーからは同じ盤面（決定論）。日付が変われば違う盤面
@@ -135,7 +146,7 @@
 ### ページ構成
 
 - `metadata`：title「ひとふでナンバー — 数字を順につないで全マスを一筆書き。毎日変わる今日の 1 問つき」、
-  `robots: robotsFor('hitofude-number')`
+  `robots: robotsFor('suji-hitofude')`
 - registry：`keywords: ['一筆書き', '数字つなぎ', '今日の1問', '連続日数']`（`/games/llms.txt` の行に出る。
   **ページにある語だけ**。`tests/llms.test.ts` が検査する）、`stage: 'wip'`
 - JSON-LD は他ゲームと同じ `VideoGame` + `BreadcrumbList`
@@ -145,14 +156,14 @@
 - **日本語で空いている型を、日替わり付きで先に置く。** 星置き・バイナリーは日本語の先行サイトがあるが、この型は無い。
   AI アシスタント経由（chatgpt.com 81 セッション／28 日）は「説明で見つかる」ので、`/games/llms.txt` の 1 行が効く
 - **再訪の計測（星置きと同じ指標）**：`first_visit / session_start`（サイト全体で 338 / 487 ＝ 69%、2026-09-27 取得）が
-  `/games/hitofude-number/` で下がるか。`public` にならないと測れないのは星置きと同じ
+  `/games/suji-hitofude/` で下がるか。`public` にならないと測れないのは星置きと同じ
 - **日替わり基盤の 2 本目**として `daily.ts` が汎用であることを確かめ、#236（バイナリー）の着手を軽くする
 
 ## 工数の見積り
 
 | 作業 | 消費トークン（目安） |
 |---|---|
-| `lib/hitofude-number.ts`（バックビット法・番号配置・壁・一意解ソルバ・難易度）＋テスト | 70k |
+| `lib/suji-hitofude.ts`（バックビット法・番号配置・壁・一意解ソルバ・難易度）＋テスト | 70k |
 | `Game.tsx`（なぞる操作・戻ると縮む・先端の再開・壁と番号の弾き・クリア判定・タイマー・記録・結果コピー） | 80k |
 | `page.tsx`・`GameIcon.tsx`・registry（`keywords`）・stage／llms テスト・スマホ実測（390×844 / 320×568） | 30k |
 | J-PlatPat の名称確認（運営者）・DECISIONS.md | 10k |
