@@ -568,6 +568,28 @@ function SlidingBlocksIcon({ size = 26 }: IconProps) {
   );
 }
 
+function HitofudePathIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 3×3 の盤を蛇行して通る 1 本の道。始点と終点に番号の丸 */}
+      <path d="M64 64 H192 V128 H64 V192 H192" />
+      <circle cx="64" cy="64" r="20" fill="currentColor" />
+      <circle cx="192" cy="192" r="20" fill="currentColor" />
+    </svg>
+  );
+}
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -599,6 +621,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   SlidingBlocks: SlidingBlocksIcon,
   // 星置きパズル。猫や動物の絵柄は先行アプリの模倣に見えるので使わず、星で通す
   Star: StarIcon,
+  // ひとふでナンバー。先行アプリの絵柄はなぞらず、蛇行する 1 本の道で表す
+  HitofudePath: HitofudePathIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

@@ -197,6 +197,25 @@ export const games: GameDef[] = [
     updatedAt: '2026-09-19',
   },
   {
+    // 「1 から順に数字を通り、全マスを 1 本の道で埋める」型（LinkedIn Zip と同型）。
+    // ルール自体に権利は及ばない。問題は自前の生成器で作り、他サイトの転記はしない。
+    // **使わない名前**：「Zip」（LinkedIn が商標出願）・「Hidato」（登録商標）・
+    // 「Numbrix」（Parade 誌）・「ナンバーリンク」（ニコリの登録商標。ルールも別物）。
+    // **「ひとふでナンバー」の商標確認（J-PlatPat・第9類/第28類/第41類）は運営者のタスク**で、
+    // 仕様書の状態行のとおり名称と slug はその確認で確定する。
+    // 登録が見つかったら name を「数字つなぎ一筆書き」、slug を `suji-hitofude` に切り替える
+    // （`wip` のうちに済ませる。公開後はURLを動かせない）。
+    // 同じ日替わり基盤（lib/daily.ts）を使う星置きパズルの隣に置く
+    slug: 'hitofude-number',
+    icon: 'HitofudePath',
+    name: 'ひとふでナンバー',
+    description:
+      '1から数字を順にたどり、全マスを1本の道で一筆書き。5×5〜7×7の3段階と、毎日変わる今日の1問。',
+    keywords: ['一筆書き', '数字つなぎ', '今日の1問', '連続日数'],
+    stage: 'wip',
+    updatedAt: '2026-09-27',
+  },
+  {
     slug: 'reversi',
     icon: 'Stones',
     name: 'リバーシ',
