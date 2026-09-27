@@ -178,7 +178,7 @@
     **遺贈で財産を取得した孫、生命保険金などのみなし相続財産を取得した孫は「相続等により財産を取得した人」に当たり、加算の対象になる**。
     この例外を回答に明記する）
 - 出典：No.4408・No.4161・No.4103 と、相続税法 19 条・21 条の 5・21 条の 7・21 条の 11 の 2（e-Gov 法令検索）
-- registry：`category: 'お金・社会保険'`、`icon: 'HandHeart'`（Phosphor。**`Gift` は `furusato-nozei`、`HandCoins` は `nenmatsu-chosei` が使っているので避ける**。`ToolIcon.tsx` の 48 個の import はすべて使用中なので、実装時に `HandHeartIcon` を import に足す。Phosphor v2 に無ければ `HandArrowDown` を第 2 候補にする）、`stage: 'preview'`、`updatedAt` は実装日
+- registry：`category: 'お金・社会保険'`、`icon: 'HandArrowDown'`（Phosphor。「手渡す」の絵。**`Gift` は `furusato-nozei`、`HandCoins` は `nenmatsu-chosei`、`HandHeart` は `yoikuhi-keisan` が使っているので避ける**。`ToolIcon.tsx` の 48 個の import はすべて使用中なので、実装時に `HandArrowDownIcon` を import に足す。Phosphor v2 に無ければ `Vault` を第 2 候補にする（未使用を確認済み））、`stage: 'preview'`、`updatedAt` は実装日
 - **関連ツールの自動リンク**は `RelatedTools` が同カテゴリから出す。退職金（`taishokukin-tedori`）の本文から
   「もらう側の税金」の並びで `PublicToolLink` を 1 本張る
 
