@@ -448,6 +448,7 @@ ol {
 .gm-board,
 .ms-board,
 .hp-board,
+.hn-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -761,6 +762,165 @@ ol {
 }
 
 .hp-share-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* ---- ひとふでナンバー ----
+   盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。
+   `--chrome` / `--board-max` は星置きと同じく盤ではなく入れ物（`.hn-game`）に置き、
+   生成中の幕（`.hn-loading`）と盤が同じ値を継承するようにする。
+   `--chrome` は盤以外が使う高さ（パンくず・見出し・リード文・段・記録の帯・
+   ボタンの行・案内の1行まで）。星置きより「チェック」が無いぶん少し低い。
+
+   **なぞる操作とスクロールを取り合わない**ように、盤の上は `touch-action: none`。
+   道は SVG で重ね描きし、マス（div）はクリックを受けない（盤が座標からマスを決める） */
+.hn-game {
+  --chrome: 440px;
+  --board-max: 440px;
+}
+
+.hn-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--hn-cols, 6), 1fr);
+  /* 行も明示する（番号の無い行が中身の高さまで潰れて、マスが正方形でなくなる） */
+  grid-template-rows: repeat(var(--hn-cols, 6), 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  border: 3px solid var(--muted);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.hn-board:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hn-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* 通ったマスは薄く塗る（残りが一目で分かる）。色だけに頼らず、道の線でも分かる */
+.hn-cell.visited {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+
+.hn-board.done .hn-cell.visited {
+  background: color-mix(in srgb, var(--ok) 20%, var(--surface));
+}
+
+/* 番号は丸で強調する。道の線より手前に出す */
+.hn-num {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--text);
+  color: var(--surface);
+  font-size: clamp(0.85rem, 4.6vw, 1.35rem);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hn-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.hn-path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.32;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.hn-board.done .hn-path {
+  stroke: var(--ok);
+}
+
+/* 壁は太線。ライト／ダークどちらでも本文色で引く（地とのコントラストを確保） */
+.hn-wall {
+  stroke: var(--text);
+  stroke-width: 0.12;
+  stroke-linecap: round;
+}
+
+/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない）。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること** */
+.hn-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.hn-actions {
+  margin-top: 12px;
+}
+
+.hn-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  /* 押す先は44pxを割らない（画面の約束4） */
+  min-height: 44px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 弾いた理由の1行。**空でも枠は置く**（高さを確保して盤を動かさない） */
+.hn-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hn-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+
+.hn-share-note {
   font-size: 0.8rem;
   color: var(--muted);
 }
@@ -4818,5 +4978,20 @@ button.hf-card {
 
   .hp-toggle {
     font-size: 0.85rem;
+  }
+
+  /* ひとふでナンバー。星置きと同じ理由で、狭い画面では高さから盤を縮めすぎない */
+  .hn-game {
+    --chrome: 300px;
+    --board-max: 380px;
+  }
+
+  .hn-toggle {
+    font-size: 0.85rem;
+  }
+
+  /* 弾いた理由の1行を 320px 幅でも折り返さない大きさに（文言は lib 側で 18 字以内） */
+  .hn-note {
+    font-size: 0.75rem;
   }
 }
