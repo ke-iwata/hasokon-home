@@ -197,8 +197,8 @@ HTML ページを出典にする**方針にそろえる（他の県も次回の�
 
   | 県 | 額 | 発効日 | 決定・公示 | 出典（労働局） |
   |---|---|---|---|---|
-  | 宮崎 | 1,085 円 | **2026-10-24** | 09-24 報道発表（「10月24日から時間額1,085円に改正」） | https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/news_topics/houdou/20260924_saichinkaisei.html （記者発表 PDF：`/miyazaki-roudoukyoku/content/contents/002826482.pdf`） |
-  | 鹿児島 | 1,090 円 | **2026-10-25** | 09-25 報道発表（「鹿児島県最低賃金を『時間額1,090円』に引き上げます」） | https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/redirect/houdou-r08_2026-0925-6.html （PDF：`/kagoshima-roudoukyoku/content/contents/2026-0925-6_20260925.pdf`） |
+  | 宮崎 | 1,085 円 | **2026-10-24** | 09-24 報道発表（「10月24日から時間額1,085円に改正」） | https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/news_topics/houdou/20260924_saichinkaisei.html （記者発表 PDF：https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/content/contents/002826482.pdf ） |
+  | 鹿児島 | 1,090 円 | **2026-10-25** | 09-25 報道発表（「鹿児島県最低賃金を『時間額1,090円』に引き上げます」） | https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/redirect/houdou-r08_2026-0925-6.html （PDF：https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/content/contents/2026-0925-6_20260925.pdf ） |
 
   額・日付は厚労省の別紙（予定）と同じなので**いま表示に誤りは無い**。問題は日付が来たあと：
   `plannedEffectiveOn` のままだと `Calculator.tsx` の `plannedDatePassed` 分岐が
@@ -211,7 +211,14 @@ HTML ページを出典にする**方針にそろえる（他の県も次回の�
   1. `tools/lib/saitei-chingin.ts` の宮崎・鹿児島：`plannedEffectiveOn` を `effectiveOn` に移し、
      `source` を上の労働局ページ（決定の報道発表）に差し替え、コメント（「決定公示を確認できていない」）を消す。
      公示日は PDF で確認して `label` に「（2026-09-24 公示）」の形で残す（PDF が画像で読めなければ
-     報道発表日で代える。**推測で埋めない**）
+     報道発表日で代える。**推測で埋めない**）。
+     **鹿児島の `effectiveOn: '2026-10-25'` は、報道発表 PDF の本文で発効日を確認してから入れる。**
+     報道発表の HTML（`houdou-r08_2026-0925-6.html`）には額（1,090 円）しか無く、発効日は PDF 本文にしか
+     書かれていない（企画レビュー 2026-09-26 の指摘）。PDF が読めずに確認できなければ
+     `plannedEffectiveOn` のまま残し、出典だけ決定の報道発表に差し替える（厚労省の
+     [地域別最低賃金の全国一覧](https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/)
+     が更新されていれば、そちらで確認してもよい）。`effectiveOn` を入れた瞬間に画面が「発効済み」に変わるので、
+     日付を間違えると法的な誤情報になる。宮崎は HTML の見出しに発効日（10月24日）と額があるので HTML で足りる
   2. `DATA_CHECKED_AT` を実装日に更新（数値が変わらなくても更新する既存の約束）
   3. `tools/tests/saitei-chingin.test.ts` の、この 2 県を「予定」固定で検査している箇所
      （09-26 時点で 348〜401 行・530〜554 行付近）を「発効日あり」に直す。
