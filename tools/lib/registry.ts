@@ -252,6 +252,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-05',
   },
   {
+    // 仕様: docs/features/shoyo-tedori-keisan.md。冬賞与の前（遅くとも2026-11-20）に public にする
+    slug: 'shoyo-tedori',
+    icon: 'MoneyWavy',
+    name: '賞与（ボーナス）手取り計算機',
+    description:
+      '賞与（ボーナス）の手取りを計算。前月の給与と扶養の数から「賞与に対する源泉徴収税額の算出率の表」で所得税の率を引き、健康保険・厚生年金・雇用保険・子ども・子育て支援金の内訳と、住民税が引かれない理由まで出します。賞与 手取り・ボーナス 手取り・賞与 所得税 率の早見表つき。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-27',
+  },
+  {
     slug: 'hatarakizon',
     icon: 'Scales',
     name: '社会保険 損得計算機',

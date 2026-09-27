@@ -51,6 +51,8 @@ import {
   PENSION_RATE,
   SHIENKIN_RATE,
 } from '@/lib/shaho-ryoritsu';
+import { BONUS_CAP_YEARLY } from '@/lib/kosodate-shienkin';
+import { GRADES, PENSION_BONUS_CAP, PENSION_STANDARD_MAX } from '@/lib/shaho-grades';
 
 /** 自己負担額（制度上、必ず自己負担になる額） */
 export const SELF_PAY = 2_000;
@@ -159,7 +161,7 @@ interface PersonalDeduction {
 
 /**
  * 配偶者控除。本人の合計所得金額900万円超で段階的に減る。
- * 【データ更新箇所】金額が変わったらここ。
+ * 【データ更新箇所】金額が変わったら `shaho-grades.ts` / `kosodate-shienkin.ts`。
  */
 function spouseDeduction(type: SpouseType, totalIncome: number): PersonalDeduction {
   if (type === 'none' || totalIncome > 10_000_000) {
@@ -224,11 +226,14 @@ export function adjustmentDeduction(
  * - 厚生年金: 標準報酬月額65万円 × 12 + 標準賞与額150万円 × 年3回 = 1,230万円
  * - 健康保険: 標準報酬月額139万円 × 12 + 標準賞与額の年間累計573万円 = 2,241万円
  *
+ * 上限の数字は `shaho-grades.ts`（`PENSION_STANDARD_MAX` / `PENSION_BONUS_CAP` / `GRADES`）と
+ * `kosodate-shienkin.ts`（`BONUS_CAP_YEARLY`）から組み立てる（ここに数字を持たない）。
+ *
  * 年収を12等分して月額の上限だけを見ると、賞与の割合が大きい人で
  * 保険料を大幅に少なく見積もってしまうため、年額で判定している。
  */
-const PENSION_CAP = 12_300_000;
-const HEALTH_CAP = 22_410_000;
+const PENSION_CAP = PENSION_STANDARD_MAX * 12 + PENSION_BONUS_CAP * 3;
+const HEALTH_CAP = GRADES[GRADES.length - 1][1] * 12 + BONUS_CAP_YEARLY;
 
 /**
  * 社会保険料の概算（会社員・年間）。

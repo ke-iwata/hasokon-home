@@ -84,6 +84,22 @@ export const GRADES: ReadonlyArray<readonly [number, number, number, number]> = 
 export const PENSION_STANDARD_MIN = 88_000;
 export const PENSION_STANDARD_MAX = 650_000;
 
+/**
+ * 厚生年金の標準賞与額の上限（**1か月あたり**150万円。厚生年金保険法24条の4）。
+ * 同じ月に2回以上支給されたときは合算して150万円で頭打ちになる。
+ * 健康保険の標準賞与額は「年度の累計573万円」で、こちらは `kosodate-shienkin.ts` の
+ * `BONUS_CAP_YEARLY`。
+ *
+ * 一次情報: 日本年金機構「厚生年金保険の保険料」
+ * https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/20150515-01.html
+ *
+ * 賞与の手取り（`shoyo-tedori.ts`）と、ふるさと納税の社会保険料概算
+ * （`furusato-nozei.ts` の年額上限）が参照する。数字を2か所に持たないこと。
+ *
+ * 【データ更新箇所】上限が改定されたらここ
+ */
+export const PENSION_BONUS_CAP = 1_500_000;
+
 /** 月収（額面）から等級表の行を引く。[等級, 標準報酬月額, 下限, 上限] */
 export function gradeOf(monthlyIncome: number): readonly [number, number, number, number] {
   for (const g of GRADES) {
