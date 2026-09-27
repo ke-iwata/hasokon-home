@@ -529,6 +529,14 @@ label {
   margin-top: 10px;
 }
 
+/* 結果パネル周辺（--surface-2 / --accent-soft の地）のリンクは --accent では 4.44 で WCAG AA の 4.5 に届かない。
+   --accent-strong（#14532d）なら --surface-2 に対して 8.08。ダークは --accent-strong（#86efac）が地 #17251c に対して 11.35。
+   --accent そのものは design/tokens.css の原典なので変えない（docs/features/mobile-lighthouse-third-party.md の D） */
+.panel a,
+.hint a {
+  color: var(--accent-strong);
+}
+
 /* 結果の大きな数値。tabular-nums で桁が揺れないようにする */
 .metric {
   display: flex;

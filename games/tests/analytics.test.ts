@@ -1,14 +1,28 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   GA_MEASUREMENT_ID,
   MEASURED_HOST,
   initAnalytics,
+  reportWebVitals,
   isAnalyticsEnabled,
   shouldTrack,
   trackEvent,
   trackPageView,
   trackToolUse,
+  trackWebVital,
+  webVitalParams,
 } from '@/lib/analytics';
+
+/**
+ * web-vitals は PerformanceObserver を使うので node では動かない。
+ * どの指標のコールバックが登録されたかだけを記録する
+ */
+const vitalsRegistered = vi.hoisted(() => [] as string[]);
+vi.mock('web-vitals', () => ({
+  onLCP: () => vitalsRegistered.push('LCP'),
+  onINP: () => vitalsRegistered.push('INP'),
+  onCLS: () => vitalsRegistered.push('CLS'),
+}));
 
 /**
  * lib/analytics.ts のテスト。
@@ -234,5 +248,73 @@ describe('設定', () => {
     const config = calls.find((c) => c[0] === 'config');
     expect(config?.[1]).toBe(GA_MEASUREMENT_ID);
     expect(config?.[2]).toEqual({ send_page_view: false });
+  });
+});
+
+/**
+ * 表示速度（Core Web Vitals）の送信（docs/features/mobile-lighthouse-third-party.md の E）。
+ * イベント名・パラメータ名は GA4 のカスタムディメンション・指標の登録と対になるので固定する。
+ */
+describe('web_vitals', () => {
+  it('イベント名は web_vitals、パラメータ名は固定', () => {
+    stubBrowser('https://hasokon.com/games/block-puzzle/');
+    trackWebVital({ name: 'LCP', value: 2345.6, rating: 'good', id: 'v5-1-1' });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.[0]).toBe('event');
+    expect(calls[0]?.[1]).toBe('web_vitals');
+    expect(Object.keys(calls[0]?.[2] ?? {}).sort()).toEqual([
+      'metric_id',
+      'metric_name',
+      'metric_rating',
+      'metric_value',
+      'transport_type',
+    ]);
+  });
+
+  it('LCP・INP は ms を整数に丸めて送る', () => {
+    expect(webVitalParams({ name: 'LCP', value: 2345.6, rating: 'good', id: 'a' }).metric_value).toBe(2346);
+    expect(webVitalParams({ name: 'INP', value: 199.4, rating: 'good', id: 'b' }).metric_value).toBe(199);
+  });
+
+  it('CLS だけ 1000 倍して整数で送る（0.05 が 0 に丸められて消えないように）', () => {
+    expect(webVitalParams({ name: 'CLS', value: 0.05, rating: 'good', id: 'c' }).metric_value).toBe(50);
+    expect(webVitalParams({ name: 'CLS', value: 0.1234, rating: 'needs-improvement', id: 'd' }).metric_value).toBe(123);
+    expect(Number.isInteger(webVitalParams({ name: 'CLS', value: 0.0004, rating: 'good', id: 'e' }).metric_value)).toBe(true);
+  });
+
+  it('名前・評価・ID はそのまま、送信は beacon', () => {
+    expect(webVitalParams({ name: 'INP', value: 512, rating: 'poor', id: 'v5-9' })).toEqual({
+      metric_name: 'INP',
+      metric_value: 512,
+      metric_rating: 'poor',
+      metric_id: 'v5-9',
+      transport_type: 'beacon',
+    });
+  });
+
+  it('本番ホスト以外では web_vitals を送らない', () => {
+    stubBrowser('https://test.hasokon.com/games/block-puzzle/');
+    trackWebVital({ name: 'CLS', value: 0.3, rating: 'poor', id: 'x' });
+
+    expect(calls).toHaveLength(0);
+  });
+
+  // reportWebVitals はモジュール内のフラグで一度しか登録しないので、本番以外 → 本番 → 2回目 の順に見る
+  it('本番ホスト以外では計測の登録そのものをしない', () => {
+    vitalsRegistered.length = 0;
+    stubBrowser('https://test.hasokon.com/games/block-puzzle/');
+    reportWebVitals();
+
+    expect(vitalsRegistered).toEqual([]);
+  });
+
+  it('本番では LCP・INP・CLS を1回だけ登録する', () => {
+    vitalsRegistered.length = 0;
+    stubBrowser('https://hasokon.com/games/block-puzzle/');
+    reportWebVitals();
+    reportWebVitals();
+
+    expect(vitalsRegistered.sort()).toEqual(['CLS', 'INP', 'LCP']);
   });
 });

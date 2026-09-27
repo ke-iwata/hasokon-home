@@ -11,6 +11,9 @@
  *
  * GA_MEASUREMENT_ID を空にすると、スクリプトも計測処理も一切出力されなくなる。
  *
+ * 表示速度（Core Web Vitals）も同じ経路で GA4 に送っている（`reportWebVitals()`。
+ * docs/features/mobile-lighthouse-third-party.md の E）。
+ *
  * 判定が2つあるのは、**効くタイミングが違う**ため（docs/features/measurement-hygiene.md）。
  * - `isAnalyticsEnabled()`：測定IDが設定されているか。**静的書き出しのビルド時**に評価され、
  *   gtag.js の <script> をHTMLに出すかどうかを決める（app/layout.tsx）
@@ -19,6 +22,8 @@
  * ビルド時には window が無いので、`isAnalyticsEnabled()` にホスト条件を混ぜてはいけない。
  * 混ぜると静的HTMLから gtag.js のタグごと消え、本番でも計測できなくなる。
  */
+
+import { onCLS, onINP, onLCP, type Metric } from 'web-vitals';
 
 /** GA4の測定ID（例: 'G-XXXXXXXXXX'）。空なら計測しない */
 export const GA_MEASUREMENT_ID = 'G-2Z0K6Y2FX0';
@@ -155,4 +160,60 @@ export function trackEvent(name: string, params?: Record<string, unknown>): void
  */
 export function trackToolUse(tool: string, action: string): void {
   trackEvent('tool_use', { tool, action });
+}
+
+/** web_vitals イベントで送る指標。LCP・INP・CLS の3つ（Google の Core Web Vitals） */
+export type WebVitalName = 'LCP' | 'INP' | 'CLS';
+
+/** web_vitals イベントのパラメータ。名前は GA4 のカスタムディメンション・指標の登録と揃えるので変えない */
+export interface WebVitalParams {
+  metric_name: WebVitalName;
+  metric_value: number;
+  metric_rating: Metric['rating'];
+  metric_id: string;
+  transport_type: 'beacon';
+}
+
+/**
+ * web-vitals の計測値を web_vitals イベントのパラメータに直す。
+ *
+ * **metric_value は整数。CLS だけ 1000 倍する**（web.dev の推奨どおり）。GA4 のイベント
+ * パラメータは小数の扱いが弱く、CLS 0.05 のような値が丸められて消えるため。読むときは 1000 で割る。
+ * `transport_type: 'beacon'` は、ページ離脱時に確定する INP・CLS を落とさないため。
+ */
+export function webVitalParams(
+  metric: Pick<Metric, 'value' | 'rating' | 'id'> & { name: WebVitalName },
+): WebVitalParams {
+  return {
+    metric_name: metric.name,
+    metric_value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+    metric_rating: metric.rating,
+    metric_id: metric.id,
+    transport_type: 'beacon',
+  };
+}
+
+/** 1件の計測値を web_vitals イベントとして送る（本番ホスト以外では送らない） */
+export function trackWebVital(
+  metric: Pick<Metric, 'value' | 'rating' | 'id'> & { name: WebVitalName },
+): void {
+  trackEvent('web_vitals', { ...webVitalParams(metric) });
+}
+
+let webVitalsReported = false;
+
+/**
+ * 利用者の実測の表示速度（LCP・INP・CLS）を GA4 に送り始める。app/Analytics.tsx から1回だけ呼ぶ。
+ *
+ * Lighthouse はラボ値で環境によって揺れるので、AdSense の読み込み順を変える前後の比較は
+ * この実測で決める（docs/features/mobile-lighthouse-third-party.md の E・B）。
+ * 送るのは数値・評価・ページのURLだけで、ツール・ゲームに入力された内容は含まない。
+ * 本番ホスト以外では計測の登録そのものをしない。
+ */
+export function reportWebVitals(): void {
+  if (webVitalsReported || !shouldTrack()) return;
+  webVitalsReported = true;
+  onLCP(trackWebVital);
+  onINP(trackWebVital);
+  onCLS(trackWebVital);
 }
