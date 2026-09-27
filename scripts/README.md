@@ -295,6 +295,39 @@ node scripts/indexnow-submit.mjs \
 デプロイ側の該当ステップは `continue-on-error: true` なので、鍵の取り違え（2）でも
 リリースは止まりません。
 
+## cf-logs-crawlers.mjs
+
+CloudFront のアクセスログ（標準ログ v2）を手元で数え、**クローラーの挙動**を表にします。
+
+仕様: [hasokon-infra/docs/features/cloudfront-access-logs.md](https://github.com/ke-iwata/hasokon-infra/blob/main/docs/features/cloudfront-access-logs.md)
+（ログの配信設定は hasokon-infra #15。本番と旧サブドメイン3面のログが
+S3 バケット `hasokon-cloudfront-logs` に JSON で届きます。IP・Cookie・クエリは記録していません）
+
+URL検査API（`gsc-canonical-audit.mjs`）は「最終クロール日時」を1URLに1つしか返しません。
+**Googlebot が1日に何回・どのURLを取りに来て何を返されたか**は、このログでしか分かりません。
+[google-index-recovery.md](../docs/features/google-index-recovery.md) の「見切り」
+（本文を厚くする方向へ切り替えるか）と、旧サブドメインの301をいつ外すかの判断に使います。
+
+```bash
+# 1. ログを手元に落とす（配信は最大12時間遅れる）
+aws s3 sync s3://hasokon-cloudfront-logs/ ./cflogs --quiet
+
+# 2. 直近14日を数える。--out で JSON も残せる
+node scripts/cf-logs-crawlers.mjs --dir ./cflogs --days 14 --out cflogs-$(date -u +%Y-%m-%d).json
+```
+
+出すのは次の5つで、Markdown の表なので仕様書の「経過」にそのまま貼れます。
+
+1. **クローラー別の日次リクエスト数。** UA と ASN の両方が一致したものだけを本物と数えます
+   （Googlebot は ASN 15169、bingbot は 8075）。UA だけ名乗っているものは `-spoof` として別の列
+2. **Googlebot が取りに来たURLの上位と、`/tools/r/*`・`/tools/guide/*` の比率**（復旧計画の B の判断材料）
+3. **旧サブドメイン3面への要求数と外部の参照元**（301 解除の判断材料）
+4. **404 になったパス**（`root-path-legacy-redirects` で救い漏れたもの）
+5. **HTML の `x-edge-result-type`**（キャッシュヒット率）
+
+終了コードは 0（集計できた）と 2（ディレクトリが無い・ログが1件も無い）だけです。
+ログには IP が無く、このスクリプトも IP を扱いません（`test/cf-logs.test.mjs` が見張っています）。
+
 ## build-test-home.mjs
 
 **テスト環境に配るときだけ**、トップ（`home/index.html`）の一覧に

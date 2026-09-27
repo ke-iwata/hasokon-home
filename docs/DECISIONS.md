@@ -8,6 +8,23 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-27：CloudFront のアクセスログを数えるスクリプトを足し、プライバシーポリシーにログの項を入れた
+
+hasokon-infra #15（[cloudfront-access-logs.md](https://github.com/ke-iwata/hasokon-infra/blob/main/docs/features/cloudfront-access-logs.md)）で
+本番と旧サブドメイン3面に標準ログ v2 を入れる。その受け側をこちらに置いた。
+
+- **`scripts/cf-logs-crawlers.mjs`**：S3 から落としたログを読み、クローラー別の日次件数・Googlebot が
+  取りに来たURL・旧サブドメインへの要求・404・キャッシュヒット率を Markdown の表で出す。
+  URL検査APIでは「Googlebot が何回来たか」が分からず、[google-index-recovery.md](./features/google-index-recovery.md)
+  の見切りが推測になっていたため
+- **Googlebot / bingbot の真偽は UA と ASN の両方で判定する。** ログに IP を記録しない設計
+  （個人関連情報を持たない）にしたので、逆引きの代わりに ASN（15169 / 8075）を使う。
+  UA だけ名乗るものは `-spoof` として分けて数える
+- **`home/privacy.html` に「サーバーのアクセスログについて」を足した。** IP・Cookie・クエリを
+  記録しないことと 180 日で消すことを明記。ログが溜まり始める前に文言を出すため、
+  infra 側の apply より先にマージする
+- 依存パッケージはゼロ（gzip は `node:zlib`）。Athena は月 5 MB のログには過剰なので使わない
+
 ## 2026-09-25：トップの `lastmod` 据え置きを直し、再発を CI で止めるようにした
 
 [sitemap-lastmod-guardrail.md](./features/sitemap-lastmod-guardrail.md) の **A** を実装した（B・C は未着手）。
