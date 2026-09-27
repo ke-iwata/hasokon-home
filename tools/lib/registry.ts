@@ -242,6 +242,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-21',
   },
   {
+    // 2027年1月開始の新税。公開期限は2026年11月（源泉切替の検索が立つ前）。
+    // `public` に上げるPRで home/index.html のカードを足す。仕様の「公開条件」参照。
+    // 仕様: docs/features/boei-tokubetsu-shotokuzei.md
+    slug: 'boei-tokubetsu-shotokuzei',
+    icon: 'Shield',
+    name: '防衛特別所得税 計算機・早見表',
+    description:
+      '2027年1月から始まる防衛特別所得税（所得税額の1%）を年収から計算。復興特別所得税が2.1%→1.1%に下がるので2027年の手取りは変わらないことを金額で示し、改正で新たに生じる2038年以降の負担（終期の定めなし）と年収別の早見表を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-27',
+  },
+  {
     slug: 'tedori-keisan',
     icon: 'Wallet',
     name: '手取り計算機',
