@@ -250,3 +250,16 @@ describe('早見表', () => {
     expect(may.motherIkujiMonths).toBe(7);
   });
 });
+
+describe('月の帯の見た目（#272 レビュー：色だけに頼らない）', () => {
+  it('産前産後・育児・対象外は枠の形でも区別できる', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/kokunen-ikuji-menjo/Calculator.tsx', import.meta.url), 'utf8');
+    const block = src.slice(src.indexOf('const CELL_STYLE'), src.indexOf('const KIND_LABELS'));
+    expect(block).toContain("border: '2px solid var(--accent)'");
+    expect(block).toContain("border: '2px dashed var(--muted)'");
+    expect(block).toContain("textDecoration: 'line-through'");
+    // 結果の箱の背景（--accent-soft）と同じ色をマスに使わない
+    expect(block).not.toContain('--accent-soft');
+  });
+});

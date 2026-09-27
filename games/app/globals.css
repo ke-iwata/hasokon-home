@@ -4618,6 +4618,134 @@ button.hf-card {
    スマホでは設定の切り替え（`.seg`）が2〜3行に折り返して、盤がそのぶん
    画面の外に出ていた（実測で設定だけで131〜184px）。1つずつを小さくすれば
    同じ数でも1行に収まる。設定を隠さずに済むのでこちらを採る */
+/* ---- ブラックジャック（docs/features/game-blackjack.md） ----
+   手の枠は「札1枚ぶんの高さ × 6枚ぶんの重ね幅」で固定する。札が増えても、
+   スプリットで手が2つになっても、枠の高さは変わらない（games/CLAUDE.md 1）。
+   6枚を超えた手は Game.tsx が重ね幅を詰めて枠の中に収める */
+
+.bj-game {
+  --bj-card-w: 64px;
+  --bj-step: 24px;
+}
+
+.bj-settings .seg button {
+  min-height: 44px;
+}
+
+.bj-settings .seg button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bj-table {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bj-hands {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.bj-hand {
+  display: flex;
+  flex-direction: column;
+  /* 行の文言で手の幅が広がらないよう、枠と同じ幅に固定する */
+  width: calc(var(--bj-card-w) + 5 * var(--bj-step));
+}
+
+/* 合計の行。1行ぶんを height で確保し、文言が変わっても下へずらさない */
+.bj-line {
+  height: 1.5em;
+  line-height: 1.5;
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bj-line strong {
+  margin-left: 6px;
+  color: var(--text);
+}
+
+.bj-result {
+  margin-left: 6px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.bj-frame {
+  position: relative;
+  width: calc(var(--bj-card-w) + 5 * var(--bj-step));
+  height: calc(var(--bj-card-w) * 7 / 5);
+  border-radius: 8px;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+}
+
+.bj-frame.active {
+  outline-color: var(--brand);
+}
+
+.bj-slot {
+  position: absolute;
+  top: 0;
+  width: var(--bj-card-w);
+}
+
+.bj-slot .playing-card {
+  cursor: default;
+}
+
+/* メッセージは2行ぶんを確保する（精算の文言が2行に折り返しても盤が動かない） */
+.bj-msg {
+  height: 3em;
+  line-height: 1.5;
+  margin: 10px 0 6px;
+  text-align: center;
+  font-size: 0.92rem;
+  overflow: hidden;
+}
+
+.bj-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.bj-actions .btn,
+.bj-main .btn {
+  min-height: 44px;
+  padding: 8px 4px;
+  white-space: nowrap;
+}
+
+.bj-actions .btn:disabled,
+.bj-main .btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bj-main {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 4px;
+}
+
+.bj-main .btn {
+  min-width: 60%;
+}
+
+.bj-note {
+  font-size: 0.85rem;
+}
+
 @media (max-width: 600px) {
   /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
   .card {
@@ -4993,5 +5121,30 @@ button.hf-card {
   /* 弾いた理由の1行を 320px 幅でも折り返さない大きさに（文言は lib 側で 18 字以内） */
   .hn-note {
     font-size: 0.75rem;
+  }
+
+  /* ブラックジャック。スプリットの2手が 320px 幅でも横に並ぶ大きさに詰める
+     （枠1つ = 50 + 5×17 = 135px、2つで 282px） */
+  .bj-game {
+    --bj-card-w: 50px;
+    --bj-step: 17px;
+  }
+
+  .bj-settings {
+    gap: 6px;
+    margin: 8px 0;
+  }
+
+  .bj-settings .seg button {
+    padding: 6px 10px;
+    font-size: 0.82rem;
+  }
+
+  .bj-actions .btn {
+    font-size: 0.8rem;
+  }
+
+  .bj-line {
+    font-size: 0.82rem;
   }
 }

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { tools, publicTools, isPublicTool, robotsFor, robotsForStage } from '@/lib/registry';
+import { tools, publicTools, robotsFor, robotsForStage } from '@/lib/registry';
 
 /**
  * 公開の段階（`stage`）のテスト。
@@ -96,9 +96,9 @@ describe('公開の段階（stage）', () => {
     expect(leaks).toEqual([]);
   });
 
-  it('isPublicTool は stage が public のものだけ true', () => {
-    for (const t of tools) expect(isPublicTool(t.slug)).toBe(t.stage === 'public');
-    expect(isPublicTool('registry-ni-nai-slug')).toBe(false);
+  it('ページは isPublicTool を直に呼ばず PublicToolLink を通す（守り方を1つにそろえる）', () => {
+    const direct = [...pages].filter(([, src]) => src.includes('isPublicTool(')).map(([slug]) => slug);
+    expect(direct).toEqual([]);
   });
 
   it('育児免除 計算機へのリンク元3本は PublicToolLink を通している（仕様書「ページ構成」）', () => {

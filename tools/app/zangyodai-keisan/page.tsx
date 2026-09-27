@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -149,7 +150,13 @@ export default function Page() {
       </p>
       <ul>
         <li>家族手当</li>
-        <li>通勤手当</li>
+        <li>
+          通勤手当
+          <PublicToolLink slug="tsukin-teate-hikazei">
+              （所得税で非課税になる額は
+              <ToolLink slug="tsukin-teate-hikazei">通勤手当 非課税限度額チェッカー</ToolLink>）
+          </PublicToolLink>
+        </li>
         <li>別居手当</li>
         <li>子女教育手当</li>
         <li>住宅手当</li>

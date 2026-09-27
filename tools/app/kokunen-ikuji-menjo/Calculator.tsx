@@ -272,7 +272,7 @@ function Result({
 
       {r.ikujiDroppedMonths > 0 && (
         <p className="hint">
-          灰色の{r.ikujiDroppedMonths}か月は本来なら育児免除の期間ですが、制度が始まる2026年10月より前なので対象外です。
+          破線・取り消し線の{r.ikujiDroppedMonths}か月は本来なら育児免除の期間ですが、制度が始まる2026年10月より前なので対象外です。
           {r.role === 'mother' &&
             '実母の育児免除は「産前産後免除の翌月から9か月目まで」で、10月から9か月に延びるわけではありません。'}
         </p>
@@ -327,10 +327,36 @@ function Result({
   );
 }
 
+/**
+ * 帯のマスの見た目。**色だけに頼らない**（#272 レビュー）：スマホではツールチップが出ず、
+ * 薄い緑と灰色は見分けにくいので、枠の形（実線・塗り・破線）と取り消し線でも区別する。
+ * 背景は結果の箱（`--accent-soft`）と重ならない `--surface` を使う
+ */
 const CELL_STYLE: Record<MonthCell['kind'], CSSProperties> = {
-  sanzen: { background: 'var(--accent-soft)', color: 'var(--text)' },
-  ikuji: { background: 'var(--accent)', color: 'var(--on-accent)' },
-  'before-enforcement': { background: 'var(--surface-2)', color: 'var(--muted)' },
+  sanzen: {
+    background: 'var(--surface)',
+    color: 'var(--accent-strong)',
+    border: '2px solid var(--accent)',
+    fontWeight: 700,
+  },
+  ikuji: {
+    background: 'var(--accent)',
+    color: 'var(--on-accent)',
+    border: '2px solid var(--accent)',
+    fontWeight: 700,
+  },
+  'before-enforcement': {
+    background: 'transparent',
+    color: 'var(--muted)',
+    border: '2px dashed var(--muted)',
+    textDecoration: 'line-through',
+  },
+};
+
+const KIND_LABELS: Record<MonthCell['kind'], string> = {
+  sanzen: '産前産後免除',
+  ikuji: '育児免除',
+  'before-enforcement': '対象外（2026年10月より前）',
 };
 
 /** 月ごとの帯。12 マスを超えたら年度の境（4 月）で折り返す */
@@ -341,17 +367,19 @@ function MonthBand({ cells }: { cells: MonthCell[] }) {
       {rows.map((row) => (
         <div key={row[0].ym} style={{ marginBottom: 8 }}>
           <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginBottom: 2 }}>
-            {formatMonthJa(row[0].ym)}〜{formatMonthJa(row[row.length - 1].ym)}
+            {row.length === 1
+              ? formatMonthJa(row[0].ym)
+              : `${formatMonthJa(row[0].ym)}〜${formatMonthJa(row[row.length - 1].ym)}`}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
             {row.map((c) => (
               <div
                 key={c.ym}
-                title={`${formatMonthJa(c.ym)}：${
-                  c.kind === 'sanzen' ? '産前産後免除' : c.kind === 'ikuji' ? '育児免除' : '対象外（施行前）'
-                }`}
+                title={`${formatMonthJa(c.ym)}：${KIND_LABELS[c.kind]}`}
+                aria-label={`${formatMonthJa(c.ym)}：${KIND_LABELS[c.kind]}`}
                 style={{
                   ...CELL_STYLE[c.kind],
+                  boxSizing: 'border-box',
                   textAlign: 'center',
                   fontSize: 'var(--fs-xs)',
                   padding: '6px 0',
@@ -369,8 +397,17 @@ function MonthBand({ cells }: { cells: MonthCell[] }) {
           .filter((k) => cells.some((c) => c.kind === k))
           .map((k) => (
             <span key={k} style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-              <span style={{ ...CELL_STYLE[k], width: 12, height: 12, borderRadius: 2, display: 'inline-block' }} />
-              {k === 'sanzen' ? '産前産後免除' : k === 'ikuji' ? '育児免除' : '対象外（2026年10月より前）'}
+              <span
+                style={{
+                  ...CELL_STYLE[k],
+                  boxSizing: 'border-box',
+                  width: 14,
+                  height: 14,
+                  borderRadius: 2,
+                  display: 'inline-block',
+                }}
+              />
+              {KIND_LABELS[k]}
             </span>
           ))}
       </div>

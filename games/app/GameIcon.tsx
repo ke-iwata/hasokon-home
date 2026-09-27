@@ -270,6 +270,36 @@ function SpeedBoltIcon({ size = 26 }: IconProps) {
 }
 
 /**
+ * ブラックジャック（札の枠に「21」）。**これも自前で描いている。**
+ *
+ * 七並べの SevensIcon・スピードの SpeedBoltIcon と同じ枠で、中身を「21」にした。
+ * 同名の漫画を連想させる絵（人物・配色）は使わない約束なので、札そのものの型に留める
+ * （docs/features/game-blackjack.md）。
+ *
+ * 線の太さ（viewBox 256 に対して 16）は Phosphor の regular に合わせてある。
+ */
+function Cards21Icon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="52" y="32" width="152" height="192" rx="20" />
+      <path d="M84 104c0-16 10-26 24-26s24 10 24 24c0 20-48 44-48 74h48" />
+      <path d="M156 94l16-16v98" />
+    </svg>
+  );
+}
+
+/**
  * 花札 こいこい（縦長の札に5弁の花）。**これも自前で描いている。**
  *
  * Phosphor に花札を指すアイコンは無い。Flower は園芸・自然の意味に寄っていて
@@ -608,6 +638,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Sevens: SevensIcon,
   MemoryPair: MemoryPairIcon,
   SpeedBolt: SpeedBoltIcon,
+  Cards21: Cards21Icon,
   Hanafuda: HanafudaIcon,
   Pinball: PinballIcon,
   Pyramid: PyramidIcon,
