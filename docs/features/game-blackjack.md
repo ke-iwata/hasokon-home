@@ -1,6 +1,8 @@
 # 新ゲーム「ブラックジャック」（CPU と遊ぶトランプの 5 本目。既存の札描画・CPU 速度・記録の基盤だけで組む）
 
-**状態**：提案（2026-09-26 起票、未実装）。
+**状態**：実装済み・`stage: 'wip'`（2026-09-26 起票、2026-09-27 実装）。
+**名称と slug（`blackjack`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある。**
+確認が済んだら `preview` へ上げ、下記「AdSense のポリシー」の 2 週間の観察を始める。
 **実装着手前に、運営者が J-PlatPat（第 9 類・第 41 類）で「ブラックジャック」を確認し、
 名称と slug を確定させる**（[game-hakoiri-musume.md](./game-hakoiri-musume.md)・
 [game-binary-puzzle.md](./game-binary-puzzle.md) と同じ「運営者の名称確認 → 名称・slug 確定 → 実装着手」の順序。
@@ -187,3 +189,7 @@ slug は URL で公開後は動かせない）。ゲーム名としては一般�
 ## 経過
 
 - 2026-09-26：起票。
+- 2026-09-27：実装（`games/lib/blackjack.ts`・`games/app/blackjack/`・`games/tests/blackjack.test.ts`）。
+  名称確認が済むまで `stage: 'wip'`（[game-hakoiri-musume.md](./game-hakoiri-musume.md) と同じ扱い）。
+  3:2 の端数（賭け金 25 → 37.5）は切り捨てて 37 とした。`plays` は「配る」を押した局で数える
+  （ピークやプレイヤーのブラックジャックで行動前に終わる局も 1 プレイに入れ、`plays` ≧ 勝敗の合計を保つため）
