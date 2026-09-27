@@ -152,7 +152,7 @@ Google Play で 2026-09-27 に確認：「Tile Match」「Triple Tile」「Tile 
 
 - `variant`: `'easy' | 'normal' | 'hard'`。クリア回数・負け回数・ベストタイム
 - 日替わり（`daily.ts`）は**初版に入れない**。星置き・ひとふでナンバーの日替わりが `wip` のままで、3 本目を足す前に
-  2 本の反応を見る（[game-hitofude-number.md](./game-hitofude-number.md) の判断と同じ）。`Rng` を受け取る形にしておけば後から足せる
+  2 本の反応を見る（[game-suji-hitofude.md](./game-suji-hitofude.md) の判断と同じ）。`Rng` を受け取る形にしておけば後から足せる
 
 ### テスト（`games/tests/triple-tiles.test.ts`）
 

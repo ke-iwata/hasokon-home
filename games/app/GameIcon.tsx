@@ -652,7 +652,7 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   SlidingBlocks: SlidingBlocksIcon,
   // 星置きパズル。猫や動物の絵柄は先行アプリの模倣に見えるので使わず、星で通す
   Star: StarIcon,
-  // ひとふでナンバー。先行アプリの絵柄はなぞらず、蛇行する 1 本の道で表す
+  // 数字つなぎ一筆書き。先行アプリの絵柄はなぞらず、蛇行する 1 本の道で表す
   HitofudePath: HitofudePathIcon,
 };
 

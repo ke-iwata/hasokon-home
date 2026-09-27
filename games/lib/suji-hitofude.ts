@@ -1,7 +1,7 @@
 /**
  * ひとふでナンバー（数字を順にたどって全マスを一筆書きする純ロジックパズル）のロジック
  *
- * 仕様: docs/features/game-hitofude-number.md
+ * 仕様: docs/features/game-suji-hitofude.md
  *
  * ## ルール
  *

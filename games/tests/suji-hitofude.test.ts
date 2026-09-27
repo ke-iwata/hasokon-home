@@ -28,12 +28,12 @@ import {
   wallSegments,
   type Mode,
   type Puzzle,
-} from '@/lib/hitofude-number';
+} from '@/lib/suji-hitofude';
 
 /**
  * ひとふでナンバーのテスト。
  *
- * 仕様: docs/features/game-hitofude-number.md の「テスト」
+ * 仕様: docs/features/game-suji-hitofude.md の「テスト」
  */
 
 /** 全マスを 1 回ずつ、縦横の隣へ進む道か */
@@ -317,10 +317,10 @@ describe('結果のコピー', () => {
       timeMs: 161_000,
       dateKey: '2026-09-27',
       streak: 5,
-      url: 'https://hasokon.com/games/hitofude-number/',
+      url: 'https://hasokon.com/games/suji-hitofude/',
     });
     expect(text).toBe(
-      'ひとふでナンバー 今日の1問（2026-09-27）2:41 ／ 連続5日\nhttps://hasokon.com/games/hitofude-number/',
+      'ひとふでナンバー 今日の1問（2026-09-27）2:41 ／ 連続5日\nhttps://hasokon.com/games/suji-hitofude/',
     );
   });
 

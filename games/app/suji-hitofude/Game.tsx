@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * ひとふでナンバーの画面。
+ * 数字つなぎ一筆書きの画面。
  *
- * 仕様: docs/features/game-hitofude-number.md
+ * 仕様: docs/features/game-suji-hitofude.md
  *
- * 盤の生成・道の伸び縮み・弾く判定・クリア判定は、すべて `lib/hitofude-number.ts`（純関数）が持つ。
+ * 盤の生成・道の伸び縮み・弾く判定・クリア判定は、すべて `lib/suji-hitofude.ts`（純関数）が持つ。
  * ここは**入力（なぞる・キー）と描画だけ**を持つ。
  *
  * **答えは画面に出さない。** ヒントは無く、`puzzle.solution` も参照しない
@@ -37,7 +37,7 @@ import {
   wallSegments,
   type Mode,
   type Puzzle,
-} from '@/lib/hitofude-number';
+} from '@/lib/suji-hitofude';
 import { currentStreak, localDateKey, nextStreak } from '@/lib/daily';
 import { SITE_URL } from '@/lib/registry';
 import { trackToolUse } from '@/lib/analytics';
@@ -73,7 +73,7 @@ export default function Game() {
    */
   const [today, setToday] = useState('');
 
-  const records = useRecords('hitofude-number');
+  const records = useRecords('suji-hitofude');
   const variant = variantOf(mode);
   const entry = records.entry(variant);
   const timer = useStopwatch();
@@ -107,7 +107,7 @@ export default function Game() {
       window.setTimeout(() => {
         const made = next === 'daily' ? dailyPuzzle(dateKey) : generateFor(next, Math.random).puzzle;
         setPuzzle(made);
-        trackToolUse('hitofude-number', `new-${next}`);
+        trackToolUse('suji-hitofude', `new-${next}`);
       }, 0);
     },
     [timer, commit],
@@ -129,7 +129,7 @@ export default function Game() {
     if (!done || notified.current || !puzzle) return;
     notified.current = true;
     dragging.current = false;
-    trackToolUse('hitofude-number', `clear-${mode}`);
+    trackToolUse('suji-hitofude', `clear-${mode}`);
     const timeMs = timer.stop();
     const clearedOn = mode === 'daily' ? today : undefined;
     // 連続日数は記録に入れる前の値から数える（表示と保存を同じ計算にそろえる）
@@ -252,12 +252,12 @@ export default function Game() {
       timeMs: result.timeMs,
       dateKey: mode === 'daily' ? today : undefined,
       streak: result.streak,
-      url: `${SITE_URL}/hitofude-number/`,
+      url: `${SITE_URL}/suji-hitofude/`,
     });
     navigator.clipboard?.writeText(text).then(
       () => {
         setCopied(true);
-        trackToolUse('hitofude-number', 'copy-result');
+        trackToolUse('suji-hitofude', 'copy-result');
       },
       () => setCopied(false),
     );
@@ -328,7 +328,7 @@ export default function Game() {
           ref={boardRef}
           className={`hn-board${done ? ' done' : ''}`}
           role="application"
-          aria-label={`ひとふでナンバーの盤面（${size}×${size}）。矢印キーで道を伸ばし、Backspaceで1マス戻します`}
+          aria-label={`数字つなぎ一筆書きの盤面（${size}×${size}）。矢印キーで道を伸ばし、Backspaceで1マス戻します`}
           tabIndex={0}
           style={{ '--hn-cols': size } as CSSProperties}
           onPointerDown={onPointerDown}
