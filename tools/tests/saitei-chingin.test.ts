@@ -342,19 +342,14 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
   });
 
   /**
-   * 労働局が発効日を示していない県は、発効日を持たせない（決め打ちしない）。
-   * この県は日付が過ぎても「答申」のままになる。
-   *
-   * 2026-09-16 の発効前メンテで9県の発効日が確認できたので、残るのは宮崎・鹿児島だけ。
-   * **この2県の決定公示が確認できたら、このテストは削除してよい**
-   * （残り0件になると「決め打ちしていない」を見張る対象が無くなるため）。
+   * 令和8年度は 47 都道府県すべての決定公示が確認できた（宮崎 2026-09-24・鹿児島 09-25 が最後）。
+   * 「予定日だけの県」が残っていないことを固定する。次年度の答申期に再び
+   * `plannedEffectiveOn` を持つ県が出たら、このテストは期待値を見直す。
    */
-  it('発効日が示されていない県は日付を持たず、日が過ぎても「答申」のまま', () => {
-    for (const name of ['宮崎', '鹿児島']) {
-      const pref = byName(name);
-      expect(pref.answered, `${name}: 答申が無い`).toBeDefined();
-      expect(pref.answered?.effectiveOn, `${name}: 発効日を決め打ちしている`).toBeUndefined();
-      expect(revisionOf(pref, new Date('2026-12-01')).status, `${name}`).toBe('答申');
+  it('令和8年度は47都道府県すべてに発効日があり、予定日だけの県は無い', () => {
+    for (const p of PREFECTURES) {
+      expect(p.answered?.effectiveOn, `${p.name}: 発効日が無い`).toMatch(ymd);
+      expect(p.answered?.plannedEffectiveOn, `${p.name}: 予定日が残っている`).toBeUndefined();
     }
   });
 
@@ -380,8 +375,8 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
 
   /**
    * 第3次追補（2026-08-31）で入れた13県。
-   * 発効日が10月中旬〜11月中旬に散らばっていて、10月1日で決め打ちできないことと、
-   * 労働局が発効日を示していない2県（宮崎・鹿児島）を持たせていないことを固定する。
+   * 発効日が10月中旬〜11月中旬に散らばっていて、10月1日で決め打ちできないことを固定する
+   * （宮崎・鹿児島は答申時に発効日が無く、2026-09-28 に決定公示で入れた）。
    */
   it('第3次追補の13県は一次情報どおりの額・答申日・発効日を持つ', () => {
     const third = [
@@ -396,9 +391,9 @@ describe('令和8年度の答申データ（労働局の報道発表で確認で
       ['高知', 1086, '2026-08-28', '2026-10-29'],
       ['長崎', 1087, '2026-08-28', '2026-11-02'],
       ['大分', 1096, '2026-08-28', '2026-11-01'],
-      // 労働局が発効日を条件付き・未記載でしか示していない2県
-      ['宮崎', 1085, '2026-08-25', undefined],
-      ['鹿児島', 1090, '2026-08-26', undefined],
+      // 答申時は発効日が条件付き・未記載だった2県。決定公示（宮崎 09-24・鹿児島 09-25）で確定
+      ['宮崎', 1085, '2026-08-25', '2026-10-24'],
+      ['鹿児島', 1090, '2026-08-26', '2026-10-25'],
     ] as const;
     for (const [name, yen, answeredOn, effectiveOn] of third) {
       const pref = byName(name);
@@ -528,18 +523,12 @@ describe('10月発効前のメンテ（決定公示の反映と出典の差し�
    * **予定日では `'発効済み'` に切り替えない**（異議申出で動く余地があるため）。
    */
   it('予定日だけの県は plannedEffectiveOn を持ち、その日が来ても「答申」のまま', () => {
-    const planned = [
-      ['宮崎', '2026-10-24'],
-      ['鹿児島', '2026-10-25'],
-    ] as const;
-    for (const [name, on] of planned) {
-      const pref = byName(name);
-      expect(pref.answered?.plannedEffectiveOn, `${name}: 予定日`).toBe(on);
-      expect(pref.answered?.effectiveOn, `${name}: 予定日を発効日にしている`).toBeUndefined();
-      const r = revisionOf(pref, new Date(`${on}T00:00:00`));
-      expect(r.status, `${name}: 予定日で発効済みにしている`).toBe('答申');
-      expect(r.effectiveOn, `${name}`).toBeUndefined();
-    }
+    // 令和8年度の実データには予定日だけの県が残っていないので、次年度の答申期を想定した fixture で見る
+    const r = revisionOf(plannedOnlyPref, new Date('2026-10-24T00:00:00'));
+    expect(plannedOnlyPref.answered?.effectiveOn, '予定日を発効日にしている').toBeUndefined();
+    expect(r.status, '予定日で発効済みにしている').toBe('答申');
+    expect(r.effectiveOn).toBeUndefined();
+    expect(r.plannedEffectiveOn).toBe('2026-10-24');
   });
 
   /**
@@ -548,7 +537,7 @@ describe('10月発効前のメンテ（決定公示の反映と出典の差し�
    * 発効済みかもしれない県を「これから」と読ませてしまう。
    */
   it('予定日の前後で plannedDatePassed が切り替わる（日付を出し続けない）', () => {
-    const miyazaki = byName('宮崎'); // 予定日 2026-10-24
+    const miyazaki = plannedOnlyPref; // 予定日 2026-10-24（宮崎の答申時の形を fixture で再現）
     const before = revisionOf(miyazaki, new Date('2026-10-20T00:00:00'));
     expect(before.status).toBe('答申');
     expect(before.plannedEffectiveOn).toBe('2026-10-24');
@@ -668,6 +657,30 @@ describe('MEYASU_BY_RANK / NATIONAL_AVERAGE', () => {
  * 始まる）なので、実データが無くなっても分岐そのものは固定しておく。
  * 値は第4次追補の前の岩手（Cランク・1,031円）と同じにしてある。
  */
+/**
+ * 予定日だけを持つ県の fixture。宮崎の 2026-09-16 時点の形（答申 1,085 円・厚労省別紙の予定日 10-24）。
+ * 令和8年度の実データからは消えたが、`plannedEffectiveOn` の分岐は次年度のために残しているので、
+ * 実データに依存せず見張る。
+ */
+const plannedOnlyPref: Prefecture = {
+  code: 45,
+  name: '宮崎',
+  rank: 'C',
+  currentYen: 1023,
+  currentEffectiveOn: '2025-11-16',
+  source: {
+    label: '厚生労働省「地域別最低賃金の全国一覧」',
+    url: 'https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/minimumichiran/',
+    checkedAt: DATA_CHECKED_AT,
+  },
+  answered: {
+    yen: 1085,
+    answeredOn: '2026-08-25',
+    plannedEffectiveOn: '2026-10-24',
+    source: SOURCE_MHLW_BESSHI,
+  },
+};
+
 const notAnsweredPref: Prefecture = {
   code: 3,
   name: '岩手',
@@ -712,9 +725,13 @@ describe('revisionOf', () => {
   });
 
   it('発効日が未公表の答申は日付が来ても「答申」のまま（決め打ちしない）', () => {
-    // 鹿児島は労働局の発表に効力発生日が載っていない
-    expect(byName('鹿児島').answered?.effectiveOn).toBeUndefined();
-    expect(revisionOf(byName('鹿児島'), new Date('2026-12-01')).status).toBe('答申');
+    // 令和8年度の実データには残っていないので、答申だけ（発効日も予定日も無し）の fixture で見る
+    const answeredOnly: Prefecture = {
+      ...notAnsweredPref,
+      answered: { yen: 1090, answeredOn: '2026-08-26', source: SOURCE_MHLW_BESSHI },
+    };
+    expect(answeredOnly.answered?.effectiveOn).toBeUndefined();
+    expect(revisionOf(answeredOnly, new Date('2026-12-01')).status).toBe('答申');
   });
 
   it('引上げ率を小数第1位まで出す', () => {
