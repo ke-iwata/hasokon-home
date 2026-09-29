@@ -386,6 +386,23 @@ cp home/index.html /tmp/index.html && node scripts/build-test-home.mjs --file /t
 **生成結果を `home/index.html` にcommitしないでください。** 本番のトップから
 `noindex` のページへリンクすることになります（`test/build-test-home.test.mjs` が落とします）。
 
+## sync-home-card-art.mjs
+
+トップ（`home/index.html`）のカードの絵とタイルの色を、tools / games の一覧ページの
+**ビルド結果**から写すスクリプトです。原本は `tools/app/ToolArt.tsx` と
+`games/app/GameIcon.tsx` の `BOARD` で、このスクリプトは原本を書き換えません。
+
+仕様: [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
+
+```bash
+(cd tools && npm run build) && (cd games && npm run build)
+node scripts/sync-home-card-art.mjs
+```
+
+- カードの `<a class="card">` の `style` と `.card-icon` の中身だけを差し替えます。何度かけても同じ結果です
+- 一覧に無いカード（公開前・削除済み）が残っていれば終了コード1、一覧から絵を拾えなければ2
+- ツールやゲームのカードをトップに足したら、足したあとに回してください
+
 ## テスト
 
 ```bash
@@ -399,7 +416,7 @@ node --test "scripts/test/*.test.mjs"
 **`home/` の鍵ファイル**（1枚あるか・中身がファイル名と一致するか・`deploy.yml` が
 それを指しているか）を見ています。用途の分からない1枚は消されやすいためです。
 
-次の5つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
+次の6つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
 生成物はビルド工程を持たず npm も vitest も無いので、
 リポジトリ唯一の `node --test` にここで相乗りしています。
 
@@ -419,6 +436,9 @@ node --test "scripts/test/*.test.mjs"
   生成スクリプト。仕様は
   [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)、
   生成スクリプトは [design/manifest-icons/](../design/manifest-icons/)
+- `test/home-card-art.test.mjs` … **トップのカードの絵とタイルの色**。
+  `sync-home-card-art.mjs` の写し忘れ（古い線画・地色なし）と、ツールの分類と色のずれを落とします。
+  仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
 - `test/sitemap-home-lastmod.test.mjs` … **`home/sitemap-home.xml` の `lastmod` が
   据え置かれていないか**。`git log` で各HTMLの最終変更日を見て、それより古ければ落とします。
   IndexNow は `lastmod` が動いたURLだけを Bing へ送るので、据え置きは黙った不送信になります。

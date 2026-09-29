@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import {
   BombIcon,
   CardsIcon,
@@ -620,6 +620,453 @@ function HitofudePathIcon({ size = 26 }: IconProps) {
   );
 }
 
+/* =====================================================================
+ * 一覧カードの絵（盤面）
+ *
+ * 60px のタイルに 40px で描く。**ゲームは盤面をそのまま描く**
+ * （抽象化しない。札は札の形、盤は盤の目）。遊ぶ人は盤面を見に来ているので、
+ * それがいちばん速く伝わる。仕様は docs/features/card-illustrations.md。
+ *
+ * 色は3つだけ使う。線と塗りは currentColor（タイルの --tile-ink）、淡い面は
+ * その薄め、抜きはタイルの地色（--tile-bg）。**生のカラーコードは書かない**
+ * （明暗テーマに追随させるため。tests/game-art.test.ts が見張る）。
+ *
+ * ここに無い名前は、上の線画アイコン（ICONS）にフォールバックする。
+ * 公開前のゲームは `public` にするPRで盤面を描く。
+ * ===================================================================== */
+
+const S = {
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 3,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+} as const;
+const F = { fill: 'currentColor', fillOpacity: 0.2 } as const;
+const SOLID = { fill: 'currentColor' } as const;
+const CUT = { style: { fill: 'var(--tile-bg, var(--accent-soft))' } } as const;
+const CUT_S = {
+  fill: 'none',
+  strokeWidth: 3,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+  style: { stroke: 'var(--tile-bg, var(--accent-soft))' },
+} as const;
+const DIGIT = { fontFamily: 'system-ui, sans-serif', fontWeight: 700, textAnchor: 'middle' } as const;
+
+/** さいころの5の目 */
+function FivePips({ x, y, s, cut }: { x: number; y: number; s: number; cut?: boolean }) {
+  const p = cut ? CUT : SOLID;
+  const a = s * 0.27;
+  const b = s * 0.73;
+  return (
+    <>
+      <circle cx={x + a} cy={y + a} r={s * 0.1} {...p} />
+      <circle cx={x + b} cy={y + a} r={s * 0.1} {...p} />
+      <circle cx={x + s / 2} cy={y + s / 2} r={s * 0.1} {...p} />
+      <circle cx={x + a} cy={y + b} r={s * 0.1} {...p} />
+      <circle cx={x + b} cy={y + b} r={s * 0.1} {...p} />
+    </>
+  );
+}
+
+const BOARD: Record<string, ReactNode> = {
+  // ソリティア：扇に開いた札
+  Cards: (
+    <>
+      <g transform="rotate(-14 17 34)">
+        <rect x="6" y="18" width="22" height="32" rx="4" {...F} />
+        <rect x="6" y="18" width="22" height="32" rx="4" {...S} />
+      </g>
+      <rect x="21" y="14" width="22" height="32" rx="4" {...F} />
+      <rect x="21" y="14" width="22" height="32" rx="4" {...S} />
+      <g transform="rotate(12 46 28)">
+        <rect x="35" y="12" width="22" height="32" rx="4" {...SOLID} />
+        <path d="M46 21l5 7-5 7-5-7z" {...CUT} />
+      </g>
+    </>
+  ),
+  // スパイダー：縦に重なった2列
+  Spade: (
+    <>
+      {[8, 14, 20].map((y) => (
+        <g key={`a${y}`}>
+          <rect x="7" y={y} width="22" height="26" rx="3" {...F} />
+          <rect x="7" y={y} width="22" height="26" rx="3" {...S} strokeWidth={2.4} />
+        </g>
+      ))}
+      <rect x="7" y="26" width="22" height="30" rx="3" {...SOLID} />
+      <path
+        d="M18 33c-4 4-8 6-8 10a4 4 0 0 0 7 2.6L16 50h4l-1-4.4A4 4 0 0 0 26 43c0-4-4-6-8-10z"
+        {...CUT}
+      />
+      {[8, 14].map((y) => (
+        <g key={`b${y}`}>
+          <rect x="35" y={y} width="22" height="26" rx="3" {...F} />
+          <rect x="35" y={y} width="22" height="26" rx="3" {...S} strokeWidth={2.4} />
+        </g>
+      ))}
+      <rect x="35" y="20" width="22" height="30" rx="3" {...F} />
+      <rect x="35" y="20" width="22" height="30" rx="3" {...S} />
+    </>
+  ),
+  // フリーセル：上に空きマス4つ、下に札
+  Club: (
+    <>
+      {[4, 18, 32, 46].map((x) => (
+        <rect key={x} x={x} y="5" width="13" height="16" rx="2.5" {...S} strokeWidth={2.2} strokeDasharray="3 3" />
+      ))}
+      <rect x="9" y="27" width="20" height="30" rx="3" {...SOLID} />
+      <circle cx="19" cy="37" r="3.4" {...CUT} />
+      <circle cx="15" cy="42.5" r="3.4" {...CUT} />
+      <circle cx="23" cy="42.5" r="3.4" {...CUT} />
+      <rect x="17.8" y="42" width="2.4" height="8" rx="1" {...CUT} />
+      <rect x="35" y="27" width="20" height="30" rx="3" {...F} />
+      <rect x="35" y="27" width="20" height="30" rx="3" {...S} />
+    </>
+  ),
+  // ピラミッド：札を三角に積む
+  Pyramid: (
+    <>
+      {[
+        [19, 18],
+        [33, 18],
+        [12, 28],
+        [26, 28],
+        [40, 28],
+        [5, 38],
+        [19, 38],
+        [33, 38],
+        [47, 38],
+      ].map(([x, y]) => (
+        <g key={`${x}-${y}`}>
+          <rect x={x} y={y} width="12" height="17" rx="2" {...F} />
+          <rect x={x} y={y} width="12" height="17" rx="2" {...S} strokeWidth={2.2} />
+        </g>
+      ))}
+      <rect x="26" y="7" width="12" height="17" rx="2" {...SOLID} />
+    </>
+  ),
+  // トライピークス：山が3つ
+  TriPeaks: (
+    <>
+      {[12, 32, 52].map((cx) => (
+        <g key={cx}>
+          <rect x={cx - 10} y="21" width="9" height="13" rx="1.8" {...F} />
+          <rect x={cx - 10} y="21" width="9" height="13" rx="1.8" {...S} strokeWidth={2} />
+          <rect x={cx + 1} y="21" width="9" height="13" rx="1.8" {...F} />
+          <rect x={cx + 1} y="21" width="9" height="13" rx="1.8" {...S} strokeWidth={2} />
+          <rect x={cx - 4.5} y="10" width="9" height="13" rx="1.8" {...SOLID} />
+        </g>
+      ))}
+      <rect x="26" y="42" width="12" height="17" rx="2" {...SOLID} />
+      <rect x="12" y="42" width="12" height="17" rx="2" {...S} strokeWidth={2.2} strokeDasharray="3 3" />
+    </>
+  ),
+  // ゴルフ：旗と札
+  Golf: (
+    <>
+      <ellipse cx="42" cy="51" rx="15" ry="5" {...F} />
+      <ellipse cx="42" cy="51" rx="15" ry="5" {...S} />
+      <path d="M42 8v43" {...S} />
+      <path d="M42 9 L58 16 L42 23z" {...SOLID} />
+      <rect x="6" y="20" width="20" height="30" rx="3" {...F} />
+      <rect x="6" y="20" width="20" height="30" rx="3" {...S} />
+      <circle cx="16" cy="35" r="4" {...SOLID} />
+    </>
+  ),
+  // マインスイーパー：盤と地雷
+  Bomb: (
+    <>
+      <rect x="7" y="7" width="50" height="50" rx="5" {...F} />
+      <path d="M23.7 7v50 M40.3 7v50 M7 23.7h50 M7 40.3h50" {...S} strokeWidth={2} strokeOpacity={0.5} />
+      <rect x="7" y="7" width="50" height="50" rx="5" {...S} />
+      <circle cx="32" cy="32" r="6.5" {...SOLID} />
+      <path d="M32 22v4 M32 38v4 M22 32h4 M38 32h4" {...S} />
+      <rect x="40.3" y="7" width="16.7" height="16.7" rx="0" {...SOLID} />
+      <text x="48.6" y="20" fontSize="12" {...DIGIT} {...CUT}>1</text>
+    </>
+  ),
+  // 2048：数字のタイル
+  SquaresFour: (
+    <>
+      <rect x="7" y="7" width="23" height="23" rx="4" {...F} />
+      <rect x="34" y="7" width="23" height="23" rx="4" {...SOLID} fillOpacity={0.35} />
+      <rect x="7" y="34" width="23" height="23" rx="4" {...SOLID} fillOpacity={0.55} />
+      <rect x="34" y="34" width="23" height="23" rx="4" {...SOLID} />
+      <text x="18.5" y="23" fontSize="13" {...DIGIT} {...SOLID}>2</text>
+      <text x="45.5" y="23" fontSize="13" {...DIGIT} {...SOLID}>4</text>
+      <text x="18.5" y="50" fontSize="13" {...DIGIT} {...CUT}>8</text>
+      <text x="45.5" y="50" fontSize="12" {...DIGIT} {...CUT}>16</text>
+    </>
+  ),
+  // ナンプレ：3×3の枠と数字
+  GridNine: (
+    <>
+      <rect x="6" y="6" width="52" height="52" rx="4" {...F} />
+      <path d="M23.3 6v52 M40.7 6v52 M6 23.3h52 M6 40.7h52" {...S} strokeWidth={2.2} />
+      <rect x="6" y="6" width="52" height="52" rx="4" {...S} />
+      <rect x="40.7" y="6" width="17.3" height="17.3" {...SOLID} />
+      <text x="14.7" y="19.5" fontSize="12" {...DIGIT} {...SOLID}>5</text>
+      <text x="32" y="37" fontSize="12" {...DIGIT} {...SOLID}>3</text>
+      <text x="14.7" y="54.3" fontSize="12" {...DIGIT} {...SOLID}>9</text>
+      <text x="49.3" y="19.5" fontSize="12" {...DIGIT} {...CUT}>7</text>
+    </>
+  ),
+  // ノノグラム：塗ったマスで絵が出る
+  GridFour: (
+    <>
+      <rect x="18" y="18" width="40" height="40" rx="3" {...F} />
+      {[
+        [28, 18],
+        [38, 18],
+        [18, 28],
+        [28, 28],
+        [38, 28],
+        [48, 28],
+        [28, 38],
+        [38, 38],
+        [28, 48],
+      ].map(([x, y]) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width="10" height="10" {...SOLID} />
+      ))}
+      <path d="M28 18v40 M38 18v40 M48 18v40 M18 28h40 M18 38h40 M18 48h40" {...S} strokeWidth={1.4} strokeOpacity={0.45} />
+      <rect x="18" y="18" width="40" height="40" rx="3" {...S} />
+      <path d="M31 7v7 M41 7v7 M7 31h7 M7 41h7" {...S} strokeWidth={3.4} />
+    </>
+  ),
+  // 数字つなぎ一筆書き：マス目の盤と、1から9まで渦を巻く1本の道。
+  // 往復する道（M16 16 H48 V32 H16 V48 H48）は数字の「2」に見えたので、盤の線を引いて渦にした
+  HitofudePath: (
+    <>
+      <rect x="6" y="6" width="52" height="52" rx="4" {...F} />
+      <path d="M23.3 6v52 M40.7 6v52 M6 23.3h52 M6 40.7h52" {...S} strokeWidth={1.6} strokeOpacity={0.45} />
+      <path d="M14.7 14.7 V49.3 H49.3 V14.7 H32 V32" {...S} strokeWidth={5} />
+      <circle cx="14.7" cy="14.7" r="7" {...SOLID} />
+      <circle cx="32" cy="32" r="7" {...SOLID} />
+      <text x="14.7" y="18.9" fontSize="11" {...DIGIT} {...CUT}>1</text>
+      <text x="32" y="36.2" fontSize="11" {...DIGIT} {...CUT}>9</text>
+    </>
+  ),
+  // リバーシ：盤と白黒の石
+  Stones: (
+    <>
+      <rect x="6" y="6" width="52" height="52" rx="4" {...F} />
+      <path d="M19 6v52 M32 6v52 M45 6v52 M6 19h52 M6 32h52 M6 45h52" {...S} strokeWidth={1.6} strokeOpacity={0.5} />
+      <rect x="6" y="6" width="52" height="52" rx="4" {...S} />
+      <circle cx="25.5" cy="25.5" r="5.4" {...SOLID} />
+      <circle cx="38.5" cy="38.5" r="5.4" {...SOLID} />
+      <circle cx="38.5" cy="25.5" r="5.4" {...CUT} />
+      <circle cx="38.5" cy="25.5" r="5.4" {...S} strokeWidth={2.4} />
+      <circle cx="25.5" cy="38.5" r="5.4" {...CUT} />
+      <circle cx="25.5" cy="38.5" r="5.4" {...S} strokeWidth={2.4} />
+    </>
+  ),
+  // 五目並べ：斜めに5つ並んだ石
+  FiveInARow: (
+    <>
+      <path
+        d="M10 6v52 M21 6v52 M32 6v52 M43 6v52 M54 6v52 M6 10h52 M6 21h52 M6 32h52 M6 43h52 M6 54h52"
+        {...S}
+        strokeWidth={1.6}
+        strokeOpacity={0.45}
+      />
+      {[10, 21, 32, 43, 54].map((v) => (
+        <circle key={v} cx={v} cy={64 - v} r="4.8" {...SOLID} />
+      ))}
+      <circle cx="21" cy="21" r="4.8" {...CUT} />
+      <circle cx="21" cy="21" r="4.8" {...S} strokeWidth={2.2} />
+      <circle cx="43" cy="43" r="4.8" {...CUT} />
+      <circle cx="43" cy="43" r="4.8" {...S} strokeWidth={2.2} />
+    </>
+  ),
+  // 大富豪：王冠と手札
+  Crown: (
+    <>
+      <g transform="rotate(-12 22 44)">
+        <rect x="12" y="30" width="20" height="28" rx="3" {...F} />
+        <rect x="12" y="30" width="20" height="28" rx="3" {...S} />
+      </g>
+      <g transform="rotate(12 42 44)">
+        <rect x="32" y="30" width="20" height="28" rx="3" {...F} />
+        <rect x="32" y="30" width="20" height="28" rx="3" {...S} />
+      </g>
+      <path d="M10 12 l9 11 l13-15 l13 15 l9-11 l-4 22 H14z" {...SOLID} />
+      <circle cx="32" cy="7" r="3" {...SOLID} />
+    </>
+  ),
+  // 七並べ：7を真ん中に並べる
+  Sevens: (
+    <>
+      <rect x="3" y="18" width="18" height="27" rx="3" {...F} />
+      <rect x="3" y="18" width="18" height="27" rx="3" {...S} />
+      <rect x="43" y="18" width="18" height="27" rx="3" {...F} />
+      <rect x="43" y="18" width="18" height="27" rx="3" {...S} />
+      <rect x="22" y="12" width="20" height="30" rx="3" {...SOLID} />
+      <text x="32" y="34" fontSize="18" {...DIGIT} {...CUT}>7</text>
+      <path d="M26 48h12 M26 53h12" {...S} strokeOpacity={0.5} />
+    </>
+  ),
+  // 神経衰弱：伏せた札と、そろった2枚
+  MemoryPair: (
+    <>
+      {[
+        [6, 9, false],
+        [25, 9, true],
+        [44, 9, true],
+        [6, 34, true],
+        [25, 34, true],
+        [44, 34, false],
+      ].map(([x, y, down]) =>
+        down ? (
+          <g key={`${x}-${y}`}>
+            <rect x={x as number} y={y as number} width="14" height="21" rx="2.5" {...F} />
+            <rect x={x as number} y={y as number} width="14" height="21" rx="2.5" {...S} strokeWidth={2.2} />
+          </g>
+        ) : (
+          <g key={`${x}-${y}`}>
+            <rect x={x as number} y={y as number} width="14" height="21" rx="2.5" {...SOLID} />
+            <path
+              d={`M${(x as number) + 7} ${(y as number) + 15.5}l-4.6-4.4a2.8 2.8 0 0 1 4.6-3.4 2.8 2.8 0 0 1 4.6 3.4z`}
+              {...CUT}
+            />
+          </g>
+        ),
+      )}
+    </>
+  ),
+  // スピード：2枚の札と稲妻
+  SpeedBolt: (
+    <>
+      <g transform="rotate(-10 15 32)">
+        <rect x="4" y="16" width="20" height="30" rx="3" {...F} />
+        <rect x="4" y="16" width="20" height="30" rx="3" {...S} />
+      </g>
+      <g transform="rotate(10 49 32)">
+        <rect x="40" y="16" width="20" height="30" rx="3" {...SOLID} />
+      </g>
+      <path d="M36 6 L24 33 h9 L28 58 L42 27 h-9 z" {...SOLID} />
+      <path d="M36 6 L24 33 h9 L28 58 L42 27 h-9 z" {...CUT_S} strokeWidth={2} />
+    </>
+  ),
+  // 花札：芒に月
+  Hanafuda: (
+    <>
+      <rect x="15" y="5" width="34" height="54" rx="3" {...F} />
+      <circle cx="32" cy="24" r="11" {...SOLID} />
+      <path d="M15 59 V45 C23 36 41 36 49 45 V59z" {...SOLID} />
+      <path d="M24 56 l-3-8 M32 56 v-10 M40 56 l3-8" {...CUT_S} strokeWidth={2.4} />
+      <rect x="15" y="5" width="34" height="54" rx="3" {...S} />
+    </>
+  ),
+  // 麻雀ソリティア：積まれた牌
+  Tiles: (
+    <>
+      <rect x="19" y="10" width="22" height="30" rx="3" {...SOLID} fillOpacity={0.4} />
+      <rect x="17" y="7" width="22" height="30" rx="3" {...F} />
+      <rect x="17" y="7" width="22" height="30" rx="3" {...S} />
+      <rect x="10" y="26" width="22" height="30" rx="3" {...SOLID} fillOpacity={0.4} />
+      <rect x="8" y="23" width="22" height="30" rx="3" {...F} />
+      <rect x="8" y="23" width="22" height="30" rx="3" {...S} />
+      <path d="M19 30v16" {...S} />
+      <rect x="35" y="26" width="22" height="30" rx="3" {...SOLID} fillOpacity={0.4} />
+      <rect x="33" y="23" width="22" height="30" rx="3" {...SOLID} />
+      <circle cx="44" cy="32" r="3.2" {...CUT} />
+      <circle cx="44" cy="44" r="3.2" {...CUT} />
+    </>
+  ),
+  // ブロックパズル：落ちてくる形と、そろいかけの段
+  Blocks: (
+    <>
+      <rect x="22" y="6" width="10" height="10" {...SOLID} />
+      <rect x="32" y="6" width="10" height="10" {...SOLID} />
+      <rect x="42" y="6" width="10" height="10" {...SOLID} />
+      <rect x="32" y="16" width="10" height="10" {...SOLID} />
+      {[
+        [7, 37],
+        [17, 37],
+        [47, 37],
+        [7, 47],
+        [17, 47],
+        [27, 47],
+        [47, 47],
+      ].map(([x, y]) => (
+        <g key={`${x}-${y}`}>
+          <rect x={x} y={y} width="10" height="10" {...F} />
+          <rect x={x} y={y} width="10" height="10" {...S} strokeWidth={2} />
+        </g>
+      ))}
+      <rect x="37" y="47" width="10" height="10" {...S} strokeWidth={2} strokeDasharray="2.5 2.5" />
+    </>
+  ),
+  // 色水ソート：層になった試験管
+  Tubes: (
+    <>
+      {[
+        [5, [0.2, 0.55, 1]],
+        [25, [0, 1, 0.55]],
+        [45, [1, 1, 1]],
+      ].map(([x, layers]) => {
+        const xx = x as number;
+        const [top, mid, bottom] = layers as number[];
+        return (
+          <g key={xx}>
+            {top > 0 && <rect x={xx} y="16" width="14" height="10" {...SOLID} fillOpacity={top} />}
+            {mid > 0 && <rect x={xx} y="26" width="14" height="10" {...SOLID} fillOpacity={mid} />}
+            <path d={`M${xx} 36 v8 a7 7 0 0 0 14 0 v-8z`} {...SOLID} fillOpacity={bottom} />
+            <path d={`M${xx} 10 v34 a7 7 0 0 0 14 0 V10`} {...S} />
+            <path d={`M${xx - 2} 10 h18`} {...S} />
+          </g>
+        );
+      })}
+    </>
+  ),
+  // ブロック崩し：ブロックの列と球とバー
+  Racquet: (
+    <>
+      {[6, 20, 34, 48].map((x) => (
+        <rect key={`t${x}`} x={x} y="7" width="11" height="7" rx="1.5" {...SOLID} />
+      ))}
+      {[6, 34, 48].map((x) => (
+        <g key={`m${x}`}>
+          <rect x={x} y="17" width="11" height="7" rx="1.5" {...F} />
+          <rect x={x} y="17" width="11" height="7" rx="1.5" {...S} strokeWidth={2} />
+        </g>
+      ))}
+      <path d="M28 49 L37 37 L46 25" {...S} strokeWidth={2.2} strokeDasharray="3 4" strokeOpacity={0.7} />
+      <circle cx="37" cy="37" r="4" {...SOLID} />
+      <rect x="16" y="51" width="26" height="6" rx="3" {...SOLID} />
+    </>
+  ),
+  // スネーク：うねる体と餌。直角の折り返しにしない（数字の「2.」に見える。SnakeIcon のコメント参照）
+  Snake: (
+    <>
+      <path d="M8 38 C14 22 22 22 28 38 S42 54 46 40" fill="none" stroke="currentColor" strokeOpacity={0.35} strokeWidth={10} strokeLinecap="round" />
+      <path d="M8 38 C14 22 22 22 28 38 S42 54 46 40" {...S} strokeWidth={4} />
+      <circle cx="48.5" cy="33" r="7" {...SOLID} />
+      <circle cx="50.5" cy="30.5" r="1.8" {...CUT} />
+      <circle cx="52" cy="14" r="4.5" {...SOLID} />
+      <path d="M52 9.5 v-3" {...S} strokeWidth={2.4} />
+    </>
+  ),
+  // ヨット：得点表と、そろった5の目
+  DiceFive: (
+    <>
+      <rect x="5" y="7" width="22" height="30" rx="3" {...F} />
+      <rect x="5" y="7" width="22" height="30" rx="3" {...S} />
+      <path d="M10 15h12 M10 22h12 M10 29h8" {...S} strokeWidth={2.4} />
+      <rect x="32" y="9" width="25" height="25" rx="5" {...SOLID} />
+      <FivePips x={32} y={9} s={25} cut />
+      <rect x="15" y="35" width="23" height="23" rx="5" {...F} />
+      <rect x="15" y="35" width="23" height="23" rx="5" {...S} />
+      <FivePips x={15} y={35} s={23} />
+    </>
+  ),
+};
+
+/** 盤面の絵がある icon 名（tests/game-art.test.ts が、公開中のゲームがすべて含まれるかを見る） */
+export const GAME_BOARD_ICONS: readonly string[] = Object.keys(BOARD);
+
 const ICONS: Record<string, ComponentType<IconProps>> = {
   Cards: CardsIcon,
   Crown: CrownIcon,
@@ -657,6 +1104,15 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
+  // 盤面の絵があればそれを出す。大きさはカードの CSS（.game-card .icon svg）が決める
+  const board = BOARD[name];
+  if (board) {
+    return (
+      <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden="true" focusable="false">
+        {board}
+      </svg>
+    );
+  }
   const Cmp = ICONS[name];
   // 名前を間違えても落とさない。アイコンが出ないだけで済ませる
   if (!Cmp) return null;
