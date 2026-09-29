@@ -108,7 +108,12 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
    `app/_records/Records.tsx`（`useRecords` / `useStopwatch` / `RecordStrip`）を使い、
    **ゲームごとに個別の localStorage キーを作らない**
    （[docs/features/game-records.md](../docs/features/game-records.md)）
-6. `npm test && npm run build` が通ることを確認
+6. **`public` にするPRで、一覧カードの盤面の絵を `app/GameIcon.tsx` の `BOARD` に描く**
+   （registry の `icon` 名をキーに1つ。盤面をそのまま描く・直角の折り返しで数字の形を作らない）。
+   トップのカードは `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で写す。
+   仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
+   （絵の無い公開中ゲームは `tests/game-art.test.ts` が落とす）
+7. `npm test && npm run build` が通ることを確認
 
 ## AdSense / アクセス解析
 
