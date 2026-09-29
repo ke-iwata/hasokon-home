@@ -373,6 +373,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/sozoku-toki-kigen.md
+    slug: 'sozoku-toki-kigen',
+    // 期限（残り日数）のツールなので砂時計。Hourglass はほかで使っていない
+    icon: 'HourglassMedium',
+    // 「過料」は判定するように読めるので名前に入れない（仕様書「ページ構成」）
+    name: '相続登記の期限チェッカー',
+    description:
+      '相続登記は2024年4月から義務になり、それより前の相続も2027年3月31日が期限です。死亡日と不動産を相続したことを知った日を入れると、相続登記の期限と残り日数、遺産分割後の期限を日付で出します。相続放棄（3か月）・準確定申告（4か月）・相続税申告（10か月）の期限も同じ画面で。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-29',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
