@@ -5,6 +5,7 @@
 // ネットワークもGoogleの認証情報も要らない（GA4 の応答を差し替えて動かす）。
 // **数え方そのもの**（期間2本の取り違え・AI チャネルの拾い漏れ）と、
 // **実行できなかったときに終了コード2で落ちること**を見る。
+// page_view の無い「幽霊セッション」の数え方は docs/features/web-vitals-phantom-sessions.md の C。
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
@@ -14,11 +15,17 @@ import {
   channelRequest,
   dateRanges,
   formatSummaryLine,
+  formatPhantomLine,
+  formatReport,
   landingPageRequest,
   parseRows,
+  PHANTOM_LANDING_PAGES,
+  PHANTOM_WARN_PERCENT,
+  phantomSessionRequest,
   runReport,
   summarize,
   summarizeChannels,
+  summarizePhantom,
   topLandings,
   topSources,
 } from '../lib/ga4.mjs';
@@ -67,6 +74,36 @@ const LANDING_BODY = {
   ],
 };
 
+/** GA4 の応答（着地ページが空のセッションをチャネル別に）。仕様書 C の切り口 */
+const PHANTOM_BODY = {
+  dimensionHeaders: [{ name: 'sessionDefaultChannelGroup' }],
+  metricHeaders: [{ name: 'sessions' }],
+  rows: [
+    { dimensionValues: [{ value: 'Unassigned' }], metricValues: [{ value: '40' }] },
+    { dimensionValues: [{ value: 'Organic Search' }], metricValues: [{ value: '3' }] },
+  ],
+};
+
+/** 期間2本の応答に Unassigned を混ぜたもの。チャネル表の注記を見るため */
+const CHANNEL_BODY_WITH_UNASSIGNED = {
+  ...CHANNEL_BODY,
+  rows: [
+    ...CHANNEL_BODY.rows,
+    {
+      dimensionValues: [{ value: 'Unassigned' }, { value: '(not set)' }, { value: 'current' }],
+      metricValues: [{ value: '71' }],
+    },
+  ],
+};
+
+/** リクエストの中身で、差し替える応答を選ぶ */
+function fakeBody(body) {
+  const field = body.dimensionFilter?.filter?.fieldName;
+  if (field === 'landingPage') return PHANTOM_BODY;
+  if (field === 'sessionDefaultChannelGroup') return LANDING_BODY;
+  return CHANNEL_BODY;
+}
+
 /** 出力を溜め、全部を差し替えた deps を作る。 */
 function harness(overrides = {}) {
   const stdout = [];
@@ -78,10 +115,7 @@ function harness(overrides = {}) {
       GOOGLE_SERVICE_ACCOUNT_JSON: '{"client_email":"a@b.iam.gserviceaccount.com","private_key":"x"}',
     },
     getAccessToken: async () => 'ya29.test',
-    report: async ({ body }) => ({
-      ok: true,
-      body: body.dimensionFilter ? LANDING_BODY : CHANNEL_BODY,
-    }),
+    report: async ({ body }) => ({ ok: true, body: fakeBody(body) }),
     writeSnapshot: async (path, text) => written.push({ path, text }),
     now: () => '2026-09-29T00:00:00.000Z',
     stdout: (line) => stdout.push(line),
@@ -203,6 +237,93 @@ describe('集計', () => {
   });
 });
 
+describe('page_view の無いセッション（web-vitals-phantom-sessions.md の C）', () => {
+  it('着地ページが空／(not set) のセッションを、チャネル別に直近だけ引く', () => {
+    const body = phantomSessionRequest();
+    const filter = body.dimensionFilter.filter;
+    assert.equal(filter.fieldName, 'landingPage');
+    // 空文字を落とすと、09-28 の 42 件がまるごと数えられない
+    assert.deepEqual(filter.inListFilter.values, ['', '(not set)']);
+    assert.deepEqual(PHANTOM_LANDING_PAGES, ['', '(not set)']);
+    assert.deepEqual(
+      body.dimensions.map((d) => d.name),
+      ['sessionDefaultChannelGroup'],
+    );
+    assert.equal(body.dateRanges.length, 1);
+    assert.equal(body.dateRanges[0].endDate, 'yesterday');
+  });
+
+  it('数・割合・Unassigned に入った分を出す', () => {
+    const phantom = summarizePhantom(parseRows(PHANTOM_BODY), 430);
+    assert.equal(phantom.sessions, 43);
+    assert.equal(phantom.unassigned, 40);
+    assert.equal(phantom.share, 10);
+    assert.equal(phantom.warnPercent, PHANTOM_WARN_PERCENT);
+  });
+
+  it('閾値ちょうどは警告しない。超えたら警告する（暫定 10%）', () => {
+    assert.equal(PHANTOM_WARN_PERCENT, 10);
+    assert.equal(summarizePhantom(parseRows(PHANTOM_BODY), 430).warn, false);
+    // 09-28 の型：75 セッション中 42 が幽霊（56%）
+    const spike = summarizePhantom(
+      [{ sessionDefaultChannelGroup: 'Unassigned', sessions: 42 }],
+      75,
+    );
+    assert.equal(spike.share, 56);
+    assert.equal(spike.warn, true);
+    // 09-02〜09-27 の低いほう（3%）は警告しない
+    assert.equal(
+      summarizePhantom([{ sessionDefaultChannelGroup: 'Unassigned', sessions: 1 }], 34).warn,
+      false,
+    );
+  });
+
+  it('チャネル名が空の行は Unassigned に寄せる', () => {
+    const phantom = summarizePhantom([{ sessions: 5 }], 100);
+    assert.equal(phantom.unassigned, 5);
+  });
+
+  it('セッションが0件でも0除算にならず、警告もしない', () => {
+    const phantom = summarizePhantom([], 0);
+    assert.deepEqual(phantom, {
+      sessions: 0,
+      unassigned: 0,
+      share: 0,
+      warnPercent: PHANTOM_WARN_PERCENT,
+      warn: false,
+    });
+  });
+
+  it('分母はチャネル別の直近ぶんの合計（前の28日を混ぜない）', () => {
+    // current の合計は 240 + 60 + 8 + 36 + 71 = 415。previous の 1 を足すと 416 になる
+    const summary = summarize(parseRows(CHANNEL_BODY_WITH_UNASSIGNED), parseRows(LANDING_BODY), {
+      phantomRows: parseRows(PHANTOM_BODY),
+    });
+    assert.equal(summary.phantom.sessions, 43);
+    assert.equal(summary.phantom.share, 10.4);
+    assert.equal(summary.phantom.warn, true);
+  });
+
+  it('チャネル表の Unassigned の行に「うち page_view 無し」を添える', () => {
+    const summary = summarize(parseRows(CHANNEL_BODY_WITH_UNASSIGNED), parseRows(LANDING_BODY), {
+      phantomRows: parseRows(PHANTOM_BODY),
+    });
+    const report = formatReport(summary);
+    assert.match(report, /Unassigned: 71 \/ 0（うち page_view 無し 40）/);
+    // 他のチャネルには付けない
+    assert.doesNotMatch(report, /Organic Search: 240 \/ 0（/);
+    assert.match(report, /page_view の無いセッション（着地ページ空）: 43/);
+  });
+
+  it('閾値を超えた行には印が付く', () => {
+    const line = formatPhantomLine({ sessions: 42, unassigned: 42, share: 56, warnPercent: 10, warn: true }, 28);
+    assert.match(line, /⚠ 10% 超え/);
+    assert.match(line, /全体の 56%/);
+    const calm = formatPhantomLine({ sessions: 1, unassigned: 1, share: 3, warnPercent: 10, warn: false }, 28);
+    assert.doesNotMatch(calm, /⚠/);
+  });
+});
+
 describe('引数', () => {
   it('既定はプロパティ548154955・28日', () => {
     const options = parseArgs([]);
@@ -236,6 +357,49 @@ describe('スクリプト全体', () => {
     assert.equal(snapshot.landings[0].page, '/games/daifugo');
   });
 
+  it('幽霊セッションが閾値を超えたら警告する（終了コードは0のまま）', async () => {
+    // CHANNEL_BODY の直近合計は 344。幽霊 43 件で 12.5%
+    const { deps, stdout, stderr, written } = harness({ env: { ...harness().deps.env, GITHUB_ACTIONS: 'true' } });
+    assert.equal(await main(['--out', 'ga4.json'], deps), EXIT_OK);
+    assert.match(stdout.join('\n'), /⚠ 10% 超え: page_view の無いセッション（着地ページ空）: 43/);
+    assert.match(stderr.join('\n'), /^::warning::page_view の無いセッションが全体の 12\.5%/m);
+    const snapshot = JSON.parse(written[0].text);
+    assert.equal(snapshot.phantom.sessions, 43);
+    assert.equal(snapshot.phantom.warn, true);
+  });
+
+  it('Actions の外では注釈の書式にしない', async () => {
+    const { deps, stderr } = harness();
+    assert.equal(await main([], deps), EXIT_OK);
+    assert.match(stderr.join('\n'), /^警告: page_view の無いセッション/m);
+    assert.doesNotMatch(stderr.join('\n'), /::warning::/);
+  });
+
+  it('閾値以下なら警告しない', async () => {
+    const { deps, stderr } = harness({
+      report: async ({ body }) => ({
+        ok: true,
+        body:
+          body.dimensionFilter?.filter?.fieldName === 'landingPage'
+            ? { dimensionHeaders: [{ name: 'sessionDefaultChannelGroup' }], rows: [] }
+            : fakeBody(body),
+      }),
+    });
+    assert.equal(await main([], deps), EXIT_OK);
+    assert.doesNotMatch(stderr.join('\n'), /page_view の無いセッション/);
+  });
+
+  it('幽霊セッションの集計が取れなければ終了コード2', async () => {
+    const { deps, stderr } = harness({
+      report: async ({ body }) =>
+        body.dimensionFilter?.filter?.fieldName === 'landingPage'
+          ? { ok: false, error: 'HTTP 400' }
+          : { ok: true, body: fakeBody(body) },
+    });
+    assert.equal(await main([], deps), EXIT_FAILED);
+    assert.match(stderr.join('\n'), /GA4 の集計を取れません（phantoms）/);
+  });
+
   it('--dry-run はAPIを叩かずリクエストだけ出す', async () => {
     let called = false;
     const { deps, stdout } = harness({
@@ -247,6 +411,7 @@ describe('スクリプト全体', () => {
     assert.equal(await main(['--dry-run'], deps), EXIT_OK);
     assert.equal(called, false);
     assert.match(stdout.join('\n'), /sessionDefaultChannelGroup/);
+    assert.match(stdout.join('\n'), /"phantoms"/);
   });
 
   it('認証できなければ終了コード2', async () => {

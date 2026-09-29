@@ -45,6 +45,18 @@
 
   --shadow-sm: 0 1px 2px rgb(28 25 23 / 0.06);
   --shadow-md: 0 10px 30px rgb(28 25 23 / 0.1);
+
+  /* カードの絵の地色（分類ごと）。線の色は地に対して 4.4 以上、図形の基準 3:1 を満たす。
+     **色は分類を示すだけ**で、個々の見分けは絵の形が担う（learn/CLAUDE.md「色だけで区別しない」）。
+     仕様は docs/features/card-illustrations.md */
+  --cat-money: #15803d;
+  --cat-money-bg: #e8f4ec;
+  --cat-calc: #1d4ed8;
+  --cat-calc-bg: #e8eefc;
+  --cat-life: #b45309;
+  --cat-life-bg: #fdf0e0;
+  --cat-pick: #6d28d9;
+  --cat-pick-bg: #f0e9fd;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -75,6 +87,17 @@
 
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
     --shadow-md: 0 10px 30px rgb(0 0 0 / 0.45);
+
+    /* 暗いテーマでは地を持ち上げる。カードの地（--surface）と 1.26〜1.47 離さないと、
+       タイルが背景に溶けて「色の塊」で分類が分からなくなる（実測して決めた） */
+    --cat-money: #4ade80;
+    --cat-money-bg: #1f4430;
+    --cat-calc: #8fb1f9;
+    --cat-calc-bg: #233459;
+    --cat-life: #fbbf24;
+    --cat-life-bg: #4a3713;
+    --cat-pick: #c4a7f8;
+    --cat-pick-bg: #3a2a59;
   }
 }
 
@@ -313,19 +336,27 @@ h3 {
   border-color: var(--accent);
 }
 
-/* アイコン枠。中身は Phosphor の線画SVG（app/ToolIcon.tsx）。
-   色は currentColor で追従するので、枠の color をアクセントにするだけでよい */
+/* 絵のタイル。中身は「そのツールを使うと出てくるもの」の絵（app/ToolArt.tsx）。
+   地と線の色は、カードにインラインで渡す --tile-ink / --tile-bg が決める（分類ごと。
+   ToolArt.tsx の categoryStyle）。クラスを増やさない約束（tools/CLAUDE.md）に合わせた。
+   渡されていないカードは従来の緑に戻る。
+   絵は currentColor（線・塗り）と var(--tile-bg)（抜き）で描くので、ここの2色に追従する。
+   仕様は docs/features/card-illustrations.md */
 .tool-card .icon {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-sm);
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent-soft);
-  border: 1px solid var(--border);
-  color: var(--accent);
+  background: var(--tile-bg, var(--accent-soft));
+  color: var(--tile-ink, var(--accent));
   margin-bottom: 12px;
+}
+
+.tool-card .icon svg {
+  width: 44px;
+  height: 44px;
 }
 
 .tool-card .name {

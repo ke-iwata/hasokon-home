@@ -102,7 +102,12 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
    生成するので、**`home/llms.txt` に手で足すものは無い**
    （[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
-6. `npm test && npm run build` が通ることを確認
+6. **`public` にするPRで、一覧カードの絵を `app/ToolArt.tsx` に描く**（slug をキーに1つ。
+   出力を描く・64×64の2トーン・色は直書きしない）。トップのカードは
+   `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で写す。
+   仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
+   （絵の無い公開中ツールは `tests/tool-art.test.ts` が落とす）
+7. `npm test && npm run build` が通ることを確認
 
 ## AdSense
 
