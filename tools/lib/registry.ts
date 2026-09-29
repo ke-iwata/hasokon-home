@@ -147,6 +147,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    slug: 'kosei-nenkin-jogen',
+    icon: 'TrendUp',
+    name: '厚生年金 上限引き上げ 計算機',
+    description:
+      '2027年9月から厚生年金の標準報酬月額の上限が65万→68万→71万→75万円と3段階で上がります。月給を入れると、いつの給与から保険料が月いくら増えるか（最大9,150円）と、将来の年金がいくら増えるかの目安が出ます。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-09-29',
+  },
+  {
     slug: 'ideco',
     icon: 'Coins',
     name: 'iDeCo 拠出限度額・節税額 計算機',
