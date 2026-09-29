@@ -29,7 +29,8 @@ const man = (n: number) => `${(n / 10_000).toLocaleString('ja-JP')}万円`;
 /** 本文の額はすべて lib から出す（手で書かない） */
 const TOP = premiumDiff(1_000_000);
 const MAX_DIFF = TOP[TOP.length - 1].diff;
-const TEN_YEARS = accumulate(1_000_000, 120);
+/** 2027年9月から10年（本文の説明用。画面を開いた日に依らない固定の例） */
+const TEN_YEARS = accumulate(1_000_000, 120, '2027-09');
 const STAGES = PENSION_CAP_STAGES;
 
 const faq = [

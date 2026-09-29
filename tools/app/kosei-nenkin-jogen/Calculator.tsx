@@ -6,6 +6,7 @@ import {
   accumulate,
   AFFECTED_FROM,
   breakEvenYears,
+  countStartMonth,
   DEFAULT_MONTHS,
   END_AGE,
   formatMonthJa,
@@ -48,7 +49,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const salary = Math.max(0, Number(salaryText) || 0);
   const sliderValue = Math.min(SALARY_MAX, Math.max(SALARY_MIN, salary));
   const age = ageText === '' ? null : Number(ageText);
-  const validAge = age !== null && Number.isFinite(age) && age >= 15 && age < 100;
+  const validAge = age !== null && Number.isInteger(age) && age >= 15 && age < 100;
 
   return (
     <div className="card">
@@ -93,6 +94,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               inputMode="numeric"
               min={15}
               max={99}
+              step={1}
               value={ageText}
               onChange={(e) => setAgeText(e.target.value)}
             />
@@ -120,6 +122,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         <Results
           salary={salary}
           months={validAge ? monthsUntilEndAge(age as number, today) : DEFAULT_MONTHS}
+          startMonth={countStartMonth(today)}
           ageGiven={validAge}
           taxRate={taxRate === '' ? null : Number(taxRate)}
         />
@@ -131,11 +134,14 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 function Results({
   salary,
   months,
+  startMonth,
   ageGiven,
   taxRate,
 }: {
   salary: number;
   months: number;
+  /** 数え始める月 'YYYY-MM'（2027-09 と今月の遅いほう） */
+  startMonth: string;
   ageGiven: boolean;
   taxRate: number | null;
 }) {
@@ -161,7 +167,7 @@ function Results({
 
   const last = points[points.length - 1];
   const stopped = points.findIndex((p) => p.standard === last.standard);
-  const acc = accumulate(salary, months);
+  const acc = accumulate(salary, months, startMonth);
   const years = breakEvenYears(acc.premiumTotal, acc.pensionPerYear);
 
   return (
@@ -225,7 +231,7 @@ function Results({
       <h3 style={{ marginTop: 22 }}>将来の年金への反映</h3>
       {months === 0 ? (
         <p className="hint" style={{ lineHeight: 1.7 }}>
-          2027年9月から{END_AGE}歳になるまでの期間が無いので、{END_AGE}
+          {formatMonthJa(startMonth)}から{END_AGE}歳になるまでの期間が無いので、{END_AGE}
           歳までで数えると年金の増加は出ません。{END_AGE}
           歳以降も厚生年金に加入して働く場合は、その期間の分だけ年金が増えます。
         </p>
@@ -235,7 +241,7 @@ function Results({
             <div>
               <dt>数えた期間</dt>
               <dd>
-                2027年9月から{months}か月
+                {formatMonthJa(startMonth)}から{months}か月
                 {ageGiven ? `（${END_AGE}歳まで）` : '（10年続いた場合）'}
               </dd>
             </div>

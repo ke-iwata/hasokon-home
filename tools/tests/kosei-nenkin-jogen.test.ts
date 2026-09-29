@@ -3,6 +3,7 @@ import {
   accumulate,
   AFFECTED_FROM,
   breakEvenYears,
+  countStartMonth,
   employeePremium,
   isAffected,
   monthsUntilEndAge,
@@ -112,7 +113,7 @@ describe('premiumDiff（4時点）', () => {
 
 describe('accumulate（保険料の増加累計と年金の増加）', () => {
   it('73万円以上で10年: 保険料 約98万円・年金 年 約5.9万円・比 17 年前後（仕様書の値）', () => {
-    const a = accumulate(730_000, 120);
+    const a = accumulate(730_000, 120, '2027-09');
     expect(a.premiumTotal).toBe(2_745 * 12 + 5_490 * 12 + 9_150 * 96);
     expect(a.premiumTotal).toBe(977_220);
     // (3万×12 ＋ 6万×12 ＋ 10万×96) × 5.481/1000
@@ -125,28 +126,52 @@ describe('accumulate（保険料の増加累計と年金の増加）', () => {
   });
 
   it('75万円で1か月払うごとに 65万円のときより年額 548 円（段階が終わったあと）', () => {
-    const before = accumulate(730_000, 24);
-    const after = accumulate(730_000, 25);
+    const before = accumulate(730_000, 24, '2027-09');
+    const after = accumulate(730_000, 25, '2027-09');
     // 10万円 × 5.481/1000 = 548.1 円。年額は合計してから円に丸めるので差は 548〜549
     expect(after.pensionPerYear - before.pensionPerYear).toBeGreaterThanOrEqual(548);
     expect(after.pensionPerYear - before.pensionPerYear).toBeLessThanOrEqual(549);
   });
 
   it('67万円は 2027-09 の段で止まる', () => {
-    const a = accumulate(670_000, 120);
+    const a = accumulate(670_000, 120, '2027-09');
     expect(a.premiumTotal).toBe(2_745 * 120);
-    expect(pensionGain(670_000, 120).perYear).toBe(Math.round(30_000 * 120 * 5.481 / 1000));
+    expect(pensionGain(670_000, 120, '2027-09').perYear).toBe(Math.round(30_000 * 120 * 5.481 / 1000));
   });
 
   it('対象外なら 0・比は出さない', () => {
-    const a = accumulate(600_000, 120);
+    const a = accumulate(600_000, 120, '2027-09');
     expect(a).toEqual({ months: 120, premiumTotal: 0, pensionPerYear: 0, pensionPerMonth: 0 });
     expect(breakEvenYears(0, 0)).toBeNull();
   });
 
   it('月数 0 や負は 0 か月', () => {
-    expect(accumulate(800_000, 0).premiumTotal).toBe(0);
-    expect(accumulate(800_000, -5).months).toBe(0);
+    expect(accumulate(800_000, 0, '2027-09').premiumTotal).toBe(0);
+    expect(accumulate(800_000, -5, '2027-09').months).toBe(0);
+  });
+});
+
+describe('施行後に開いたとき（#294 レビュー）', () => {
+  it('数え始めは 2027-09 と今月の遅いほう', () => {
+    expect(countStartMonth('2026-09-29')).toBe('2027-09');
+    expect(countStartMonth('2027-09-01')).toBe('2027-09');
+    expect(countStartMonth('2030-01-15')).toBe('2030-01');
+  });
+
+  it('2030-01 に55歳・月給80万円：今月から60か月、累計 549,000円（過ぎた月を積まない）', () => {
+    const today = '2030-01-15';
+    const months = monthsUntilEndAge(55, today);
+    expect(months).toBe(60);
+    const a = accumulate(800_000, months, countStartMonth(today));
+    expect(a.premiumTotal).toBe(9_150 * 60);
+    expect(a.premiumTotal).toBe(549_000);
+    expect(a.pensionPerYear).toBe(Math.round(100_000 * 60 * 5.481 / 1000));
+  });
+
+  it('2028-03 に開くと 2028-09 の段から先だけが上がる', () => {
+    const a = accumulate(800_000, 12, countStartMonth('2028-03-10'));
+    // 2028-03〜08 は 2,745円、2028-09〜2029-02 は 5,490円
+    expect(a.premiumTotal).toBe(2_745 * 6 + 5_490 * 6);
   });
 });
 
@@ -166,6 +191,11 @@ describe('monthsUntilEndAge（60 歳まで）', () => {
 
   it('施行後に数えると今月から数える', () => {
     expect(monthsUntilEndAge(55, '2030-01-15')).toBe(60);
+  });
+
+  it('年齢の端数は切り捨てて整数の月数にする', () => {
+    expect(monthsUntilEndAge(40.3, '2026-09-29')).toBe(monthsUntilEndAge(40, '2026-09-29'));
+    expect(Number.isInteger(monthsUntilEndAge(40.3, '2026-09-29'))).toBe(true);
   });
 
   it('60 歳以上や施行前に 60 歳になる人は 0', () => {

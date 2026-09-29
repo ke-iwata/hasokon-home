@@ -127,11 +127,25 @@ export function isAffected(salary: number): boolean {
   return salary >= AFFECTED_FROM;
 }
 
-/** 2027-09 から数えて i か月目（0始まり）の月初 'YYYY-MM-01' */
-function monthFromFirstRaise(i: number): string {
-  const [y, m] = FIRST_RAISE_FROM.split('-').map(Number);
-  const idx = y * 12 + (m - 1) + i;
-  return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, '0')}-01`;
+/** 'YYYY-MM' / 'YYYY-MM-DD' → 通し月番号 */
+function monthIndex(ym: string): number {
+  const [y, m] = ym.split('-').map(Number);
+  return y * 12 + (m - 1);
+}
+
+/** 通し月番号 → 'YYYY-MM' */
+function formatMonthIndex(idx: number): string {
+  return `${Math.floor(idx / 12)}-${String((idx % 12) + 1).padStart(2, '0')}`;
+}
+
+/**
+ * 保険料・年金の増加を数え始める月 'YYYY-MM'。最初の引き上げ（2027-09）と `today` の月の遅いほう。
+ * 施行後に開いたとき、過ぎた月を数えないため（#294 レビュー）。
+ *
+ * @param today 'YYYY-MM-DD'。既定値を持たない（呼ぶ側が決める）
+ */
+export function countStartMonth(today: string): string {
+  return formatMonthIndex(Math.max(monthIndex(FIRST_RAISE_FROM), monthIndex(today)));
 }
 
 export interface Accumulation {
@@ -146,18 +160,22 @@ export interface Accumulation {
 }
 
 /**
- * 2027-09 から `months` か月払ったときの、保険料の増加累計と年金の増加。
+ * `startMonth` から `months` か月払ったときの、保険料の増加累計と年金の増加。
  * 3段階の途中は月ごとに上限を切り替える（段階込み）。
  * 年金は「上限の差 × 5.481/1000 × 月数」。再評価・マクロ経済スライドは入れない目安。
+ *
+ * @param startMonth 数え始める月 'YYYY-MM'。画面では `countStartMonth(today)` を渡す。
+ *   既定値を持たない（`pensionCapAt` と同じ約束。施行後に開いたとき過ぎた月を積まないため）
  */
-export function accumulate(salary: number, months: number): Accumulation {
+export function accumulate(salary: number, months: number, startMonth: string): Accumulation {
   const n = Math.max(0, Math.floor(months));
+  const start = monthIndex(startMonth);
   const baseStd = standardMonthlyAt(salary, '2000-01-01');
   const basePremium = employeePremium(baseStd);
   let premiumTotal = 0;
   let stdDiffTotal = 0;
   for (let i = 0; i < n; i++) {
-    const std = standardMonthlyAt(salary, monthFromFirstRaise(i));
+    const std = standardMonthlyAt(salary, `${formatMonthIndex(start + i)}-01`);
     premiumTotal += employeePremium(std) - basePremium;
     stdDiffTotal += std - baseStd;
   }
@@ -171,8 +189,12 @@ export function accumulate(salary: number, months: number): Accumulation {
 }
 
 /** 年金の増加（年額・月額）。`accumulate` の年金側だけ */
-export function pensionGain(salary: number, months: number): { perYear: number; perMonth: number } {
-  const a = accumulate(salary, months);
+export function pensionGain(
+  salary: number,
+  months: number,
+  startMonth: string,
+): { perYear: number; perMonth: number } {
+  const a = accumulate(salary, months, startMonth);
   return { perYear: a.pensionPerYear, perMonth: a.pensionPerMonth };
 }
 
@@ -194,17 +216,14 @@ export function netCostWithTax(diff: number, incomeTaxRate: number): number {
 }
 
 /**
- * いまの年齢から、2027-09 以後 60 歳になるまでに払う月数の目安。
- * 誕生日を聞かないので、`today` 時点でちょうどその年齢になったとして数える。
+ * いまの年齢から、`countStartMonth(today)` 以後 60 歳になるまでに払う月数の目安。
+ * 誕生日を聞かないので、`today` 時点でちょうどその年齢になったとして数える。年齢の端数は切り捨てる。
  *
  * @param today 'YYYY-MM-DD'。既定値を持たない（呼ぶ側が決める）
  */
 export function monthsUntilEndAge(age: number, today: string): number {
-  const [y, m] = today.split('-').map(Number);
-  const [fy, fm] = FIRST_RAISE_FROM.split('-').map(Number);
-  const endIdx = y * 12 + (m - 1) + (END_AGE - age) * 12;
-  const startIdx = Math.max(fy * 12 + (fm - 1), y * 12 + (m - 1));
-  return Math.max(0, endIdx - startIdx);
+  const endIdx = monthIndex(today) + (END_AGE - Math.floor(age)) * 12;
+  return Math.max(0, endIdx - monthIndex(countStartMonth(today)));
 }
 
 /** 'YYYY-MM' → '2027年10月' */
