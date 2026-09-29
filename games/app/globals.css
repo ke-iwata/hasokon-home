@@ -74,6 +74,10 @@
   --hp-r6: #f1f7ea;
   --hp-r7: #efeff7;
   --hp-r8: #f7f4ea;
+  /* カードの絵の地色。ゲームは1分類なので1色。home のトップでも同じ色で並ぶので、
+     「この色のタイルはゲーム」と覚えてもらえる。仕様は docs/features/card-illustrations.md */
+  --cat-play: #be123c;
+  --cat-play-bg: #fde9ee;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -125,6 +129,9 @@
     --ms-8: #a8a29c;
 
     --mj-felt: #1d4633;
+    /* 暗いテーマでは地を持ち上げる（カードの地と 1.3 離す。実測して決めた） */
+    --cat-play: #fb8a9c;
+    --cat-play-bg: #552536;
   }
 }
 
@@ -301,17 +308,25 @@ ol {
   transform: translateY(-2px);
 }
 
-/* アイコン枠。中身は Phosphor の線画SVG（app/GameIcon.tsx）。
-   currentColor なので枠の color を変えれば追従する */
+/* 絵のタイル。中身は盤面そのものの絵（app/GameIcon.tsx）。
+   絵は currentColor（線・塗り）と var(--tile-bg)（抜き）で描くので、ここの2色に追従する。
+   仕様は docs/features/card-illustrations.md */
 .game-card .icon {
+  --tile-ink: var(--cat-play);
+  --tile-bg: var(--cat-play-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  border-radius: var(--radius-sm);
-  background: var(--accent-soft);
-  color: var(--accent);
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: var(--tile-bg);
+  color: var(--tile-ink);
+}
+
+.game-card .icon svg {
+  width: 44px;
+  height: 44px;
 }
 
 .game-card .name {
@@ -4729,6 +4744,15 @@ button.hf-card {
 
 .tp-guide .game-card .icon {
   grid-row: span 2;
+  /* 案内は1画面に収める実測で 42px の列にしてある。一覧の 60px を持ち込むとはみ出す */
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+}
+
+.tp-guide .game-card .icon svg {
+  width: 28px;
+  height: 28px;
 }
 
 .tp-guide .game-card .name {

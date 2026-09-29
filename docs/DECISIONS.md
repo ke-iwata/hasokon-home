@@ -8,6 +8,38 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-29：一覧カードの絵を「出てくるもの」の絵に替え、分類ごとに色のタイルを敷いた
+
+[card-illustrations.md](./features/card-illustrations.md)。運営者の「パット見でどういった機能か
+わかるようなデザインに変えたい」から（提案は /design の「出力を描くカード」）。
+
+- **ツールは出力を、ゲームは盤面を描く。** 線画（Phosphor）は概念を指すので、お金のツールが
+  24本並ぶと書類・¥・グラフの似た記号に落ちていた。公開中のツール43本（`tools/app/ToolArt.tsx`）と
+  ゲーム24本（`games/app/GameIcon.tsx` の `BOARD`）を 64×64 の2トーンで描いた。公開前のものは線画のまま
+- **色は分類だけ（5色）、形で個々を見分ける。** 60px のタイルに分類の地色を敷く。
+  色はクラスを増やさずインラインの変数（`--tile-ink` / `--tile-bg`）で渡す
+- **トップは `scripts/sync-home-card-art.mjs` が一覧ページのビルド結果から写す。**
+  これまで手で写していた線画と、形を説明するコメント13か所は外した。
+  スマホ幅のトップはタイルを左に置く横並びにした
+- 見張り：`tools/tests/tool-art.test.ts`・`games/tests/game-art.test.ts`（公開中に絵が無い・
+  色の直書き・明暗の定義漏れ）、`scripts/test/home-card-art.test.mjs`（トップの写し忘れ・分類と色のずれ）
+- **直角の折り返しは数字に見える**（スネークが「2.」、一筆書きの往復が「2」）。
+  以前の線画で運営者から指摘されていたのに盤面の絵で繰り返したので、仕様書の「踏んだ失敗」に残した
+
+## 2026-09-29：週次監査に Bing Webmaster Tools API を足し、検索語とページ別の表示回数を毎週残すようにした
+
+[bing-search-performance-audit.md](./features/bing-search-performance-audit.md) の **A・B・C** を実装した
+（D は運営者の API キー発行・Secret 登録で、それまでは警告を出して Bing だけ飛ばす）。
+
+- Search Console は 28 日で表示 1 回、GA4 の Organic Search の約 9 割は bing（2026-09-28）。
+  **流入の実測値は Bing にしかない**のに、画面作業なので誰も取りに行っていなかった
+- **`scripts/bing-search-stats.mjs`・`scripts/lib/bing-webmaster.mjs` を足した。** 3 本の GET で
+  サイト全体（7 日・28 日。週単位で返ったら 28 日だけ）・上位の検索語・上位のページを表と JSON に出す
+- **検索語は表示 5 回以上・上位 20 件だけ。** public リポジトリのログと artifact は誰でも見られるので、
+  それより細かい行は JSON にも残さない。API キーはエラー文・`--dry-run` でも `apikey=***` に伏せる
+- **`gsc-audit.yml` の Bing のステップは終了コードで落とさない。** GSC が飛ばされた週でも動き、
+  artifact は `always() && hashFiles('audit-out/**') != ''` で Bing だけの週も残す
+
 ## 2026-09-29：週次の GA4 集計で「page_view の無いセッション」を数え、1 割を超えたら警告するようにした
 
 [web-vitals-phantom-sessions.md](./features/web-vitals-phantom-sessions.md) の **C・E** を実装した

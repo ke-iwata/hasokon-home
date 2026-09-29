@@ -249,6 +249,41 @@ GOOGLE_SERVICE_ACCOUNT_JSON="$(cat sa.json)" \
 Search Console の表示回数がほぼゼロなのと食い違っており、Discover や
 アプリ内ブラウザが混ざっているとみられます。判断には Search Console の実数を使います。
 
+## bing-search-stats.mjs
+
+Bing の検索パフォーマンス（表示回数・クリック・検索語・ページ）を週1回残します。
+
+仕様: [docs/features/bing-search-performance-audit.md](../docs/features/bing-search-performance-audit.md)
+
+2026-09-28 の計測で、Search Console は4プロパティ合計で28日に表示1回、GA4 の
+Organic Search は 358 セッションのうち 319 が bing でした。**「どの語で・どのページが」
+出ているかの実測値は Bing にしかない**ので、画面作業をやめて API で毎週取ります。
+
+```bash
+# 何を投げるかだけ見る（APIを叩かない。キーは伏せる）
+node scripts/bing-search-stats.mjs --dry-run
+
+# 計測して結果を残す
+BING_WEBMASTER_API_KEY=... \
+  node scripts/bing-search-stats.mjs --site https://hasokon.com/ --out bing-$(date -u +%Y-%m-%d).json
+```
+
+出すのは次の3つです（`GetRankAndTrafficStats` → `GetQueryStats` → `GetPageStats`）。
+
+- サイト全体の表示回数とクリック。点の間隔が1日なら直近7日・28日、週単位なら28日だけ
+  （見出しに粒度を書きます。週の点から「7日」は作りません）
+- 上位の検索語。**表示5回以上のものを上位20件まで。** それより細かい行は `--out` の JSON にも残しません
+  （このリポジトリは public で、Actions のログと artifact は誰でも見られます。
+  検索語には人名など個人に関わる語がまれに混ざるため）
+- 上位のページ20件。GA4 の `pagePath` と突き合わせやすいよう、`hasokon.com` からの相対パスにします
+
+**API キーは URL のクエリに載るので、エラー文・`--dry-run` のどこにも出しません**（`apikey=***`）。
+週1回の実行は `.github/workflows/gsc-audit.yml` に相乗りしていて、Bing が失敗しても
+Search Console・GA4 の計測は落としません。`BING_WEBMASTER_API_KEY` が未設定の週は警告だけ出して飛ばします。
+
+終了コードは 0（計測できた）と 2（実行できなかった）だけです。3本のうち1本でも取れなければ 2 で、
+取れた本は表に出します。**「0件」（登録直後はふつう）と「取れなかった」は表で区別します。**
+
 ## indexnow-submit.mjs
 
 **更新したURLを IndexNow に通知する**スクリプトです。本番デプロイ（`v*` タグ）の
@@ -351,6 +386,23 @@ cp home/index.html /tmp/index.html && node scripts/build-test-home.mjs --file /t
 **生成結果を `home/index.html` にcommitしないでください。** 本番のトップから
 `noindex` のページへリンクすることになります（`test/build-test-home.test.mjs` が落とします）。
 
+## sync-home-card-art.mjs
+
+トップ（`home/index.html`）のカードの絵とタイルの色を、tools / games の一覧ページの
+**ビルド結果**から写すスクリプトです。原本は `tools/app/ToolArt.tsx` と
+`games/app/GameIcon.tsx` の `BOARD` で、このスクリプトは原本を書き換えません。
+
+仕様: [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
+
+```bash
+(cd tools && npm run build) && (cd games && npm run build)
+node scripts/sync-home-card-art.mjs
+```
+
+- カードの `<a class="card">` の `style` と `.card-icon` の中身だけを差し替えます。何度かけても同じ結果です
+- 一覧に無いカード（公開前・削除済み）が残っていれば終了コード1、一覧から絵を拾えなければ2
+- ツールやゲームのカードをトップに足したら、足したあとに回してください
+
 ## テスト
 
 ```bash
@@ -364,7 +416,7 @@ node --test "scripts/test/*.test.mjs"
 **`home/` の鍵ファイル**（1枚あるか・中身がファイル名と一致するか・`deploy.yml` が
 それを指しているか）を見ています。用途の分からない1枚は消されやすいためです。
 
-次の5つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
+次の6つだけは scripts/ 自身のテストではありません。home/ とリポジトリ直下の
 生成物はビルド工程を持たず npm も vitest も無いので、
 リポジトリ唯一の `node --test` にここで相乗りしています。
 
@@ -384,6 +436,9 @@ node --test "scripts/test/*.test.mjs"
   生成スクリプト。仕様は
   [docs/features/games-pwa-manifest.md](../docs/features/games-pwa-manifest.md)、
   生成スクリプトは [design/manifest-icons/](../design/manifest-icons/)
+- `test/home-card-art.test.mjs` … **トップのカードの絵とタイルの色**。
+  `sync-home-card-art.mjs` の写し忘れ（古い線画・地色なし）と、ツールの分類と色のずれを落とします。
+  仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
 - `test/sitemap-home-lastmod.test.mjs` … **`home/sitemap-home.xml` の `lastmod` が
   据え置かれていないか**。`git log` で各HTMLの最終変更日を見て、それより古ければ落とします。
   IndexNow は `lastmod` が動いたURLだけを Bing へ送るので、据え置きは黙った不送信になります。

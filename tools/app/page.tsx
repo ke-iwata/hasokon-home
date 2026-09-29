@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { categories, publicTools, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
-import ToolIcon from '@/app/ToolIcon';
+import ToolArt, { categoryStyle } from '@/app/ToolArt';
 
 /**
  * 自己参照canonical（docs/features/self-canonical-coverage.md）。
@@ -82,9 +82,9 @@ export default function Home() {
             </div>
             <div className="tool-grid">
               {list.map((t) => (
-                <Link key={t.slug} className="tool-card" href={`/${t.slug}/`}>
+                <Link key={t.slug} className="tool-card" style={categoryStyle(t.category)} href={`/${t.slug}/`}>
                   <div className="icon">
-                    <ToolIcon name={t.icon} />
+                    <ToolArt slug={t.slug} icon={t.icon} />
                   </div>
                   <div className="name">{t.name}</div>
                   <div className="desc">{t.description}</div>

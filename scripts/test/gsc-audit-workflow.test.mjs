@@ -72,3 +72,39 @@ describe('AIチャネルの計測（相乗り）', () => {
     assert.match(step, /if: steps\.audit\.outputs\.skipped == 'false'/);
   });
 });
+
+describe('Bing の検索パフォーマンス（相乗り）', () => {
+  // 仕様: docs/features/bing-search-performance-audit.md の C。
+  // **Bing の失敗でその週の GSC・GA4 の結果を失わない**
+  const start = yaml.indexOf('- name: Bing の検索パフォーマンスを取る');
+  const step = yaml.slice(start, yaml.indexOf('- name: 結果を artifact'));
+
+  it('GA4 のステップの直後にある', () => {
+    assert.ok(start > yaml.indexOf('AIアシスタント経由の流入を数える'));
+    assert.ok(start < yaml.indexOf('- name: 結果を artifact'));
+  });
+
+  it('bing-search-stats.mjs を hasokon.com・--out つきで呼び、キーは Secret から渡す', () => {
+    assert.match(step, /node scripts\/bing-search-stats\.mjs --site https:\/\/hasokon\.com\/ .*--out "audit-out\/bing-/);
+    assert.match(step, /BING_WEBMASTER_API_KEY: \$\{\{ secrets\.BING_WEBMASTER_API_KEY \}\}/);
+  });
+
+  it('終了コードで落とさない（警告どまり）', () => {
+    assert.match(step, /\|\| code=\$\?/);
+    assert.match(step, /::warning::/);
+    assert.doesNotMatch(step, /exit "\$code"/);
+  });
+
+  it('GSC の skipped では止めず、キーが空なら自前で飛ばす', () => {
+    assert.doesNotMatch(step, /steps\.audit\.outputs\.skipped/);
+    assert.match(step, /if \[ -z "\$BING_WEBMASTER_API_KEY" \]/);
+    // GSC のステップが飛ばされていると audit-out\/ が無い
+    assert.match(step, /mkdir -p audit-out/);
+  });
+
+  it('artifact は Bing だけが動いた週も残す', () => {
+    const artifact = yaml.slice(yaml.indexOf('- name: 結果を artifact'));
+    assert.match(artifact, /if: always\(\) && hashFiles\('audit-out\/\*\*'\) != ''/);
+    assert.match(artifact, /name: gsc-audit-\$\{\{ github\.run_id \}\}/);
+  });
+});

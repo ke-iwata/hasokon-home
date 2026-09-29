@@ -8,6 +8,10 @@ name: GSC audit
 # 同じサービスアカウント（analytics.readonly を既に持っている）で取れるので、
 # ジョブもSecretも増やさない。
 #
+# Bing Webmaster Tools の検索パフォーマンス（表示回数・検索語・ページ）も同じ枠で取る。
+# 仕様: docs/features/bing-search-performance-audit.md の「C」
+# Google のサービスアカウントとは無関係なので、GSC が飛ばされた週でも動く。
+#
 # 見るのは coverageState 別の内訳で、判定は「登録（Submitted and indexed）が
 # 4週連続で増えているか」。結果は Actions のログと artifact に残すだけで、
 # **リポジトリにはcommitしない**（生成物を履歴に混ぜないため）。
@@ -74,8 +78,31 @@ jobs:
             echo "::warning::AIチャネルの計測に失敗しました（終了コード $code）。サービスアカウントに GA4 プロパティの閲覧権限があるか確認してください。docs/features/ai-assistant-channel.md を参照"
           fi
 
+      - name: Bing の検索パフォーマンスを取る
+        # GSC のステップが飛ばされた・落ちた週でも取る（Bing は Google の認証と関係が無い）
+        if: ${{ !cancelled() }}
+        env:
+          BING_WEBMASTER_API_KEY: ${{ secrets.BING_WEBMASTER_API_KEY }}
+        run: |
+          # キーは運営者が発行して登録するまで空。未設定のうちは警告だけ出して飛ばす
+          if [ -z "$BING_WEBMASTER_API_KEY" ]; then
+            echo "::warning::Secret BING_WEBMASTER_API_KEY が未設定なので Bing の計測を飛ばしました。docs/features/bing-search-performance-audit.md の D を参照"
+            exit 0
+          fi
+
+          # GSC のステップが飛ばされていると audit-out/ が無い
+          mkdir -p audit-out
+          # **Bing の失敗でその週の GSC・GA4 の結果を失わない**。キーの期限切れ・
+          # レート制限はふつうに起こるので、終了コードは警告にとどめる
+          code=0
+          node scripts/bing-search-stats.mjs --site https://hasokon.com/ --out "audit-out/bing-$(date -u +%Y-%m-%d).json" || code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::Bing の計測に失敗しました（終了コード $code）。API キーの期限を確認してください。docs/features/bing-search-performance-audit.md を参照"
+          fi
+
       - name: 結果を artifact に残す
-        if: steps.audit.outputs.skipped == 'false'
+        # Bing だけが動いた週も残す
+        if: always() && hashFiles('audit-out/**') != ''
         uses: actions/upload-artifact@v4
         with:
           name: gsc-audit-${{ github.run_id }}

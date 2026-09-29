@@ -163,6 +163,12 @@ CloudFront・証明書・IAMロールは [hasokon-infra](https://github.com/ke-i
   仕様は [docs/features/indexnow.md](./docs/features/indexnow.md)
 - `BingSiteAuth.xml` は Bing Webmaster Tools の所有権確認ファイル（2026-09-25 追加）。
   **消さない**。消すと Bing Webmaster Tools の確認が外れる
+- **カードの絵（`.card-icon` の SVG）とタイルの色（`<a class="card">` の `style`）は手で書かない。**
+  原本は `tools/app/ToolArt.tsx` と `games/app/GameIcon.tsx` の `BOARD` で、
+  tools・games をビルドしてから `node scripts/sync-home-card-art.mjs` で写す
+  （`scripts/test/home-card-art.test.mjs` が写し忘れを落とす）。
+  **公開する（`stage` を `public` にする）PRで絵も描く**。仕様は
+  [docs/features/card-illustrations.md](./docs/features/card-illustrations.md)
 - ファビコン（favicon.ico / icon.svg / apple-touch-icon.png）はドメイン直下に置いてあり、
   tools/games のページもブラウザのフォールバックでこれを使う
 - SNS共有時のサムネイル（`ogp.png`）は home / tools / games / learn に1枚ずつあり、
