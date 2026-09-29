@@ -64,7 +64,7 @@
 import { evaluateKabe, nextWall, type KabeResult } from './nenshu-kabe';
 
 /** データ全体の最終確認日 'YYYY-MM-DD'。ページに「データ最終更新日」として表示する */
-export const DATA_CHECKED_AT = '2026-09-16';
+export const DATA_CHECKED_AT = '2026-09-28';
 
 /** 現行（改定前）の年度。表の見出しに使う */
 export const CURRENT_FY_LABEL = '令和7年度';
@@ -202,8 +202,10 @@ export interface Prefecture {
  *
  * 2026-09-16 の発効前メンテで、答申時に日付が無かった11県のうち9県は
  * 労働局の**決定公示・県の最低賃金ページ**で発効日を確認できたので `effectiveOn` を入れ、
- * 出典もそのページへ差し替えた。まだ確認できない宮崎・鹿児島は、厚労省の別紙が示す
- * 「発効日（予定）」を `plannedEffectiveOn` として持たせている（`'発効済み'` にはしない）。
+ * 出典もそのページへ差し替えた。残っていた宮崎・鹿児島も 2026-09-24／09-25 に官報公示が出て、
+ * 2026-09-28 に報道発表の本文で発効日を確認して `effectiveOn` に移した。
+ * **令和8年度は 47 都道府県すべてに `effectiveOn` がそろっている**（`plannedEffectiveOn` を持つ県は無い。
+ * 仕組みは次年度の答申期のために残す）。
  */
 export const PREFECTURES: Prefecture[] = [
   {
@@ -1033,13 +1035,12 @@ export const PREFECTURES: Prefecture[] = [
     answered: {
       yen: 1085,
       answeredOn: '2026-08-25',
-      // 報道発表が「10月下旬（最短で10月24日）に発効される見込み」と条件付きで、
-      // 2026-09-16 時点で労働局の決定公示を確認できていない。
-      // 厚労省の別紙が示す「発効日（予定）」だけを持たせる（'発効済み' にはしない）
-      plannedEffectiveOn: '2026-10-24',
+      // 2026-09-24 に宮崎労働局長が決定・官報公示（報道発表 PDF 本文：
+      // 「本日（９月24日）、官報に公示されました。これにより 10月24日から…1,085円」）
+      effectiveOn: '2026-10-24',
       source: {
-        label: '宮崎労働局「令和8年度宮崎県最低賃金の改正答申について」',
-        url: 'https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/content/contents/002795889.pdf',
+        label: '宮崎労働局「最低賃金が10月24日から時間額1,085円（62円の引上げ）に改正されます」（決定・官報公示 2026-09-24）',
+        url: 'https://jsite.mhlw.go.jp/miyazaki-roudoukyoku/news_topics/houdou/20260924_saichinkaisei.html',
         checkedAt: DATA_CHECKED_AT,
       },
     },
@@ -1054,13 +1055,12 @@ export const PREFECTURES: Prefecture[] = [
     answered: {
       yen: 1090,
       answeredOn: '2026-08-26',
-      // 労働局の発表（フォトレポート）に発効日の記載が無く、公示PDFは画像で読めない。
-      // 2026-09-16 時点でも決定公示を確認できていないので、
-      // 厚労省の別紙が示す「発効日（予定）」だけを持たせる（'発効済み' にはしない）
-      plannedEffectiveOn: '2026-10-25',
+      // 2026-09-11 に鹿児島労働局長が決定、2026-09-25 に官報公示（報道発表 PDF 本文：
+      // 「効力発生日は、令和８年10月25日となります」）
+      effectiveOn: '2026-10-25',
       source: {
-        label: '鹿児島労働局「令和8年度第3回鹿児島地方最低賃金審議会が開催されました」',
-        url: 'https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/home/photoreport_2026-0827-4.html',
+        label: '鹿児島労働局「鹿児島県最低賃金を「時間額1,090円」に引き上げます」（決定・官報公示 2026-09-25）',
+        url: 'https://jsite.mhlw.go.jp/kagoshima-roudoukyoku/redirect/houdou-r08_2026-0925-6.html',
         checkedAt: DATA_CHECKED_AT,
       },
     },
