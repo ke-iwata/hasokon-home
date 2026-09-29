@@ -363,11 +363,21 @@ Bing の着地ページは `/tools/saitei-chingin/` 59・`/tools/tabako-zei-neag
     ② 4 の Bing Webmaster Tools（GA4 の 90 日・`sessionSource` で最大の流入元：bing 240 セッション＝全体 約 672 の約 36%、検索エンジン経由〔bing 240・google 119・search.google.com 11〕に絞ると約 65%。#246 の実測）／③ 5 の `public` 昇格停止の最終判断。
     ここまでの実績：登録リクエストは 2 回（計 23 件）、Search Console の表示は 0 → 0、
     `Submitted and indexed` は 1 → 1、`Crawled - currently not indexed` は 30 → 36
-- 2026-09-28：**週次の再計測（URL 検査 API・113 URL、`scripts/gsc-canonical-audit.mjs`。セッション `session_01Bjfv5Ay9BkJVSJH766VddV`）**。
-  `Submitted and indexed` **1**（トップのみ、変わらず）／ `Crawled - currently not indexed` **43**（09-16 30 → 09-25 36 → 43）／
-  `URL is unknown to Google` **68**（91 → 68。learn 37・games 15・tools 16）／ `Duplicate` 1。
-  **unknown が減った分がそのまま「クロール済み - 未登録」に移っている**（合計 111 → 111）。C（サイトマップ送信）で
-  Google は URL を知り、取りに来て、載せない。原因 1（サイト単位の品質判定）の見立てのまま。
+- 2026-09-28：**週次の再計測（URL 検査 API、`scripts/gsc-canonical-audit.mjs`。セッション `session_01Bjfv5Ay9BkJVSJH766VddV`）**。
+  **検査した URL の総数が変わっている**ので、09-16 と単純には比べられない：09-16 は 123 URL、09-28 は **113 URL**
+  （#257 で用途別ルーレット・ガイドの 16 ページをサイトマップから外し、その後 `public` になったページが加わった）。
+
+  | 状態 | 09-16（123 URL） | 09-28（113 URL） |
+  |---|---|---|
+  | Submitted and indexed | 1 | **1**（トップのみ） |
+  | Crawled - currently not indexed | 30（09-25 の画面確認では 36） | **43**（tools 28・games 11・learn 2・about 1・privacy 1） |
+  | URL is unknown to Google | 91 | **68**（learn 37・games 15・tools 16） |
+  | Duplicate, Google chose different canonical | 1 | 1 |
+
+  unknown は 23 件減ったが、その一部は #257 でサイトマップから外した 16 ページ（09-16 は unknown に数えていた）で、
+  Google が発見して移した分は「クロール済み - 未登録」の増分（30 → 43 の 13 件）が上限。
+  つまり **C（サイトマップ送信）で Google が URL を知って取りに来ても、載せない側に積み上がっている**。
+  原因 1（サイト単位の品質判定）の見立てのまま。
   `Search Console の searchAnalytics`（08-29〜09-26）は **4 プロパティ合計で表示 1・クリック 0**。
   一方 GA4 の同期間は Organic Search 358（うち bing 319・google 25）で、**流入の実測値は Bing にしかない**。
   Bing Webmaster Tools の「初回計測」（09-25 の項）は画面作業のため今回も取れていない。

@@ -65,7 +65,7 @@ Organic Search が 3 倍に伸びたが、**その 89% が Bing**。Google か�
 
 つまり **title・description・見出しを検索語に合わせて直す、という SEO の基本作業の根拠が、
 このサイトには 1 つも無い**。Google の登録が戻るまで（[google-index-recovery.md](./google-index-recovery.md)、
-「クロール済み - 未登録」36 件のまま）、Bing のデータが唯一の実測値になる。
+09-28 の再計測で「クロール済み - 未登録」**43** 件・unknown 68 件）、Bing のデータが唯一の実測値になる。
 
 ### Bing Webmaster Tools の画面では、誰も取りに行かない
 
@@ -108,23 +108,39 @@ node scripts/bing-search-stats.mjs --site https://hasokon.com/ --out bing-2026-1
 - `GetRankAndTrafficStats` → `GetQueryStats` → `GetPageStats` の順に 3 回 GET。各 1 回まで再試行
   （`scripts/lib/search-console.mjs` の `backoffDelay` / `isRetryable` を流用）
 - 標準出力に Markdown の表を出す：
-  1. 直近 7 日・28 日の表示回数とクリック（`GetRankAndTrafficStats` を日付で切る）
-  2. 上位クエリ 20 件（表示回数順。クリック・CTR・平均掲載順位）
+  1. 直近 7 日・28 日の表示回数とクリック（`GetRankAndTrafficStats` の `Date` で切る。**日別で返るとは決めつけない**。
+     週ごとにまとまった点で返ったら、表に「週単位」と書いて 7 日の行は出さない）
+  2. 上位クエリ **20 件まで**（表示回数順。クリック・CTR・平均掲載順位）
   3. 上位ページ 20 件（同上）。**パスは `hasokon.com` からの相対**にして GA4 の `pagePath` と目視で突き合わせられるようにする
-- `--out` で生 JSON も残す（`gsc-audit.yml` の artifact）
+- **検索語の出し方（このリポジトリは public）**：`ke-iwata/hasokon-home` は公開リポジトリで、Actions のログは誰でも読め、
+  artifact もサインインすれば誰でも落とせる。検索語には人名など個人に関わる語がまれに混ざる（養育費・相続まわりで特に）。
+  そのため **クエリは表示回数 5 回以上のものだけを、上位 20 件まで**出し、**それより細かい行は `--out` の JSON にも残さない**
+  （`MIN_IMPRESSIONS = 5`・`TOP_N = 20` を lib の定数にしてテストで固定する）。ページ別の表は URL だけなので絞らない。
+  合計値（`GetRankAndTrafficStats`）はそのまま出す
+- `--out` で JSON も残す（`gsc-audit.yml` の artifact）。上の絞り込みを通したあとの行だけ
 
 ### B. `scripts/lib/bing-webmaster.mjs`（新規・純関数）
 
 - `endpointUrl(method, siteUrl, apiKey, extra)`：URL の組み立て
 - `parseDotNetDate('/Date(1316156400000-0700)/')` → ISO 日付。**この形式は WCF 固有**なので単体テストを置く
 - `summarizeTraffic(rows, nowIso)`：7 日・28 日の合計
-- `topN(rows, key, n)`・`formatReport(...)`：表の組み立て
+- `topN(rows, key, n)`・`filterQueries(rows, minImpressions)`・`formatReport(...)`：表の組み立てと絞り込み
 - `redactKey(message, apiKey)`：エラー文からキーを伏せる
 
 ### C. `.github/workflows/gsc-audit.yml` にステップを 1 つ足す
 
-GA4 のステップの直後に、同じ形（Secret 未設定なら `::warning` で飛ばす／終了コード 2 だけ落とす）で追加。
-artifact の名前は既存の `gsc-audit-<日付>` に `bing-<日付>.json` を同梱する。**リポジトリには commit しない**（既存の方針どおり）。
+GA4 のステップ（「AIアシスタント経由の流入を数える」）の直後に足す。**いまの GA4 のステップは失敗しても落とさない**
+（終了コードが 0 でなければ `::warning` を出すだけ。「こちらの失敗で GSC の結果まで落とさない」）。Bing も同じにする。
+キーの期限切れ・レート制限はふつうに起こるので、**Bing の失敗でその週の GSC・GA4 の結果を失わない**ことが条件。
+
+- **Bing のステップは終了コードで落とさない。** 0 でなければ `::warning` を出して次へ進む
+- **`steps.audit.outputs.skipped` では止めない。** Bing は Google のサービスアカウントと関係が無いので、
+  自前で `BING_WEBMASTER_API_KEY` が空なら `::warning` を出して飛ばす。`mkdir -p audit-out` もこのステップで行う
+  （GSC のステップが飛ばされていると `audit-out/` が無い）
+- **artifact のステップの条件を直す。** いまは `if: steps.audit.outputs.skipped == 'false'` だけで `always()` が無い。
+  Bing だけが動いた週も残るように `if: always() && hashFiles('audit-out/**') != ''` にする。
+  artifact の名前は既存の `gsc-audit-${{ github.run_id }}` のまま（日付ではない）で、その中に `bing-<日付>.json` を同梱する
+- **リポジトリには commit しない**（既存の方針どおり）
 
 ### D. 運営者作業（1 回だけ）
 
@@ -158,6 +174,8 @@ artifact の名前は既存の `gsc-audit-<日付>` に `bing-<日付>.json` を
 - **Bing への URL 送信（`SubmitUrlBatch`）は使わない。** すでに IndexNow で送っており、経路を 2 本にすると
   どちらが効いたか分からなくなる
 - **結果をリポジトリに commit しない。** 既存の週次監査と同じく Actions のログと artifact に残す
+- **検索語を全件は出さない。** public リポジトリのログ・artifact は誰でも見られるので、表示回数 5 回未満のクエリは
+  表にも JSON にも残さない（上の A）。全件が要る場面は Bing Webmaster Tools の画面で見る
 - **キーの OAuth 化はしない。** API キーで足りる（読み取りだけ）。キーが漏れたら Bing 側で削除して再発行する
 - **title・description の書き換えはこの仕様書に含めない。** 4 週ぶんの数字を見てから別の仕様書で
 
@@ -166,4 +184,6 @@ artifact の名前は既存の `gsc-audit-<日付>` に `bing-<日付>.json` を
 - `siteUrl` は Bing に登録した表記（`https://hasokon.com/`、末尾スラッシュあり）と一致させる。違うと空の配列が返る
 - 応答の `d` が空でもエラーにしない（登録直後は 0 件が正常）。「0 件」と「取れなかった」は表で区別する
 - `Date` は `/Date(ミリ秒±タイムゾーン)/` 形式。`Date.parse` では読めないので B の変換を通す
+- `GetRankAndTrafficStats` の粒度は返ってきた `Date` の間隔から判定する。日別なら 7 日・28 日、週単位なら 28 日だけを出し、
+  表の見出しに粒度を書く（「7 日」を週の点から作らない）
 - キーが URL に載る API なので、**`--dry-run` の出力にもキーを出さない**（`apikey=***` に置き換える）
