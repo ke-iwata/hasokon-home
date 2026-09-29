@@ -1,6 +1,6 @@
 # web_vitals 導入初日に GA4 のセッションが 28 → 75 に跳ねた — うち 42 は page_view の無い「幽霊セッション」。読み方の注意と、止め方・見張り方・カスタム定義の登録
 
-**状態**：提案（2026-09-29 起票。セッション `session_01UBDziAjHeeJzaW6rf1Z3ZF`）。
+**状態**：**C・E を実装済み**（2026-09-29、セッション `session_0146zNH8iCqoo6FB8299mh2s`。週次の `gsc-audit.yml` で動く）。**A・D は運営者の画面作業待ち**。**B は A を採らないと決めたときの代替なので未着手**。起票は 2026-09-29（セッション `session_01UBDziAjHeeJzaW6rf1Z3ZF`）。
 **A（セッションのタイムアウト延長）は運営者の GA4 管理画面の作業**（コード変更なし・1 分）。
 **D（カスタム定義の登録）も運営者作業**で、[mobile-lighthouse-third-party.md](./mobile-lighthouse-third-party.md) の E が
 求めていたものが **2026-09-29 時点で 0 件のまま**（Data API の `metadata` で確認）。B・C はコード。

@@ -15,6 +15,11 @@
 // サービスアカウント。`analytics.readonly` を既に持っているので、
 // 新しい権限もスコープの追加も要らない。
 //
+// あわせて **page_view の無い「幽霊セッション」**（着地ページが空）を数え、全体の 1 割を
+// 超えたら警告する。2026-09-28 に `web_vitals` を入れた日から、30 分でセッションが切れた
+// あとにタブを閉じる人の分が `Unassigned` に積まれるようになったため
+// （仕様: docs/features/web-vitals-phantom-sessions.md の C）。
+//
 // **`sessionSource: google` を「Google 検索が回復した」と読まないこと。**
 // Search Console の表示回数がほぼゼロなのと食い違っており、
 // Discover やアプリ内ブラウザが混ざっているとみられる（仕様書の「背景と根拠」）。
@@ -28,6 +33,8 @@ import {
   formatReport,
   landingPageRequest,
   parseRows,
+  PHANTOM_WARN_PERCENT,
+  phantomSessionRequest,
   runReport,
   summarize,
   WINDOW_DAYS,
@@ -53,6 +60,8 @@ const USAGE = `使い方: node scripts/ga4-ai-channel.mjs [オプション]
 
 GA4 Data API で、チャネル別（sessionDefaultChannelGroup × sessionSource）の
 セッションと、AI Assistant に絞ったランディングページの上位を数える。
+あわせて page_view の無いセッション（着地ページ空）を数え、
+全体の ${PHANTOM_WARN_PERCENT}% を超えたら警告する（docs/features/web-vitals-phantom-sessions.md）。
 直近28日と、その前の28日を並べて出す。
 仕様: docs/features/ai-assistant-channel.md
 
@@ -151,6 +160,7 @@ export async function main(argv, deps = {}) {
   const requests = {
     channels: channelRequest(options.days),
     landings: landingPageRequest(options.days),
+    phantoms: phantomSessionRequest(options.days),
   };
 
   if (options.dryRun) {
@@ -180,8 +190,22 @@ export async function main(argv, deps = {}) {
     fetched[name] = parseRows(result.body);
   }
 
-  const summary = summarize(fetched.channels, fetched.landings, { days: options.days });
+  const summary = summarize(fetched.channels, fetched.landings, {
+    days: options.days,
+    phantomRows: fetched.phantoms,
+  });
   out(formatReport(summary));
+
+  // 幽霊セッションが閾値を超えたら警告する（web-vitals-phantom-sessions.md の C）。
+  // 計測はできているので終了コードは 0 のまま。Actions では注釈として出す
+  if (summary.phantom.warn) {
+    const prefix = env.GITHUB_ACTIONS === 'true' ? '::warning::' : '警告: ';
+    log(
+      `${prefix}page_view の無いセッションが全体の ${summary.phantom.share}%（${summary.phantom.sessions} 件）で、` +
+        `${summary.phantom.warnPercent}% を超えています。セッション数・Unassigned が水増しされています。` +
+        'docs/features/web-vitals-phantom-sessions.md を参照',
+    );
+  }
 
   if (options.out) {
     const snapshot = {
@@ -194,6 +218,7 @@ export async function main(argv, deps = {}) {
       channels: summary.channels,
       sources: summary.sources,
       landings: summary.landings,
+      phantom: summary.phantom,
     };
     await writeSnapshot(options.out, `${JSON.stringify(snapshot, null, 2)}\n`);
     log(`結果を書き出しました: ${options.out}`);

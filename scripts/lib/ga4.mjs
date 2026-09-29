@@ -69,6 +69,70 @@ export function landingPageRequest(days = WINDOW_DAYS) {
 }
 
 /**
+ * 着地ページが空／`(not set)` のセッション＝**page_view の無い「幽霊セッション」**。
+ *
+ * 仕様: docs/features/web-vitals-phantom-sessions.md の C
+ *
+ * GA4 のセッションが 30 分無操作で切れたあとに、タブを閉じるときの `web_vitals`・
+ * `user_engagement` が飛ぶと、page_view の無い新しいセッションが立つ。着地ページは空、
+ * 参照元も無いのでチャネルは `Unassigned` になる。`web_vitals` を入れた 2026-09-28 に
+ * 1 日 1〜4 件から 42 件に跳ね、セッション数とチャネル表を水増しした。
+ */
+export const PHANTOM_LANDING_PAGES = Object.freeze(['', '(not set)']);
+
+/**
+ * 幽霊セッションが全体の何 % を超えたら警告するか。
+ *
+ * **暫定の閾値。** 09-02〜09-27 は 3〜15%、09-28 は 56%。
+ * セッションのタイムアウト延長（仕様書 A）のあとに下がった実測で見直す。
+ */
+export const PHANTOM_WARN_PERCENT = 10;
+
+/** 幽霊セッションが入るチャネル。チャネル表のこの行に「うち page_view 無し」を添える */
+export const UNASSIGNED_CHANNEL = 'Unassigned';
+
+/**
+ * 着地ページが空のセッションを、チャネル別に数えるリクエスト本文。
+ * 期間は直近ぶんだけ（割合の分母はチャネル別の current 合計を使う）。
+ */
+export function phantomSessionRequest(days = WINDOW_DAYS) {
+  return {
+    dateRanges: [dateRanges(days)[0]],
+    dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+    metrics: [{ name: 'sessions' }],
+    dimensionFilter: {
+      filter: {
+        fieldName: 'landingPage',
+        inListFilter: { values: [...PHANTOM_LANDING_PAGES] },
+      },
+    },
+    orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+    limit: 50,
+  };
+}
+
+/**
+ * 幽霊セッションの数・全体に占める割合・`Unassigned` に入った分・警告するか。
+ *
+ * @param {Array<{ sessions: number, sessionDefaultChannelGroup?: string }>} rows `phantomSessionRequest` の応答を `parseRows` に通したもの
+ * @param {number} totalSessions 直近の全セッション（チャネル別の current の合計）
+ */
+export function summarizePhantom(rows, totalSessions, options = {}) {
+  const warnPercent = options.warnPercent ?? PHANTOM_WARN_PERCENT;
+  let sessions = 0;
+  let unassigned = 0;
+  for (const row of rows) {
+    sessions += row.sessions;
+    if ((row.sessionDefaultChannelGroup || UNASSIGNED_CHANNEL) === UNASSIGNED_CHANNEL) {
+      unassigned += row.sessions;
+    }
+  }
+  /** 全体に占める割合（%、小数1桁）。0除算は 0 にする */
+  const share = totalSessions === 0 ? 0 : Math.round((sessions / totalSessions) * 1000) / 10;
+  return { sessions, unassigned, share, warnPercent, warn: share > warnPercent };
+}
+
+/**
  * レスポンスを `{ 次元名: 値, sessions: 数, dateRange: 名前 }` の配列にする。
  *
  * 期間を2つ渡すと GA4 が `dateRange` 次元を足して返すので、
@@ -146,6 +210,7 @@ export function topLandings(rows, limit = 5) {
  */
 export function summarize(channelRows, landingRows, options = {}) {
   const days = options.days ?? WINDOW_DAYS;
+  const phantomRows = options.phantomRows ?? [];
   const totals = summarizeChannels(channelRows);
   const current = totals.current.get(AI_CHANNEL) ?? 0;
   const previous = totals.previous.get(AI_CHANNEL) ?? 0;
@@ -165,6 +230,7 @@ export function summarize(channelRows, landingRows, options = {}) {
       })),
     sources: topSources(channelRows),
     landings: topLandings(landingRows),
+    phantom: summarizePhantom(phantomRows, allCurrent),
   };
 }
 
@@ -187,12 +253,29 @@ export function formatSummaryLine(summary) {
 export function formatReport(summary) {
   const lines = [formatSummaryLine(summary)];
   lines.push(`  チャネル別（直近${summary.days}日 / 前の${summary.days}日）:`);
-  for (const c of summary.channels) lines.push(`    ${c.channel}: ${c.sessions} / ${c.previous}`);
+  for (const c of summary.channels) {
+    // Unassigned が跳ねた週は、まず幽霊セッションを疑う（web-vitals-phantom-sessions.md の E）
+    const note =
+      c.channel === UNASSIGNED_CHANNEL && summary.phantom
+        ? `（うち page_view 無し ${summary.phantom.unassigned}）`
+        : '';
+    lines.push(`    ${c.channel}: ${c.sessions} / ${c.previous}${note}`);
+  }
   if (summary.sources.length > 0) {
     lines.push('  参照元（上位）:');
     for (const s of summary.sources) lines.push(`    ${s.source}: ${s.sessions}`);
   }
+  if (summary.phantom) lines.push(formatPhantomLine(summary.phantom, summary.days));
   return lines.join('\n');
+}
+
+/** 幽霊セッションの1行。閾値を超えたら先頭に印を付ける */
+export function formatPhantomLine(phantom, days = WINDOW_DAYS) {
+  const mark = phantom.warn ? `⚠ ${phantom.warnPercent}% 超え: ` : '';
+  return (
+    `  ${mark}page_view の無いセッション（着地ページ空）: ${phantom.sessions}` +
+    `（直近${days}日・全体の ${phantom.share}%・うち Unassigned ${phantom.unassigned}）`
+  );
 }
 
 /**
