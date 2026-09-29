@@ -455,4 +455,13 @@ describe('ページの文言', () => {
     expect(src).toContain(`${SIZE}×${SIZE}の盤`);
     expect(src).toContain(`${DAILY_MOVES}手のスコア勝負`);
   });
+
+  it('上段の数字（.m3-stats）に連続日数を入れない（4〜5桁のスコアと並べると右端が切れる。#295）', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/match3/Game.tsx', import.meta.url), 'utf8');
+    const start = src.indexOf('<p className="m3-stats"');
+    const end = src.indexOf('</p>', start);
+    expect(start).toBeGreaterThan(-1);
+    expect(src.slice(start, end)).not.toMatch(/streak/i);
+  });
 });

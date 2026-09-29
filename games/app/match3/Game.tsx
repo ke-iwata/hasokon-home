@@ -362,17 +362,19 @@ export default function Game() {
         </button>
       </div>
 
-      {/* 「残り手数 / スコア / ベスト」は height で1行ぶん確保する（伸び縮みさせない） */}
+      {/* 「残り手数 / スコア / ベスト」は height で1行ぶん確保する（伸び縮みさせない）。
+          **連続日数はここに入れない。** 4〜5桁のスコアと並べると 390px 幅でも右端が切れる
+          （#295 のレビュー。実測で中身 350px ＞ 表示 336px）。連続日数は盤の下の案内の1行に出す */}
       <p className="m3-stats" aria-live="polite">
         <span>
-          残り <strong>{state?.movesLeft === null ? '∞' : (state?.movesLeft ?? '')}</strong>手
+          残り<strong>{state?.movesLeft === null ? '∞' : (state?.movesLeft ?? '')}</strong>手
         </span>
+        {/* 「スコア」の3文字は付けず「点」で示す（5桁でも 320px 幅の1行に収めるため） */}
         <span>
-          スコア <strong>{(state?.score ?? 0).toLocaleString('ja-JP')}</strong>
+          <strong>{(state?.score ?? 0).toLocaleString('ja-JP')}</strong>点
         </span>
         <span>
           {mode === 'daily' ? '今日のベスト' : 'ベスト'} <strong>{(todayBest ?? 0).toLocaleString('ja-JP')}</strong>
-          {mode === 'daily' && streakNow > 0 ? `・連続${streakNow}日` : ''}
         </span>
       </p>
 
@@ -430,7 +432,9 @@ export default function Game() {
       )}
 
       {/* 案内の1行。**空でも枠は置く**（高さを確保して下を動かさない） */}
-      <p className="m3-note">{note}</p>
+      <p className="m3-note">
+        {note || (mode === 'daily' && streakNow > 0 && !result ? `連続${streakNow}日（今日の1盤面を遊び切った日数）` : '')}
+      </p>
 
       {/* エンドレスの「ここで終える」は盤の下に置く。上の段に足すと 390px 幅で折り返し、
           モードを切り替えるたびに盤が 40px 上下する（実測） */}
