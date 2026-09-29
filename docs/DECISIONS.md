@@ -8,6 +8,24 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-29：週次の GA4 集計で「page_view の無いセッション」を数え、1 割を超えたら警告するようにした
+
+[web-vitals-phantom-sessions.md](./features/web-vitals-phantom-sessions.md) の **C・E** を実装した
+（A・D は運営者の GA4 管理画面の作業、B は A を採らない場合の代替なので未着手）。
+
+- `web_vitals` を入れた 2026-09-28 に、GA4 のセッションが 28 → 75 に跳ねた。うち 42 は着地ページが空で
+  `page_view` も `session_start` も無い「幽霊セッション」（30 分でセッションが切れたあと、タブを閉じるときの
+  `web_vitals` が新しいセッションを立てる）。チャネルは全部 `Unassigned`
+- **`scripts/ga4-ai-channel.mjs` に 3 本目の `runReport`（`phantomSessionRequest()`）を足した。**
+  着地ページが空／`(not set)` のセッションをチャネル別に数え、全体に対する割合を 1 行出す。
+  チャネル表の `Unassigned` の行には「うち page_view 無し N」を添える。スナップショット JSON にも `phantom` を残す
+- **10% を超えたら Actions の警告（`::warning::`）を出す。** 計測はできているので終了コードは 0 のまま。
+  閾値は暫定（09-02〜09-27 は 3〜15%、09-28 は 56%）で、A のあとの実測で見直す
+- **読み方の約束（E）：** A を適用するまでのセッション数は、着地ページ空のセッションを引いて読む
+  （09-28 は 75 − 42 ≒ 33）。`Unassigned` が跳ねた週は「うち page_view 無し」を見てから判断する。
+  10/1 ごろの [google-index-recovery.md](./features/google-index-recovery.md) の再計測はセッションではなく
+  `activeUsers` と `page_view` で読む。**A を適用したら、その日付をここに足し、前後のセッション数を並べて比べない**
+
 ## 2026-09-27：CloudFront のアクセスログを数えるスクリプトを足し、プライバシーポリシーにログの項を入れた
 
 hasokon-infra #15（[cloudfront-access-logs.md](https://github.com/ke-iwata/hasokon-infra/blob/main/docs/features/cloudfront-access-logs.md)）で

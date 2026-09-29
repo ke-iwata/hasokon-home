@@ -65,7 +65,9 @@ jobs:
         run: |
           # GA4 は Search Console とは別のAPIなので、権限が足りないと2で落ちる。
           # **こちらの失敗で GSC の結果まで落とさない**（主目的は上のステップ）。
-          # 気づける場所は Actions の警告と、下の artifact に無いこと
+          # 気づける場所は Actions の警告と、下の artifact に無いこと。
+          # page_view の無いセッションが 1 割を超えたときも ::warning:: が出る（終了コードは0。
+          # docs/features/web-vitals-phantom-sessions.md の C）
           code=0
           node scripts/ga4-ai-channel.mjs --out "audit-out/ga4-ai-$(date -u +%Y-%m-%d).json" || code=$?
           if [ "$code" -ne 0 ]; then
