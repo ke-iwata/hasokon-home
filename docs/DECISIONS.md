@@ -8,6 +8,20 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-09-29：週次監査に Bing Webmaster Tools API を足し、検索語とページ別の表示回数を毎週残すようにした
+
+[bing-search-performance-audit.md](./features/bing-search-performance-audit.md) の **A・B・C** を実装した
+（D は運営者の API キー発行・Secret 登録で、それまでは警告を出して Bing だけ飛ばす）。
+
+- Search Console は 28 日で表示 1 回、GA4 の Organic Search の約 9 割は bing（2026-09-28）。
+  **流入の実測値は Bing にしかない**のに、画面作業なので誰も取りに行っていなかった
+- **`scripts/bing-search-stats.mjs`・`scripts/lib/bing-webmaster.mjs` を足した。** 3 本の GET で
+  サイト全体（7 日・28 日。週単位で返ったら 28 日だけ）・上位の検索語・上位のページを表と JSON に出す
+- **検索語は表示 5 回以上・上位 20 件だけ。** public リポジトリのログと artifact は誰でも見られるので、
+  それより細かい行は JSON にも残さない。API キーはエラー文・`--dry-run` でも `apikey=***` に伏せる
+- **`gsc-audit.yml` の Bing のステップは終了コードで落とさない。** GSC が飛ばされた週でも動き、
+  artifact は `always() && hashFiles('audit-out/**') != ''` で Bing だけの週も残す
+
 ## 2026-09-29：週次の GA4 集計で「page_view の無いセッション」を数え、1 割を超えたら警告するようにした
 
 [web-vitals-phantom-sessions.md](./features/web-vitals-phantom-sessions.md) の **C・E** を実装した

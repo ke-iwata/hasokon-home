@@ -249,6 +249,41 @@ GOOGLE_SERVICE_ACCOUNT_JSON="$(cat sa.json)" \
 Search Console の表示回数がほぼゼロなのと食い違っており、Discover や
 アプリ内ブラウザが混ざっているとみられます。判断には Search Console の実数を使います。
 
+## bing-search-stats.mjs
+
+Bing の検索パフォーマンス（表示回数・クリック・検索語・ページ）を週1回残します。
+
+仕様: [docs/features/bing-search-performance-audit.md](../docs/features/bing-search-performance-audit.md)
+
+2026-09-28 の計測で、Search Console は4プロパティ合計で28日に表示1回、GA4 の
+Organic Search は 358 セッションのうち 319 が bing でした。**「どの語で・どのページが」
+出ているかの実測値は Bing にしかない**ので、画面作業をやめて API で毎週取ります。
+
+```bash
+# 何を投げるかだけ見る（APIを叩かない。キーは伏せる）
+node scripts/bing-search-stats.mjs --dry-run
+
+# 計測して結果を残す
+BING_WEBMASTER_API_KEY=... \
+  node scripts/bing-search-stats.mjs --site https://hasokon.com/ --out bing-$(date -u +%Y-%m-%d).json
+```
+
+出すのは次の3つです（`GetRankAndTrafficStats` → `GetQueryStats` → `GetPageStats`）。
+
+- サイト全体の表示回数とクリック。点の間隔が1日なら直近7日・28日、週単位なら28日だけ
+  （見出しに粒度を書きます。週の点から「7日」は作りません）
+- 上位の検索語。**表示5回以上のものを上位20件まで。** それより細かい行は `--out` の JSON にも残しません
+  （このリポジトリは public で、Actions のログと artifact は誰でも見られます。
+  検索語には人名など個人に関わる語がまれに混ざるため）
+- 上位のページ20件。GA4 の `pagePath` と突き合わせやすいよう、`hasokon.com` からの相対パスにします
+
+**API キーは URL のクエリに載るので、エラー文・`--dry-run` のどこにも出しません**（`apikey=***`）。
+週1回の実行は `.github/workflows/gsc-audit.yml` に相乗りしていて、Bing が失敗しても
+Search Console・GA4 の計測は落としません。`BING_WEBMASTER_API_KEY` が未設定の週は警告だけ出して飛ばします。
+
+終了コードは 0（計測できた）と 2（実行できなかった）だけです。3本のうち1本でも取れなければ 2 で、
+取れた本は表に出します。**「0件」（登録直後はふつう）と「取れなかった」は表で区別します。**
+
 ## indexnow-submit.mjs
 
 **更新したURLを IndexNow に通知する**スクリプトです。本番デプロイ（`v*` タグ）の
