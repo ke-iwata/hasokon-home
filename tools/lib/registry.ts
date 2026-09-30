@@ -361,6 +361,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/ikuji-jitan-kyufu.md
+    slug: 'ikuji-jitan-kyufu',
+    // Baby・BabyCarriage は出産予定日・育休給付、Timer・ClockCountdown は別ツールが使っている。
+    // 「短い勤務時間」の絵で ClockAfternoon
+    icon: 'ClockAfternoon',
+    name: '育児時短就業給付金 計算機',
+    description:
+      '2歳未満の子のために時短勤務をすると、時短中の月給の10%が雇用保険から支給されます。時短前と時短後の月給を入れると、90%超での逓減・支給限度額（484,121円）まで厚労省の式どおりに月の支給額を出し、子が2歳になるまでの支給対象月と合計の目安を計算します。',
+    category: 'お金・社会保険',
+    // 公開は 2027-01-15 までに（仕様書の「公開条件」）。`public` にする PR で
+    // home/index.html・home/404.html のカードと ToolArt.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-09-30',
+  },
+  {
     // 仕様: docs/features/zoyozei-keisan.md
     slug: 'zoyozei-keisan',
     // Gift はふるさと納税、HandCoins は年末調整、HandHeart は養育費が使っている。「手渡す」の絵で HandArrowDown
