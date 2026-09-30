@@ -45,6 +45,14 @@ export interface RecordEntry {
   /** スコアのベスト（大きいほうが良い） */
   bestScore?: number;
   /**
+   * `bestScore` を出した日（**端末のローカル日付**。`lib/daily.ts` の `localDateKey`）。
+   *
+   * 「今日のベスト」を持つ日替わりのスコア制（マッチ3パズル）だけが使う。
+   * この日付が今日でなければ、ベストは 0 から数え直す（`bestScoreOf` を通して読む）。
+   * 日付を持たない記録（ほかのゲーム）は、これまでどおり通算のベスト。
+   */
+  bestScoreOn?: string;
+  /**
    * 正確率のベスト（%。大きいほうが良い）。タイピング練習が使う。
    *
    * スコア（KPM）と別に持つのは、**速さと正確さがトレードオフだから**。
@@ -114,6 +122,12 @@ export interface PlayResult {
    * 日替わり以外のゲームは渡さない（渡さなければ連続日数には触れない）。
    */
   clearedOn?: DateKey;
+  /**
+   * スコアを「その日のベスト」として比べる日付（`localDateKey`）。
+   * 渡すと、記録の `bestScoreOn` がこの日でなければベストを 0 から数え直し、
+   * 更新したら `bestScoreOn` をこの日にする。渡さなければ通算のベストと比べる。
+   */
+  scoredOn?: DateKey;
 }
 
 /** どのベストが更新されたか（クリア画面で「ベスト更新！」を出すのに使う） */
@@ -193,6 +207,7 @@ export function sanitizeEntry(value: unknown): RecordEntry {
     draws: count(v.draws),
     bestTimeMs: positive(v.bestTimeMs),
     bestScore: positive(v.bestScore),
+    bestScoreOn: dateKey(v.bestScoreOn),
     bestAccuracy: positive(v.bestAccuracy),
     bestMoves: positive(v.bestMoves),
     scoreSum: count(v.scoreSum),
@@ -253,6 +268,39 @@ function mergeStreak(base: RecordEntry, extra: RecordEntry): Pick<RecordEntry, '
   return { lastClearedOn: newer.lastClearedOn, streak: newer.streak };
 }
 
+/**
+ * スコアのベストを2つの記録からまとめる。
+ *
+ * **日付つきのベストは日付とセットで選ぶ**（連続日数と同じ理由）。
+ * 新しい日のほうを残し、同じ日なら大きいほう。どちらも日付を持たなければ大きいほう。
+ */
+function mergeBestScore(base: RecordEntry, extra: RecordEntry): Pick<RecordEntry, 'bestScore' | 'bestScoreOn'> {
+  if (base.bestScoreOn === undefined && extra.bestScoreOn === undefined) {
+    const a = base.bestScore;
+    const b = extra.bestScore;
+    return { bestScore: a === undefined ? b : b === undefined ? a : Math.max(a, b) };
+  }
+  if (base.bestScoreOn === undefined) return { bestScore: extra.bestScore, bestScoreOn: extra.bestScoreOn };
+  if (extra.bestScoreOn === undefined) return { bestScore: base.bestScore, bestScoreOn: base.bestScoreOn };
+  if (base.bestScoreOn === extra.bestScoreOn) {
+    return {
+      bestScore: Math.max(base.bestScore ?? 0, extra.bestScore ?? 0) || undefined,
+      bestScoreOn: base.bestScoreOn,
+    };
+  }
+  const newer = base.bestScoreOn > extra.bestScoreOn ? base : extra;
+  return { bestScore: newer.bestScore, bestScoreOn: newer.bestScoreOn };
+}
+
+/**
+ * 「その日のベスト」を読む。`bestScoreOn` が `today` でなければ undefined（まだ遊んでいない）。
+ * 日付を持たない記録は通算のベストをそのまま返す。
+ */
+export function bestScoreOf(entry: RecordEntry, today: DateKey): number | undefined {
+  if (entry.bestScoreOn === undefined) return entry.bestScore;
+  return entry.bestScoreOn === today ? entry.bestScore : undefined;
+}
+
 /** 2つの記録を「良いほうを残して」まとめる（旧キーの移行と、同時更新の取りこぼし対策） */
 export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
   const best = (
@@ -270,7 +318,7 @@ export function mergeEntry(base: RecordEntry, extra: RecordEntry): RecordEntry {
     losses: best(base.losses, extra.losses, Math.max),
     draws: best(base.draws, extra.draws, Math.max),
     bestTimeMs: best(base.bestTimeMs, extra.bestTimeMs, Math.min),
-    bestScore: best(base.bestScore, extra.bestScore, Math.max),
+    ...mergeBestScore(base, extra),
     bestAccuracy: best(base.bestAccuracy, extra.bestAccuracy, Math.max),
     bestMoves: best(base.bestMoves, extra.bestMoves, Math.min),
     // **足さずに大きいほうを残す。** ここが呼ばれるのは旧キーの取り込みと
@@ -301,9 +349,12 @@ export function applyResult(
   const score = positive(result.score);
   const moves = positive(result.moves);
   const rate = positive(result.accuracy);
+  // 日付つきのスコアは、その日のベストとだけ比べる（別の日のベストは 0 から数え直す）
+  const scoredOn = isDateKey(result.scoredOn) ? result.scoredOn : undefined;
+  const prevScore = scoredOn === undefined ? entry.bestScore : bestScoreOf(entry, scoredOn);
   const improved: Improved = {
     time: timeMs !== undefined && (entry.bestTimeMs === undefined || timeMs < entry.bestTimeMs),
-    score: score !== undefined && (entry.bestScore === undefined || score > entry.bestScore),
+    score: score !== undefined && (prevScore === undefined || score > prevScore),
     moves: moves !== undefined && (entry.bestMoves === undefined || moves < entry.bestMoves),
   };
   // 日替わりのクリア日を渡されたときだけ連続日数を数え直す。
@@ -322,6 +373,7 @@ export function applyResult(
       draws: result.outcome === 'draw' ? (entry.draws ?? 0) + 1 : entry.draws,
       bestTimeMs: improved.time ? timeMs : entry.bestTimeMs,
       bestScore: improved.score ? score : entry.bestScore,
+      bestScoreOn: improved.score && scoredOn !== undefined ? scoredOn : entry.bestScoreOn,
       bestMoves: improved.moves ? moves : entry.bestMoves,
       // 正確率は `Improved` に載せない（祝うのは速さのほうだけ）
       bestAccuracy:

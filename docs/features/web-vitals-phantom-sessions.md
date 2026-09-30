@@ -108,7 +108,9 @@ console.log(JSON.stringify(body))'
 
 - `trackPageView` / `trackEvent` が呼ばれるたびに時刻を更新（`Date.now()`。純関数側は時刻を引数で受けてテスト可能にする）
 - 失うのは「30 分以上放置したタブ」の INP・CLS。**その値はどのみち放置中の値で、表示速度の判断には要らない**
-- 純関数 `shouldSendVital(lastSentAt, now, timeoutMs)` とテストを足す。tools / games の両方に同じ変更
+- 純関数 `shouldSendVital(lastSentAt, now, timeoutMs)` とテストを足す。tools / games の両方に同じ変更。
+  **gtag が自動で送る `user_engagement`・`scroll` は `lastSentAt` に反映されない**ので、25 分は GA4 の実際のセッションより
+  早く切れる方向（安全側）に倒れる。テストのコメントにそう書く
 - A と両方入れる必要は無い（A で幽霊は消える）。**B は A を採らないと運営者が決めた場合の代替**
 
 ### C：週次監査で「page_view の無いセッション」を数え、1 割を超えたら警告する（コード）
@@ -125,7 +127,7 @@ console.log(JSON.stringify(body))'
 管理 → カスタム定義 → **カスタム ディメンション**（イベント スコープ）に `metric_name`・`metric_rating`、
 **カスタム指標**に `metric_value`（単位：標準）を登録する。
 
-- 登録した日以降のイベントだけが切れる。**登録が遅れた日数ぶん、B（AdSense の読み込み順）の前後比較の起点が後ろへずれる**
+- 登録した日以降のイベントだけが切れる。**登録が遅れた日数ぶん、[mobile-lighthouse-third-party.md](./mobile-lighthouse-third-party.md) の B（AdSense の読み込み順）の前後比較の起点が後ろへずれる**（この仕様書の B＝送信の間引き とは別物）
 - 登録後に `customEvent:metric_rating` で `runReport` が通ることを確認し、[mobile-lighthouse-third-party.md](./mobile-lighthouse-third-party.md)
   の E の状態行に登録日を書く
 
