@@ -4928,6 +4928,121 @@ button.hf-card {
   font-size: 0.85rem;
 }
 
+/* ---- ハーツ（docs/features/game-hearts.md） ----
+   配置は大富豪の器（.df-seats / .df-slot / .df-hand / .df-msg）を借りて、
+   ハーツにしか無い枠（パスの向き・トリック・自分の点）だけを足す */
+
+/* 席の「今局／累計」。桁が変わっても1行に収める */
+.ht-points {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* パスの向きの1行。パス無しの局でも空のまま枠を置く（games/CLAUDE.md 1） */
+.ht-pass {
+  line-height: 1.4;
+  height: 1.4em;
+  margin: 0 0 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* トリック。4枚出そろう前も枠は4つ置き、札の有無で高さが変わらないようにする */
+.ht-trick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.ht-trick-seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ht-trick-name {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  height: 1.3em;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+/* 自分の点の1行。「ハートブレイク済み」が出ても出なくても高さは同じ */
+.ht-me {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.5;
+  height: 1.5em;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.ht-me-turn {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.ht-broken {
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* 手札は大富豪の2行折り返しのまま。高さは2行ぶん＋持ち上げ（10px）で固定し、
+   局の終わりは同じ枠に点の一覧を出す（枠ごと出し入れすると下が動く） */
+.ht-hand {
+  --ht-slot: clamp(38px, 9.5vw, 54px);
+  min-height: 0;
+  height: calc(2 * var(--ht-slot) * 1.4 + 4px + 12px);
+  padding-top: 12px;
+  align-content: flex-start;
+  overflow: hidden;
+}
+
+/* 局の終わりは持ち上げのぶんの余白も点の一覧に回す（border-box なので枠の高さは同じ） */
+.ht-hand.ht-hand-result {
+  padding-top: 0;
+}
+
+.ht-result {
+  margin: 0;
+  padding: 4px 12px;
+  width: 100%;
+  max-width: 360px;
+  overflow: auto;
+}
+
+.ht-result h3 {
+  font-size: 0.9rem;
+  margin: 0 0 4px;
+}
+
+.ht-result li {
+  font-size: 0.85rem;
+  padding: 0;
+  line-height: 1.35;
+}
+
 @media (max-width: 600px) {
   /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
   .card {
@@ -5346,5 +5461,45 @@ button.hf-card {
 
   .bj-line {
     font-size: 0.82rem;
+  }
+
+  /* ハーツ。手札の1枚は大富豪と同じ34pxで、2行ぶんの高さもそれに合わせる */
+  .ht-hand {
+    --ht-slot: 34px;
+    padding-top: 10px;
+    height: calc(2 * var(--ht-slot) * 1.4 + 3px + 10px);
+  }
+
+  .ht-hand.ht-hand-result {
+    padding-top: 0;
+  }
+
+  .ht-result h3 {
+    font-size: 0.82rem;
+    margin: 0 0 2px;
+  }
+
+  .ht-trick {
+    padding: 4px 2px;
+  }
+
+  .ht-points {
+    font-size: 0.75rem;
+  }
+
+  /* 320px 幅でも「あなた 今局 17／累計 17 ハートブレイク」を1行に収める */
+  .ht-me {
+    gap: 4px;
+    font-size: 0.75rem;
+  }
+
+  .ht-pass {
+    margin: 0 0 4px;
+    font-size: 0.72rem;
+  }
+
+  .ht-result li {
+    font-size: 0.78rem;
+    line-height: 1.3;
   }
 }
