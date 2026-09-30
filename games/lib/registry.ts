@@ -215,6 +215,22 @@ export const games: GameDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 6 つの数と四則演算で目標の数をつくる計算パズル（docs/features/game-target-keisan.md）。
+    // ルールは英国のクイズ番組の数字ラウンド（1982年〜）以来のジェネリックなもので権利者はいない。
+    // **番組名・他社のゲーム名は表示名・slug・keywords・本文に使わない**（仕様書の「名称と権利」）。
+    // 表示名・slug は仮。**`public` の前に運営者が名称を決める**（J-PlatPat で確認するか、
+    // 説明的な「目標の数をつくる計算パズル」／`mokuhyo-keisan` に切り替える。仕様書の公開条件）。
+    // `preview` の slug は本番に出ないので、改名しても redirect は要らない
+    slug: 'target-keisan',
+    icon: 'TargetNumber',
+    name: 'ターゲット計算パズル',
+    description:
+      '6つの数を四則演算でつないで目標の数をつくる計算パズル。やさしい〜むずかしいの3段階と、毎日変わる今日の3問。',
+    keywords: ['計算パズル', '四則演算', '今日の1問', '連続日数'],
+    stage: 'preview',
+    updatedAt: '2026-09-29',
+  },
+  {
     slug: 'reversi',
     icon: 'Stones',
     name: 'リバーシ',
@@ -314,6 +330,24 @@ export const games: GameDef[] = [
     keywords: ['ヒット', 'スタンド', 'ダブルダウン', 'スプリット', '3:2', 'ソフト17'],
     stage: 'wip',
     updatedAt: '2026-09-27',
+  },
+  {
+    // ハーツのルールは公有で、「ハーツ」は英語の一般名 hearts の片仮名
+    // （docs/features/game-hearts.md の「名称と権利」）。Microsoft の「Hearts」の画面・札の絵柄・
+    // キャラクター名は真似ず、CPU の呼び名は大富豪の SEAT_NAMES に揃えている。
+    // 「Windows」は商標なので name・description には入れない（本文の説明の 1 か所だけ）。
+    // **名称の J-PlatPat 確認（第9類・第41類）は運営者のタスク**で、登録があれば
+    // 表示名「ハートを避けるトランプ（ハーツ）」・slug `heart-yoke` に変える。
+    // `public` への昇格は google-index-recovery.md の解除判断後。絵（GameIcon の BOARD）は
+    // `public` にする PR で描く
+    slug: 'hearts',
+    icon: 'Hearts',
+    name: 'ハーツ',
+    description:
+      'ハートと♠Qを取らないように立ち回る、CPU 3人と4人で遊ぶトランプの定番。パス・ハートブレイク・シュートザムーンに対応し、1局だけでも100点までの試合でも遊べます。',
+    keywords: ['ハートブレイク', 'シュートザムーン', '♠Q', 'フォロー', 'パス'],
+    stage: 'preview',
+    updatedAt: '2026-09-30',
   },
   {
     // 花札のルールも伝統的な絵柄（松に鶴・芒に月など）もパブリックドメインで、
