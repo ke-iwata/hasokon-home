@@ -1,5 +1,12 @@
 # 新ゲーム「マッチ3パズル」— 隣と入れ替えて同じ形を 3 つそろえて消す、カジュアルパズルの最大ジャンル。日替わり基盤で「今日の盤面・30 手のスコア」を全員同じ条件で競う
 
+**状態**：実装済み・`stage: 'wip'`（2026-09-29 起票、同日実装。企画レビュー（#291）の必須 5 点・軽微 2 点を反映済み）。
+**名称と slug（`match3`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある**（箱入り娘・数字つなぎ一筆書きと同じ扱い）。
+確認が済み、テスト環境で遊んで問題が無ければ `preview` へ（登録があれば、その前に名称・slug を下記のとおり切り替える）。
+実装の判断は [games/docs/DECISIONS.md](../../games/docs/DECISIONS.md) の 2026-09-29 の項。
+
+<details><summary>起票時の状態メモ</summary>
+
 **状態**：提案（2026-09-29 起票。セッション `session_01UBDziAjHeeJzaW6rf1Z3ZF`）。
 **着手条件**：**実装着手前に、運営者が J-PlatPat（第9類・第28類・第41類）で「マッチ3」「マッチスリー」を確認し、名称と slug を確定させる**
 （[game-suji-hitofude.md](./game-suji-hitofude.md)・[game-hakoiri-musume.md](./game-hakoiri-musume.md) と同じ
@@ -9,6 +16,9 @@
 **`public` への昇格は運営者の判断**（2026-09-19 の「新規ゲームはまたあとで」以降、ゲームの `public` は止まっている。
 数字つなぎ一筆書きが 09-27 に `public` になったので、再開の判断はそちらの実測を見てから）。
 `public` にする PR では `home/index.html` のカード・`home/404.html` の一覧も足す。
+
+</details>
+
 **対象**：`games/`（`hasokon.com/games/match3/` を想定）
 **起票**：2026-09-29
 **関連**：[game-block-puzzle.md](./game-block-puzzle.md)（同じ「格子に置く／消す」型。**`tool_use` が全ページ 1 位**）・

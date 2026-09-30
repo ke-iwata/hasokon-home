@@ -131,6 +131,14 @@ export default function Page() {
 
       <Calculator buildDate={new Date().toISOString()} />
 
+      <PublicToolLink slug="ikuji-jitan-kyufu">
+        <p className="hint">
+          復帰後に時短で働くなら →{' '}
+          <ToolLink slug="ikuji-jitan-kyufu">育児時短就業給付金 計算機</ToolLink>
+          （2歳未満の子のための時短勤務で、月給の10%が支給されます）
+        </p>
+      </PublicToolLink>
+
       <AdUnit position="below-tool" />
 
       <h2>「手取り10割」は最大{SHUSSHOGO_MAX_DAYS}日間の話です</h2>

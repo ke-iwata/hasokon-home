@@ -7,6 +7,7 @@ import {
   applyResult,
   applyStart,
   averageScore,
+  bestScoreOf,
   browserStorage,
   decidedGames,
   DEFAULT_VARIANT,
@@ -421,7 +422,8 @@ describe('各ゲームの組み込み', () => {
     // リバーシ・五目並べの「強さ・手番」、大富豪の「強さ・ローカルルール」、
     // 七並べの「ローカルルール・CPUの速さ」、神経衰弱の「遊び方・枚数・強さ」、
     // スピードの「強さ」、花札こいこいの「強さ・月数・役の設定・月数の併記」、
-    // ヨットの「強さ」、タイピング練習の「難易度」、ブラックジャックの「ソフト17」は、
+    // ヨットの「強さ」、タイピング練習の「難易度」、ブラックジャックの「ソフト17」、
+    // ハーツの「強さ・試合の長さ」は、
     // 遊んだ記録ではなく設定なので例外
     // （lib/records.ts の LEGACY_KEYS のコメントも参照）
     const allowed = new Set([
@@ -435,6 +437,7 @@ describe('各ゲームの組み込み', () => {
       'yacht',
       'typing',
       'blackjack',
+      'hearts',
     ]);
     for (const g of gameFiles) {
       if (allowed.has(g.slug)) continue;
@@ -544,5 +547,74 @@ describe('連続日数', () => {
     });
     // 難易度側の記録は連続日数を持たない（区分が分かれている）
     expect(entryOf(loadRecords('hoshioki-puzzle', storage), 'easy')).toEqual({});
+  });
+});
+
+/**
+ * 「今日のベスト」（`bestScoreOn`）。マッチ3パズルの日替わりが使う。
+ *
+ * 仕様: docs/features/game-match3.md「記録・共有」。
+ * `bestScore` は既存の項目なので、**日付を渡さないゲームのふるまいが変わらない**ことも確かめる。
+ */
+describe('今日のベスト（bestScoreOn）', () => {
+  it('日付を渡すと、ベストとその日付が入る', () => {
+    const { entry, improved } = applyResult({}, { score: 1240, scoredOn: '2026-09-29' });
+    expect(entry.bestScore).toBe(1240);
+    expect(entry.bestScoreOn).toBe('2026-09-29');
+    expect(improved.score).toBe(true);
+  });
+
+  it('同じ日は大きいほうだけがベストになる', () => {
+    const before = { bestScore: 900, bestScoreOn: '2026-09-29' };
+    const lower = applyResult(before, { score: 600, scoredOn: '2026-09-29' });
+    expect(lower.entry.bestScore).toBe(900);
+    expect(lower.improved.score).toBe(false);
+    const higher = applyResult(before, { score: 1000, scoredOn: '2026-09-29' });
+    expect(higher.entry.bestScore).toBe(1000);
+    expect(higher.improved.score).toBe(true);
+  });
+
+  it('日が変わったら 0 から数え直す（前日のベストより低くても更新）', () => {
+    const before = { bestScore: 2000, bestScoreOn: '2026-09-28' };
+    const { entry, improved } = applyResult(before, { score: 300, scoredOn: '2026-09-29' });
+    expect(entry.bestScore).toBe(300);
+    expect(entry.bestScoreOn).toBe('2026-09-29');
+    expect(improved.score).toBe(true);
+  });
+
+  it('bestScoreOf は今日の分だけを返す', () => {
+    const entry = { bestScore: 2000, bestScoreOn: '2026-09-28' };
+    expect(bestScoreOf(entry, '2026-09-28')).toBe(2000);
+    expect(bestScoreOf(entry, '2026-09-29')).toBeUndefined();
+    // 日付を持たない記録（ほかのゲーム）は通算のベストのまま
+    expect(bestScoreOf({ bestScore: 50 }, '2026-09-29')).toBe(50);
+  });
+
+  it('日付を渡さないゲームは、これまでどおり通算のベストと比べる', () => {
+    const { entry, improved } = applyResult({ bestScore: 500 }, { score: 300 });
+    expect(entry.bestScore).toBe(500);
+    expect(entry.bestScoreOn).toBeUndefined();
+    expect(improved.score).toBe(false);
+  });
+
+  it('壊れた日付は読み捨てる', () => {
+    expect(sanitizeEntry({ bestScore: 10, bestScoreOn: '2026-13-40' })).toEqual({ bestScore: 10 });
+    expect(sanitizeEntry({ bestScore: 10, bestScoreOn: '2026-09-29' })).toEqual({
+      bestScore: 10,
+      bestScoreOn: '2026-09-29',
+    });
+  });
+
+  it('まとめるときは日付とセットで選ぶ（新しい日のほう、同じ日なら大きいほう）', () => {
+    const older = { bestScore: 5000, bestScoreOn: '2026-09-28' };
+    const newer = { bestScore: 100, bestScoreOn: '2026-09-29' };
+    expect(mergeEntry(older, newer)).toMatchObject({ bestScore: 100, bestScoreOn: '2026-09-29' });
+    expect(mergeEntry(newer, older)).toMatchObject({ bestScore: 100, bestScoreOn: '2026-09-29' });
+    expect(mergeEntry(newer, { bestScore: 400, bestScoreOn: '2026-09-29' })).toMatchObject({
+      bestScore: 400,
+      bestScoreOn: '2026-09-29',
+    });
+    // 日付を持たないもの同士は、これまでどおり大きいほう
+    expect(mergeEntry({ bestScore: 10 }, { bestScore: 20 }).bestScore).toBe(20);
   });
 });
