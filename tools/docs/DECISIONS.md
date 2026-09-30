@@ -8,6 +8,18 @@
 
 ---
 
+## 2026-10-01：酒税改正 早見表 — 文面を施行後に切り替え、期日を過ぎたら description の「これから」を CI で止める
+
+[shuzei-kaisei-post-revision-copy.md](../../docs/features/shuzei-kaisei-post-revision-copy.md) の A・B を実施。
+
+- `page.tsx` の title は既存の語を全部残して「新税率」だけ足した。description・リード・FAQ「どう変わりましたか」・
+  「2026年10月に変わったもの」を過去形に。買いだめの h2 と FAQ は「施行前はこうだった」に畳み、`MINOR_DRINKING_NOTE` は残した
+- registry の `description` から「9月中に買うと得」を消し、`updatedAt` を `2026-10-01` に上げた（sitemap の `lastmod` → IndexNow）。
+  **「されました」が施行前に本番へ出ると逆向きに嘘になるので、マージは 10-01（JST）以降**
+- `tests/shuzei-kaisei.test.ts`：`isRevised(new Date())` が true のとき、description 2 か所に「されます」「9月中」「施行前に買う」が
+  無いことを見る。日付判定はライブラリの `isRevised` に任せ、本文は検査しない（過去形の段落に「施行前に買う」が正しく残る）
+- 税率・計算・`Calculator.tsx` は触っていない
+
 ## 2026-09-28：最低賃金チェッカー — 宮崎・鹿児島の決定公示を反映し、令和8年度 47 都道府県の発効日がそろった
 
 [saitei-chingin-r8-hakko-mae-mente.md](../../docs/features/saitei-chingin-r8-hakko-mae-mente.md) の 09-26 の「やること」を実施。

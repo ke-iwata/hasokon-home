@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { metadata } from '@/app/shuzei-kaisei/page';
+import { tools } from '@/lib/registry';
 import {
   ADVICE_LABEL,
   AFTER_STAGE_ID,
@@ -515,5 +519,74 @@ describe('表示の整形', () => {
 describe('飲酒に関する注記', () => {
   it('20歳未満の飲酒防止の注記を持っている（飲酒を勧めるページにしない）', () => {
     expect(MINOR_DRINKING_NOTE).toContain('20歳未満');
+  });
+});
+
+/**
+ * 施行後の文面。静的HTMLに焼き込む文面は開いた日で切り替わらないので、書き換えで追従する。
+ *
+ * 仕様: docs/features/shuzei-kaisei-post-revision-copy.md
+ */
+describe('施行後の文面', () => {
+  const pageSource = readFileSync(join(__dirname, '../app/shuzei-kaisei/page.tsx'), 'utf8');
+  const pageDescription = String(metadata.description);
+  const registryDescription = tools.find((t) => t.slug === 'shuzei-kaisei')!.description;
+  const STALE_PHRASES = ['されます', '9月中', '施行前に買う'];
+
+  it.runIf(isRevised(new Date()))(
+    '施行日を過ぎたら、description に「これから」の文面が残っていない',
+    () => {
+      // 日付の判定は Calculator と同じ isRevised に任せる（CI は UTC で動くため、直接比べない）。
+      // 本文（過去形に畳んだ段落・FAQ）には「施行前に買う」が正しく残るので、description だけを見る
+      for (const phrase of STALE_PHRASES) {
+        expect(pageDescription, `page.tsx の description に「${phrase}」`).not.toContain(phrase);
+        expect(registryDescription, `registry の description に「${phrase}」`).not.toContain(phrase);
+      }
+    },
+  );
+
+  it('title は施行前の語を全部残し、「新税率」を足している', () => {
+    const title = String(metadata.title);
+    for (const word of ['2026年10月', 'ビール減税', '第三のビール', 'チューハイ増税', '新税率']) {
+      expect(title).toContain(word);
+    }
+  });
+
+  it('description は施行後の文面になっている', () => {
+    for (const phrase of STALE_PHRASES) {
+      expect(pageDescription).not.toContain(phrase);
+      expect(registryDescription).not.toContain(phrase);
+    }
+    expect(pageDescription).toContain('一本化されました');
+    expect(registryDescription).toContain('一本化されました');
+  });
+
+  it('買いだめの段落と FAQ は過去形に畳み、20歳未満の注記を残している', () => {
+    expect(pageSource).not.toContain('買いだめの判断は種類で逆になる');
+    expect(pageSource).not.toContain('9月のうちに買いだめしたほうが得ですか');
+    const h2 = pageSource.indexOf('<h2>施行前の買いだめは、種類で判断が逆だった</h2>');
+    expect(h2).toBeGreaterThan(-1);
+    const paragraph = pageSource.slice(h2, pageSource.indexOf('</p>', h2));
+    expect(paragraph).toContain('{MINOR_DRINKING_NOTE}');
+    const faq = pageSource.indexOf("q: '施行前に買いだめしておく意味はありましたか？'");
+    expect(faq).toBeGreaterThan(-1);
+    const answer = pageSource.slice(faq, pageSource.indexOf('},', faq));
+    expect(answer).toContain('${MINOR_DRINKING_NOTE}');
+  });
+
+  it('20歳未満の注記の数が減っていない', () => {
+    // 書き換え前は import・h2 の段落・FAQ・扱わないこと・ToolMeta の 5 か所
+    expect(pageSource.split('MINOR_DRINKING_NOTE').length - 1).toBeGreaterThanOrEqual(5);
+  });
+
+  it('「2026年10月に変わったもの」の節は過去形で、関連ツールへのリンクを残している', () => {
+    expect(pageSource).toContain('<h2>2026年10月に変わったものを、まとめて確認する</h2>');
+    for (const href of ['/tabako-zei-neage/', '/saitei-chingin/', '/nenshu-kabe/']) {
+      expect(pageSource).toContain(`href="${href}"`);
+    }
+  });
+
+  it('registry の updatedAt を施行日以降に上げている（sitemap の lastmod → IndexNow）', () => {
+    expect(tools.find((t) => t.slug === 'shuzei-kaisei')!.updatedAt >= REVISION_DATE).toBe(true);
   });
 });
