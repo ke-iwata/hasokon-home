@@ -11,6 +11,7 @@ import {
   daysLeft,
   daysLeftLabel,
   formatJaWithWeekday,
+  isTokiOverdue,
   otherDeadlines,
   taxDueDate,
   tokiDeadline,
@@ -169,6 +170,33 @@ describe('daysLeft / daysLeftLabel', () => {
     expect(daysLeftLabel(183)).toBe('あと183日');
     expect(daysLeftLabel(0)).toBe('今日が期限');
     expect(daysLeftLabel(-2)).toBe('2日過ぎています');
+  });
+});
+
+describe('isTokiOverdue（期限切れの警告を出すか）', () => {
+  // #299 レビューの再現：死亡日 2020-01-10、分割 2025-10-01、今日 2027-05-01
+  it('先に登記・申出をした人（はい）は、主の期限を過ぎても警告しない', () => {
+    const toki = tokiDeadline('2020-01-10', { on: '2025-10-01', registeredFirst: true });
+    expect(toki.deadline).toBe('2027-03-31');
+    expect(toki.divisionDeadline).toBe('2028-10-01');
+    expect(isTokiOverdue(toki, '2027-05-01')).toBe(false);
+  });
+
+  it('「はい」でも分割の内容で登記する期限を過ぎたら警告する', () => {
+    const toki = tokiDeadline('2020-01-10', { on: '2025-10-01', registeredFirst: true });
+    expect(isTokiOverdue(toki, '2028-10-01')).toBe(false);
+    expect(isTokiOverdue(toki, '2028-10-02')).toBe(true);
+  });
+
+  it('先に登記・申出をしていない人（いいえ）は、主の期限を過ぎたら警告する', () => {
+    const toki = tokiDeadline('2020-01-10', { on: '2025-10-01', registeredFirst: false });
+    expect(isTokiOverdue(toki, '2027-05-01')).toBe(true);
+    expect(isTokiOverdue(toki, '2027-03-31')).toBe(false);
+  });
+
+  it('分割日を入れていない人は、主の期限で判定する', () => {
+    expect(isTokiOverdue(tokiDeadline('2020-01-10'), '2027-04-01')).toBe(true);
+    expect(isTokiOverdue(tokiDeadline('2020-01-10'), '2026-09-30')).toBe(false);
   });
 });
 

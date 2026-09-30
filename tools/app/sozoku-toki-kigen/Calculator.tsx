@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { trackToolUse } from '@/lib/analytics';
 import {
+  FIRST_REGISTRATION_DONE_NOTE,
   INPUT_ERROR_MESSAGES,
   NO_FIRST_REGISTRATION_NOTE,
   OVERDUE_MESSAGE,
@@ -10,6 +11,7 @@ import {
   daysLeftLabel,
   formatDate,
   formatJaWithWeekday,
+  isTokiOverdue,
   otherDeadlines,
   parseDate,
   taxDueDate,
@@ -74,7 +76,9 @@ export default function Calculator() {
   const others = ready ? otherDeadlines(death) : null;
   const jun = others ? taxDueDate(others.junKakutei) : null;
   const sozokuzei = others ? taxDueDate(others.sozokuzei) : null;
-  const overdue = toki && today ? daysLeft(toki.deadline, today) < 0 : false;
+  const overdue = toki && today ? isTokiOverdue(toki, today) : false;
+  /** 先に登記・申出をした人は、知った日からの期限をもう果たしている（残り日数を出さない） */
+  const firstDone = Boolean(toki?.divisionDeadline);
 
   return (
     <div className="card">
@@ -165,7 +169,7 @@ export default function Calculator() {
               </span>
               <span className="label">
                 までに相続登記
-                {today && (
+                {today && !firstDone && (
                   <>
                     （<Left deadline={toki.deadline} today={today} />）
                   </>
@@ -177,6 +181,11 @@ export default function Calculator() {
                 ? '2024年4月1日より前に知った相続は、経過措置で2027年3月31日が期限です（知った日から3年ではありません）。'
                 : '不動産を相続で取得したことを知った日から3年です（不動産登記法76条の2第1項）。'}
             </p>
+            {firstDone && (
+              <p className="hint" style={{ margin: '6px 0 0' }}>
+                {FIRST_REGISTRATION_DONE_NOTE}
+              </p>
+            )}
           </div>
 
           {overdue && (
@@ -260,7 +269,7 @@ export default function Calculator() {
             {(jun!.holidayUnknown || sozokuzei!.holidayUnknown) &&
               '祝日のデータが無い年にかかるため、土日と年末年始だけで繰り下げています。'}
             相続放棄の期限が土日祝に当たるときの扱いは、家庭裁判所に確認してください。
-            相続税は、遺産が基礎控除以下なら申告は要りません。
+            相続税は、遺産が基礎控除以下なら申告は要りません（小規模宅地等の特例や配偶者の税額軽減を使って税額が0になる場合は、申告が要ります）。
           </p>
         </>
       )}

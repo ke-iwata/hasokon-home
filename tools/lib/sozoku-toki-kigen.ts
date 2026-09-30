@@ -126,6 +126,22 @@ export function tokiDeadline(knownOn: string, division?: DivisionInput): TokiDea
   return result;
 }
 
+/**
+ * 相続登記の期限を過ぎているか（期限切れの警告を出すかどうか）。
+ *
+ * **先に法定相続分での登記か相続人申告登記をした人は、知った日からの義務（76条の2第1項・76条の3第2項）を
+ * もう果たしている**ので、主の期限を過ぎても警告しない。この人が追う期限は `divisionDeadline`
+ * （分割の内容で登記する期限）だけで、それを過ぎたときに限って警告する（#299 レビュー）。
+ */
+export function isTokiOverdue(toki: TokiDeadline, today: string): boolean {
+  const target = toki.divisionDeadline ?? toki.deadline;
+  return daysLeft(target, today) < 0;
+}
+
+/** 先に登記・申出をした人に、上段の期限の下へ添える1行 */
+export const FIRST_REGISTRATION_DONE_NOTE =
+  '知った日からの期限の義務は、先にした法定相続分での登記、または相続人申告登記で果たしています。追う期限は下の「遺産分割の内容で登記する期限」です。';
+
 // ---------------------------------------------------------------- ほかの期限
 
 export interface OtherDeadlines {
