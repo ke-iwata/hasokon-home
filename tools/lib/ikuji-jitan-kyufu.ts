@@ -173,6 +173,7 @@ export function taperRateHundredths(wageRateH: number): number {
  * - `none-over100`：賃金が開始時賃金月額の100%以上なので支給なし
  * - `none-over-limit`：賃金が支給限度額以上なので支給なし
  * - `none-min`：算定した支給額が最低限度額以下なので支給なし
+ * - `none-no-months`：時短の開始が支給対象月の最後の月より後なので、支給対象月が無い
  */
 export type AmountReason =
   | 'base'
@@ -180,7 +181,8 @@ export type AmountReason =
   | 'cap'
   | 'none-over100'
   | 'none-over-limit'
-  | 'none-min';
+  | 'none-min'
+  | 'none-no-months';
 
 export interface MonthlyAmount {
   /** 月の支給額（円）。支給なしなら0 */
@@ -309,16 +311,19 @@ export function calcIkujiJitan(input: IkujiJitanInput): IkujiJitanResult | null 
   const firstMonth = { year: jitanStart.year, month: jitanStart.month };
   const lastMonth = lastEligibleMonth(birth);
   const months = Math.max(0, monthIndex(lastMonth) - monthIndex(firstMonth) + 1);
+  // 支給対象月が無いのに月の額を出すと「もらえる」と読めるので、支給なしにそろえる（#304 レビュー）
+  const monthResult: MonthlyAmount =
+    months === 0 ? { ...month, amount: 0, rateHundredths: 0, reason: 'none-no-months' } : month;
 
   return {
     startWage,
-    month,
+    month: monthResult,
     firstMonth,
     lastMonth,
     reachesTwo: reachesAgeTwoOn(birth),
     months,
-    total: month.amount * months,
-    paidPlusBenefit: wageAfter + month.amount,
+    total: monthResult.amount * months,
+    paidPlusBenefit: wageAfter + monthResult.amount,
   };
 }
 

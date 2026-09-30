@@ -28,6 +28,7 @@ function reasonText(r: IkujiJitanResult): string {
     'none-over100': '時短後の月給が時短前（開始時賃金月額）の100%以上なので、支給されません。',
     'none-over-limit': `時短後の月給が支給限度額 ${fmtYen(LIMIT_MAX)} 以上なので、支給されません。`,
     'none-min': `算定した支給額が最低限度額 ${fmtYen(LIMIT_MIN)} 以下なので、支給されません。`,
+    'none-no-months': `時短の開始日が支給対象月の最後の月（${r.lastMonth.year}年${r.lastMonth.month}月）より後なので、支給されません。`,
   };
   return texts[m.reason];
 }
@@ -207,7 +208,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           <p className="hint">
             給付は非課税で、社会保険料もかからないので、月給の手取りにそのまま足せます
             （月給から引かれる税・保険料はこの計算機では出しません）。
-            開始月と終了月は賃金が日割りになるため、実際の額は変わります。
+            時短を始めた月（と時短をやめた月）は賃金が日割りになるため、実際の額は変わります。
           </p>
         </>
       )}

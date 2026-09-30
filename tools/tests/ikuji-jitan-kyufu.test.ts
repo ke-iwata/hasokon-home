@@ -227,10 +227,13 @@ describe('calcIkujiJitan', () => {
     expect(r?.paidPlusBenefit).toBe(220_000);
   });
 
-  it('時短開始が支給対象月の最後の月より後なら0か月', () => {
+  it('時短開始が支給対象月の最後の月より後なら0か月で、月の額も支給なし', () => {
     const r = calcIkujiJitan({ ...base, jitanStart: d('2027-05-01') });
     expect(r?.months).toBe(0);
     expect(r?.total).toBe(0);
+    expect(r?.month.amount).toBe(0);
+    expect(r?.month.reason).toBe('none-no-months');
+    expect(r?.paidPlusBenefit).toBe(200_000);
   });
 
   it('最後の月に始めれば1か月', () => {
