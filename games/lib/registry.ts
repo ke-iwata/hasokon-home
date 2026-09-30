@@ -215,6 +215,22 @@ export const games: GameDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 6 つの数と四則演算で目標の数をつくる計算パズル（docs/features/game-target-keisan.md）。
+    // ルールは英国のクイズ番組の数字ラウンド（1982年〜）以来のジェネリックなもので権利者はいない。
+    // **番組名・他社のゲーム名は表示名・slug・keywords・本文に使わない**（仕様書の「名称と権利」）。
+    // 表示名・slug は仮。**`public` の前に運営者が名称を決める**（J-PlatPat で確認するか、
+    // 説明的な「目標の数をつくる計算パズル」／`mokuhyo-keisan` に切り替える。仕様書の公開条件）。
+    // `preview` の slug は本番に出ないので、改名しても redirect は要らない
+    slug: 'target-keisan',
+    icon: 'TargetNumber',
+    name: 'ターゲット計算パズル',
+    description:
+      '6つの数を四則演算でつないで目標の数をつくる計算パズル。やさしい〜むずかしいの3段階と、毎日変わる今日の3問。',
+    keywords: ['計算パズル', '四則演算', '今日の1問', '連続日数'],
+    stage: 'preview',
+    updatedAt: '2026-09-29',
+  },
+  {
     slug: 'reversi',
     icon: 'Stones',
     name: 'リバーシ',

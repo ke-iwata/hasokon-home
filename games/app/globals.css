@@ -1098,6 +1098,167 @@ ol {
   }
 }
 
+/* ---- ターゲット計算パズル ----
+   盤は正方形ではなく「目標・タイル 2 段・演算・状態・履歴・ボタン」の縦積み。
+   **文言で伸び縮みする場所（状態の 1 行・履歴）は `height` で行数ぶんを確保する**（画面の約束1）。
+   計算で消えたタイルの枠（`.tk-empty`）も置いたままにして、タイルの並びを動かさない。
+   履歴の枠は解答例（最大 5 手 ＋ 見出し）が入る 6 行ぶん。答える前は直近 3 手だけ出す */
+.tk-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 10px;
+}
+
+.tk-target {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.tk-target-label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.tk-target-num {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+.tk-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.tk-tile {
+  height: 60px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.tk-tile:focus-visible,
+.tk-op:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.tk-tile.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+
+.tk-tile.hit {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 20%, var(--surface));
+}
+
+.tk-tile:disabled {
+  cursor: default;
+}
+
+/* 消えたタイルの枠。**空でも置く**（並びを動かさない） */
+.tk-empty {
+  border-style: dashed;
+  background: transparent;
+  cursor: default;
+}
+
+.tk-ops {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.tk-op {
+  height: 48px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tk-op.selected {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--on-accent);
+}
+
+.tk-op:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* 生成中・今日の 3 問を答え終えたあと。タイルと演算があった場所を同じ高さで空けておく
+   （60 × 2 ＋ 8 ＋ 10 ＋ 48） */
+.tk-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 186px;
+  padding: 0 12px;
+  text-align: center;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.tk-status {
+  height: 1.6rem;
+  line-height: 1.6rem;
+  margin: 8px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.tk-status > span {
+  color: var(--text);
+}
+
+.tk-log {
+  height: calc(1.35rem * 6);
+  line-height: 1.35rem;
+  margin: 4px 0 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tk-log-head {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.tk-actions {
+  justify-content: center;
+  margin-top: 8px;
+}
+
 /* ---- ブロック崩し ---- */
 
 .bk-stage {
@@ -5501,5 +5662,55 @@ button.hf-card {
   .ht-result li {
     font-size: 0.78rem;
     line-height: 1.3;
+  }
+
+  /* ターゲット計算パズル。390×844 で 1 画面に収める（タイルは 44px を割らない） */
+  .tk-target-num {
+    font-size: 2.2rem;
+  }
+
+  .tk-tile {
+    height: 52px;
+    font-size: 1.3rem;
+  }
+
+  .tk-op {
+    height: 44px;
+  }
+
+  .tk-loading {
+    height: 166px;
+  }
+
+  .tk-log {
+    height: calc(1.25rem * 6);
+    line-height: 1.25rem;
+    font-size: 0.85rem;
+  }
+
+  /* 320px 幅でも弾いた理由・「ベスト更新！」が切れないよう、2 行ぶんの高さを確保する
+     （高さは固定のまま。1 行でも 2 行でも下は動かない） */
+  .tk-status {
+    height: 2.5rem;
+    line-height: 1.25rem;
+    white-space: normal;
+    font-size: 0.8rem;
+  }
+
+  .tk-meta {
+    font-size: 0.8rem;
+  }
+
+  /* 320px 幅でも「もどす・最初から・これで答える」を 1 行に（折り返すと下がずれる） */
+  .tk-actions {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .tk-actions .btn {
+    min-height: 44px;
+    padding: 8px 10px;
+    font-size: 0.82rem;
+    white-space: nowrap;
   }
 }

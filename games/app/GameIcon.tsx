@@ -648,6 +648,32 @@ function Match3Icon({ size = 26 }: IconProps) {
   );
 }
 
+function TargetNumberIcon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* 上に目標の枠、下に 2 段 × 3 の数のタイル */}
+      <rect x="64" y="32" width="128" height="64" rx="12" />
+      <rect x="40" y="128" width="48" height="40" rx="8" />
+      <rect x="104" y="128" width="48" height="40" rx="8" />
+      <rect x="168" y="128" width="48" height="40" rx="8" />
+      <rect x="40" y="184" width="48" height="40" rx="8" />
+      <rect x="104" y="184" width="48" height="40" rx="8" />
+      <rect x="168" y="184" width="48" height="40" rx="8" />
+    </svg>
+  );
+}
+
 /* =====================================================================
  * 一覧カードの絵（盤面）
  *
@@ -1131,6 +1157,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   HitofudePath: HitofudePathIcon,
   // マッチ3パズル。宝石・キャンディの絵柄は既存タイトルを連想させるので使わず、丸と矢印で表す
   Match3: Match3Icon,
+  // ターゲット計算パズル。目標の枠と数のタイル（盤面の絵は `public` にするPRで描く）
+  TargetNumber: TargetNumberIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
