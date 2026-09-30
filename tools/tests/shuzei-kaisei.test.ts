@@ -536,7 +536,8 @@ describe('施行後の文面', () => {
   it.runIf(isRevised(new Date()))(
     '施行日を過ぎたら、description に「これから」の文面が残っていない',
     () => {
-      // 日付の判定は Calculator と同じ isRevised に任せる（CI は UTC で動くため、直接比べない）。
+      // 日付の判定は Calculator と同じ isRevised に任せる。isRevised は実行環境のローカル日付で比べるので、
+      // UTC で動く CI では 2026-10-01 09:00（JST）から有効になる（Calculator と同じ判定）。
       // 本文（過去形に畳んだ段落・FAQ）には「施行前に買う」が正しく残るので、description だけを見る
       for (const phrase of STALE_PHRASES) {
         expect(pageDescription, `page.tsx の description に「${phrase}」`).not.toContain(phrase);
@@ -572,6 +573,24 @@ describe('施行後の文面', () => {
     expect(faq).toBeGreaterThan(-1);
     const answer = pageSource.slice(faq, pageSource.indexOf('},', faq));
     expect(answer).toContain('${MINOR_DRINKING_NOTE}');
+  });
+
+  it('FAQ「発泡酒と第三のビール」は施行後の税額を現在の値として答えている', () => {
+    const faq = pageSource.indexOf("q: '発泡酒と第三のビールは、いま税額が違うのですか？'");
+    expect(faq).toBeGreaterThan(-1);
+    const answer = pageSource.slice(faq, pageSource.indexOf('},', faq));
+    // 施行前の税額（134,250円）を「現在は」「同じです」と言い切らない
+    expect(answer).not.toContain('現在は');
+    expect(answer).not.toMatch(/134,250円[^。]*同じです/);
+    expect(answer).not.toContain('155,000円になります');
+    expect(answer).toContain('155,000円');
+    expect(answer).toContain('揃いました');
+  });
+
+  it('施行で変わった点を未来形で書いていない', () => {
+    for (const phrase of ['上がります。', '広がります', '35円になります', 'なぜビールだけ安くなるのですか']) {
+      expect(pageSource, phrase).not.toContain(phrase);
+    }
   });
 
   it('20歳未満の注記の数が減っていない', () => {
