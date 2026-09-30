@@ -620,6 +620,34 @@ function HitofudePathIcon({ size = 26 }: IconProps) {
   );
 }
 
+/**
+ * マッチ3パズル。**同じ丸が2つ並び、3つ目が1段下にずれている**。上向きの矢印で
+ * 「入れ替えるとそろう」一歩手前を表す。盤の格子（GridFour など）はすでに3つあるので、
+ * 格子は描かずに図形だけで見分ける。線の太さは Phosphor の regular に合わせて 16
+ */
+function Match3Icon({ size = 26 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 256 256"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={16}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="52" cy="88" r="30" />
+      <circle cx="204" cy="88" r="30" />
+      <circle cx="128" cy="184" r="30" fill="currentColor" />
+      <polyline points="108,92 128,72 148,92" />
+      <line x1="128" y1="72" x2="128" y2="128" />
+    </svg>
+  );
+}
+
 /* =====================================================================
  * 一覧カードの絵（盤面）
  *
@@ -1101,6 +1129,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Star: StarIcon,
   // 数字つなぎ一筆書き。先行アプリの絵柄はなぞらず、蛇行する 1 本の道で表す
   HitofudePath: HitofudePathIcon,
+  // マッチ3パズル。宝石・キャンディの絵柄は既存タイトルを連想させるので使わず、丸と矢印で表す
+  Match3: Match3Icon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
