@@ -316,6 +316,24 @@ export const games: GameDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // ハーツのルールは公有で、「ハーツ」は英語の一般名 hearts の片仮名
+    // （docs/features/game-hearts.md の「名称と権利」）。Microsoft の「Hearts」の画面・札の絵柄・
+    // キャラクター名は真似ず、CPU の呼び名は大富豪の SEAT_NAMES に揃えている。
+    // 「Windows」は商標なので name・description には入れない（本文の説明の 1 か所だけ）。
+    // **名称の J-PlatPat 確認（第9類・第41類）は運営者のタスク**で、登録があれば
+    // 表示名「ハートを避けるトランプ（ハーツ）」・slug `heart-yoke` に変える。
+    // `public` への昇格は google-index-recovery.md の解除判断後。絵（GameIcon の BOARD）は
+    // `public` にする PR で描く
+    slug: 'hearts',
+    icon: 'Hearts',
+    name: 'ハーツ',
+    description:
+      'ハートと♠Qを取らないように立ち回る、CPU 3人と4人で遊ぶトランプの定番。パス・ハートブレイク・シュートザムーンに対応し、1局だけでも100点までの試合でも遊べます。',
+    keywords: ['ハートブレイク', 'シュートザムーン', '♠Q', 'フォロー', 'パス'],
+    stage: 'preview',
+    updatedAt: '2026-09-30',
+  },
+  {
     // 花札のルールも伝統的な絵柄（松に鶴・芒に月など）もパブリックドメインで、
     // 権利者はいない。特定メーカーの製品の絵柄は模写せず、48枚とも自前のSVGで
     // 描き起こしている。ゲーム名も一般名称の「花札 こいこい」だけを使う
