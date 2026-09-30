@@ -127,8 +127,8 @@ export function applyOp(a: number, op: Op, b: number): number | null {
 /** 弾いた理由（画面の案内の 1 行） */
 export function invalidReason(a: number, op: Op, b: number): string | null {
   if (applyOp(a, op, b) !== null) return null;
-  if (op === '-') return '引き算は答えが1以上になるときだけ使えます。';
-  return '割り算は割り切れるときだけ使えます。';
+  if (op === '-') return '引き算は答えが1以上のときだけ';
+  return '割り算は割り切れるときだけ';
 }
 
 // ---- 数の抽選 ----

@@ -310,12 +310,15 @@ export default function Game() {
 
   const dailyTotal = dailyStars.reduce((s, x) => s + x, 0);
 
-  /** 状態の 1 行（高さは固定） */
+  /**
+   * 状態の行（高さは固定）。**入れるのは「いま」の 1 件だけ**にする
+   * （合計・連続は `.tk-meta` へ。詰め込むと ellipsis で「ベスト更新！」が切れた。#300 のレビュー）
+   */
   let status: ReactNode;
   if (phase === 'finished') {
     status =
       dailyStars.length === 3
-        ? `今日の3問 ${dailyStars.map(starText).join(' ')}　合計 ★${dailyTotal}／9`
+        ? dailyStars.map(starText).join(' ')
         : '今日の3問はこの端末で答えました。';
   } else if (phase === 'answered' && answer && puzzle) {
     const diff = answer.value - puzzle.target;
@@ -323,13 +326,20 @@ export default function Game() {
       <span style={{ color: answer.stars === 3 ? 'var(--ok)' : undefined, fontWeight: 700 }}>
         {answer.stars === 3 ? '🎉 ぴったり！' : `答え ${answer.value}（差 ${Math.abs(diff)}）`}{' '}
         <span aria-label={`星${answer.stars}つ`}>{starText(answer.stars)}</span>
-        {dailyDone ? `　合計 ★${dailyTotal}／9` : ''}
-        {mode === 'daily' && dailyDone && streak ? `　連続${streak}日` : ''}
         <BestBadge improved={improved} />
       </span>
     );
   } else {
-    status = note || (op && selected !== null ? `${board?.slots[selected]} ${OP_LABEL[op]} …つなぐ数を選ぶ` : '数 → 演算 → 数の順にタップ');
+    // 計算の直後は結果のタイルを選んだままにしているので、何を選んでいるかを出す
+    // （出さないと、続けて使おうとその数を押して選択を外してしまう。#300 のレビュー）
+    const picked = selected !== null ? board?.slots[selected] : null;
+    status =
+      note ||
+      (picked != null
+        ? op
+          ? `${picked} ${OP_LABEL[op]} …つなぐ数を選ぶ`
+          : `${picked} を選んでいます。演算を選ぶ`
+        : '数 → 演算 → 数の順にタップ');
   }
 
   return (
@@ -369,8 +379,10 @@ export default function Game() {
         </div>
         <div className="tk-meta">
           {mode === 'daily'
-            ? phase === 'finished'
-              ? '今日の3問 おわり'
+            ? dailyDone || phase === 'finished'
+              ? dailyStars.length === 3
+                ? `合計 ★${dailyTotal}／9${streak ? `・連続${streak}日` : ''}`
+                : '今日の3問 おわり'
               : `今日の1問 ${Math.min(index + 1, 3)}／3`
             : MODE_LABEL[mode]}
         </div>

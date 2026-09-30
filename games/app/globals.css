@@ -1132,7 +1132,7 @@ ol {
 .tk-meta {
   font-size: 0.85rem;
   color: var(--muted);
-  white-space: nowrap;
+  text-align: right;
 }
 
 .tk-tiles {
@@ -5688,7 +5688,16 @@ button.hf-card {
     font-size: 0.85rem;
   }
 
+  /* 320px 幅でも弾いた理由・「ベスト更新！」が切れないよう、2 行ぶんの高さを確保する
+     （高さは固定のまま。1 行でも 2 行でも下は動かない） */
   .tk-status {
+    height: 2.5rem;
+    line-height: 1.25rem;
+    white-space: normal;
+    font-size: 0.8rem;
+  }
+
+  .tk-meta {
     font-size: 0.8rem;
   }
 
