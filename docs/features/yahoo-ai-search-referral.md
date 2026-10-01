@@ -115,6 +115,9 @@
   `AI 経由: 合計 N（ChatGPT 直接 n1〔sessionSource = chatgpt.com〕・Yahoo! AI n2〔sessionSource = openai〕・その他の AI Assistant n3）`。
   **判断に使う値は `AI Assistant` チャネル単独から、この合計に替える。** 前期との比較も合計で出す
 - 読み方の注記を `formatReport()` に固定で 1 行：「`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`」
+- `openai` は OpenAI API の Web 検索を使うサービス全般が付ける値なので、参照元ホストの表に `search.yahoo.co.jp` 以外の
+  `openai` 行が出てきたら「Yahoo! AI」という呼び名を見直す（合計 `aiTraffic.total` はそのままで正しい）
+- 2 行目の `AI Assistant: N セッション` と全体比・着地上位は**チャネル単独**の値で、1 行目の合計とは数字が違う。行に「チャネル単独」と添える
 - JSON スナップショットにも `aiTraffic` と `referrers` を残す（週次の artifact で推移を追えるように）
 
 ### B. 前日分の「処理待ち」を注記し、閾値で警告する

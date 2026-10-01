@@ -300,7 +300,7 @@ describe('集計', () => {
 
   it('月曜のログに出す1行に、増減と上位ランディングが入る', () => {
     const line = formatSummaryLine(summary);
-    assert.match(line, /AI Assistant: 68 セッション/);
+    assert.match(line, /AI Assistant: 68 セッション（チャネル単独/);
     assert.match(line, /\+67/);
     assert.match(line, /\/games\/daifugo 15/);
   });

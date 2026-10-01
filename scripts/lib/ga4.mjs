@@ -393,7 +393,7 @@ export function formatSummaryLine(summary) {
     .map((l) => `${l.page} ${l.sessions}`)
     .join(' / ');
   return (
-    `AI Assistant: ${current} セッション（直近${summary.days}日・前の${summary.days}日は ${previous}・${sign}）` +
+    `AI Assistant: ${current} セッション（チャネル単独・直近${summary.days}日・前の${summary.days}日は ${previous}・${sign}）` +
     `／全体の ${summary.aiShare}%` +
     (top === '' ? '' : `／上位: ${top}`)
   );
