@@ -6,26 +6,36 @@
 // **数え方そのもの**（期間2本の取り違え・AI チャネルの拾い漏れ）と、
 // **実行できなかったときに終了コード2で落ちること**を見る。
 // page_view の無い「幽霊セッション」の数え方は docs/features/web-vitals-phantom-sessions.md の C。
+// Yahoo! JAPAN 検索の AI 回答（openai）の足し算・参照元ホストの表・未確定行の警告は
+// docs/features/yahoo-ai-search-referral.md の A・B。
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
   AI_CHANNEL,
+  AI_SOURCE_NOTE,
   channelRequest,
   dateRanges,
   formatSummaryLine,
   formatPhantomLine,
+  formatAiTrafficLine,
   formatReport,
+  formatUnresolvedLine,
   landingPageRequest,
   parseRows,
   PHANTOM_LANDING_PAGES,
   PHANTOM_WARN_PERCENT,
   phantomSessionRequest,
+  referrerHost,
+  referrerRequest,
   runReport,
   summarize,
+  summarizeAiTraffic,
   summarizeChannels,
   summarizePhantom,
+  summarizeReferrers,
+  summarizeUnresolved,
   topLandings,
   topSources,
 } from '../lib/ga4.mjs';
@@ -96,9 +106,68 @@ const CHANNEL_BODY_WITH_UNASSIGNED = {
   ],
 };
 
+/** GA4 の応答（参照元 × sessionSource × チャネル、session_start に絞った eventCount） */
+const REFERRER_BODY = {
+  dimensionHeaders: [
+    { name: 'pageReferrer' },
+    { name: 'sessionSource' },
+    { name: 'sessionDefaultChannelGroup' },
+  ],
+  metricHeaders: [{ name: 'eventCount' }],
+  rows: [
+    {
+      dimensionValues: [{ value: 'https://www.bing.com/' }, { value: 'bing' }, { value: 'Organic Search' }],
+      metricValues: [{ value: '189' }],
+    },
+    {
+      dimensionValues: [
+        { value: 'https://search.yahoo.co.jp/' },
+        { value: 'openai' },
+        { value: 'Organic Search' },
+      ],
+      metricValues: [{ value: '90' }],
+    },
+    {
+      dimensionValues: [
+        { value: 'https://search.yahoo.co.jp/search?p=x' },
+        { value: 'openai' },
+        { value: 'Organic Search' },
+      ],
+      metricValues: [{ value: '3' }],
+    },
+    {
+      dimensionValues: [{ value: '' }, { value: 'chatgpt.com' }, { value: 'AI Assistant' }],
+      metricValues: [{ value: '16' }],
+    },
+  ],
+};
+
+/**
+ * 2026-09-21〜30 の実測（仕様書の表）に近い、Yahoo! AI と未確定行を含む期間2本の応答。
+ * 直近: bing 189・openai 93・(data not available) 107・(not set) 59・chatgpt.com 52・copilot.com 4
+ */
+const CHANNEL_BODY_YAHOO = {
+  dimensionHeaders: CHANNEL_BODY.dimensionHeaders,
+  metricHeaders: CHANNEL_BODY.metricHeaders,
+  rows: [
+    ['Organic Search', 'bing', 'current', 189],
+    ['Organic Search', 'openai', 'current', 93],
+    ['Cross-network', '(data not available)', 'current', 107],
+    ['Unassigned', '(not set)', 'current', 59],
+    ['AI Assistant', 'chatgpt.com', 'current', 52],
+    ['AI Assistant', 'copilot.com', 'current', 4],
+    ['AI Assistant', 'chatgpt.com', 'previous', 60],
+    ['Organic Search', 'openai', 'previous', 2],
+  ].map(([channel, source, range, n]) => ({
+    dimensionValues: [{ value: channel }, { value: source }, { value: range }],
+    metricValues: [{ value: String(n) }],
+  })),
+};
+
 /** リクエストの中身で、差し替える応答を選ぶ */
 function fakeBody(body) {
   const field = body.dimensionFilter?.filter?.fieldName;
+  if (field === 'eventName') return REFERRER_BODY;
   if (field === 'landingPage') return PHANTOM_BODY;
   if (field === 'sessionDefaultChannelGroup') return LANDING_BODY;
   return CHANNEL_BODY;
@@ -324,6 +393,120 @@ describe('page_view の無いセッション（web-vitals-phantom-sessions.md �
   });
 });
 
+describe('Yahoo! AI と参照元ホスト（yahoo-ai-search-referral.md の A）', () => {
+  it('参照元は session_start に絞った eventCount を、ホスト × sessionSource × チャネルで直近だけ引く', () => {
+    const body = referrerRequest(28);
+    assert.deepEqual(
+      body.dimensions.map((d) => d.name),
+      ['pageReferrer', 'sessionSource', 'sessionDefaultChannelGroup'],
+    );
+    assert.deepEqual(body.metrics, [{ name: 'eventCount' }]);
+    assert.deepEqual(body.dimensionFilter.filter, {
+      fieldName: 'eventName',
+      stringFilter: { matchType: 'EXACT', value: 'session_start' },
+    });
+    assert.equal(body.dateRanges.length, 1);
+    assert.equal(body.dateRanges[0].endDate, 'yesterday');
+  });
+
+  it('参照元の URL はホスト名に丸め、空は (none) にする', () => {
+    assert.equal(referrerHost('https://search.yahoo.co.jp/search?p=%E9%85%92'), 'search.yahoo.co.jp');
+    assert.equal(referrerHost(''), '(none)');
+    assert.equal(referrerHost(undefined), '(none)');
+    assert.equal(referrerHost('(not set)'), '(not set)');
+  });
+
+  it('同じホストのパス違いを1行にまとめ、多い順に並べる', () => {
+    const referrers = summarizeReferrers(parseRows(REFERRER_BODY));
+    assert.deepEqual(referrers[0], {
+      host: 'www.bing.com',
+      source: 'bing',
+      channel: 'Organic Search',
+      sessions: 189,
+    });
+    assert.deepEqual(referrers[1], {
+      host: 'search.yahoo.co.jp',
+      source: 'openai',
+      channel: 'Organic Search',
+      sessions: 93,
+    });
+    assert.equal(referrers[2].host, '(none)');
+  });
+
+  it('上位10行までに切る', () => {
+    const rows = Array.from({ length: 15 }, (_, i) => ({
+      pageReferrer: `https://r${i}.example/`,
+      sessionSource: `r${i}`,
+      sessionDefaultChannelGroup: 'Referral',
+      sessions: i + 1,
+    }));
+    const referrers = summarizeReferrers(rows);
+    assert.equal(referrers.length, 10);
+    assert.equal(referrers[0].sessions, 15);
+  });
+
+  it('AI 経由の合計は ChatGPT 直接・Yahoo! AI（Organic Search に入っていても）・その他の AI Assistant を足す', () => {
+    const traffic = summarizeAiTraffic(parseRows(CHANNEL_BODY_YAHOO));
+    assert.deepEqual(traffic.current, { total: 149, chatgpt: 52, yahoo: 93, other: 4 });
+    assert.deepEqual(traffic.previous, { total: 62, chatgpt: 60, yahoo: 2, other: 0 });
+    assert.equal(traffic.delta, 87);
+  });
+
+  it('AI Assistant チャネル単独だと Yahoo! AI が抜ける（判断の値は合計のほう）', () => {
+    const summary = summarize(parseRows(CHANNEL_BODY_YAHOO), []);
+    assert.equal(summary.ai.current, 56);
+    assert.equal(summary.aiTraffic.current.total, 149);
+  });
+
+  it('判断の1行に合計・内訳・前期比が入り、レポートの先頭に来る', () => {
+    const summary = summarize(parseRows(CHANNEL_BODY_YAHOO), [], {
+      referrerRows: parseRows(REFERRER_BODY),
+    });
+    const line = formatAiTrafficLine(summary);
+    assert.equal(
+      line,
+      'AI 経由: 合計 149（ChatGPT 直接 52・Yahoo! AI 93・その他の AI Assistant 4）／直近28日・前の28日は 62・+87',
+    );
+    const report = formatReport(summary);
+    assert.equal(report.split('\n')[0], line);
+    assert.ok(report.includes(AI_SOURCE_NOTE));
+    assert.match(report, /search\.yahoo\.co\.jp \/ openai \/ Organic Search: 93/);
+  });
+
+  it('セッションが0件でも合計は0で落ちない', () => {
+    const empty = summarize([], []);
+    assert.deepEqual(empty.aiTraffic.current, { total: 0, chatgpt: 0, yahoo: 0, other: 0 });
+    assert.deepEqual(empty.referrers, []);
+    assert.match(formatAiTrafficLine(empty), /合計 0/);
+  });
+});
+
+describe('参照元が未確定のセッション（yahoo-ai-search-referral.md の B）', () => {
+  it('(data not available) と (not set) を直近ぶんだけ数え、割合を出す', () => {
+    // 直近合計 504、未確定 166 → 32.9%
+    const unresolved = summarizeUnresolved(parseRows(CHANNEL_BODY_YAHOO));
+    assert.equal(unresolved.sessions, 166);
+    assert.equal(unresolved.share, 32.9);
+    assert.equal(unresolved.warn, true);
+  });
+
+  it('閾値ちょうどは警告しない。超えたら警告する（10%）', () => {
+    const rows = (n) => [
+      { sessionSource: 'bing', sessionDefaultChannelGroup: 'Organic Search', sessions: 100 - n },
+      { sessionSource: '(not set)', sessionDefaultChannelGroup: 'Unassigned', sessions: n },
+    ];
+    assert.equal(summarizeUnresolved(rows(10)).warn, false);
+    assert.equal(summarizeUnresolved(rows(11)).warn, true);
+    assert.equal(summarizeUnresolved([]).share, 0);
+  });
+
+  it('閾値を超えた行には印が付く', () => {
+    const line = formatUnresolvedLine(summarizeUnresolved(parseRows(CHANNEL_BODY_YAHOO)));
+    assert.match(line, /^  ⚠ 10% 超え: 参照元が未確定のセッション/);
+    assert.match(line, /166（直近28日・全体の 32\.9%）/);
+  });
+});
+
 describe('引数', () => {
   it('既定はプロパティ548154955・28日', () => {
     const options = parseArgs([]);
@@ -389,6 +572,50 @@ describe('スクリプト全体', () => {
     assert.doesNotMatch(stderr.join('\n'), /page_view の無いセッション/);
   });
 
+  it('AI 経由の合計と参照元ホストをレポートと JSON に残す', async () => {
+    const { deps, stdout, written } = harness();
+    assert.equal(await main(['--out', 'ga4.json'], deps), EXIT_OK);
+    assert.match(stdout.join('\n'), /^AI 経由: 合計 68/);
+    assert.match(stdout.join('\n'), /search\.yahoo\.co\.jp \/ openai/);
+    const snapshot = JSON.parse(written[0].text);
+    assert.equal(snapshot.aiTraffic.current.total, 68);
+    assert.equal(snapshot.referrers[1].host, 'search.yahoo.co.jp');
+    assert.equal(snapshot.unresolved.warn, false);
+  });
+
+  it('参照元が未確定のセッションが10%を超えたら警告する（終了コードは0のまま）', async () => {
+    const { deps, stderr, written } = harness({
+      env: { ...harness().deps.env, GITHUB_ACTIONS: 'true' },
+      report: async ({ body }) => ({
+        ok: true,
+        body: body.dimensionFilter ? fakeBody(body) : CHANNEL_BODY_YAHOO,
+      }),
+    });
+    assert.equal(await main(['--out', 'ga4.json'], deps), EXIT_OK);
+    assert.match(
+      stderr.join('\n'),
+      /^::warning::参照元が未確定のセッションが 166 件（32\.9%）。直近 1〜2 日分の処理待ちの可能性/m,
+    );
+    assert.equal(JSON.parse(written[0].text).unresolved.sessions, 166);
+  });
+
+  it('参照元が未確定のセッションが少なければ警告しない', async () => {
+    const { deps, stderr } = harness();
+    assert.equal(await main([], deps), EXIT_OK);
+    assert.doesNotMatch(stderr.join('\n'), /参照元が未確定/);
+  });
+
+  it('参照元の集計が取れなければ終了コード2', async () => {
+    const { deps, stderr } = harness({
+      report: async ({ body }) =>
+        body.dimensionFilter?.filter?.fieldName === 'eventName'
+          ? { ok: false, error: 'HTTP 400' }
+          : { ok: true, body: fakeBody(body) },
+    });
+    assert.equal(await main([], deps), EXIT_FAILED);
+    assert.match(stderr.join('\n'), /GA4 の集計を取れません（referrers）/);
+  });
+
   it('幽霊セッションの集計が取れなければ終了コード2', async () => {
     const { deps, stderr } = harness({
       report: async ({ body }) =>
@@ -412,6 +639,7 @@ describe('スクリプト全体', () => {
     assert.equal(called, false);
     assert.match(stdout.join('\n'), /sessionDefaultChannelGroup/);
     assert.match(stdout.join('\n'), /"phantoms"/);
+    assert.match(stdout.join('\n'), /"referrers"/);
   });
 
   it('認証できなければ終了コード2', async () => {

@@ -133,6 +133,150 @@ export function summarizePhantom(rows, totalSessions, options = {}) {
 }
 
 /**
+ * 参照元ホスト × `sessionSource` × チャネルのリクエスト本文。
+ *
+ * 仕様: docs/features/yahoo-ai-search-referral.md の A
+ *
+ * Yahoo! JAPAN 検索の AI 回答からの流入は `search.yahoo.co.jp` の参照で `utm_source=openai&utm_medium=organic`
+ * が付き、GA4 は Organic Search に入れる（AI Assistant に出ない）。チャネル表だけでは
+ * 「Bing が伸びた」と読み違えるので、**参照元のホスト**を並べて見る。
+ *
+ * `pageReferrer` はイベント単位の次元なので、`session_start` に絞って
+ * 「セッションの最初の 1 件」だけを数える（件数がセッション数になる）。
+ */
+export function referrerRequest(days = WINDOW_DAYS) {
+  return {
+    dateRanges: [dateRanges(days)[0]],
+    dimensions: [
+      { name: 'pageReferrer' },
+      { name: 'sessionSource' },
+      { name: 'sessionDefaultChannelGroup' },
+    ],
+    metrics: [{ name: 'eventCount' }],
+    dimensionFilter: {
+      filter: {
+        fieldName: 'eventName',
+        stringFilter: { matchType: 'EXACT', value: 'session_start' },
+      },
+    },
+    orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+    limit: 500,
+  };
+}
+
+/** 参照元の表に出す行数 */
+export const REFERRER_TOP = 10;
+
+/**
+ * `pageReferrer`（URL）をホスト名に丸める。空は `(none)`。
+ * URL として読めない値（`(not set)` など）はそのまま返す。
+ */
+export function referrerHost(ref) {
+  const value = (ref ?? '').trim();
+  if (value === '') return '(none)';
+  try {
+    return new URL(value).hostname || value;
+  } catch {
+    return value;
+  }
+}
+
+/**
+ * 参照元ホスト × `sessionSource` × チャネルの上位 n 件。
+ * 同じホストでもパスが違う参照（`/games/daifugo/` と `/tools/` など）を 1 行にまとめる。
+ *
+ * @param {Array<{ sessions: number, pageReferrer?: string, sessionSource?: string, sessionDefaultChannelGroup?: string }>} rows
+ */
+export function summarizeReferrers(rows, limit = REFERRER_TOP) {
+  const totals = new Map();
+  for (const row of rows) {
+    const host = referrerHost(row.pageReferrer);
+    const source = row.sessionSource || '(direct)';
+    const channel = row.sessionDefaultChannelGroup || '(not set)';
+    const key = JSON.stringify([host, source, channel]);
+    totals.set(key, (totals.get(key) ?? 0) + row.sessions);
+  }
+  return [...totals]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([key, sessions]) => {
+      const [host, source, channel] = JSON.parse(key);
+      return { host, source, channel, sessions };
+    });
+}
+
+/**
+ * AI 経由の内訳に使う `sessionSource`。
+ *
+ * - `chatgpt.com`：ChatGPT 本体（`utm_source=chatgpt.com`）
+ * - `openai`：Yahoo! JAPAN 検索の AI 回答。OpenAI API の Web 検索が出典 URL に付ける。
+ *   `utm_medium=organic` が付くので GA4 は Organic Search に入れる
+ */
+export const CHATGPT_SOURCE = 'chatgpt.com';
+export const YAHOO_AI_SOURCE = 'openai';
+
+/** 読み方の注記。週次の表に固定で 1 行出す */
+export const AI_SOURCE_NOTE =
+  '`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`';
+
+/**
+ * AI 経由の合計と内訳（期間 1 本ぶん）。
+ * ChatGPT・Yahoo! AI はチャネルを問わず参照元で数え、
+ * それ以外は AI Assistant チャネルに入ったものだけを「その他」に足す（二重に数えない）。
+ */
+function aiBreakdown(rows) {
+  let chatgpt = 0;
+  let yahoo = 0;
+  let other = 0;
+  for (const row of rows) {
+    if (row.sessionSource === CHATGPT_SOURCE) chatgpt += row.sessions;
+    else if (row.sessionSource === YAHOO_AI_SOURCE) yahoo += row.sessions;
+    else if (row.sessionDefaultChannelGroup === AI_CHANNEL) other += row.sessions;
+  }
+  return { total: chatgpt + yahoo + other, chatgpt, yahoo, other };
+}
+
+/**
+ * **判断に使う値。** AI Assistant チャネル単独ではなく、Yahoo! AI（`openai`）を足した合計。
+ *
+ * 仕様: docs/features/yahoo-ai-search-referral.md の A
+ *
+ * @param {ReturnType<typeof parseRows>} channelRows `channelRequest` の応答（期間 2 本）
+ */
+export function summarizeAiTraffic(channelRows) {
+  const current = aiBreakdown(channelRows.filter((row) => !isPrevious(row)));
+  const previous = aiBreakdown(channelRows.filter((row) => isPrevious(row)));
+  return { current, previous, delta: current.total - previous.total };
+}
+
+/**
+ * 参照元が確定していない `sessionSource`。GA4 は直近 24〜48 時間の参照元を後から埋めるので、
+ * 前日分がこの値のまま Cross-network / Unassigned に出る。
+ */
+export const UNRESOLVED_SOURCES = Object.freeze(['(data not available)', '(not set)']);
+
+/** 参照元が未確定のセッションが全体の何 % を超えたら警告するか（仕様書 B） */
+export const UNRESOLVED_WARN_PERCENT = 10;
+
+/**
+ * 直近ぶんで、参照元が未確定のセッションの数・割合・警告するか。
+ *
+ * 仕様: docs/features/yahoo-ai-search-referral.md の B
+ */
+export function summarizeUnresolved(channelRows, options = {}) {
+  const warnPercent = options.warnPercent ?? UNRESOLVED_WARN_PERCENT;
+  let sessions = 0;
+  let total = 0;
+  for (const row of channelRows) {
+    if (isPrevious(row)) continue;
+    total += row.sessions;
+    if (UNRESOLVED_SOURCES.includes(row.sessionSource)) sessions += row.sessions;
+  }
+  const share = total === 0 ? 0 : Math.round((sessions / total) * 1000) / 10;
+  return { sessions, share, warnPercent, warn: share > warnPercent };
+}
+
+/**
  * レスポンスを `{ 次元名: 値, sessions: 数, dateRange: 名前 }` の配列にする。
  *
  * 期間を2つ渡すと GA4 が `dateRange` 次元を足して返すので、
@@ -204,13 +348,16 @@ export function topLandings(rows, limit = 5) {
 /**
  * 週次のログに出す形にまとめる。
  *
- * **判断に使うのは AI Assistant の増減**で、他のチャネルは分母として添える。
+ * **判断に使うのは AI 経由の合計（`aiTraffic`）の増減**で、他のチャネルは分母として添える。
+ * 2026-10 までは AI Assistant チャネル単独だったが、Yahoo! JAPAN 検索の AI 回答（`openai`）が
+ * Organic Search に入るので合計に替えた（docs/features/yahoo-ai-search-referral.md）。
  * `sessionSource: google` を「Google 検索が効いている」根拠にしないこと
  * （Search Console の表示回数と食い違う。仕様書の「背景と根拠」）。
  */
 export function summarize(channelRows, landingRows, options = {}) {
   const days = options.days ?? WINDOW_DAYS;
   const phantomRows = options.phantomRows ?? [];
+  const referrerRows = options.referrerRows ?? [];
   const totals = summarizeChannels(channelRows);
   const current = totals.current.get(AI_CHANNEL) ?? 0;
   const previous = totals.previous.get(AI_CHANNEL) ?? 0;
@@ -219,6 +366,7 @@ export function summarize(channelRows, landingRows, options = {}) {
   return {
     days,
     ai: { current, previous, delta: current - previous },
+    aiTraffic: summarizeAiTraffic(channelRows),
     /** 全チャネルの合計に占める割合（%、小数1桁）。0除算は 0 にする */
     aiShare: allCurrent === 0 ? 0 : Math.round((current / allCurrent) * 1000) / 10,
     channels: [...totals.current]
@@ -231,6 +379,8 @@ export function summarize(channelRows, landingRows, options = {}) {
     sources: topSources(channelRows),
     landings: topLandings(landingRows),
     phantom: summarizePhantom(phantomRows, allCurrent),
+    referrers: summarizeReferrers(referrerRows),
+    unresolved: summarizeUnresolved(channelRows),
   };
 }
 
@@ -249,9 +399,27 @@ export function formatSummaryLine(summary) {
   );
 }
 
+/**
+ * 判断に使う 1 行（AI 経由の合計と内訳・前期比）。
+ *
+ * 仕様: docs/features/yahoo-ai-search-referral.md の A
+ */
+export function formatAiTrafficLine(summary) {
+  const { current, previous, delta } = summary.aiTraffic;
+  const sign = delta > 0 ? `+${delta}` : String(delta);
+  return (
+    `AI 経由: 合計 ${current.total}（ChatGPT 直接 ${current.chatgpt}・Yahoo! AI ${current.yahoo}・` +
+    `その他の AI Assistant ${current.other}）` +
+    `／直近${summary.days}日・前の${summary.days}日は ${previous.total}・${sign}`
+  );
+}
+
 /** 内訳（チャネル別・参照元）。1行目のあとにログへ流す */
 export function formatReport(summary) {
-  const lines = [formatSummaryLine(summary)];
+  const lines = [];
+  if (summary.aiTraffic) lines.push(formatAiTrafficLine(summary));
+  lines.push(formatSummaryLine(summary));
+  lines.push(`  読み方: ${AI_SOURCE_NOTE}`);
   lines.push(`  チャネル別（直近${summary.days}日 / 前の${summary.days}日）:`);
   for (const c of summary.channels) {
     // Unassigned が跳ねた週は、まず幽霊セッションを疑う（web-vitals-phantom-sessions.md の E）
@@ -265,7 +433,14 @@ export function formatReport(summary) {
     lines.push('  参照元（上位）:');
     for (const s of summary.sources) lines.push(`    ${s.source}: ${s.sessions}`);
   }
+  if (summary.referrers && summary.referrers.length > 0) {
+    lines.push(`  参照元ホスト × sessionSource（直近${summary.days}日・上位${summary.referrers.length}）:`);
+    for (const r of summary.referrers) {
+      lines.push(`    ${r.host} / ${r.source} / ${r.channel}: ${r.sessions}`);
+    }
+  }
   if (summary.phantom) lines.push(formatPhantomLine(summary.phantom, summary.days));
+  if (summary.unresolved) lines.push(formatUnresolvedLine(summary.unresolved, summary.days));
   return lines.join('\n');
 }
 
@@ -275,6 +450,15 @@ export function formatPhantomLine(phantom, days = WINDOW_DAYS) {
   return (
     `  ${mark}page_view の無いセッション（着地ページ空）: ${phantom.sessions}` +
     `（直近${days}日・全体の ${phantom.share}%・うち Unassigned ${phantom.unassigned}）`
+  );
+}
+
+/** 参照元が未確定のセッションの1行。閾値を超えたら先頭に印を付ける */
+export function formatUnresolvedLine(unresolved, days = WINDOW_DAYS) {
+  const mark = unresolved.warn ? `⚠ ${unresolved.warnPercent}% 超え: ` : '';
+  return (
+    `  ${mark}参照元が未確定のセッション（${UNRESOLVED_SOURCES.join('・')}）: ${unresolved.sessions}` +
+    `（直近${days}日・全体の ${unresolved.share}%）`
   );
 }
 

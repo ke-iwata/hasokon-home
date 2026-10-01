@@ -1,6 +1,6 @@
 # Yahoo! JAPAN 検索の AI アシスタント経由の流入（`utm_source=openai`）が 1 週間で 1 → 138 セッション/日に増え、GA4 では「Organic Search」「Cross-network」「Unassigned」に割れて数えられている — 週次集計に「参照元ホスト × utm_source」を足し、AI 経由の読み方を直す
 
-**状態**：提案（2026-10-01 起票。セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
+**状態**：**A・B・D を実装済み**（2026-10-01。セッション `session_017DFEqwXCyCLuP8bRWNrRt2`）。C は運営者の任意作業で未着手。B の判定（09-30 の行が付け直されたか）は 10-05 の週次で見る。起票は 2026-10-01（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
 **緊急度**：高。**サイトの 1 日のセッション数がこの 1 本の経路で 3 日間に 34 → 137 に跳ねた**のに、
 いまの週次集計（`scripts/ga4-ai-channel.mjs`）はこれを「AI Assistant」として数えない。
 次の週次（10-05 月）で「AI Assistant は横ばい、Organic Search と Cross-network が急増」と読んでしまう。

@@ -8,6 +8,20 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-10-01：週次の GA4 集計で、AI 経由を「AI Assistant ＋ Yahoo! AI（openai）」の合計で読むようにした
+
+[yahoo-ai-search-referral.md](./features/yahoo-ai-search-referral.md)。Yahoo! JAPAN 検索の AI 回答からの流入
+（`search.yahoo.co.jp` 参照・`utm_source=openai&utm_medium=organic`）が 09-28 から 1 日 31〜138 セッションに増えたが、
+GA4 は Organic Search に入れるので AI Assistant チャネルに出なかった。
+
+- **判断に使う値を `aiTraffic`（ChatGPT 直接・Yahoo! AI・その他の AI Assistant の合計）に替えた。**
+  レポートの1行目に合計と内訳・前期比を出し、`openai` と `chatgpt.com` の読み方の注記を固定で1行添える
+- `referrerRequest()` を足し、`session_start` に絞った `pageReferrer`（ホスト名に丸める）× `sessionSource` × チャネルの上位10行を出す
+- `sessionSource` が `(data not available)` / `(not set)` の行が直近の 10% を超えたら `::warning::`
+  （前日分の処理待ちの可能性。終了コードは 0 のまま）。**窓は `yesterday` のまま縮めない**
+- JSON スナップショットに `aiTraffic`・`referrers`・`unresolved` を足した。
+  見張りは `scripts/test/ga4-ai-channel.test.mjs`
+
 ## 2026-09-29：一覧カードの絵を「出てくるもの」の絵に替え、分類ごとに色のタイルを敷いた
 
 [card-illustrations.md](./features/card-illustrations.md)。運営者の「パット見でどういった機能か
