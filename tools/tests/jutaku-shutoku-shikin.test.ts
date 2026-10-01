@@ -5,8 +5,10 @@ import {
   FILING_NOTE,
   FIRST_SETTLEMENT_NOTE,
   INCOME_LIMITS,
+  LATE_MOVE_IN_NOTE,
   LIMITS,
   MEASURE,
+  NEW_BUILD_NOTE,
   SETTLEMENT_AGE_NOTE,
   SETTLEMENT_IRREVOCABLE_NOTE,
   adultBirthCutoff,
@@ -41,6 +43,9 @@ const base: EligibilityInput = {
   acquireAndMoveInByMar15: true,
   mostlyResidential: true,
   quakeOk: true,
+  notUsedBefore: true,
+  notFromRelated: true,
+  domicileInJapan: true,
 };
 const judge = (patch: Partial<EligibilityInput>) => eligibility({ ...base, ...patch }, 'undecided');
 
@@ -139,6 +144,19 @@ describe('eligibility：その他の要件を名指しで返す', () => {
   it('耐震の要件は既存住宅だけに効く', () => {
     expect(judge({ houseKind: 'new', quakeOk: false }).ok).toBe(true);
     expect(judge({ houseKind: 'existing', quakeOk: false }).failures).toEqual(['quake']);
+  });
+
+  it('過去（2009〜2023年分）に適用を受けた・親族などから取得・国内に住所が無い は名指しで落とす（#311 レビュー）', () => {
+    expect(judge({ notUsedBefore: false }).failures).toEqual(['used-before']);
+    expect(judge({ notFromRelated: false }).failures).toEqual(['related-party']);
+    expect(judge({ domicileInJapan: false }).failures).toEqual(['domicile']);
+    const r = judge({ notUsedBefore: false, notFromRelated: false, domicileInJapan: false });
+    expect(r.ok).toBe(false);
+    expect(r.limit).toBe(0);
+    const ctx = { giftYear: 2026, incomeLimit: r.incomeLimit };
+    expect(failureMessage('used-before', ctx)).toContain('2009〜2023年分');
+    expect(failureMessage('related-party', ctx)).toContain('親族など特別の関係がある人');
+    expect(failureMessage('domicile', ctx)).toContain('日本国内に住所がありません');
   });
 
   it('居住用が 2 分の 1 未満', () => {
@@ -252,6 +270,20 @@ describe('画面の文言', () => {
     expect(SETTLEMENT_IRREVOCABLE_NOTE).toContain('一律20%');
     expect(SETTLEMENT_IRREVOCABLE_NOTE).toContain('暦年課税に戻せません');
     expect(calc).toContain('SETTLEMENT_IRREVOCABLE_NOTE');
+  });
+
+  it('注文住宅は上棟まで・翌年12月31日までに住まないと修正申告、の注記を出す', () => {
+    expect(NEW_BUILD_NOTE).toContain('上棟');
+    expect(LATE_MOVE_IN_NOTE).toContain('翌年12月31日');
+    expect(LATE_MOVE_IN_NOTE).toContain('修正申告');
+    expect(calc).toContain('NEW_BUILD_NOTE');
+    expect(calc).toContain('LATE_MOVE_IN_NOTE');
+  });
+
+  it('要件の表に、使えない 3 つ（過去の適用・親族などからの取得・国内の住所）を書く', () => {
+    expect(page).toContain('2009〜2023年分');
+    expect(page).toMatch(/親族など特別の関係がある人/);
+    expect(page).toContain('日本国内に住所');
   });
 
   it('特別控除を初めて使う前提のときの 1 行と、税額 0 でも申告が要る 1 行を出す', () => {

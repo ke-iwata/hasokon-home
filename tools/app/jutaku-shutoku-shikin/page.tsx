@@ -132,13 +132,21 @@ export default function Page() {
             <td style={{ textAlign: 'left' }}>
               贈与者の直系卑属（子・孫）／贈与の年の1月1日に18歳以上／贈与の年の合計所得金額が{man(INCOME_LIMITS.normal)}以下
               （床面積{FLOOR_AREA.min}㎡以上{FLOOR_AREA.smallBelow}㎡未満なら{man(INCOME_LIMITS.small)}以下）／
-              翌年3月15日までに資金の全額を充てて新築・取得・増改築を済ませ、同日までに住む
+              翌年3月15日までに資金の全額を充てて新築・取得・増改築を済ませ（注文住宅は上棟まで）、同日までに住む（遅れる場合は翌年12月31日まで）／
+              贈与を受けたときに日本国内に住所がある
             </td>
           </tr>
           <tr>
             <td style={{ textAlign: 'left' }}>住宅</td>
             <td style={{ textAlign: 'left' }}>
               床面積{FLOOR_AREA.min}㎡以上{FLOOR_AREA.max}㎡以下／2分の1以上が居住用／中古は昭和57年以降の建築か耐震基準に適合
+            </td>
+          </tr>
+          <tr>
+            <td style={{ textAlign: 'left' }}>使えない場合</td>
+            <td style={{ textAlign: 'left' }}>
+              平成21年分〜令和5年分（2009〜2023年分）にこの非課税の適用を受けたことがある（一定の場合を除く）／
+              配偶者・親族など特別の関係がある人から住宅を取得する、またはその人との請負契約で新築・増改築する
             </td>
           </tr>
           <tr>

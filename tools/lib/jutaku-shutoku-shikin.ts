@@ -131,6 +131,12 @@ export interface EligibilityInput {
   mostlyResidential: boolean;
   /** 既存住宅のとき：昭和 57 年以降築か、耐震基準に適合しているか */
   quakeOk: boolean;
+  /** 平成 21 年分〜令和 5 年分にこの非課税の適用を受けたことがない（No.4508 受贈者の要件 (4)） */
+  notUsedBefore: boolean;
+  /** 配偶者・親族など特別の関係がある人から取得・請負契約で新築等したものではない（同 (5)） */
+  notFromRelated: boolean;
+  /** 贈与を受けたときに日本国内に住所がある（同 (7)。一定の例外あり） */
+  domicileInJapan: boolean;
 }
 
 /** 満たさない要件の識別子（テストと画面の両方で使う） */
@@ -143,7 +149,10 @@ export type Failure =
   | 'area-large'
   | 'residential'
   | 'quake'
-  | 'move-in';
+  | 'move-in'
+  | 'used-before'
+  | 'related-party'
+  | 'domicile';
 
 export interface Eligibility {
   ok: boolean;
@@ -186,6 +195,9 @@ export function eligibility(input: EligibilityInput, extension: Extension = MEAS
   if (!input.mostlyResidential) failures.push('residential');
   if (input.houseKind === 'existing' && !input.quakeOk) failures.push('quake');
   if (!input.acquireAndMoveInByMar15) failures.push('move-in');
+  if (!input.notUsedBefore) failures.push('used-before');
+  if (!input.notFromRelated) failures.push('related-party');
+  if (!input.domicileInJapan) failures.push('domicile');
   const ok = failures.length === 0;
   return {
     ok,
@@ -219,6 +231,12 @@ export function failureMessage(f: Failure, ctx: { giftYear: number; incomeLimit:
       return '既存住宅が昭和57年より前の建築で、耐震基準に適合していません（取得までに耐震改修すれば対象になります）';
     case 'move-in':
       return `${ctx.giftYear + 1}年3月15日までに引渡しを受け（新築・取得・増改築を済ませ）、住むことができません`;
+    case 'used-before':
+      return '平成21年分〜令和5年分（2009〜2023年分）にこの非課税の適用を受けたことがあります';
+    case 'related-party':
+      return '配偶者・親族など特別の関係がある人から住宅を取得するか、その人との請負契約で新築・増改築します';
+    case 'domicile':
+      return '贈与を受けたときに日本国内に住所がありません（一定の例外は税務署に確認してください）';
   }
 }
 
@@ -349,6 +367,17 @@ export const SETTLEMENT_IRREVOCABLE_NOTE =
 
 /** 特別控除を初めて使う前提のときの 1 行 */
 export const FIRST_SETTLEMENT_NOTE = '初めて相続時精算課税を使う前提で計算しています（前年までに使った特別控除 0円）。';
+
+/**
+ * 新築の「翌年 3 月 15 日まで」の読み方（No.4508 の注記）。注文住宅は上棟（屋根・骨組みがあり土地に定着した状態）まででよい。
+ * 取得（建売・分譲・中古）は引渡しまでが要る
+ */
+export const NEW_BUILD_NOTE =
+  '注文住宅の新築は、翌年3月15日の時点で屋根（骨組みを含む）があり土地に定着した状態（上棟）なら足ります。建売・分譲・中古の取得は引渡しまでが要ります。';
+
+/** 遅滞なく住む場合の注意（No.4508 の注記） */
+export const LATE_MOVE_IN_NOTE =
+  '翌年3月15日の後に住む場合は、翌年12月31日までに住んでいないと非課税が取り消され、修正申告が要ります。';
 
 /** 申告の 1 行（税額 0 でも要る） */
 export const FILING_NOTE = '税額が0円でも、贈与税の申告をしないと非課税になりません。';

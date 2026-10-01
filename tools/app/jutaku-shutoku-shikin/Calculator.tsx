@@ -6,7 +6,9 @@ import { formatJaWithWeekday } from '@/lib/sozoku-toki-kigen';
 import {
   FILING_NOTE,
   FIRST_SETTLEMENT_NOTE,
+  LATE_MOVE_IN_NOTE,
   LIMITS,
+  NEW_BUILD_NOTE,
   SETTLEMENT_AGE_NOTE,
   SETTLEMENT_IRREVOCABLE_NOTE,
   adultBirthCutoff,
@@ -30,7 +32,8 @@ const pct = (r: number) => `${Math.round(r * 100)}%`;
 
 const radioRow = { display: 'flex', gap: 16, flexWrap: 'wrap' as const, fontSize: 'var(--fs-sm)' };
 const radioLabel = { fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' };
-const rowLabel = { textAlign: 'left' as const };
+/** 見出し列は折り返さない（320px で「贈与額」が1〜2文字ずつ折れるため。#311 レビュー） */
+const rowLabel = { textAlign: 'left' as const, whiteSpace: 'nowrap' as const };
 
 /** 320px 幅では 2 列の表を縦に積む（仕様書「表示」）。CSS クラスを増やさないため matchMedia で切り替える */
 function useNarrow(): boolean {
@@ -96,6 +99,9 @@ export default function Calculator() {
   const [moveIn, setMoveIn] = useState(true);
   const [residential, setResidential] = useState(true);
   const [quakeOk, setQuakeOk] = useState(true);
+  const [notUsedBefore, setNotUsedBefore] = useState(true);
+  const [notFromRelated, setNotFromRelated] = useState(true);
+  const [domicileInJapan, setDomicileInJapan] = useState(true);
   const [method, setMethod] = useState<Method>('rekinen');
   const [usedSpecialMan, setUsedSpecialMan] = useState('0');
 
@@ -128,6 +134,9 @@ export default function Calculator() {
           acquireAndMoveInByMar15: moveIn,
           mostlyResidential: residential,
           quakeOk,
+          notUsedBefore,
+          notFromRelated,
+          domicileInJapan,
         });
 
   const limit = elig?.limit ?? 0;
@@ -256,6 +265,19 @@ export default function Calculator() {
           </Check>
           <Check checked={residential} onChange={setResidential}>
             床面積の2分の1以上が居住用
+          </Check>
+          <p className="hint" style={{ margin: 0 }}>
+            {NEW_BUILD_NOTE}
+            {LATE_MOVE_IN_NOTE}
+          </p>
+          <Check checked={notUsedBefore} onChange={setNotUsedBefore}>
+            平成21年分〜令和5年分（2009〜2023年分）に、この非課税の適用を<strong>受けたことがない</strong>
+          </Check>
+          <Check checked={notFromRelated} onChange={setNotFromRelated}>
+            配偶者・親族など特別の関係がある人から買う、またはその人に請け負わせて建てる<strong>のではない</strong>
+          </Check>
+          <Check checked={domicileInJapan} onChange={setDomicileInJapan}>
+            贈与を受けるときに日本国内に住所がある
           </Check>
           {houseKind === 'existing' && (
             <Check checked={quakeOk} onChange={setQuakeOk}>
