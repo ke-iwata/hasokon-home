@@ -26,6 +26,17 @@
 - 既存の手取り・働き損・在職老齢年金から `PublicToolLink` で張った（公開までは出ない）
 - 一次資料：厚生労働省「厚生年金等の標準報酬月額の上限の段階的引上げについて」で上限3段階と施行月を確認した（2026-09-29）
 
+## 2026-10-01：酒税改正 早見表 — 文面を施行後に切り替え、期日を過ぎたら description の「これから」を CI で止める
+
+[shuzei-kaisei-post-revision-copy.md](../../docs/features/shuzei-kaisei-post-revision-copy.md) の A・B を実施。
+
+- `page.tsx` の title は既存の語を全部残して「新税率」だけ足した。description・リード・FAQ「どう変わりましたか」・
+  「2026年10月に変わったもの」を過去形に。買いだめの h2 と FAQ は「施行前はこうだった」に畳み、`MINOR_DRINKING_NOTE` は残した
+- registry の `description` から「9月中に買うと得」を消し、`updatedAt` を `2026-10-01` に上げた（sitemap の `lastmod` → IndexNow）。
+  **「されました」が施行前に本番へ出ると逆向きに嘘になるので、マージは 10-01（JST）以降**
+- `tests/shuzei-kaisei.test.ts`：`isRevised(new Date())` が true のとき、description 2 か所に「されます」「9月中」「施行前に買う」が
+  無いことを見る。日付判定はライブラリの `isRevised` に任せ、本文は検査しない（過去形の段落に「施行前に買う」が正しく残る）
+- 税率・計算・`Calculator.tsx` は触っていない
 ## 2026-09-29：相続登記の期限チェッカーを足した（`stage: 'preview'`）
 
 [features/sozoku-toki-kigen.md](../../docs/features/sozoku-toki-kigen.md)。
