@@ -8,6 +8,25 @@
 
 ---
 
+## 2026-10-01：住宅取得等資金の贈与税 非課税 判定・計算機を足した（`stage: 'preview'`）
+
+[features/jutaku-shutoku-shikin-hikazei.md](../../docs/features/jutaku-shutoku-shikin-hikazei.md)。
+父母・祖父母からの住宅資金の贈与（措法70条の2。2026-12-31までの贈与）について、要件判定・非課税限度額（1,000万／500万円）・
+残りの贈与税（暦年課税と相続時精算課税の2列）・取得と居住／申告の期限を出す。`lib/jutaku-shutoku-shikin.ts`・`app/jutaku-shutoku-shikin/`。
+
+- **税率表・基礎控除・精算課税の定数は `lib/zoyozei-keisan.ts` から import する**（`giftTax()`・`settlementTax()` をそのまま使う）。
+  新しく持つのは限度額2つ・床面積と所得の閾値・適用期間だけ
+- **延長の状態は `MEASURE.extension`（`undecided` / `extended` / `ended`）の1語**。12月の税制改正大綱が出たらここだけ切り替える。
+  70条の2（非課税）と70条の3（精算課税の年齢特例）を同じフラグで切り替える（いまは期限が同じ）
+- **満たさない要件は名指しで返す**（`eligibility().failures`）。「わからない」は500万円で計算し、証明書があれば+500万円を添える
+- 18歳の判定は「贈与の年の1月1日に18歳以上＝(年−18)年1月2日以前生まれ」（年齢は誕生日の前日に加わる）
+- 申告期限の土日祝の繰り下げは `sozoku-toki-kigen` の `taxDueDate()` を使う（2025年分は 2026-03-16）
+- 320px では2列の表を方式ごとの表に縦に積む。CSSクラスを増やさないため `matchMedia` で切り替えた。
+  390×844・320×568 で横スクロールしないことを実測した
+- `zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の住宅取得等資金の行に、`PublicToolLink` でこのツールへのリンクを足した。
+  精算課税の説明にも「住宅取得等資金は60歳未満でも選べる（70条の3）」の例外を1行足した
+- 「非課税分は生前贈与加算の対象外」は一次資料で確かめきれなかったので、FAQには書いていない
+
 ## 2026-09-29：相続登記の期限チェッカーを足した（`stage: 'preview'`）
 
 [features/sozoku-toki-kigen.md](../../docs/features/sozoku-toki-kigen.md)。

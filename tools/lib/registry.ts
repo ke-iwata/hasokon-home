@@ -388,6 +388,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/jutaku-shutoku-shikin-hikazei.md
+    slug: 'jutaku-shutoku-shikin',
+    // House は住宅ローン控除、HandArrowDown は贈与税が使っている。同じ住宅購入層で並ぶので、別の家の絵 HouseLine
+    icon: 'HouseLine',
+    name: '住宅取得等資金の贈与税 非課税 判定・計算機',
+    description:
+      '父母・祖父母からの住宅資金の贈与は、省エネ等住宅なら1,000万円、それ以外は500万円まで贈与税が非課税です（2026年12月31日までの贈与。延長は未定）。住宅の性能・床面積・所得・贈与額から、使えるか・いくら非課税か・残りの贈与税（暦年課税と相続時精算課税）・申告の期限を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-01',
+  },
+  {
     // 仕様: docs/features/sozoku-toki-kigen.md
     slug: 'sozoku-toki-kigen',
     // 期限（残り日数）のツールなので砂時計。Hourglass はほかで使っていない
