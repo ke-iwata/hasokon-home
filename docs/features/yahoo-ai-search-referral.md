@@ -79,10 +79,10 @@ B の閾値から幽霊セッションを差し引く、09-30 の数字の書き
 |---|---:|---:|---:|---:|
 | bing | 192 | 142（74%） | 174 | 266 |
 | **openai（Yahoo! AI）** | **98** | **66（67%）** | **151** | **65** |
+| chatgpt.com | 38 | 18（47%） | 407 | 106 |
 
 `openai` 98 のうち 93 が Yahoo! 参照（Organic Search の行）。残り 5 は参照元が空で `Unassigned`（`utm_source=openai` だけ付き `utm_medium` が無い。
 アプリ内ブラウザなどで参照元が落ちた形とみる。A の内訳では「Yahoo! AI」ではなく「openai（参照元なし）」として別に出す）。
-| chatgpt.com | 38 | 18（47%） | 407 | 106 |
 
 着地はほぼ**期日のあるページ**に集中している（10 日・`openai` の `pageLocation`）：
 `/tools/tabako-zei-neage/` 70、`/tools/nenrei-keisan/` 19、`/tools/shuzei-kaisei/` 3。
@@ -126,7 +126,10 @@ B の閾値から幽霊セッションを差し引く、09-30 の数字の書き
   `session_start` の `eventCount` は参照元ホストの表（表示用）にしか使わず、合計には混ぜない（件数の定義が違う）
 - **二重計上の防止**：`aiTraffic.total = (AI Assistant チャネルの全行の sessions) + (sessionSource = openai で、チャネルが AI Assistant 以外の行の sessions)`。
   GA4 が将来 `openai` を AI Assistant に入れても、2 つ目の項が 0 になるだけで合計は変わらない。**テストに「`openai / AI Assistant` の行がある入力で合計が増えない」を入れる**。
-  内訳の `Yahoo! AI` は `openai` のうちチャネルが Organic Search の行、`openai（参照元なし）` は Unassigned の行
+  **内訳はチャネルを問わず `sessionSource = openai` で切る**：参照元ホストが `search.yahoo.co.jp` のものを `Yahoo! AI`、参照元が空のものを `openai（参照元なし）`
+  （参照元は `referrerRequest()` の表から引く。無ければ `openai` を 1 本にまとめる）。`その他の AI Assistant` は AI Assistant チャネルのうち `openai` 以外。
+  こうしておけば、GA4 が `openai` を AI Assistant に移しても、Cross-network に付いても、合計と内訳の両方が変わらない。
+  テストの「合計が増えない」ケースで内訳も合わせて確認する
 - 読み方の注記を `formatReport()` に固定で 1 行：「`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`」
 - JSON スナップショットにも `aiTraffic` と `referrers` を残す（週次の artifact で推移を追えるように）
 
