@@ -4,6 +4,8 @@
 **同日の企画レビュー（#307・#313）の must 5 点・should 1 点を反映**（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）：
 B の閾値から幽霊セッションを差し引く、09-30 の数字の書き分け（Cross-network 107 ＝ Yahoo! 73 ＋ Bing 34）と数え方の注、`aiTraffic` の数え元と二重計上の防止、
 内訳はチャネルを問わず `sessionSource = openai` で切る、D の書き換え先の実名、表を切っていた注記の移動。
+**実装との差分（2026-10-02 確認）**：#312 の `summarizeUnresolved()`（`scripts/lib/ga4.mjs`）は未確定行から**幽霊セッションを差し引いていない**ので、
+幽霊だけで 10% を超える週（28 日で 71 件・約 2 割）は B の警告が毎週鳴る。B の仕様どおり `summarizePhantom()` の件数を引く追従実装が要る（別 PR。本書は仕様のみ）。
 **緊急度**：高。**サイトの 1 日のセッション数がこの 1 本の経路で 3 日間に 34 → 137 に跳ねた**のに、
 いまの週次集計（`scripts/ga4-ai-channel.mjs`）はこれを「AI Assistant」として数えない。
 次の週次（10-05 月）で「AI Assistant は横ばい、Organic Search と Cross-network が急増」と読んでしまう。
