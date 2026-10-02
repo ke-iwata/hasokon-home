@@ -1,6 +1,7 @@
 # 新ツール「たばこ値上げ早見表・負担額計算」（2026年10月・2027年4月からの段階増税対応）
 
 **状態**：実装済み（2026-08-15。本番反映はタグリリース待ち）
+**2027-04-01 への申し送り**：1 回目の引き上げ（2027-04-01）の実装 PR で、`tools/tests/tabako-zei.test.ts` に `it.runIf(phaseIndexAt(new Date()) >= 1)` で description 2 か所（`page.tsx`・`registry.ts`）に「2027年4月から」「上がります」「引き上げられます」が残っていないことを見るテストを足す（禁止語は当時の文面で確定。詳細は [tabako-zei-post-alignment-copy.md](./tabako-zei-post-alignment-copy.md) の「2027-04-01 への申し送り」）
 **対象**：`tools/`（`hasokon.com/tools/tabako-zei-neage/`）
 **起票**：2026-08-15
 

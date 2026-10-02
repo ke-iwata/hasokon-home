@@ -8,6 +8,18 @@
 
 ---
 
+## 2026-10-02：たばこ値上げ早見表 — 文面を加熱式の見直し後に切り替え、description の「これから」を CI で止める
+
+[tabako-zei-post-alignment-copy.md](../../docs/features/tabako-zei-post-alignment-copy.md) の A・B を実施。
+
+- `page.tsx` の title は既存の語（2026年10月・2027年4月・増税・1箱いくら）を全部残し、主役を 2027-04 に移した。
+  description・リード・FAQ 2 問・「加熱式たばこの課税方式の見直し」の節を完了形に。
+  「紙巻 1 箱と同じ」は「市販のスティックの多くは」の限定つきで言い、FAQ の金額は `formatYenDecimal(timeline[0].perPack)` のまま
+- 「このツールが扱わないこと」は 10-01 以降も正しいので触らない。`Calculator.tsx` は注記 1 文だけ（`heatedPending` の分岐は残す）
+- registry の `description` に加熱式の 1 文を足し、`updatedAt` を `2026-10-02` に上げた（sitemap の `lastmod` → IndexNow）
+- `tests/tabako-zei.test.ts`：`heatedAlignment(new Date()).aligned` のとき description 2 か所に「揃います」「見直されます」
+  「見直しがあります」が無いこと、title が既存の語を全部持っていることを見る。2027-04 の申し送りは元の仕様書の状態行の下に書いた
+
 ## 2026-10-01：酒税改正 早見表 — 文面を施行後に切り替え、期日を過ぎたら description の「これから」を CI で止める
 
 [shuzei-kaisei-post-revision-copy.md](../../docs/features/shuzei-kaisei-post-revision-copy.md) の A・B を実施。
