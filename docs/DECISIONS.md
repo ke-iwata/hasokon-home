@@ -8,6 +8,16 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-10-02：GA4 週次集計の「参照元が未確定」の警告は、幽霊セッションを差し引いてから閾値と比べる
+
+[yahoo-ai-search-referral.md](./features/yahoo-ai-search-referral.md) の B。`(data not available)` / `(not set)` の行には
+page_view の無い「幽霊セッション」（[web-vitals-phantom-sessions.md](./features/web-vitals-phantom-sessions.md) の C）も入っていて、
+幽霊だけで全体の 2 割近くある週は 10% の警告が毎週鳴って意味を失う。
+
+- `summarizeUnresolved()` に `phantomSessions` を渡し、未確定の件数から差し引いてから割合を出す。
+  引くのは `summarizePhantom()` の `unassigned`（幽霊のうち `Unassigned` に入ったぶん）。未確定より多くは引かない
+- 警告とレポートの行に「幽霊 P 件を除く」を添え、JSON の `unresolved` に `raw`（差し引く前）と `phantom` を足した
+
 ## 2026-10-01：週次の GA4 集計で、AI 経由を「AI Assistant ＋ Yahoo! AI（openai）」の合計で読むようにした
 
 [yahoo-ai-search-referral.md](./features/yahoo-ai-search-referral.md)。Yahoo! JAPAN 検索の AI 回答からの流入

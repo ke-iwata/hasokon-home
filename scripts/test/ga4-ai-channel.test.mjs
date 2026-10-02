@@ -505,6 +505,53 @@ describe('参照元が未確定のセッション（yahoo-ai-search-referral.md 
     assert.match(line, /^  ⚠ 10% 超え: 参照元が未確定のセッション/);
     assert.match(line, /166（直近28日・全体の 32\.9%）/);
   });
+
+  it('幽霊だけで 10% を超えるが、幽霊を除けば超えないなら警告は出ない', () => {
+    // 未確定 25 件のうち 20 件が幽霊。差し引かなければ 25% で鳴る
+    const rows = [
+      { sessionSource: 'bing', sessionDefaultChannelGroup: 'Organic Search', sessions: 75 },
+      { sessionSource: '(not set)', sessionDefaultChannelGroup: 'Unassigned', sessions: 25 },
+    ];
+    assert.equal(summarizeUnresolved(rows).warn, true);
+    const unresolved = summarizeUnresolved(rows, { phantomSessions: 20 });
+    assert.equal(unresolved.raw, 25);
+    assert.equal(unresolved.phantom, 20);
+    assert.equal(unresolved.sessions, 5);
+    assert.equal(unresolved.share, 5);
+    assert.equal(unresolved.warn, false);
+    assert.match(formatUnresolvedLine(unresolved), /^  参照元が未確定のセッション.*: 5（直近28日・全体の 5%・幽霊 20 件を除く）$/);
+  });
+
+  it('幽霊を除いても 10% を超えると警告が出る', () => {
+    const rows = [
+      { sessionSource: 'bing', sessionDefaultChannelGroup: 'Organic Search', sessions: 70 },
+      { sessionSource: '(data not available)', sessionDefaultChannelGroup: 'Cross-network', sessions: 20 },
+      { sessionSource: '(not set)', sessionDefaultChannelGroup: 'Unassigned', sessions: 10 },
+    ];
+    const unresolved = summarizeUnresolved(rows, { phantomSessions: 10 });
+    assert.equal(unresolved.sessions, 20);
+    assert.equal(unresolved.share, 20);
+    assert.equal(unresolved.warn, true);
+  });
+
+  it('幽霊が未確定より多くても 0 未満にしない', () => {
+    const rows = [
+      { sessionSource: 'bing', sessionDefaultChannelGroup: 'Organic Search', sessions: 95 },
+      { sessionSource: '(not set)', sessionDefaultChannelGroup: 'Unassigned', sessions: 5 },
+    ];
+    const unresolved = summarizeUnresolved(rows, { phantomSessions: 40 });
+    assert.equal(unresolved.phantom, 5);
+    assert.equal(unresolved.sessions, 0);
+    assert.equal(unresolved.warn, false);
+  });
+
+  it('summarize() は幽霊のうち Unassigned の件数を差し引く', () => {
+    const summary = summarize(parseRows(CHANNEL_BODY_YAHOO), [], {
+      phantomRows: parseRows(PHANTOM_BODY),
+    });
+    assert.equal(summary.unresolved.phantom, 40);
+    assert.equal(summary.unresolved.sessions, 126);
+  });
 });
 
 describe('引数', () => {
@@ -594,9 +641,13 @@ describe('スクリプト全体', () => {
     assert.equal(await main(['--out', 'ga4.json'], deps), EXIT_OK);
     assert.match(
       stderr.join('\n'),
-      /^::warning::参照元が未確定のセッションが 166 件（32\.9%）。直近 1〜2 日分の処理待ちの可能性/m,
+      // 未確定 166 から幽霊（Unassigned）40 を引いた 126 件 / 直近合計 504 → 25.0%
+      /^::warning::参照元が未確定のセッションが 126 件（25%、幽霊 40 件を除く）。直近 1〜2 日分の処理待ちの可能性/m,
     );
-    assert.equal(JSON.parse(written[0].text).unresolved.sessions, 166);
+    const snapshot = JSON.parse(written[0].text);
+    assert.equal(snapshot.unresolved.sessions, 126);
+    assert.equal(snapshot.unresolved.raw, 166);
+    assert.equal(snapshot.unresolved.phantom, 40);
   });
 
   it('参照元が未確定のセッションが少なければ警告しない', async () => {
