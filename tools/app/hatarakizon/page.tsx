@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, webApplication } from '@/
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import Calculator from './Calculator';
 
 const name = '社会保険 損得計算機';
@@ -214,6 +215,10 @@ export default function Page() {
           <strong>老齢厚生年金（報酬比例部分）</strong>
           ：「平均標準報酬額 × 5.481/1000 × 加入月数」で終身増えます。
           老齢基礎年金は扶養内（第3号被保険者）でも満額の対象なので、増えるのはこの部分だけです
+          <PublicToolLink slug="kosei-nenkin-jogen">
+            （等級表の上限側、2027年9月からの上限引き上げは
+            <ToolLink slug="kosei-nenkin-jogen">厚生年金 上限引き上げ 計算機</ToolLink>）
+          </PublicToolLink>
         </li>
         <li>
           <strong>傷病手当金・出産手当金</strong>
