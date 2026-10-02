@@ -40,6 +40,7 @@
   仕様書の検索語（「詰将棋 無料」など）は本文に無い言い回しで `tests/llms.test.ts` の約束に合わないため
 - カードの絵（`GameIcon` の `BOARD`）は描いていない（`public` にする PR で描く）。registry の `icon` は `ShogiKing`
 - 計測は `new-1` / `new-3` / `new-daily` / `clear-*` / `reveal`
+
 ## 2026-10-01：間違い探し（左右 2 枚から違いを見つける）を足した（`stage: 'wip'`）
 
 [docs/features/game-machigai-sagashi.md](../../docs/features/game-machigai-sagashi.md) の実装。
