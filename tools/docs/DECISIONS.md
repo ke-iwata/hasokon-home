@@ -27,6 +27,17 @@
   精算課税の説明にも「住宅取得等資金は60歳未満でも選べる（70条の3）」の例外を1行足した
 - 「非課税分は生前贈与加算の対象外」は一次資料で確かめきれなかったので、FAQには書いていない
 - **#311 レビュー**：No.4508 の受贈者要件のうち (4) 2009〜2023年分に適用を受けたことがない・(5) 親族など特別の関係がある人からの取得／請負でない・(7) 贈与時に国内に住所がある、の3つを判定に足した（`used-before` / `related-party` / `domicile`）。抜けていると「使える 1,000万円」と言い切ってしまうため。注文住宅は翌年3/15に上棟で足りること、遅れて住む場合は翌年12/31までに住まないと修正申告、の注記も足した
+## 2026-10-02：たばこ値上げ早見表 — 文面を加熱式の見直し後に切り替え、description の「これから」を CI で止める
+
+[tabako-zei-post-alignment-copy.md](../../docs/features/tabako-zei-post-alignment-copy.md) の A・B を実施。
+
+- `page.tsx` の title は既存の語（2026年10月・2027年4月・増税・1箱いくら）を全部残し、主役を 2027-04 に移した。
+  description・リード・FAQ 2 問・「加熱式たばこの課税方式の見直し」の節を完了形に。
+  「紙巻 1 箱と同じ」は「市販のスティックの多くは」の限定つきで言い、FAQ の金額は `formatYenDecimal(timeline[0].perPack)` のまま
+- 「このツールが扱わないこと」は 10-01 以降も正しいので触らない。`Calculator.tsx` は注記 1 文だけ（`heatedPending` の分岐は残す）
+- registry の `description` に加熱式の 1 文を足し、`updatedAt` を `2026-10-02` に上げた（sitemap の `lastmod` → IndexNow）
+- `tests/tabako-zei.test.ts`：`heatedAlignment(new Date()).aligned` のとき description 2 か所に「揃います」「見直されます」
+  「見直しがあります」が無いこと、title が既存の語を全部持っていることを見る。2027-04 の申し送りは元の仕様書の状態行の下に書いた
 
 ## 2026-10-01：酒税改正 早見表 — 文面を施行後に切り替え、期日を過ぎたら description の「これから」を CI で止める
 
@@ -39,6 +50,25 @@
 - `tests/shuzei-kaisei.test.ts`：`isRevised(new Date())` が true のとき、description 2 か所に「されます」「9月中」「施行前に買う」が
   無いことを見る。日付判定はライブラリの `isRevised` に任せ、本文は検査しない（過去形の段落に「施行前に買う」が正しく残る）
 - 税率・計算・`Calculator.tsx` は触っていない
+
+## 2026-09-29：厚生年金 標準報酬月額 上限引き上げ 計算機を足した（`stage: 'preview'`）
+
+[features/kosei-nenkin-hyojun-hoshu-jogen.md](../../docs/features/kosei-nenkin-hyojun-hoshu-jogen.md)。
+令和7年法律第74号で 65万 → 68万（2027-09）→ 71万（2028-09）→ 75万円（2029-09）と上がる上限について、
+月給から「いつの給与から・月いくら増えるか」と老齢厚生年金の増加の目安を出す。`lib/kosei-nenkin-jogen.ts`・`app/kosei-nenkin-jogen/`。
+
+- **上限の段階は `shaho-grades.ts` の `PENSION_CAP_STAGES` に置いた**（`PENSION_STANDARD_MAX` の持ち主の隣）。
+  `pensionCapAt(date)` は日付を必ず引数で受ける（既定の「今日」を持たない）
+- **等級は足していない。** 境目（66.5万・69.5万・73万円）は健保の `GRADES` 36〜38 等級と同じなので、健保の等級を引いて上限で丸める
+- **既存の `PENSION_STANDARD_MAX`（650,000）はこのPRでは置き換えていない。** 仕様が「単独のPRで出してよい」としているため。
+  現行の上限と一致することは `tests/kosei-nenkin-jogen.test.ts` が見張る。2027-08 までに置き換える（tools/CLAUDE.md の定期メンテ）
+- 本人負担は `standard × 0.0915` を銭の単位で丸めてから端数処理する（二進小数の誤差で1円落とさないため）
+- 年金の増加は月ごとに上限を切り替えて積む（段階込み）。保険料の累計と年金の増加年額の比は出すが、「得」「損」「元が取れる」の語は使わない
+- 年齢から月数を出すときの「今日」は、ビルド時刻で描画してからマウント後に開いた日へ差し替える（`shoyo-tedori` と同じ）
+- **保険料・年金の増加は `max(2027-09, 今月)` から数える**（`countStartMonth(today)` を `accumulate` に引数で渡す）。当初は常に 2027-09 から積んでいて、施行後に開くと過ぎた月まで積んで累計が小さく出た（#294 レビューで指摘）
+- 既存の手取り・働き損・在職老齢年金から `PublicToolLink` で張った（公開までは出ない）
+- 一次資料：厚生労働省「厚生年金等の標準報酬月額の上限の段階的引上げについて」で上限3段階と施行月を確認した（2026-09-29）
+
 ## 2026-09-29：相続登記の期限チェッカーを足した（`stage: 'preview'`）
 
 [features/sozoku-toki-kigen.md](../../docs/features/sozoku-toki-kigen.md)。

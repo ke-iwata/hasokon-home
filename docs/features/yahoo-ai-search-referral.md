@@ -1,6 +1,11 @@
 # Yahoo! JAPAN 検索の AI アシスタント経由の流入（`utm_source=openai`）が 1 週間で 1 → 138 セッション/日に増え、GA4 では「Organic Search」「Cross-network」「Unassigned」に割れて数えられている — 週次集計に「参照元ホスト × utm_source」を足し、AI 経由の読み方を直す
 
-**状態**：提案（2026-10-01 起票。セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
+**状態**：**A・B・D を実装済み**（2026-10-01。セッション `session_017DFEqwXCyCLuP8bRWNrRt2`）。C は運営者の任意作業で未着手。B の判定（09-30 の行が付け直されたか）は **2026-10-01 に引き直して確定**（下記「背景と根拠」3.。10-05 の判定は不要）。起票は 2026-10-01（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
+**同日の企画レビュー（#307・#313）の must 5 点・should 1 点を反映**（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）：
+B の閾値から幽霊セッションを差し引く、09-30 の数字の書き分け（Cross-network 107 ＝ Yahoo! 73 ＋ Bing 34）と数え方の注、`aiTraffic` の数え元と二重計上の防止、
+内訳はチャネルを問わず `sessionSource = openai` で切る、D の書き換え先の実名、表を切っていた注記の移動。
+**実装との差分（2026-10-02 確認）**：#312 の `summarizeUnresolved()`（`scripts/lib/ga4.mjs`）は未確定行から**幽霊セッションを差し引いていない**ので、
+幽霊だけで 10% を超える週（28 日で 71 件・約 2 割）は B の警告が毎週鳴る。B の仕様どおり `summarizePhantom()` の件数を引く追従実装が要る（別 PR。本書は仕様のみ）。
 **緊急度**：高。**サイトの 1 日のセッション数がこの 1 本の経路で 3 日間に 34 → 137 に跳ねた**のに、
 いまの週次集計（`scripts/ga4-ai-channel.mjs`）はこれを「AI Assistant」として数えない。
 次の週次（10-05 月）で「AI Assistant は横ばい、Organic Search と Cross-network が急増」と読んでしまう。
@@ -32,6 +37,9 @@
 | Yahoo! 参照のセッション | 1 | 4 | 3 | 4 | 3 | **31** | **41** | **138** |
 | うち GA4 のチャネル | Organic | Organic | Organic | Organic | Organic | Organic 31 | Organic 41 | **Cross-network 73・Unassigned 59**・Organic 6 |
 
+**数え方の注**：この表は `pageReferrer`（イベント単位の次元）× `sessions` で引いた。1 つのセッションに参照元の違うイベントが混ざると
+複数の行に数えられるので、日計（09-30 は全体 137）を超えることがある（138）。**目安の数字**で、A では `session_start` 1 件＝1 セッションで数え直す。
+
 **着地 URL には `?utm_source=openai&utm_medium=organic` が付いている**（`pageLocation` / `sessionManualSource` / `sessionManualMedium`）。
 直近 10 日（09-21〜09-30）の参照元 × GA4 の付け方：
 
@@ -59,12 +67,16 @@
    その判定より `medium=organic` が先に効くので、**Yahoo! の AI 経由はいくら増えても「AI Assistant」に出ない**。
    いまの週次集計は `AI_CHANNEL = 'AI Assistant'` の増減だけを「判断に使う」と決めている（`scripts/lib/ga4.mjs`）ので、
    **この経路の増加は Organic Search の増加としか読めない**
-3. **09-30 の「Cross-network / (data not available)」107 件と「Unassigned / (not set)」59 件は、同じ Yahoo! 経由の
-   前日分が、参照元の処理待ちのまま出ている形**とみる。根拠は、09-28・09-29 には同じ付き方の行が無く（Organic 31・41 と
-   Unassigned 1・2 だけ）、09-30 だけに集中していること、`sessionManualSource` が `(not set)` なのに `pageLocation` には
+3. **09-30 の「Cross-network / (data not available)」は全体で 107 件（Yahoo! 参照 73 ＋ Bing 参照 34）、「Unassigned / (not set)」は
+   Yahoo! 参照 59 ＋ Bing 参照 25。どちらも前日分が参照元の処理待ちのまま出ている形**とみる。根拠は、09-28・09-29 には
+   同じ付き方の行が無く（Yahoo! は Organic 31・41 と Unassigned 1・2 だけ）、09-30 だけに集中していること、Yahoo! でも Bing でも同じ付き方に
+   落ちていること（Yahoo! 固有ではなく「前日分」の性質）、`sessionManualSource` が `(not set)` なのに `pageLocation` には
    `?utm_source=openai` が残っていること。GA4 は直近 24〜48 時間の参照元・属性を後から埋める。
-   **確定ではない**ので、本提案の B で「翌週の集計で 09-30 の行がどう付け直されたか」を見て判定を書く
-   （同じ日の Bing 参照 59 件も `(data not available)` / `(not set)` に落ちているので、Yahoo! 固有ではなく「前日分」の性質）
+   **確定ではない**ので、本提案の B で「翌週の集計で 09-30 の行がどう付け直されたか」を見て判定を書く。
+   突き合わせる基準値は **Yahoo! 参照の 73（Cross-network）と 59（Unassigned）**で、Bing の 34・25 は別に見る
+   **→ 確定（2026-10-01 15:10 UTC に同じ API で 09-30 を引き直し）**：Cross-network 107・Unassigned 84 の行は消え、09-30 は
+   `Organic Search / openai` 90・`Organic Search / bing` 44・`Direct` 3・`duckduckgo` 1（計 138）に付け直されていた。Yahoo! 参照のセッションは全部 `openai / Organic Search`。
+   **前日分の参照元は 24〜36 時間後に埋まる**ので、B の警告文の「翌週の集計で付け直されていれば問題なし」はこの実測どおり。10-05 の判定は不要になった
 
 ### 中身は本物のユーザーで、Bing と同じくらい使っている
 
@@ -75,6 +87,9 @@
 | bing | 192 | 142（74%） | 174 | 266 |
 | **openai（Yahoo! AI）** | **98** | **66（67%）** | **151** | **65** |
 | chatgpt.com | 38 | 18（47%） | 407 | 106 |
+
+`openai` 98 のうち 93 が Yahoo! 参照（Organic Search の行）。残り 5 は参照元が空で `Unassigned`（`utm_source=openai` だけ付き `utm_medium` が無い。
+アプリ内ブラウザなどで参照元が落ちた形とみる。A の内訳では「Yahoo! AI」ではなく「openai（参照元なし）」として別に出す）。
 
 着地はほぼ**期日のあるページ**に集中している（10 日・`openai` の `pageLocation`）：
 `/tools/tabako-zei-neage/` 70、`/tools/nenrei-keisan/` 19、`/tools/shuzei-kaisei/` 3。
@@ -114,14 +129,28 @@
 - `summarize()` に **`aiTraffic`** を足し、1 行で出す：
   `AI 経由: 合計 N（ChatGPT 直接 n1〔sessionSource = chatgpt.com〕・Yahoo! AI n2〔sessionSource = openai〕・その他の AI Assistant n3）`。
   **判断に使う値は `AI Assistant` チャネル単独から、この合計に替える。** 前期との比較も合計で出す
+- **数え元は既存の `channelRequest()`（`sessionDefaultChannelGroup` × `sessionSource` × `sessions`）だけ。** `referrerRequest()` の
+  `session_start` の `eventCount` は参照元ホストの表（表示用）にしか使わず、合計には混ぜない（件数の定義が違う）
+- **二重計上の防止**：`aiTraffic.total = (AI Assistant チャネルの全行の sessions) + (sessionSource = openai で、チャネルが AI Assistant 以外の行の sessions)`。
+  GA4 が将来 `openai` を AI Assistant に入れても、2 つ目の項が 0 になるだけで合計は変わらない。**テストに「`openai / AI Assistant` の行がある入力で合計が増えない」を入れる**。
+  **内訳はチャネルを問わず `sessionSource = openai` で切る**：参照元ホストが `search.yahoo.co.jp` のものを `Yahoo! AI`、参照元が空のものを `openai（参照元なし）`
+  （参照元は `referrerRequest()` の表から引く。無ければ `openai` を 1 本にまとめる）。`その他の AI Assistant` は AI Assistant チャネルのうち `openai` 以外。
+  こうしておけば、GA4 が `openai` を AI Assistant に移しても、Cross-network に付いても、合計と内訳の両方が変わらない。
+  テストの「合計が増えない」ケースで内訳も合わせて確認する
 - 読み方の注記を `formatReport()` に固定で 1 行：「`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`」
+- `openai` は OpenAI API の Web 検索を使うサービス全般が付ける値なので、参照元ホストの表に `search.yahoo.co.jp` 以外の
+  `openai` 行が出てきたら「Yahoo! AI」という呼び名を見直す（合計 `aiTraffic.total` はそのままで正しい）
+- 2 行目の `AI Assistant: N セッション` と全体比・着地上位は**チャネル単独**の値で、1 行目の合計とは数字が違う。行に「チャネル単独」と添える
 - JSON スナップショットにも `aiTraffic` と `referrers` を残す（週次の artifact で推移を追えるように）
 
 ### B. 前日分の「処理待ち」を注記し、閾値で警告する
 
-- `channelRequest()` の結果で、`sessionSource` が `(data not available)` または `(not set)` の行の合計が
-  全セッションの **10% を超えたら** `::warning::` を 1 行出す：「参照元が未確定のセッションが N 件（M%）。直近 1〜2 日分の処理待ちの可能性。
-  翌週の集計で付け直されていれば問題なし」。終了コードは 0 のまま（計測はできている）
+- `channelRequest()` の結果で、`sessionSource` が `(data not available)` または `(not set)` の行の合計から、
+  **幽霊セッション（`phantomSessionRequest()` が返す page_view の無い `Unassigned`。[web-vitals-phantom-sessions.md](./web-vitals-phantom-sessions.md) の C）を差し引いた**件数が
+  全セッションの **10% を超えたら** `::warning::` を 1 行出す：「参照元が未確定のセッションが N 件（M%、幽霊 P 件を除く）。直近 1〜2 日分の処理待ちの可能性。
+  翌週の集計で付け直されていれば問題なし」。終了コードは 0 のまま（計測はできている）。
+  差し引かないと、幽霊だけで 28 日 71 件（全体の 2 割近く）あるので毎週鳴って意味を失う。
+  **テストに「幽霊だけで 10% を超えるが警告は出ない」「幽霊を除いても 10% を超えると警告が出る」の 2 ケース**を入れる
 - **窓は変えない**（`endDate: 'yesterday'` のまま）。`2daysAgo` に縮めると過去のスナップショットと比べられなくなり、
   09-28 から始まった急増を 1 週遅れで見ることになる。注記で足りる
 - **判定の記録**：10-05 の週次で 09-30 の行を見る。`Cross-network 107` / `Unassigned 59` が `openai / Organic Search` に
@@ -137,10 +166,12 @@
 
 ### D. 仕様書の読み替え（コードは触らない）
 
-- [ai-assistant-channel.md](./ai-assistant-channel.md) の「判断に使うのは AI Assistant の増減」は、A が入った時点で
-  「AI 経由の合計（`aiTraffic`）の増減」に読み替える。向こうの本文は本提案の実装 PR で 1 行だけ直す
-  （状態行の下に「2026-10 から合計で読む。[yahoo-ai-search-referral.md](./yahoo-ai-search-referral.md)」）。
-  **同じ PR で向こうの本文の他の行は触らない**（並走中の提案との衝突を避ける）
+- 「判断に使うのは AI Assistant の増減」の文は **`scripts/lib/ga4.mjs` の `summarize()` の JSDoc（207 行付近）**にある。A の実装でこの JSDoc を
+  「AI 経由の合計（`aiTraffic`）の増減」に書き換える
+- [ai-assistant-channel.md](./ai-assistant-channel.md) は、**状態行の下に 1 行だけ**足す：「2026-10 から AI 経由は合計（`aiTraffic`）で読む。
+  [yahoo-ai-search-referral.md](./yahoo-ai-search-referral.md)」。**向こうの本文の他の行は触らない**（並走中の提案との衝突を避ける）
+- `docs/DECISIONS.md`：冒頭 `---` 直下に自己完結のブロックを 1 つ足す（「Yahoo! JAPAN 検索の AI 回答経由を AI 経由に数え、未確定行から幽霊を除いて警告する」。
+  既存エントリは触らない。union マージの約束）
 
 ## 期待される効果
 
@@ -161,7 +192,7 @@
 |---|---|
 | A：`referrerRequest()`・`aiTraffic` の集計と表示・JSON への追加＋テスト（`scripts/test/ga4-ai-channel.test.mjs` に 4〜5 ケース） | 45k |
 | B：未確定行の割合と `::warning::`＋テスト 2 ケース | 15k |
-| D：ai-assistant-channel.md の 1 行・DECISIONS.md | 10k |
+| D：`ga4.mjs` の JSDoc・ai-assistant-channel.md の 1 行・DECISIONS.md のブロック 1 つ | 10k |
 | **合計** | **約 70k**（API の権限・Secret・ワークフローは増えない） |
 
 C は運営者の画面作業 10 分。

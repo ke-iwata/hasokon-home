@@ -126,6 +126,10 @@ export default function Page() {
           <strong>厚生年金保険料</strong> — 料率18.3%の半分。
           <strong>標準報酬月額65万円（32等級）で頭打ち</strong>になるため、年収
           {manInt(PENSION_CAP_INCOME)}あたりから増えません
+          <PublicToolLink slug="kosei-nenkin-jogen">
+            （この上限は2027年9月から3段階で75万円まで上がります。月給ごとの増え方は
+            <ToolLink slug="kosei-nenkin-jogen">厚生年金 上限引き上げ 計算機</ToolLink>）
+          </PublicToolLink>
         </li>
         <li>
           <strong>雇用保険料</strong> —

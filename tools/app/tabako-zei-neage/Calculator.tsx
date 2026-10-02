@@ -104,7 +104,7 @@ export default function Calculator() {
         </select>
         <p className="hint">
           2027年4月からの引き上げは紙巻・加熱式に共通です。加熱式は、これとは別に
-          {formatDate(alignment.alignedFrom)}に紙巻たばこと同じ課税へ揃える見直しがあります。
+          {formatDate(alignment.alignedFrom)}に紙巻たばこと同じ課税へ揃いました（10月1日以降は加熱式でも税額を出します）。
         </p>
       </div>
 

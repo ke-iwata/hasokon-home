@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import {
+  BinocularsIcon,
   BombIcon,
   CardsIcon,
   ClubIcon,
@@ -1159,6 +1160,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Match3: Match3Icon,
   // ターゲット計算パズル。目標の枠と数のタイル（盤面の絵は `public` にするPRで描く）
   TargetNumber: TargetNumberIcon,
+  // 間違い探し。既存タイトルの絵柄は使わず、見比べる道具（双眼鏡）で表す（盤面の絵は `public` にするPRで描く）
+  Binoculars: BinocularsIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
