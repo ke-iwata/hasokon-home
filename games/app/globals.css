@@ -464,6 +464,7 @@ ol {
 .ms-board,
 .hp-board,
 .hn-board,
+.ts-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -1143,6 +1144,233 @@ ol {
   .ms-game {
     --chrome: 130px;
   }
+}
+
+/* ---- 詰将棋 ----
+   仕様: docs/features/game-tsume-shogi.md「画面」。
+   盤は正方形の SVG（盤の外の筋・段の番号を含めて正方形）なので、大きさは「盤を画面の高さに合わせる」節の
+   共通指定に任せる（ここで max-width を書き直さないこと）。`--chrome` / `--board-max` は入れ物（`.ts-game`）に置き、
+   生成中の幕（`.ts-loading`）と盤が同じ値を継承する。`--chrome` は盤以外が使う高さ（パンくず・見出し・リード文・
+   段・記録の帯・状態の行・玉方の持ち駒・攻方の持ち駒・理由の1行・ボタンの行まで）の実測値。
+   盤のマスは 44px を割る（390px 幅で約 38px）ので、誤タップは「選ぶ → 先をタップ」の 2 段で防ぐ。
+   **44px を守るのは持ち駒・成／不成・ボタン**（画面の約束 4） */
+.ts-game {
+  --chrome: 470px;
+  --board-max: 520px;
+}
+
+.ts-board-wrap {
+  position: relative;
+}
+
+.ts-board {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.ts-coord {
+  font-size: 0.34px;
+  fill: var(--muted);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* 盤の地。木目は描かない（仕様書の「やらないこと」） */
+.ts-ground {
+  fill: color-mix(in srgb, #e8c27a 45%, var(--surface));
+  stroke: var(--text);
+  stroke-width: 0.05;
+}
+
+.ts-cell {
+  fill: transparent;
+  stroke: color-mix(in srgb, var(--text) 55%, transparent);
+  stroke-width: 0.02;
+}
+
+.ts-cell.moved {
+  fill: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.ts-cell.selected {
+  fill: color-mix(in srgb, var(--brand) 38%, transparent);
+}
+
+/* 動ける先。色だけに頼らず、空きマスには点、駒のあるマスには枠を出す */
+.ts-cell.target {
+  fill: color-mix(in srgb, var(--ok) 22%, transparent);
+  stroke: var(--ok);
+  stroke-width: 0.05;
+}
+
+.ts-dot {
+  fill: var(--ok);
+}
+
+.ts-piece {
+  font-size: 0.72px;
+  font-weight: 700;
+  fill: #1a1a1a;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* 成駒は赤字。色覚に配慮して字も変えている（と・杏・圭・全・馬・龍） */
+.ts-piece.promoted {
+  fill: #c0261b;
+}
+
+.ts-board.done .ts-cell.moved {
+  fill: color-mix(in srgb, var(--ok) 30%, transparent);
+}
+
+/* キーボードで動かす枠。盤にフォーカスがあるときだけ見せる */
+.ts-cursor {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.08;
+  opacity: 0;
+}
+
+.ts-board:focus-visible .ts-cursor {
+  opacity: 1;
+}
+
+.ts-board:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 生成のあいだ、盤があった場所を空けておく。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること** */
+.ts-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* 成・不成の 2 択。盤の上に重ねて出す（押す先は 44px 以上） */
+.ts-promote {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.ts-promote .btn {
+  min-width: 88px;
+  min-height: 52px;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+/* 玉方の持ち駒。折り畳まず 1 行（高さを固定。狭い画面は枚数だけの短い表示に切り替える） */
+.ts-hand-d {
+  height: 1.6rem;
+  line-height: 1.6rem;
+  margin: 4px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ts-hand-d-short {
+  display: none;
+}
+
+/* 攻方の持ち駒。押す先は 44px を割らない。1 行の高さを固定して盤の下を動かさない */
+.ts-hand-a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  margin-top: 6px;
+  overflow: hidden;
+}
+
+.ts-hand-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ts-hand-none {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ts-hand-btn {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 8px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, #e8c27a 45%, var(--surface));
+  color: #1a1a1a;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 44px;
+  cursor: pointer;
+}
+
+.ts-hand-btn small {
+  font-size: 0.75rem;
+}
+
+.ts-hand-btn.selected {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 38%, #f3dfb6);
+}
+
+.ts-hand-btn:disabled {
+  cursor: default;
+}
+
+/* 不正解の理由・答えの 1 行。**空でも枠は置く**（高さを確保して盤を動かさない） */
+.ts-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 4px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ts-note.wrong {
+  color: var(--danger, #c0261b);
+  font-weight: 700;
+}
+
+.ts-actions {
+  justify-content: center;
+  margin-top: 6px;
 }
 
 /* ---- マッチ3パズル ----
@@ -5961,5 +6189,17 @@ button.hf-card {
     .ms-hint-penalty {
       display: none;
     }
+  }
+}
+
+/* 詰将棋：iPhone SE 級（320px 幅）では、玉方の持ち駒を枚数だけの短い表示にする
+   （仕様書の 320×568 の合格線。390px 幅では種類ごとの枚数を 1 行で出す） */
+@media (max-width: 360px) {
+  .ts-hand-d-full {
+    display: none;
+  }
+
+  .ts-hand-d-short {
+    display: inline;
   }
 }
