@@ -230,7 +230,7 @@ export function failureMessage(f: Failure, ctx: { giftYear: number; incomeLimit:
     case 'quake':
       return '既存住宅が昭和57年より前の建築で、耐震基準に適合していません（取得までに耐震改修すれば対象になります）';
     case 'move-in':
-      return `${ctx.giftYear + 1}年3月15日までに引渡しを受け（新築・取得・増改築を済ませ）、住むことができません`;
+      return `${ctx.giftYear + 1}年3月15日までに取得・増改築を済ませ（建売・分譲・中古は引渡し、注文住宅の新築は上棟まで）、住むことができません`;
     case 'used-before':
       return '平成21年分〜令和5年分（2009〜2023年分）にこの非課税の適用を受けたことがあります';
     case 'related-party':
