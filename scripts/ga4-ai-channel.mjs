@@ -221,7 +221,7 @@ export async function main(argv, deps = {}) {
   if (summary.unresolved.warn) {
     const prefix = env.GITHUB_ACTIONS === 'true' ? '::warning::' : '警告: ';
     log(
-      `${prefix}参照元が未確定のセッションが ${summary.unresolved.sessions} 件（${summary.unresolved.share}%）。` +
+      `${prefix}参照元が未確定のセッションが ${summary.unresolved.sessions} 件（${summary.unresolved.share}%、幽霊 ${summary.unresolved.phantom} 件を除く）。` +
         '直近 1〜2 日分の処理待ちの可能性。翌週の集計で付け直されていれば問題なし。' +
         'docs/features/yahoo-ai-search-referral.md を参照',
     );
