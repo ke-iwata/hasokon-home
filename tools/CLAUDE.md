@@ -226,6 +226,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 贈与税・相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/zoyozei-keisan.ts` の速算表2本（`GENERAL_BRACKETS` / `SPECIAL_BRACKETS`）・`BASIC_DEDUCTION`・`EXTENDED_EXCLUSION`・精算課税の `SETTLEMENT_*`・加算期間の切り替え日 `TRANSITION`。国税庁 No.4408・No.4161・No.4103 を正とし、`DATA_CHECKED_AT` を進める。`app/zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の**適用期限**（住宅取得等資金 2026-12-31・結婚子育て 2027-03-31）も同じときに確かめる。**加算されるかは贈与日ではなく相続開始日で決まる**（「2026年内に駆け込むと有利」と読める文言を置かない） |
 | 毎年12月（税制改正大綱が出たら・住宅取得等資金の非課税） | `lib/jutaku-shutoku-shikin.ts` の `MEASURE.extension` を `'undecided'` → `'extended'` / `'ended'` に切り替える（画面の文言はこの1語で決まる）。延長なら `MEASURE.to`・`LIMITS`・床面積や所得の閾値も大綱と国税庁 No.4508 に合わせ、`DATA_CHECKED_AT` を進める。70条の2と70条の3の一方だけが延長されたら、そのときにフラグを2つに分ける。**延長の見通しを画面に書かない** |
 | 相続登記・相続の期限の改正時（登録免許税の免税措置の延長も） | `lib/sozoku-toki-kigen.ts` の冒頭の定数（`GIMUKA_START`・`KEIKA_SOCHI_DEADLINE`・期間4つ・`MENZEI_DEADLINE`）と `DATA_CHECKED_AT`。法務省「相続登記の申請義務化に関するQ&A」と e-Gov の条文を正とする。**免税措置（租特法84条の2の3）は現行 2027-03-31 まで**なので、毎年12月の税制改正大綱で延長を確かめる。税の期限の繰り下げは `nissu-keisan` の `HOLIDAYS` に乗っているので、祝日を足せば自動で追随する |
+| 住所・氏名変更登記の期限の改正時 | `lib/jusho-henko-toki.ts` の冒頭の定数（`JUSHO_GIMUKA_START`・`JUSHO_KEIKA_SOCHI_DEADLINE`・`JUSHO_TOKI_MONTHS`・`JUSHO_KARYO_MAX_YEN`・`TOROKU_MENKYO_PER_PROPERTY`）と `JUSHO_DATA_CHECKED_AT`。法務省「住所等変更登記の義務化に関するQ&A」と e-Gov を正とする。応当日の計算は `sozoku-toki-kigen` の関数を使っているので、ここには持たない |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 通勤手当の非課税限度額の改正時 | `lib/tsukin-teate.ts` の `DISTANCE_BANDS`・`PARKING_CAP`・`TOTAL_CAP`（国税庁「通勤手当の非課税限度額の改正について」とQ&Aを正とする）。確かめただけでも `DATA_CHECKED_AT` を進める。改正前の表（`DISTANCE_BANDS_BEFORE_2026_04`）は令和8年1〜3月分の確認用で、令和9年分の年末調整が済んだら外してよい |
@@ -248,9 +249,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール51本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`kosei-nenkin-jogen`・`jutaku-shutoku-shikin` が `preview`。ほかは `public`。
+- **ツール52本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`kosei-nenkin-jogen`・`jutaku-shutoku-shikin`・`jusho-henko-toki` が `preview`。ほかは `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」、
-  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`ikuji-jitan-kyufu` は 2027-01-15 までに、`jutaku-shutoku-shikin` は 2026-10-31 までに `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ。`kosei-nenkin-jogen` は 2027-08-31 までに `public` にする）** /
+  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`ikuji-jitan-kyufu` は 2027-01-15 までに、`jutaku-shutoku-shikin` は 2026-10-31 までに、`jusho-henko-toki` は相続登記の公開から4週以内（遅くとも2027-03）に `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ。`kosei-nenkin-jogen` は 2027-08-31 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
