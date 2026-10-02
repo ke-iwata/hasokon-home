@@ -147,6 +147,9 @@ export default function Game() {
         setProblem(made);
         setBoard(made.board);
         setPhase('play');
+        // タイムは盤を出した時から計る。詰将棋は初手の前に考えるので、最初の 1 手から計ると
+        // 1 手詰のタイムがほぼ 0 になる（#319 レビュー）。play() の begin() は 2 回目以降なので何もしない
+        timer.begin();
         trackToolUse('tsume-shogi', `new-${next}`);
       }, 0);
     },
@@ -179,6 +182,13 @@ export default function Game() {
       const timeMs = timer.stop();
       if (revealed) return;
       trackToolUse('tsume-shogi', `clear-${mode}`);
+      // 今日の 1 問は**その日の初回の正解だけ**を記録する。「やり直す」で同じ問題を答えを知ったうえで解き直し、
+      // ベストや正解回数を伸ばせてしまうため（全員同じ条件でタイムを比べる趣旨。#319 レビュー）
+      if (mode === 'daily' && entry.lastClearedOn === today) {
+        setResult({ timeMs, improved: { time: false, score: false, moves: false }, streak: entry.streak });
+        setNote('今日の1問は初回の記録だけを残します（このタイムは記録しません）。');
+        return;
+      }
       const clearedOn = mode === 'daily' ? today : undefined;
       // 連続日数は記録に入れる前の値から数える（表示と保存を同じ計算にそろえる）
       const streak = mode === 'daily' ? nextStreak(entry.lastClearedOn, today, entry.streak) : undefined;
@@ -334,6 +344,12 @@ export default function Game() {
     [phase, selection],
   );
 
+  /** 成・不成の 2 択を閉じて、駒を選び直す局面に戻す */
+  const cancelPromote = useCallback(() => {
+    setPending(null);
+    setPhase('play');
+  }, []);
+
   const reveal = useCallback(() => {
     if (!problem) return;
     clearTimers();
@@ -480,7 +496,18 @@ export default function Game() {
         )}
 
         {phase === 'promote' && pending ? (
-          <div className="ts-promote" role="dialog" aria-label="成りますか">
+          <div
+            className="ts-promote"
+            role="dialog"
+            aria-label="成りますか（盤の空いた所を押すか Esc で取り消し）"
+            // 行き先を間違えたときに取り消せるように、2 択の外を押すか Esc で選び直しに戻る（#319 レビュー）
+            onClick={(e) => {
+              if (e.target === e.currentTarget) cancelPromote();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') cancelPromote();
+            }}
+          >
             <button type="button" className="btn btn-primary" onClick={() => play({ ...pending, promote: true })}>
               成
             </button>
