@@ -3,6 +3,7 @@
 **状態**：**A・B（B-1／B-2／B-2b／B-2c／B-3／B-4）を実装済み**（2026-09-24。本番反映はタグリリース待ち）。
 C（AIクローラーが実際に取れているかの集計）は [hasokon-infra #15](https://github.com/ke-iwata/hasokon-infra/pull/15)
 のマージ待ちで**未着手**。起票は2026-09-24／2026-09-25 レビュー反映。
+**2026-10 から「判断に使うのは AI Assistant の増減」は AI 経由の合計（`aiTraffic`）の増減で読む。** [yahoo-ai-search-referral.md](./yahoo-ai-search-referral.md)
 コード変更は `home/llms.txt`・各アプリの `lib/llms.ts` と `app/llms.txt/route.ts`（新規）・
 `scripts/`（`ga4-ai-channel.mjs`・`lib/ga4.mjs`）・`learn/tests/compliance.test.ts` に閉じている
 **対象**：`home/llms.txt`・`tools/` `games/` `learn/` の `app/llms.txt/route.ts`（新規）・`scripts/`（週次レポートへの計測追加）・`learn/tests/compliance.test.ts`（B-4）

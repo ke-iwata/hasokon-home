@@ -19,6 +19,25 @@
 - `tests/shuzei-kaisei.test.ts`：`isRevised(new Date())` が true のとき、description 2 か所に「されます」「9月中」「施行前に買う」が
   無いことを見る。日付判定はライブラリの `isRevised` に任せ、本文は検査しない（過去形の段落に「施行前に買う」が正しく残る）
 - 税率・計算・`Calculator.tsx` は触っていない
+
+## 2026-09-29：厚生年金 標準報酬月額 上限引き上げ 計算機を足した（`stage: 'preview'`）
+
+[features/kosei-nenkin-hyojun-hoshu-jogen.md](../../docs/features/kosei-nenkin-hyojun-hoshu-jogen.md)。
+令和7年法律第74号で 65万 → 68万（2027-09）→ 71万（2028-09）→ 75万円（2029-09）と上がる上限について、
+月給から「いつの給与から・月いくら増えるか」と老齢厚生年金の増加の目安を出す。`lib/kosei-nenkin-jogen.ts`・`app/kosei-nenkin-jogen/`。
+
+- **上限の段階は `shaho-grades.ts` の `PENSION_CAP_STAGES` に置いた**（`PENSION_STANDARD_MAX` の持ち主の隣）。
+  `pensionCapAt(date)` は日付を必ず引数で受ける（既定の「今日」を持たない）
+- **等級は足していない。** 境目（66.5万・69.5万・73万円）は健保の `GRADES` 36〜38 等級と同じなので、健保の等級を引いて上限で丸める
+- **既存の `PENSION_STANDARD_MAX`（650,000）はこのPRでは置き換えていない。** 仕様が「単独のPRで出してよい」としているため。
+  現行の上限と一致することは `tests/kosei-nenkin-jogen.test.ts` が見張る。2027-08 までに置き換える（tools/CLAUDE.md の定期メンテ）
+- 本人負担は `standard × 0.0915` を銭の単位で丸めてから端数処理する（二進小数の誤差で1円落とさないため）
+- 年金の増加は月ごとに上限を切り替えて積む（段階込み）。保険料の累計と年金の増加年額の比は出すが、「得」「損」「元が取れる」の語は使わない
+- 年齢から月数を出すときの「今日」は、ビルド時刻で描画してからマウント後に開いた日へ差し替える（`shoyo-tedori` と同じ）
+- **保険料・年金の増加は `max(2027-09, 今月)` から数える**（`countStartMonth(today)` を `accumulate` に引数で渡す）。当初は常に 2027-09 から積んでいて、施行後に開くと過ぎた月まで積んで累計が小さく出た（#294 レビューで指摘）
+- 既存の手取り・働き損・在職老齢年金から `PublicToolLink` で張った（公開までは出ない）
+- 一次資料：厚生労働省「厚生年金等の標準報酬月額の上限の段階的引上げについて」で上限3段階と施行月を確認した（2026-09-29）
+
 ## 2026-09-29：相続登記の期限チェッカーを足した（`stage: 'preview'`）
 
 [features/sozoku-toki-kigen.md](../../docs/features/sozoku-toki-kigen.md)。

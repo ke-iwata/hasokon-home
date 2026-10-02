@@ -20,6 +20,10 @@
 // あとにタブを閉じる人の分が `Unassigned` に積まれるようになったため
 // （仕様: docs/features/web-vitals-phantom-sessions.md の C）。
 //
+// **AI 経由は Yahoo! JAPAN 検索の AI 回答（`sessionSource: openai`）も足して読む。**
+// `utm_medium=organic` が付くので GA4 は Organic Search に入れ、AI Assistant に出ない
+// （仕様: docs/features/yahoo-ai-search-referral.md）。
+//
 // **`sessionSource: google` を「Google 検索が回復した」と読まないこと。**
 // Search Console の表示回数がほぼゼロなのと食い違っており、
 // Discover やアプリ内ブラウザが混ざっているとみられる（仕様書の「背景と根拠」）。
@@ -35,6 +39,7 @@ import {
   parseRows,
   PHANTOM_WARN_PERCENT,
   phantomSessionRequest,
+  referrerRequest,
   runReport,
   summarize,
   WINDOW_DAYS,
@@ -62,6 +67,8 @@ GA4 Data API で、チャネル別（sessionDefaultChannelGroup × sessionSource
 セッションと、AI Assistant に絞ったランディングページの上位を数える。
 あわせて page_view の無いセッション（着地ページ空）を数え、
 全体の ${PHANTOM_WARN_PERCENT}% を超えたら警告する（docs/features/web-vitals-phantom-sessions.md）。
+AI 経由は AI Assistant に Yahoo! JAPAN 検索の AI 回答（sessionSource = openai）を足した合計で読み、
+参照元ホスト × sessionSource の上位も出す（docs/features/yahoo-ai-search-referral.md）。
 直近28日と、その前の28日を並べて出す。
 仕様: docs/features/ai-assistant-channel.md
 
@@ -161,6 +168,7 @@ export async function main(argv, deps = {}) {
     channels: channelRequest(options.days),
     landings: landingPageRequest(options.days),
     phantoms: phantomSessionRequest(options.days),
+    referrers: referrerRequest(options.days),
   };
 
   if (options.dryRun) {
@@ -193,6 +201,7 @@ export async function main(argv, deps = {}) {
   const summary = summarize(fetched.channels, fetched.landings, {
     days: options.days,
     phantomRows: fetched.phantoms,
+    referrerRows: fetched.referrers,
   });
   out(formatReport(summary));
 
@@ -207,6 +216,17 @@ export async function main(argv, deps = {}) {
     );
   }
 
+  // 参照元が未確定のセッションが多ければ注記する（yahoo-ai-search-referral.md の B）。
+  // 直近 1〜2 日分の処理待ちの可能性が高く、計測はできているので終了コードは 0 のまま
+  if (summary.unresolved.warn) {
+    const prefix = env.GITHUB_ACTIONS === 'true' ? '::warning::' : '警告: ';
+    log(
+      `${prefix}参照元が未確定のセッションが ${summary.unresolved.sessions} 件（${summary.unresolved.share}%）。` +
+        '直近 1〜2 日分の処理待ちの可能性。翌週の集計で付け直されていれば問題なし。' +
+        'docs/features/yahoo-ai-search-referral.md を参照',
+    );
+  }
+
   if (options.out) {
     const snapshot = {
       // 実行日時は結果の意味に効くので必ず残す（docs/README.md の「数字を根拠にする」）
@@ -215,10 +235,13 @@ export async function main(argv, deps = {}) {
       days: options.days,
       ai: summary.ai,
       aiShare: summary.aiShare,
+      aiTraffic: summary.aiTraffic,
       channels: summary.channels,
       sources: summary.sources,
       landings: summary.landings,
       phantom: summary.phantom,
+      referrers: summary.referrers,
+      unresolved: summary.unresolved,
     };
     await writeSnapshot(options.out, `${JSON.stringify(snapshot, null, 2)}\n`);
     log(`結果を書き出しました: ${options.out}`);

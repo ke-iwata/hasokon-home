@@ -1,7 +1,9 @@
 # Yahoo! JAPAN 検索の AI アシスタント経由の流入（`utm_source=openai`）が 1 週間で 1 → 138 セッション/日に増え、GA4 では「Organic Search」「Cross-network」「Unassigned」に割れて数えられている — 週次集計に「参照元ホスト × utm_source」を足し、AI 経由の読み方を直す
 
-**状態**：提案（2026-10-01 起票。セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`。**同日の企画レビュー（#307）の must 4 点を反映**：
-B の閾値から幽霊セッションを差し引く、09-30 の数字の書き分け（Cross-network 107 ＝ Yahoo! 73 ＋ Bing 34）と数え方の注、`aiTraffic` の数え元と二重計上の防止、D の書き換え先の実名）。
+**状態**：**A・B・D を実装済み**（2026-10-01。セッション `session_017DFEqwXCyCLuP8bRWNrRt2`）。C は運営者の任意作業で未着手。B の判定（09-30 の行が付け直されたか）は **2026-10-01 に引き直して確定**（下記「背景と根拠」3.。10-05 の判定は不要）。起票は 2026-10-01（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
+**同日の企画レビュー（#307・#313）の must 5 点・should 1 点を反映**（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）：
+B の閾値から幽霊セッションを差し引く、09-30 の数字の書き分け（Cross-network 107 ＝ Yahoo! 73 ＋ Bing 34）と数え方の注、`aiTraffic` の数え元と二重計上の防止、
+内訳はチャネルを問わず `sessionSource = openai` で切る、D の書き換え先の実名、表を切っていた注記の移動。
 **緊急度**：高。**サイトの 1 日のセッション数がこの 1 本の経路で 3 日間に 34 → 137 に跳ねた**のに、
 いまの週次集計（`scripts/ga4-ai-channel.mjs`）はこれを「AI Assistant」として数えない。
 次の週次（10-05 月）で「AI Assistant は横ばい、Organic Search と Cross-network が急増」と読んでしまう。
@@ -134,6 +136,9 @@ B の閾値から幽霊セッションを差し引く、09-30 の数字の書き
   こうしておけば、GA4 が `openai` を AI Assistant に移しても、Cross-network に付いても、合計と内訳の両方が変わらない。
   テストの「合計が増えない」ケースで内訳も合わせて確認する
 - 読み方の注記を `formatReport()` に固定で 1 行：「`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`」
+- `openai` は OpenAI API の Web 検索を使うサービス全般が付ける値なので、参照元ホストの表に `search.yahoo.co.jp` 以外の
+  `openai` 行が出てきたら「Yahoo! AI」という呼び名を見直す（合計 `aiTraffic.total` はそのままで正しい）
+- 2 行目の `AI Assistant: N セッション` と全体比・着地上位は**チャネル単独**の値で、1 行目の合計とは数字が違う。行に「チャネル単独」と添える
 - JSON スナップショットにも `aiTraffic` と `referrers` を残す（週次の artifact で推移を追えるように）
 
 ### B. 前日分の「処理待ち」を注記し、閾値で警告する
