@@ -1,5 +1,13 @@
 # 新ゲーム「間違い探し」— 左右 2 枚の絵から 5 つの違いを見つける脳トレの定番。絵をプログラムで生成して権利と制作コストをゼロにし、日替わり基盤で「今日の 1 枚・何秒で見つけたか」を全員同じ条件で競う
 
+**状態**：実装済み・`stage: 'wip'`（2026-10-01 実装。セッション `session_01KGEMdF1CfYXpVhBh14awVR`）。
+**名称と slug（`machigai-sagashi`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある**（マッチ3と同じ扱い）。
+確認が済んだら `preview` へ（生成・差分注入・当たり判定のテストはそろっている）。
+**仕様からの差分**：当たり判定の最小半径を 24 にした（実測で絵が 294〜356px になり、20 では直径 44px を割るため）・
+むずかしい（25 個）は 5×5 の格子。経緯は [games/docs/DECISIONS.md](../../games/docs/DECISIONS.md) の 2026-10-01。
+
+<details><summary>起票時の状態メモ</summary>
+
 **状態**：提案（2026-10-01 起票。セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`。**同日の企画レビュー（#310）の要修正 4 点・任意 1 点を反映**：
 記録は既存の `timeMs` / `bestTimeMs` を使う（`records.ts` の改修は無し）、タイム制の日替わりは星置き・数字つなぎと同じ型に乗る、
 当たり判定の円は生成側の配置制約で重ねない、キーボード操作はネタバレしない位置だけのラベル、小型端末の横向きを確認条件に）。
@@ -11,6 +19,9 @@
 （[game-match3.md](./game-match3.md) と同じ「運営者の名称確認 → 名称・slug 確定 → 実装着手」の順序。slug は公開後に動かせない）。
 問題なければ名称「間違い探し」・slug `machigai-sagashi`。登録があれば説明的な「ちがい見つけ」`chigai-mitsuke`。
 実装したら `stage: 'wip'` から始め、生成・差分注入・当たり判定のテストがそろったら `preview` へ。`public` は運営者の判断
+
+</details>
+
 **対象**：`games/`（`hasokon.com/games/machigai-sagashi/` を想定）
 **起票**：2026-10-01
 **関連**：[game-hoshioki-puzzle.md](./game-hoshioki-puzzle.md)（日替わり基盤 `lib/daily.ts` の持ち主。**補足：いま App Store パズル無料 1 位の「Meowdoku!」はスターバトル＝星置きパズルと同じルール**。下記「補足」）・
