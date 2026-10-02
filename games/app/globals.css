@@ -5954,4 +5954,12 @@ button.hf-card {
   .ms-status {
     gap: 6px;
   }
+
+  /* 320px 幅（iPhone SE 第1世代級）で残り数の行が「やり直す」まで収まるように、
+     ヒントのペナルティの文言を外す（ボタンの aria-label とページ本文には残っている） */
+  @media (max-width: 340px) {
+    .ms-hint-penalty {
+      display: none;
+    }
+  }
 }

@@ -14,7 +14,7 @@
  * - ヒントの点滅は演出なので、ここの状態に置く（`lib/` には入れない）
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import {
   cellHeight,
   cellLabel,
@@ -230,9 +230,15 @@ export default function Game() {
     [puzzle, done, records, variant, flash],
   );
 
-  const onPointerDown = useCallback(
-    (e: PointerEvent<HTMLDivElement>) => {
-      if (!puzzle || done) return;
+  /**
+   * 絵のタップ。**`click` で取る**（`pointerdown` だと、絵の上から始めたスクロールの指の置き始めが
+   * そのまま判定され、スクロールしただけで違いが見つかってしまう。#314 のレビュー）。
+   * ブラウザはスクロール・長押しを click にしないので、それだけで区別できる。
+   * `detail === 0` はキーボード由来の click（左の絵の中の `.ms-key` の Enter が泡立ってきたもの）なので無視する
+   */
+  const onPictureClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (!puzzle || done || e.detail === 0) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * VIEW_W;
       const y = ((e.clientY - rect.top) / rect.height) * VIEW_H;
@@ -330,7 +336,7 @@ export default function Game() {
           style={{ visibility: canHint ? 'visible' : 'hidden' }}
           aria-label={`ヒント（タイムに${HINT_PENALTY_MS / 1000}秒足されます）`}
         >
-          ヒント+{HINT_PENALTY_MS / 1000}秒
+          ヒント<span className="ms-hint-penalty">+{HINT_PENALTY_MS / 1000}秒</span>
         </button>
         <button type="button" className="btn ms-new-btn" onClick={() => newGame(mode, today)}>
           {/* 今日の1枚は全員同じ絵なので、作り直しても同じ絵が出る（やり直しになる） */}
@@ -347,7 +353,7 @@ export default function Game() {
         <div className={`ms-pics${done ? ' done' : ''}`}>
           <div
             className="ms-pic"
-            onPointerDown={onPointerDown}
+            onClick={onPictureClick}
             onContextMenu={(e) => e.preventDefault()}
           >
             <Picture scene={puzzle.left} prefix="ms-l" puzzle={puzzle} found={found} flash={flash} focusCell={focusCell} />
@@ -370,12 +376,16 @@ export default function Game() {
                   }
                   onFocus={() => setFocusCell(cell)}
                   onBlur={() => setFocusCell((c) => (c === cell ? null : c))}
-                  onClick={() => onCell(cell)}
+                  onClick={(e) => {
+                    // 絵の click（座標での判定）まで泡立たせない
+                    e.stopPropagation();
+                    onCell(cell);
+                  }}
                 />
               ))}
             </div>
           </div>
-          <div className="ms-pic" onPointerDown={onPointerDown} onContextMenu={(e) => e.preventDefault()}>
+          <div className="ms-pic" onClick={onPictureClick} onContextMenu={(e) => e.preventDefault()}>
             <Picture scene={puzzle.right} prefix="ms-r" puzzle={puzzle} found={found} flash={flash} focusCell={focusCell} />
           </div>
         </div>

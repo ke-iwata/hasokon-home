@@ -29,7 +29,10 @@ export const VIEW_H = 240;
  * （隣接しないマス同士は中心が 128・120 以上離れ、半径は最大でも 36 なので、円は重ならないまま）
  */
 export const MIN_HIT_RADIUS = 24;
-/** 絵の表示幅の下限（px）。`app/globals.css` の `.ms-pic` の下限と同じ値にする */
+/**
+ * 絵の表示幅の下限（px）。`app/globals.css` の `.ms-pic` の下限と同じ値にする。
+ * **320px 幅の端末は対象外**（絵がカードに収まる 286px になり、円の直径は約 43px）
+ */
 export const MIN_PICTURE_PX = 294;
 /** 当たり判定の円は「図形の大きさ + この値」 */
 export const HIT_MARGIN = 12;
