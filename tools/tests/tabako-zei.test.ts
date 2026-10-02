@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { metadata } from '@/app/tabako-zei-neage/page';
+import { tools } from '@/lib/registry';
 import {
   CONSUMPTION_TAX_RATE,
   DATA_CHECKED_AT,
@@ -530,5 +532,37 @@ describe('表示の整形', () => {
   it('formatDate は和文の日付にする', () => {
     expect(formatDate('2027-04-01')).toBe('2027年4月1日');
     expect(formatDate('2026-10-01')).toBe('2026年10月1日');
+  });
+});
+
+/**
+ * 加熱式の見直し後の文面。静的HTMLに焼き込む文面は開いた日で切り替わらないので、書き換えで追従する。
+ *
+ * 仕様: docs/features/tabako-zei-post-alignment-copy.md
+ */
+describe('加熱式の見直し後の文面', () => {
+  const pageDescription = String(metadata.description);
+  const registryDescription = tools.find((t) => t.slug === 'tabako-zei-neage')!.description;
+  const STALE_PHRASES = ['揃います', '見直されます', '見直しがあります'];
+
+  it.runIf(heatedAlignment(new Date()).aligned)(
+    '見直し後は、description に「これから」の文面が残っていない',
+    () => {
+      // 日付の判定は Calculator と同じ heatedAlignment に任せる。heatedAlignment は実行環境のローカル日付で比べるので、
+      // UTC で動く CI では 2026-10-01 09:00（JST）から有効になる（Calculator と同じ判定）。
+      // 本文には「10月までは」の過去の説明が正しく残るので、description だけを見る
+      for (const phrase of STALE_PHRASES) {
+        expect(pageDescription, `page.tsx の description に「${phrase}」`).not.toContain(phrase);
+        expect(registryDescription, `registry の description に「${phrase}」`).not.toContain(phrase);
+      }
+      expect(pageDescription).toContain('同じ課税になり');
+    },
+  );
+
+  it('title は施行前の語を全部残している', () => {
+    const title = String(metadata.title);
+    for (const word of ['2026年10月', '2027年4月', '増税', '1箱いくら']) {
+      expect(title).toContain(word);
+    }
   });
 });
