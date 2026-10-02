@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import Calculator from './Calculator';
 
 const title = '在職老齢年金 計算機｜令和8年4月から基準額は65万円（62万円ではありません）';
@@ -123,6 +124,12 @@ export default function Page() {
         <strong>62万円〜65万円の帯にいる方</strong>は、62万円で計算すると「年金が減る」と出ますが、
         実際には<strong>全額支給</strong>です。結論が逆になるため、本ツールは65万円で計算しています。
       </p>
+      <PublicToolLink slug="kosei-nenkin-jogen">
+        <p>
+          同じ改正法では、厚生年金の標準報酬月額の上限も2027年9月から65万円→75万円へ3段階で上がります。月給ごとの保険料の増え方は
+          <ToolLink slug="kosei-nenkin-jogen">厚生年金 上限引き上げ 計算機</ToolLink>で出せます。
+        </p>
+      </PublicToolLink>
 
       <h2>在職老齢年金の計算方法</h2>
       <p>使う数字は2つだけです。</p>

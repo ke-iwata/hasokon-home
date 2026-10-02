@@ -85,6 +85,44 @@ export const PENSION_STANDARD_MIN = 88_000;
 export const PENSION_STANDARD_MAX = 650_000;
 
 /**
+ * 厚生年金の標準報酬月額の上限の段階。令和7年法律第74号で 65万 → 68万（2027-09）→ 71万（2028-09）→ 75万円（2029-09）。
+ * 新しい等級の境目（66.5万・69.5万・73万円）は健康保険の GRADES 36〜38 等級と同じなので、等級表は足さない。
+ *
+ * 一次情報: 厚生労働省「厚生年金等の標準報酬月額の上限の段階的引上げについて」
+ * https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000147284_00024.html
+ *
+ * `PENSION_STANDARD_MAX` はまだ 650,000 の1値のまま（既存5ツールが参照）。施行日つきへの置き換えは
+ * docs/features/kosei-nenkin-hyojun-hoshu-jogen.md の「置き換えの約束」に従って別に行う。
+ *
+ * 【データ更新箇所】上限の段階が改正されたらここ（施行日の昇順を保つ）
+ */
+export const PENSION_CAP_STAGES: ReadonlyArray<{
+  /** 施行日 'YYYY-MM-DD'。先頭（現行）は持たない */
+  effectiveFrom?: string;
+  /** 上限の標準報酬月額 */
+  cap: number;
+  /** 上限の厚生年金の等級 */
+  grade: number;
+}> = [
+  { cap: 650_000, grade: 32 },
+  { effectiveFrom: '2027-09-01', cap: 680_000, grade: 33 },
+  { effectiveFrom: '2028-09-01', cap: 710_000, grade: 34 },
+  { effectiveFrom: '2029-09-01', cap: 750_000, grade: 35 },
+];
+
+/**
+ * その日（'YYYY-MM-DD'）に効いている厚生年金の標準報酬月額の上限。
+ * **日付は必ず引数で受け取る**（既定の「今日」を持たない。静的書き出しのビルド時刻で固まるのを避けるため）。
+ */
+export function pensionCapAt(date: string): number {
+  let cap = PENSION_CAP_STAGES[0].cap;
+  for (const stage of PENSION_CAP_STAGES) {
+    if (stage.effectiveFrom === undefined || stage.effectiveFrom <= date) cap = stage.cap;
+  }
+  return cap;
+}
+
+/**
  * 厚生年金の標準賞与額の上限（**1か月あたり**150万円。厚生年金保険法24条の4）。
  * 同じ月に2回以上支給されたときは合算して150万円で頭打ちになる。
  * 健康保険の標準賞与額は「年度の累計573万円」で、こちらは `kosodate-shienkin.ts` の

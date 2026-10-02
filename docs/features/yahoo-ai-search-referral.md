@@ -1,6 +1,6 @@
 # Yahoo! JAPAN 検索の AI アシスタント経由の流入（`utm_source=openai`）が 1 週間で 1 → 138 セッション/日に増え、GA4 では「Organic Search」「Cross-network」「Unassigned」に割れて数えられている — 週次集計に「参照元ホスト × utm_source」を足し、AI 経由の読み方を直す
 
-**状態**：提案（2026-10-01 起票。セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
+**状態**：**A・B・D を実装済み**（2026-10-01。セッション `session_017DFEqwXCyCLuP8bRWNrRt2`）。C は運営者の任意作業で未着手。B の判定（09-30 の行が付け直されたか）は 10-05 の週次で見る。起票は 2026-10-01（セッション `session_01CBTnoTTpMsUXsqGpqGYn7f`）。
 **緊急度**：高。**サイトの 1 日のセッション数がこの 1 本の経路で 3 日間に 34 → 137 に跳ねた**のに、
 いまの週次集計（`scripts/ga4-ai-channel.mjs`）はこれを「AI Assistant」として数えない。
 次の週次（10-05 月）で「AI Assistant は横ばい、Organic Search と Cross-network が急増」と読んでしまう。
@@ -115,6 +115,9 @@
   `AI 経由: 合計 N（ChatGPT 直接 n1〔sessionSource = chatgpt.com〕・Yahoo! AI n2〔sessionSource = openai〕・その他の AI Assistant n3）`。
   **判断に使う値は `AI Assistant` チャネル単独から、この合計に替える。** 前期との比較も合計で出す
 - 読み方の注記を `formatReport()` に固定で 1 行：「`openai` は Yahoo! JAPAN 検索の AI 回答（OpenAI API 経由）。ChatGPT 本体は `chatgpt.com`」
+- `openai` は OpenAI API の Web 検索を使うサービス全般が付ける値なので、参照元ホストの表に `search.yahoo.co.jp` 以外の
+  `openai` 行が出てきたら「Yahoo! AI」という呼び名を見直す（合計 `aiTraffic.total` はそのままで正しい）
+- 2 行目の `AI Assistant: N セッション` と全体比・着地上位は**チャネル単独**の値で、1 行目の合計とは数字が違う。行に「チャネル単独」と添える
 - JSON スナップショットにも `aiTraffic` と `referrers` を残す（週次の artifact で推移を追えるように）
 
 ### B. 前日分の「処理待ち」を注記し、閾値で警告する
