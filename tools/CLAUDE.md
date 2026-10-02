@@ -212,6 +212,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年4月 | 雇用保険料率（労働者負担・一般の事業）を `lib/shaho-ryoritsu.ts` の `EMPLOYMENT_RATE` に反映。厚生労働省が毎年出す「令和◯年度の雇用保険料率」のPDF（[令和8年度](https://www.mhlw.go.jp/content/001692566.pdf)）を正とする（令和8年度は 5/1,000。**①労働者負担の欄を見る**。合計の 13.5/1,000 や事業主負担と取り違えないこと）。`tests/hatarakizon.test.ts` が率そのものを固定しているので、直し忘れではなく「直したこと」が差分に出る |
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・出産手当金・働き損・在職老齢年金の5ツールが参照） |
+| 厚生年金の標準報酬月額の上限が改正されたとき | `lib/shaho-grades.ts` の `PENSION_CAP_STAGES`（施行日つき。厚生年金 上限引き上げ計算機が `pensionCapAt(date)` で参照）。**`PENSION_STANDARD_MAX` はまだ 650,000 の1値**で、手取り・賞与手取り・働き損・ふるさと納税・在職老齢年金が参照している。**2027-08 までに施行日つきへ置き換える**（[仕様](../docs/features/kosei-nenkin-hyojun-hoshu-jogen.md)の「置き換えの約束」。基準日はツールごとに決めて引数で渡す） |
 | 全被保険者の標準報酬月額の平均額の改定時 | `lib/kenpo-daily-amount.ts` の `SHORT_TENURE_CAP`（被保険者期間12か月未満の上限。**傷病手当金・出産手当金の2ツールに効く**。協会けんぽを正とする。健保組合は別の額を定めている場合がある） |
 | 毎年度（在職老齢年金） | 支給停止調整額を `lib/zaishoku-rorei-nenkin.ts` の `FISCAL_YEARS` に1行追加（賃金の変動に応じて毎年度改定される） |
 | 毎年8月1日（育児休業給付） | `lib/ikuji-kyugyo.ts` の `WAGE_DAILY_MAX` / `WAGE_DAILY_MIN` と支給上限額・下限額（`UNIT_CAP_*` / `UNIT_FLOOR_*` / `SHUSSHOGO_CAP` / `SHUSSHOGO_FLOOR` / `SHUSSHOJI_CAP`）を、厚労省「育児休業等給付の内容と支給申請手続」の改訂版か支給限度額のリーフレットから写し、`LIMIT_LABEL` / `LIMIT_EFFECTIVE_FROM` / `LIMIT_EFFECTIVE_UNTIL` / `DATA_CHECKED_AT` を直す。**失業保険と同じ日に改定されるが別表**（年齢区分が無い）なので、`lib/shitsugyo-hoken.ts` の値を写し合わせないこと。一次情報も基本手当の告示ではなく育児休業給付側から取る。給付率（67%/50%/13%）と180日・28日は法律なので毎年は変わらない。**同じPRで `lib/ikuji-jitan-kyufu.ts`（育児時短就業給付）の `START_WAGE_DAILY_MAX` / `START_WAGE_DAILY_MIN`（同じ表）と支給限度額 `LIMIT_MAX`・最低限度額 `LIMIT_MIN`、`LIMIT_*` / `DATA_CHECKED_AT` も直す**（`tests/ikuji-jitan-kyufu.test.ts` が2本の食い違いを落とす） |
@@ -247,9 +248,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール50本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`jusho-henko-toki` が `preview`。ほかは `public`。
+- **ツール51本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`kosei-nenkin-jogen`・`jusho-henko-toki` が `preview`。ほかは `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」、
-  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`jusho-henko-toki` は相続登記の公開から4週以内（遅くとも2027-03）に、`ikuji-jitan-kyufu` は 2027-01-15 までに `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ）** /
+  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`jusho-henko-toki` は相続登記の公開から4週以内（遅くとも2027-03）に、`ikuji-jitan-kyufu` は 2027-01-15 までに `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ。`kosei-nenkin-jogen` は 2027-08-31 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は

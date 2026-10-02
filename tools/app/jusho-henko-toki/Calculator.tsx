@@ -216,7 +216,7 @@ export default function Calculator() {
                     return (
                       <tr key={label}>
                         <td style={rowLabel}>
-                          {label}（{formatJaWithWeekday(on)}）
+                          {label}：{formatJaWithWeekday(on)}
                         </td>
                         <td style={isFirst ? { fontWeight: 700 } : undefined}>
                           {formatJaWithWeekday(d.deadline)}

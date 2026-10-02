@@ -262,18 +262,29 @@ export const UNRESOLVED_WARN_PERCENT = 10;
  * 直近ぶんで、参照元が未確定のセッションの数・割合・警告するか。
  *
  * 仕様: docs/features/yahoo-ai-search-referral.md の B
+ *
+ * **幽霊セッション（page_view の無い `Unassigned`）を差し引いてから閾値と比べる。**
+ * 幽霊は参照元が `(not set)` のまま `Unassigned` に入るので、差し引かないと
+ * 幽霊だけで 10% を超える週に毎週鳴って意味を失う（web-vitals-phantom-sessions.md の C）。
+ * 未確定の件数より多くは引かない（0 未満にしない）。
+ *
+ * @param {ReturnType<typeof parseRows>} channelRows `channelRequest` の応答（期間 2 本）
+ * @param {{ warnPercent?: number, phantomSessions?: number }} [options]
+ *   `phantomSessions` は `summarizePhantom()` の `unassigned`（直近ぶん）
  */
 export function summarizeUnresolved(channelRows, options = {}) {
   const warnPercent = options.warnPercent ?? UNRESOLVED_WARN_PERCENT;
-  let sessions = 0;
+  let raw = 0;
   let total = 0;
   for (const row of channelRows) {
     if (isPrevious(row)) continue;
     total += row.sessions;
-    if (UNRESOLVED_SOURCES.includes(row.sessionSource)) sessions += row.sessions;
+    if (UNRESOLVED_SOURCES.includes(row.sessionSource)) raw += row.sessions;
   }
+  const phantom = Math.min(raw, Math.max(0, options.phantomSessions ?? 0));
+  const sessions = raw - phantom;
   const share = total === 0 ? 0 : Math.round((sessions / total) * 1000) / 10;
-  return { sessions, share, warnPercent, warn: share > warnPercent };
+  return { sessions, raw, phantom, share, warnPercent, warn: share > warnPercent };
 }
 
 /**
@@ -362,6 +373,7 @@ export function summarize(channelRows, landingRows, options = {}) {
   const current = totals.current.get(AI_CHANNEL) ?? 0;
   const previous = totals.previous.get(AI_CHANNEL) ?? 0;
   const allCurrent = [...totals.current.values()].reduce((a, b) => a + b, 0);
+  const phantom = summarizePhantom(phantomRows, allCurrent);
 
   return {
     days,
@@ -378,9 +390,9 @@ export function summarize(channelRows, landingRows, options = {}) {
       })),
     sources: topSources(channelRows),
     landings: topLandings(landingRows),
-    phantom: summarizePhantom(phantomRows, allCurrent),
+    phantom,
     referrers: summarizeReferrers(referrerRows),
-    unresolved: summarizeUnresolved(channelRows),
+    unresolved: summarizeUnresolved(channelRows, { phantomSessions: phantom.unassigned }),
   };
 }
 
@@ -458,7 +470,9 @@ export function formatUnresolvedLine(unresolved, days = WINDOW_DAYS) {
   const mark = unresolved.warn ? `⚠ ${unresolved.warnPercent}% 超え: ` : '';
   return (
     `  ${mark}参照元が未確定のセッション（${UNRESOLVED_SOURCES.join('・')}）: ${unresolved.sessions}` +
-    `（直近${days}日・全体の ${unresolved.share}%）`
+    `（直近${days}日・全体の ${unresolved.share}%` +
+    (unresolved.phantom ? `・幽霊 ${unresolved.phantom} 件を除く` : '') +
+    '）'
   );
 }
 
