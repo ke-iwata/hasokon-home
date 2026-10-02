@@ -940,6 +940,211 @@ ol {
   color: var(--muted);
 }
 
+/* ---- 間違い探し ----
+
+   仕様: docs/features/game-machigai-sagashi.md「画面」・docs/features/mobile-one-screen.md。
+   絵は 4:3（viewBox 320×240）。**広い画面は横並び、600px 以下は縦に積む**（各 ≤ 42vh）。
+   絵の幅は画面の高さからも決める：横並びは `(100dvh − chrome) × 4/3`、縦積みは
+   `min(42vh, (100dvh − chrome) / 2) × 4/3`。`--chrome` は入れ物（`.ms-game`）に置く。
+   `--chrome` は絵より上が使う高さの実測値（パンくず・見出し・リード文・段・残り数の行）。
+   記録の帯と案内の1行は絵の下に置き、数えない。**絵の幅の下限 294px は当たり判定の円を
+   直径 44px 以上に保つための値**（`lib/machigai-sagashi.ts` の `MIN_PICTURE_PX` と同じ。
+   テストが突き合わせる）。375×667 の縦向きでは下限が効き、見出しの分だけスクロールすると
+   残り数と 2 枚がカードの中で 1 画面に収まる。横向きの小型端末（高さ 500px 以下）は見出しまでを
+   1 画面に入れられないので、カードの中だけで数える（カードまでスクロールすれば 2 枚が収まる）。
+
+   当たり判定はタップした点の座標で行う。キーボード用のマス（`.ms-key`）は指では押せない
+   （pointer-events: none）ので、タップは絵の判定に届く */
+.ms-game {
+  --chrome: 310px;
+}
+
+.ms-modes {
+  margin: 4px 0 2px;
+}
+
+.ms-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin: 2px 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ms-left {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.ms-left strong {
+  font-size: 1.6rem;
+  margin-left: 2px;
+  color: var(--brand);
+}
+
+.ms-clear {
+  color: var(--ok);
+}
+
+.ms-time {
+  margin-left: auto;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.ms-sub {
+  margin-left: 4px;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.ms-hint-btn,
+.ms-new-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+/* 読み上げだけに出す「あと3」（画面には大きな数字が出ている） */
+.ms-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.ms-pics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  justify-items: center;
+}
+
+.ms-pic,
+.ms-loading {
+  position: relative;
+  width: 100%;
+  max-width: max(294px, calc((100dvh - var(--chrome, 310px)) * 4 / 3));
+  aspect-ratio: 4 / 3;
+}
+
+.ms-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  color: var(--muted);
+}
+
+.ms-pic {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* ダブルタップの拡大で判定が遅れないように */
+  touch-action: manipulation;
+}
+
+.ms-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 絵の地はライト・ダークとも同じ明るい色（図形の色を画面の配色に左右させない） */
+.ms-bg {
+  fill: #fbf8f1;
+}
+
+.ms-found {
+  fill: none;
+  stroke: #d1342f;
+  stroke-width: 3.5;
+}
+
+.ms-hint {
+  fill: #f2b134;
+  fill-opacity: 0.25;
+  stroke: #f2b134;
+  stroke-width: 3;
+  animation: ms-blink 0.5s ease-in-out 2;
+}
+
+@keyframes ms-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+.ms-focus {
+  fill: none;
+  stroke: #2f6fd0;
+  stroke-width: 2.5;
+  stroke-dasharray: 5 3;
+}
+
+.ms-keys {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ms-key {
+  position: absolute;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ms-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.ms-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+
+.ms-share-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-hint {
+    animation: none;
+  }
+}
+
+/* 横向きの小型端末：カードの中（段・帯・残り数・案内）だけを chrome に数える */
+@media (max-height: 500px) and (min-width: 601px) {
+  .ms-game {
+    --chrome: 130px;
+  }
+}
+
 /* ---- マッチ3パズル ----
 
    仕様: docs/features/game-match3.md「操作」「画面」。
@@ -5712,5 +5917,49 @@ button.hf-card {
     padding: 8px 10px;
     font-size: 0.82rem;
     white-space: nowrap;
+  }
+
+  /* 間違い探し：2 枚を縦に積む。各 ≤ 42vh で、2 枚と chrome が 1 画面に入る幅にする */
+  /* カードの左右の余白（12px）まで絵を広げる。横幅いっぱいで当たり判定の円を大きくするため */
+  .ms-pics {
+    grid-template-columns: 1fr;
+    gap: 6px;
+    margin-inline: -10px;
+  }
+
+  .ms-pic,
+  .ms-loading {
+    max-width: max(294px, calc(min(42vh, (100dvh - var(--chrome, 310px)) / 2) * 4 / 3));
+  }
+
+  .ms-game .seg button {
+    padding: 8px 6px;
+    font-size: 0.8rem;
+  }
+
+  .ms-new-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .ms-time {
+    font-size: 0.85rem;
+  }
+
+  .ms-hint-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .ms-status {
+    gap: 6px;
+  }
+
+  /* 320px 幅（iPhone SE 第1世代級）で残り数の行が「やり直す」まで収まるように、
+     ヒントのペナルティの文言を外す（ボタンの aria-label とページ本文には残っている） */
+  @media (max-width: 340px) {
+    .ms-hint-penalty {
+      display: none;
+    }
   }
 }
