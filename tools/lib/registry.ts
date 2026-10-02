@@ -401,6 +401,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-29',
   },
   {
+    // 仕様: docs/features/jusho-henko-toki-kigen.md
+    slug: 'jusho-henko-toki',
+    // 引っ越しの日から数えるツールなので Truck。ほかで使っていない
+    icon: 'Truck',
+    // 「過料」は判定するように読めるので名前に入れない（相続登記と同じ）
+    name: '住所変更登記の期限チェッカー',
+    description:
+      '不動産の住所・氏名の変更登記は2026年4月から義務になり、変わった日から2年以内、それより前の変更は2028年3月31日が期限です。引っ越し・改姓の日を入れると、期限と残り日数を日付で出します。未登記の変更が2回あるときは早いほうの期限を、登録免許税（1個1,000円）の目安も。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-02',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
