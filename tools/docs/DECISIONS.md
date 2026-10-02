@@ -22,6 +22,7 @@
   本文に載せていない。仕様書の「実装時の確認」に記録した
 - 仕様書は「相続登記を `public` にしてから着手」としていたが、`preview` で入れる分には公開の順序に触れないので先に実装した。
   `public` にするのは相続登記の公開後（仕様書の公開条件どおり）
+
 ## 2026-10-01：住宅取得等資金の贈与税 非課税 判定・計算機を足した（`stage: 'preview'`）
 
 [features/jutaku-shutoku-shikin-hikazei.md](../../docs/features/jutaku-shutoku-shikin-hikazei.md)。
