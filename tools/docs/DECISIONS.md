@@ -8,6 +8,21 @@
 
 ---
 
+## 2026-10-04：公開条件のそろった8本を公開した（ツールは47本が `public`）
+
+運営者の「tool系はリリースしよう」に対し、範囲を確認して**公開条件のそろった8本**に決めた
+（`preview` の10本のうち、防衛特別所得税は「運営者の確認後」、厚生年金 上限引き上げは
+上限額の施行日つきへの置き換えが未着手のため外した。`wip` の3本も外した）。
+
+- 公開：`kokunen-ikuji-menjo`（10-01 の施行後に公開の約束どおり）・`ikuji-jitan-kyufu`・`zoyozei-keisan`・
+  `jutaku-shutoku-shikin`（10-31 までの約束）・`sozoku-toki-kigen`・`jusho-henko-toki`（相続登記の公開後、の条件は同時公開で満たす）・
+  `shoyo-tedori`・`tsukin-teate-hikazei`
+- カードの絵を `app/ToolArt.tsx` に8枚足した（出てくるものを描く：賞与袋とお札、免除になる月と斜線の硬貨、
+  時短の棒と上乗せ、贈与の年と足し戻し、リボンの家、登記の書類と砂時計、引っ越し、車と距離の標識）。
+  最初の判子の絵は人の形に見えたので、斜線の硬貨に描き直した
+- トップ（`home/index.html`）のお金の節に8枚を足し、近道の件数を 24 → 32 に。絵は `scripts/sync-home-card-art.mjs` で写した
+- 各仕様書の `**状態**：` 行を公開済みに直し、公開前の記録は残した
+
 ## 2026-10-02：住所変更登記の期限チェッカーを足した（`stage: 'preview'`）
 
 [features/jusho-henko-toki-kigen.md](../../docs/features/jusho-henko-toki-kigen.md)。
