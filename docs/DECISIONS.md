@@ -8,6 +8,24 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-10-03：tools／games／learn の Next.js を 16.3.8 に揃え、lockfile の drift をテストで止め、Dependabot で毎週見る
+
+[dependency-vulnerability-audit.md](./features/dependency-vulnerability-audit.md) の A-0・A・B-1。
+3 アプリの lockfile が next 16.2.12／16.3.0／16.3.4 にばらけ、`npm audit --omit=dev` が critical 1・high 3 を返していた。
+
+- **上げた版**：3 アプリとも `next ^16.3.8`（lockfile も 16.3.8。メジャーは据え置き）・`react`／`react-dom` 19.2.8・`sharp` 0.35.5（`npm update` で next の範囲内）・
+  `postcss` 8.5.23・`nanoid` 3.3.19。**`npm audit --omit=dev` は 3 アプリとも 0 件**。next 16.3.6 以降は固定依存の postcss を 8.5.23 に上げていたので、
+  仕様書で「残る見込み」としていた tools の postcss 8.4.31 も消えた
+- **残した勧告**：開発時だけの `@vitest/mocker`（moderate。vitest 4.1.10 の内部）。本番の成果物に入らず、learn は `--force`（メジャー更新）が要るので
+  Dependabot の dev-tools グループに任せる
+- **配信面に影響しなかった理由**：next の 3 件（`next/og`・画像最適化 API・Windows サーバーの RCE）はいずれもサーバー側で、`output: 'export'`・
+  `images: { unoptimized: true }` の当サイトには攻撃面が無い。sharp・postcss はビルド時にリポジトリ内のファイルだけを処理する
+- next 16.3 の型チェックで tools の `tests/tabako-zei.test.ts` の `number | undefined` を `toBeGreaterThan` に渡す 2 行が落ちたので `!` を付けた
+- `scripts/test/deps-aligned.test.mjs` が `next`・`react`・`react-dom`・`sharp` の lockfile の版を 3 アプリで比べる
+- `test.yml` に 3 アプリの `npm ci && npm test && npm run build` を `pull_request` で足した（Dependabot の PR の受け入れ）
+- `.github/dependabot.yml`：npm は週次（月曜 9:00 JST）で `group-by: dependency-name` により 3 ディレクトリを 1 本の PR に。github-actions は月次。
+  **セキュリティ更新の有効化はリポジトリ設定で運営者が 1 回行う**
+
 ## 2026-10-02：GA4 週次集計の「参照元が未確定」の警告は、幽霊セッションを差し引いてから閾値と比べる
 
 [yahoo-ai-search-referral.md](./features/yahoo-ai-search-referral.md) の B。`(data not available)` / `(not set)` の行には

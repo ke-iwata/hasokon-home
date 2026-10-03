@@ -390,7 +390,7 @@ describe('estimateSpending（負担額計算）', () => {
     const cheap = estimateSpending({ sticksPerDay: 20, pricePerPack: 500, rates: CURRENT_RATES });
     const rich = estimateSpending({ sticksPerDay: 20, pricePerPack: 650, rates: CURRENT_RATES });
     expect(cheap.annualTobaccoTax).toBe(rich.annualTobaccoTax);
-    expect(cheap.taxRatioPercent).toBeGreaterThan(rich.taxRatioPercent);
+    expect(cheap.taxRatioPercent).toBeGreaterThan(rich.taxRatioPercent!);
   });
 
   it('増税後の税率を渡すと、たばこ税だけが増える', () => {
@@ -400,7 +400,7 @@ describe('estimateSpending（負担額計算）', () => {
       pricePerPack: 580,
       rates: PHASES[3].rates,
     });
-    expect(later.annualTobaccoTax).toBeGreaterThan(now.annualTobaccoTax);
+    expect(later.annualTobaccoTax).toBeGreaterThan(now.annualTobaccoTax!);
     expect(later.annual).toBe(now.annual);
   });
 
