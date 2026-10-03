@@ -1,7 +1,9 @@
 name: Test
 
-# node --test で動くテスト（scripts/ の計測スクリプトと home/ のポータル）。
-# tools/ と games/ は各ディレクトリの vitest で別に動かす。
+# node --test で動くテスト（scripts/ の計測スクリプトと home/ のポータル）と、
+# tools / games / learn の vitest とビルド（deploy.yml の build-* と同じ手順）。
+# アプリのビルドを PR で回すのは、Dependabot の依存更新 PR がビルドを壊していないかを
+# マージ前に見るため（仕様: docs/features/dependency-vulnerability-audit.md の A-0）。
 # ネットワークもGoogleの認証情報も要らない（すべて差し替えて動かしている）。
 on:
   push:
@@ -31,3 +33,29 @@ jobs:
 
       - name: node --test
         run: node --test "scripts/test/*.test.mjs"
+
+  apps:
+    name: ${{ matrix.app }} テスト & ビルド
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [tools, games, learn]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+
+      - run: npm ci
+
+      - run: npm test
+
+      - name: 静的サイトのビルド
+        run: npm run build
