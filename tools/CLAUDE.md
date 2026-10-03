@@ -249,9 +249,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール52本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`kosei-nenkin-jogen`・`jutaku-shutoku-shikin`・`jusho-henko-toki` が `preview`。ほかは `public`。
+- **ツール53本（`tsukin-teate-hikazei`・`boei-tokubetsu-shotokuzei`・`shoyo-tedori`・`kokunen-ikuji-menjo`・`zoyozei-keisan`・`ikuji-jitan-kyufu`・`sozoku-toki-kigen`・`kosei-nenkin-jogen`・`jutaku-shutoku-shikin`・`jusho-henko-toki`・`mynumber-kigen` が `preview`。ほかは `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」、
-  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`ikuji-jitan-kyufu` は 2027-01-15 までに、`jutaku-shutoku-shikin` は 2026-10-31 までに、`jusho-henko-toki` は相続登記の公開から4週以内（遅くとも2027-03）に `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ。`kosei-nenkin-jogen` は 2027-08-31 までに `public` にする）** /
+  `shoyo-tedori` は 2026-11-20 までに、`zoyozei-keisan`・`sozoku-toki-kigen` は 2026-12-15 までに、`ikuji-jitan-kyufu` は 2027-01-15 までに、`jutaku-shutoku-shikin` は 2026-10-31 までに、`jusho-henko-toki` は相続登記の公開から4週以内（遅くとも2027-03）に `public` にする。国民年金 育児免除は2026-10-01の施行後に `public` へ。`kosei-nenkin-jogen` は 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は

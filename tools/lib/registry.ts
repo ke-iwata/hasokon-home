@@ -436,6 +436,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-02',
   },
   {
+    // 仕様: docs/features/mynumber-card-yuko-kigen.md
+    slug: 'mynumber-kigen',
+    // カードの期限なので IdentificationCard。ほかで使っていない
+    icon: 'IdentificationCard',
+    // 「マイナ」の略称を商品名のように使わない（仕様書「公開条件」）
+    name: 'マイナンバーカード・電子証明書の有効期限チェッカー',
+    description:
+      '生年月日とカード表面の有効期限を入れると、カード本体（10回目の誕生日）と電子証明書（5回目の誕生日）の期限、更新できる日、通知書が届く目安を日付で出します。期限切れのときはマイナ保険証の3か月の猶予がいつまでかも。',
+    category: '生活・健康',
+    stage: 'preview',
+    updatedAt: '2026-10-03',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
