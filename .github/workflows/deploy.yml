@@ -155,17 +155,17 @@ jobs:
               || echo "::notice::${p} を取得できませんでした。取れなかった分は全件送る側に倒れます"
           done
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: tools-site
           path: tools-out
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: games-site
           path: games-out
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: learn-site
           path: learn-out
