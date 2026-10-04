@@ -3,7 +3,7 @@ import ToolIcon from '@/app/ToolIcon';
 import type { ToolCategory } from '@/lib/registry';
 
 /**
- * 一覧カードの絵（60px のタイルに 40px で描く）。
+ * 一覧カードの絵（60px のタイルに 44px で描く）。
  *
  * **描くのは道具ではなく「使うと出てくるもの」。** 電卓ではなく戻ってくる硬貨、
  * 書類ではなく内訳のドーナツ図。Phosphor の線画は概念を描くので、
@@ -365,6 +365,117 @@ const ART: Record<string, ReactNode> = {
     </>
   ),
 
+  // 賞与の袋（縦の封筒からお札がのぞく）と、手元に残る額
+  'shoyo-tedori': (
+    <>
+      <rect x="15" y="4" width="22" height="16" rx="2" {...F} />
+      <rect x="15" y="4" width="22" height="16" rx="2" {...S} strokeWidth={2.4} />
+      <circle cx="26" cy="11" r="3" {...S} strokeWidth={2} />
+      <rect x="9" y="12" width="34" height="46" rx="3" {...SOLID} />
+      <path d="M9 21 H43" {...CUT_S} strokeWidth={2.6} />
+      <path d="M17 31 h18 M17 38 h12" {...CUT_S} strokeWidth={2.6} />
+      <circle cx="47" cy="47" r="13" {...CUT} />
+      <YenCoin cx={47} cy={47} r={10} />
+    </>
+  ),
+  // 国民年金：12か月のうち免除になる月と、払わずに済む保険料（斜線の硬貨）
+  'kokunen-ikuji-menjo': (
+    <>
+      {[0, 1, 2].map((row) =>
+        [0, 1, 2, 3].map((col) => {
+          const i = row * 4 + col;
+          const x = 6 + col * 12;
+          const y = 6 + row * 12;
+          return i >= 3 && i <= 6 ? (
+            <rect key={i} x={x} y={y} width="9" height="9" rx="2" {...SOLID} />
+          ) : (
+            <rect key={i} x={x} y={y} width="9" height="9" rx="2" {...F} />
+          );
+        }),
+      )}
+      <circle cx="46" cy="46" r="15" {...CUT} />
+      <YenCoin cx={46} cy={46} r={11} />
+      <path d="M34 58 L58 34" {...CUT_S} strokeWidth={7} />
+      <path d="M34 58 L58 34" {...S} />
+    </>
+  ),
+  // 時短で減った分に、給付が上乗せされる
+  'ikuji-jitan-kyufu': (
+    <>
+      <circle cx="13" cy="15" r="8" {...S} strokeWidth={2.6} />
+      <path d="M13 10.5 V15 L16 17" {...S} strokeWidth={2.4} />
+      <rect x="25" y="9" width="33" height="12" rx="3" {...S} />
+      <rect x="6" y="34" width="34" height="12" rx="3" {...SOLID} />
+      <rect x="42" y="34" width="12" height="12" rx="3" {...F} />
+      <rect x="42" y="34" width="12" height="12" rx="3" {...S} strokeWidth={2.4} />
+      <path d="M48 52 v8 M44 56 h8" {...S} strokeWidth={2.6} />
+    </>
+  ),
+  // 贈与の年を並べ、相続の前の年だけが足し戻される
+  'zoyozei-keisan': (
+    <>
+      <path d="M4 46 H54" {...S} />
+      <path d="M58 20 V52" {...S} />
+      {[8, 17, 26].map((x) => (
+        <g key={x}>
+          <rect x={x - 3.5} y="35" width="7" height="7" rx="1.5" {...F} />
+          <rect x={x - 3.5} y="35" width="7" height="7" rx="1.5" {...S} strokeWidth={2} />
+        </g>
+      ))}
+      {[35, 44, 53].map((x) => (
+        <rect key={x} x={x - 3.5} y="35" width="7" height="7" rx="1.5" {...SOLID} />
+      ))}
+      <path d="M31 30 V25 H57 V30" {...S} strokeWidth={2.6} />
+      <path d="M44 25 V14 M38 18 L44 12 L50 18" {...S} strokeWidth={2.6} />
+    </>
+  ),
+  // 住宅を買うお金の贈与（リボンをかけた家）
+  'jutaku-shutoku-shikin': (
+    <>
+      <path d="M8 31 L32 12 L56 31 V56 H8 Z" {...SOLID} />
+      <path d="M32 21 V56 M8 42 H56" {...CUT_S} strokeWidth={3.4} />
+      <path d="M32 12 C24 2 18 8 32 12 C46 8 40 2 32 12" {...S} strokeWidth={2.6} />
+    </>
+  ),
+  // 登記の書類と、期限の砂時計
+  'sozoku-toki-kigen': (
+    <>
+      <rect x="8" y="5" width="32" height="44" rx="3" {...F} />
+      <rect x="8" y="5" width="32" height="44" rx="3" {...S} />
+      <path d="M15 22 L24 14 L33 22 V29 H15 Z" {...SOLID} />
+      <path d="M15 36 h18 M15 42 h11" {...S} strokeWidth={2.4} />
+      <rect x="35" y="30" width="24" height="31" rx="4" {...CUT} />
+      <path d="M40 34 H54 L47 45.5 L54 57 H40 L47 45.5 Z" {...F} />
+      <path d="M38 34 H56 M38 57 H56 M40 34 L47 45.5 L40 57 M54 34 L47 45.5 L54 57" {...S} strokeWidth={2.6} />
+      <path d="M42.5 55 H51.5 L47 48.5 Z" {...SOLID} />
+    </>
+  ),
+  // 引っ越し：前の家から次の家へ
+  'jusho-henko-toki': (
+    <>
+      <path d="M5 42 L15 33 L25 42 V56 H5 Z" {...F} />
+      <path d="M5 42 L15 33 L25 42 V56 H5 Z" {...S} />
+      <path d="M37 40 L48 30 L59 40 V56 H37 Z" {...SOLID} />
+      <rect x="45" y="46" width="6" height="10" rx="1" {...CUT} />
+      <path d="M15 26 C20 10 42 8 47 22" {...S} />
+      <path d="M41 19 L47 23 L50 16" {...S} />
+    </>
+  ),
+  // 通勤の車と、距離の標識
+  'tsukin-teate-hikazei': (
+    <>
+      <path d="M52 52 V24" {...S} />
+      <rect x="40" y="10" width="22" height="14" rx="2.5" {...SOLID} />
+      <path d="M45 17 h12" {...CUT_S} strokeWidth={2.6} />
+      <path d="M4 53 H60" {...S} />
+      <path d="M5 46 V39 L12 31 H30 L37 39 H44 V46 Z" {...SOLID} />
+      <path d="M14 34 H20 V38 H11 Z M23 34 H29 L32 38 H23 Z" {...CUT} />
+      <circle cx="13" cy="47" r="5" {...SOLID} />
+      <circle cx="35" cy="47" r="5" {...SOLID} />
+      <circle cx="13" cy="47" r="2" {...CUT} />
+      <circle cx="35" cy="47" r="2" {...CUT} />
+    </>
+  ),
   // ---- 生活・健康 ----
   // 水と缶詰
   'bosai-bichiku-keisan': (

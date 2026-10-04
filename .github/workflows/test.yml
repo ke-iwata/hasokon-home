@@ -19,7 +19,7 @@ jobs:
     name: scripts / home のテスト
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # test/sitemap-home-lastmod.test.mjs が `git log` で home/ のHTMLの
           # 最終変更日を見るため、履歴を全部持ってくる。既定の fetch-depth: 1 では
@@ -45,7 +45,7 @@ jobs:
       run:
         working-directory: ${{ matrix.app }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:

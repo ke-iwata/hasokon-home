@@ -29,7 +29,7 @@ jobs:
       run:
         working-directory: tools
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -58,7 +58,7 @@ jobs:
       run:
         working-directory: games
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -87,7 +87,7 @@ jobs:
       run:
         working-directory: learn
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v7
         with:
@@ -114,7 +114,7 @@ jobs:
     needs: [build-tools, build-games, build-learn]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # タグなら本番、mainならテスト環境
       - name: デプロイ先を判定
@@ -187,7 +187,7 @@ jobs:
             || echo "::warning::同期するサイトマップの一部をコピーできませんでした。その分は IndexNow に通知されません"
 
       - name: AWS認証（OIDC・長期キー不要）
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
