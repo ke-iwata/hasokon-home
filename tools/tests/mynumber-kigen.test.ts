@@ -6,6 +6,7 @@ import {
   cardExpiryFromIssue,
   certExpiryFromCard,
   certExpiryFromIssue,
+  certMaybeRenewed,
   classifyByExpiry,
   closedDayReason,
   daysLeftLabel,
@@ -207,5 +208,41 @@ describe('入力の検査とまとめ', () => {
     expect(daysLeftLabel(1868)).toBe('あと1,868日');
     expect(daysLeftLabel(0)).toBe('今日が期限');
     expect(daysLeftLabel(-3)).toBe('3日過ぎています');
+  });
+});
+
+describe('#333 レビューの指摘', () => {
+  it('必須1：券面から数えた電子証明書が切れていてカードが有効なら「更新済みかも」の印を立てる（断定しない）', () => {
+    const r = calcMynumber({ birth: '1980-07-01', cardExpiry: '2027-07-01' })!;
+    expect(r.cert.expiry).toBe('2022-07-01');
+    expect(certMaybeRenewed(r, '2026-10-03')).toBe(true);
+    // 更新した日を入れたら印は立たない
+    const renewed = calcMynumber({ birth: '1980-07-01', cardExpiry: '2027-07-01', certRenewed: '2022-07-15' })!;
+    expect(renewed.cert.expiry).toBe('2027-07-01');
+    expect(certMaybeRenewed(renewed, '2026-10-03')).toBe(false);
+    // まだ切れていない・カード本体も切れているときは立たない
+    expect(certMaybeRenewed(calcMynumber({ birth: '1985-11-14', cardExpiry: '2031-11-14' })!, '2026-10-03')).toBe(false);
+    expect(certMaybeRenewed(calcMynumber({ birth: '1980-07-01', cardExpiry: '2026-07-01' })!, '2026-10-03')).toBe(false);
+  });
+
+  it('必須2：更新後の電子証明書の期限はカード本体の期限を超えない', () => {
+    const r = calcMynumber({ birth: '1985-11-14', cardExpiry: '2031-11-14', certRenewed: '2027-12-01' })!;
+    expect(r.cert.expiry).toBe('2031-11-14');
+    expect(r.cert.cappedByCard).toBe(true);
+    const ok = calcMynumber({ birth: '1985-11-14', cardExpiry: '2031-11-14', certRenewed: '2026-11-20' })!;
+    expect(ok.cert.cappedByCard).toBe(false);
+  });
+
+  it('推奨1：旧ルールの境目は申請から交付までの遅れを見込む（2022-03申請・2022-05交付・4月に誕生日）', () => {
+    expect(classifyByExpiry('2003-04-15', '2027-04-15')).toBe('legacyMinor');
+    expect(classifyByExpiry('2003-09-30', '2027-09-30')).toBe('legacyMinor'); // 期限−5年がちょうど 2022-09-30
+    expect(classifyByExpiry('2003-10-01', '2027-10-01')).toBe('invalid'); // 期限−5年が 2022-10-01
+  });
+
+  it('推奨4：電子証明書を更新した日が今日より後・カードの期限より後ならエラー', () => {
+    const base = { birth: '1985-11-14', cardExpiry: '2031-11-14' };
+    expect(validateInput({ ...base, certRenewed: '2026-10-04' }, '2026-10-03')).toBe('renewed-future');
+    expect(validateInput({ ...base, certRenewed: '2031-11-15' }, '2031-12-01')).toBe('renewed-after-card');
+    expect(validateInput({ ...base, certRenewed: '2026-10-03' }, '2026-10-03')).toBeNull();
   });
 });

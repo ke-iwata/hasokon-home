@@ -6,11 +6,13 @@ import {
   CARD_BASIS,
   INPUT_ERROR_MESSAGES,
   calcMynumber,
+  certMaybeRenewed,
   daysLeft,
   daysLeftLabel,
   expiryStatus,
   formatDate,
   formatJaWithWeekday,
+  hokenGraceEnd,
   parseDate,
   validateInput,
   type ExpiryItem,
@@ -68,7 +70,7 @@ function ExpiryCard({
       {item.closedBecause && (
         <p className="hint" style={{ margin: '4px 0 0' }}>
           期限日は{item.closedBecause}
-          です。期限日が土日祝でも、期限はその日のままです（繰り下がりません）。窓口は開いていないので、前の平日までに。
+          です。期限日が土日祝でも、期限はその日のままです（繰り下がりません）。窓口が開いていないことが多いので、前の平日までに。
         </p>
       )}
       {children}
@@ -79,6 +81,32 @@ function ExpiryCard({
 /** 電子証明書の状態ごとの文面 */
 function CertStatus({ r, today }: { r: MynumberResult; today: string }) {
   const status = expiryStatus(r.cert.expiry, today);
+  // 券面から数えた最初の期限が過ぎているだけで、多くの人はその時点で一度更新している。断定しない（#333 必須1）
+  if (certMaybeRenewed(r, today)) {
+    return (
+      <p className="hint" style={{ marginTop: 8 }}>
+        券面から数えた最初の電子証明書は{formatJaWithWeekday(r.cert.expiry)}に切れています。
+        その後に更新していれば、上の「電子証明書を更新した日」を入れると期限を出し直します。
+        更新したかどうかは、マイナポータルやカードの追記欄でも確かめられます。
+      </p>
+    );
+  }
+  const cardExpired = expiryStatus(r.card.expiry, today) === 'expired';
+  // カード本体も切れていて、電子証明書の期限が券面から数えた最初のものだけのときは、
+  // 途中で更新していた人（電子証明書はカードの期限まで）とそうでない人の両方を書く
+  if (cardExpired && !r.cert.fromRenewal && r.cert.expiry < r.card.expiry) {
+    const renewedGrace = hokenGraceEnd(r.card.expiry);
+    return (
+      <p className="note" role="alert" style={{ marginTop: 8 }}>
+        <strong>カード本体の期限（{formatJaWithWeekday(r.card.expiry)}）で、電子証明書も切れています。</strong>
+        マイナ保険証は、途中で電子証明書を更新していれば{formatJaWithWeekday(renewedGrace)}まで
+        {daysLeft(renewedGrace, today) >= 0 ? '使えます' : 'が猶予でした'}
+        （更新していなければ{formatJaWithWeekday(r.cert.hokenGraceEnd)}
+        まで）。保険資格の情報だけで、診療情報・薬剤情報の提供はできません。
+        カード本体も期限切れなので、電子証明書だけの再発行はできません。市区町村の窓口で新しいカードを申請してください。
+      </p>
+    );
+  }
   if (status === 'expired') {
     const graceLeft = daysLeft(r.cert.hokenGraceEnd, today);
     return (
@@ -96,7 +124,9 @@ function CertStatus({ r, today }: { r: MynumberResult; today: string }) {
             有効な健康保険証が無く再発行もしていない人には、資格確認書が交付されます。
           </>
         )}
-        お住まいの市区町村の窓口で電子証明書の再発行の手続きを（オンラインではできません）。
+        {cardExpired
+          ? 'カード本体も期限切れなので、電子証明書だけの再発行はできません。市区町村の窓口で新しいカードを申請してください。'
+          : 'お住まいの市区町村の窓口で電子証明書の再発行の手続きを（オンラインではできません）。'}
       </p>
     );
   }
@@ -161,6 +191,7 @@ export default function Calculator() {
   const error = filled ? validateInput(input, today ?? '9999-12-31') : null;
   const r = filled && !error ? calcMynumber(input) : null;
   const certFirst = r ? r.cert.expiry <= r.card.expiry : true;
+  const maybeRenewed = r && today ? certMaybeRenewed(r, today) : false;
 
   const certCard = r && (
     <ExpiryCard
@@ -168,11 +199,13 @@ export default function Calculator() {
       title={r.signatureCert ? '電子証明書（署名用・利用者証明用）' : '電子証明書（利用者証明用）'}
       item={r.cert}
       basis={
-        r.cert.fromRenewal
-          ? '電子証明書を更新した日から5回目の誕生日'
-          : r.cls === 'adult'
-            ? 'カード本体の期限の5年前の同じ誕生日（年齢にかかわらず交付から5回目の誕生日）'
-            : 'カード本体と同じ日（交付から5回目の誕生日）'
+        r.cert.cappedByCard
+          ? 'カード本体の期限まで（電子証明書はカードの期限を超えない）'
+          : r.cert.fromRenewal
+            ? '電子証明書を更新した日から5回目の誕生日'
+            : r.cls === 'adult'
+              ? 'カード本体の期限の5年前の同じ誕生日（年齢にかかわらず交付から5回目の誕生日）'
+              : 'カード本体と同じ日（交付から5回目の誕生日）'
       }
       today={today}
       emphasize={certFirst}
@@ -226,7 +259,7 @@ export default function Calculator() {
         カード本体の有効期限は、カード表面（顔写真の面）に印字されています。交付日は印字されていないので、こちらを入れてください。
       </p>
 
-      <details className="field">
+      <details className="field" open={maybeRenewed || undefined}>
         <summary style={{ cursor: 'pointer' }}>交付日・電子証明書を更新した日（分かる人向け）</summary>
         <div style={{ marginTop: 8 }}>
           <div className="field">
@@ -282,21 +315,21 @@ export default function Calculator() {
       <table>
         <thead>
           <tr>
-            <th style={{ ...tight, ...rowLabel }}>切れるもの</th>
+            <th style={{ ...tight, ...rowLabel, whiteSpace: 'nowrap' }}>切れるもの</th>
             <th style={{ ...tight, ...rowLabel }}>使えなくなるもの</th>
             <th style={{ ...tight, ...rowLabel }}>猶予</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td style={{ ...tight, ...rowLabel }}>電子証明書</td>
+            <td style={{ ...tight, ...rowLabel, whiteSpace: 'nowrap' }}>電子証明書</td>
             <td style={{ ...tight, ...rowLabel }}>
               マイナ保険証・コンビニ交付・e-Tax 等のオンライン申請・マイナポータル・民間の本人確認
             </td>
             <td style={{ ...tight, ...rowLabel }}>マイナ保険証だけ、満了日が属する月の末日から3か月</td>
           </tr>
           <tr>
-            <td style={{ ...tight, ...rowLabel }}>カード本体</td>
+            <td style={{ ...tight, ...rowLabel, whiteSpace: 'nowrap' }}>カード本体</td>
             <td style={{ ...tight, ...rowLabel }}>本人確認書類としての利用・上のすべて</td>
             <td style={{ ...tight, ...rowLabel }}>なし</td>
           </tr>

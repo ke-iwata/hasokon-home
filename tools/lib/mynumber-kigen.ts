@@ -36,6 +36,13 @@ export { formatDate, parseDate, type DateParts } from './date-parts';
 
 /** 成年年齢の引き下げ（2022-04-01）の前日。この日までの申請の20歳未満は旧ルール（5回目の誕生日） */
 export const LEGACY_MINOR_LAST_DAY = '2022-03-31';
+/**
+ * 券面から旧ルールのカードとみなす「期限−5年」の上限。
+ * 旧ルールは**申請日**で決まるが券面からは分からないので、申請から交付までの遅れ（半年）を見込む。
+ * 期限の日に23〜24歳になる正しいカードは旧ルールの20歳未満しか無いので、ゆるめても
+ * ほかの区分と取り違える組み合わせは生まれない（#333 レビュー推奨1）
+ */
+export const LEGACY_MINOR_ISSUE_ALLOWANCE_LAST_DAY = '2022-09-30';
 /** カード本体（交付時18歳以上）の有効期間：交付から10回目の誕生日 */
 export const CARD_BIRTHDAYS_ADULT = 10;
 /** カード本体（交付時18歳未満）と電子証明書の有効期間：交付から5回目の誕生日 */
@@ -106,7 +113,7 @@ function normalizeExpiry(birth: DateParts, expiry: DateParts): DateParts {
  * |---|---|
  * | 〜19 | 'under15'（15歳未満で交付・5回目。署名用電子証明書は原則なし） |
  * | 20〜22 | 'minor'（15〜17歳で交付・5回目） |
- * | 23〜24 | 'legacyMinor'（2022-03-31以前の18〜19歳・旧ルール5回目）。期限−5年が2022-04-01以降なら 'invalid' |
+ * | 23〜24 | 'legacyMinor'（2022-03-31以前に申請の18〜19歳・旧ルール5回目）。期限−5年が交付の遅れを見込んだ日より後なら 'invalid' |
  * | 25〜27 | 'invalid'（券面か生年月日の入れ間違い） |
  * | 28〜 | 'adult'（18歳以上で交付・10回目） |
  */
@@ -121,7 +128,7 @@ export function classifyByExpiry(birthYmd: string, cardExpiryYmd: string): CardC
   if (age <= 22) return 'minor';
   if (age <= 24) {
     const fiveYearsBefore = birthdayInYear(birth, expiry.year - CARD_BIRTHDAYS_MINOR);
-    return compareDate(fiveYearsBefore, mustParse(LEGACY_MINOR_LAST_DAY)) <= 0 ? 'legacyMinor' : 'invalid';
+    return compareDate(fiveYearsBefore, mustParse(LEGACY_MINOR_ISSUE_ALLOWANCE_LAST_DAY)) <= 0 ? 'legacyMinor' : 'invalid';
   }
   if (age <= 27) return 'invalid';
   return 'adult';
@@ -256,6 +263,8 @@ export interface MynumberResult {
   cert: ExpiryItem & {
     /** 電子証明書を途中で更新した日から出し直したか */
     fromRenewal: boolean;
+    /** 更新した日から数えた期限がカード本体の期限より後で、カード本体の期限に詰めたか */
+    cappedByCard: boolean;
     /** マイナ保険証として使える最後の日 */
     hokenGraceEnd: string;
   };
@@ -283,13 +292,21 @@ export interface MynumberInput {
 }
 
 /** 入力の矛盾。問題が無ければ null */
-export type InputError = 'birth-future' | 'expiry-before-birth' | 'invalid-band' | 'renewed-before-birth';
+export type InputError =
+  | 'birth-future'
+  | 'expiry-before-birth'
+  | 'invalid-band'
+  | 'renewed-before-birth'
+  | 'renewed-future'
+  | 'renewed-after-card';
 
 export function validateInput(input: MynumberInput, today: string): InputError | null {
   if (input.birth > today) return 'birth-future';
   if (input.cardExpiry <= input.birth) return 'expiry-before-birth';
   if (classifyByExpiry(input.birth, input.cardExpiry) === 'invalid') return 'invalid-band';
   if (input.certRenewed && input.certRenewed < input.birth) return 'renewed-before-birth';
+  if (input.certRenewed && input.certRenewed > today) return 'renewed-future';
+  if (input.certRenewed && input.certRenewed > input.cardExpiry) return 'renewed-after-card';
   return null;
 }
 
@@ -298,6 +315,8 @@ export const INPUT_ERROR_MESSAGES: Record<InputError, string> = {
   'expiry-before-birth': 'カードの有効期限が生年月日より前になっています。',
   'invalid-band': 'カード表面の有効期限と生年月日を確かめてください（この組み合わせになるカードはありません）。',
   'renewed-before-birth': '電子証明書を更新した日が生年月日より前になっています。',
+  'renewed-future': '電子証明書を更新した日が今日より後になっています。',
+  'renewed-after-card': '電子証明書を更新した日がカードの有効期限より後になっています。',
 };
 
 /** 期限の計算のひとまとめ。入力が矛盾していれば null（`validateInput()` で理由を出す） */
@@ -305,7 +324,10 @@ export function calcMynumber(input: MynumberInput): MynumberResult | null {
   const cls = classifyByExpiry(input.birth, input.cardExpiry);
   if (cls === 'invalid' || input.cardExpiry <= input.birth) return null;
   const certFromCard = certExpiryFromCard(input.birth, input.cardExpiry) as string;
-  const certExpiry = input.certRenewed ? certExpiryFromIssue(input.birth, input.certRenewed) : certFromCard;
+  // 電子証明書はカードに入っているので、カード本体の期限を超えない（#333 レビュー必須2）
+  const renewedExpiry = input.certRenewed ? certExpiryFromIssue(input.birth, input.certRenewed) : null;
+  const cappedByCard = renewedExpiry !== null && renewedExpiry > input.cardExpiry;
+  const certExpiry = renewedExpiry === null ? certFromCard : cappedByCard ? input.cardExpiry : renewedExpiry;
   const birth = mustParse(input.birth);
   const issueMismatch = input.issued
     ? !sameExpiry(
@@ -320,6 +342,7 @@ export function calcMynumber(input: MynumberInput): MynumberResult | null {
     cert: {
       ...item(certExpiry),
       fromRenewal: Boolean(input.certRenewed),
+      cappedByCard,
       hokenGraceEnd: hokenGraceEnd(certExpiry),
     },
     signatureCert: cls !== 'under15',
@@ -327,6 +350,16 @@ export function calcMynumber(input: MynumberInput): MynumberResult | null {
     notBirthday: !isBirthdayDate(input.birth, input.cardExpiry),
     issueMismatch,
   };
+}
+
+/**
+ * 券面から数えた電子証明書の期限が過ぎているが、カード本体はまだ有効で、更新した日が入っていない。
+ *
+ * 18歳以上で交付された人の多くは、券面から数えた最初の期限の時点で電子証明書を一度更新しているので、
+ * この場合は「期限切れ」と断定せず、更新した日を入れるよう促す（#333 レビュー必須1）
+ */
+export function certMaybeRenewed(r: MynumberResult, today: string): boolean {
+  return !r.cert.fromRenewal && daysLeft(r.cert.expiry, today) < 0 && daysLeft(r.card.expiry, today) >= 0;
 }
 
 // ---------------------------------------------------------------- 表示
