@@ -111,7 +111,7 @@ export default function Calculator() {
             <dd style={{ fontWeight: 400 }}>{STATUS_NOTE[revision.status]}</dd>
           </div>
           <div>
-            <dt>発効（予定）日</dt>
+            <dt>{revision.effectiveOn ? '発効日' : '発効予定日'}</dt>
             <dd>
               {revision.effectiveOn
                 ? formatDate(revision.effectiveOn)
