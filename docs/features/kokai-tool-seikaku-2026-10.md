@@ -1,12 +1,12 @@
 # 公開中ツールの誤り 4 件 — 最低賃金チェッカーが「発効済み」の 25 都道府県（10-05 時点）で旧い額を「いま」として判定し、下回っている人に「足りています」と出す。あわせて年齢計算の「2026 年度に 18 歳になる学年」が 1 年ずれ、養育費の FAQ が「原則 18 歳まで」と言い切り、医療費控除が決まったセルフメディケーション税制の延長を「まだ決まっていない」と書いている
 
-**状態**：提案（2026-10-05 起票。セッション `session_01Bx6ivZWdhjEGTmjVWmqvsL`）。
+**状態**：提案（2026-10-05 起票。セッション `session_01Bx6ivZWdhjEGTmjVWmqvsL`。**同日の企画レビュー（#339）の必須 1 点を反映**：`checkWage()` の呼び出し元は 2 か所で、残業代計算も同じ誤りを出している → 対象・仕様・テスト・工数に追加。任意の 1 点（テストの日付はローカル時刻で作る）も反映）。
 **優先度：最優先（1 は法対応・いま誤った答えを出している）。** 1 は着地 4 位（直近 7 日 26 セッション・28 日 101 PV）のページで、
 **10-01 から毎日、発効済みの県が増えるほど誤りの範囲が広がる**（10-05 時点 25 都道府県 → 11-01 に 43 → 12-02 に 47 全部）。
 **着手条件**：なし（1・3・4 はコードと既存の出典だけで直せる。2 は改正法の成立と施行日を国税庁のページで確認してから文面を確定する）。
 **公開条件**：`public` のページの修正なので stage は動かさない。main にマージしてテスト環境で下記「確認手順」を運営者が見たら、
 **次のリリース（v* タグ）に必ず載せる**。1 だけでも先に出す価値がある。
-**対象**：`tools/`（`saitei-chingin`・`nenrei-keisan`・`yoikuhi-keisan`・`iryohi-kojo`）
+**対象**：`tools/`（`saitei-chingin`・**`zangyodai-keisan`**（`checkWage()` の 2 か所目の呼び出し元。#339 レビューで追加）・`nenrei-keisan`・`yoikuhi-keisan`・`iryohi-kojo`）
 **起票**：2026-10-05
 **関連**：[saitei-chingin-checker.md](./saitei-chingin-checker.md)・[saitei-chingin-r8-hakko-mae-mente.md](./saitei-chingin-r8-hakko-mae-mente.md)
 （`revisionOf()` の `'発効済み'` への切り替えを作った仕様書。**切り替えはデータ側で正しく動いているが、画面の文言が切り替えに追従していない**のが本件）・
@@ -51,6 +51,7 @@
 | 同 178〜196 行 | 「{CURRENT_FY_LABEL}（いま）の最低賃金と比べると 足りています／下回っています」。比べる先は `check.current`＝`pref.currentYen` | **判定そのものが旧い額との比較** |
 | 同 198〜214 行 | 「{REVISED_FY_LABEL}の改定後は… いまの時給のままだと ◯円足りなくなります」 | 発効済みなのに未来形 |
 | `tools/lib/saitei-chingin.ts` 1247〜1260 行 `checkWage()` | `current: verdict(hourlyYen, pref.currentYen)` | 「いま」の基準が日付で変わらない |
+| **`tools/lib/zangyodai.ts` 451 行**（`checkWage()` の 2 か所目の呼び出し元）→ **`tools/app/zangyodai-keisan/Calculator.tsx` 627〜647 行**「参考：最低賃金との比較」 | 「{県}の最低賃金は {check.current.minimumYen}円（発効済み）」「現行額を◯円上回っています」、条件 `!check.revised.meets && check.current.meets` で「改定後の額（◯円）は下回ります」 | **旧い額（東京 1,226 円）に「発効済み」の札が付く**。残業代計算でも、下回っている人に「上回っています」と出る |
 | `tools/app/saitei-chingin/page.tsx` 167 行 | 表の見出し「{CURRENT_FY_LABEL}（現行）」 | 発効済みの県でも令和 7 年度の列が「現行」 |
 | 同 26〜27 行（description）・39 行（FAQ）・116 行 | 「答申済みの県は答申額、まだの県は目安ベースの見込み」 | 47 都道府県すべて答申済み（09-09 完了）で、「まだの県」は無い |
 | `tools/lib/saitei-chingin.ts` 67 行 | `DATA_CHECKED_AT = '2026-09-28'` | 発効を照合した日に上げる |
@@ -95,7 +96,9 @@
 
 - `tools/lib/saitei-chingin.ts`：`checkWage()` に**「いま有効な額」**を足す。`revision.status === '発効済み'` なら `revision.yen`、それ以外は `pref.currentYen`。
   `current` はその額との比較にし、`revised` は**発効前のときだけ**意味を持たせる（発効済みなら `revised` は `current` と同じ、または `undefined`）。
-  型は `WageCheck` に `inForceYen: number` と `inForceFy: '令和7年度' | '令和8年度'` を足す形を推奨（呼び出し側が 1 か所なので影響が小さい）
+  型は `WageCheck` に `inForceYen: number` と `inForceFy: '令和7年度' | '令和8年度'` を足す形を推奨。
+  **呼び出し側は 2 か所**（`app/saitei-chingin/Calculator.tsx` 56 行と `lib/zangyodai.ts` 451 行）。`current`／`revised` の意味を変えると
+  残業代の画面の文言と条件にもそのまま効くので、**両方を同じ PR で直す**（#339 レビュー）
 - `Calculator.tsx`：
   - 上段：発効済みなら「**{日付}から {revision.yen} 円になりました**（令和7年度は {pref.currentYen} 円。+◯円）」、発効前なら現行の文面
   - 判定：発効済みなら 1 段だけ「**いまの最低賃金（令和8年度・{日付}発効）と比べると 足りています／下回っています**」。
@@ -103,12 +106,20 @@
     発効前なら現行の 2 段（いま／改定後）のまま
 - `page.tsx`：表の見出しを「{CURRENT_FY_LABEL}（**改定前**）」に。description・FAQ（39 行）・116 行の「まだの県は目安」を
   「**47 都道府県すべて答申済みで、10月1日から順に発効しています（最後は沖縄の12月2日）**」に置き換える。発効済みかどうかは開いた日でチェッカーが判定する、の注記は残す
+- **残業代計算（`tools/app/zangyodai-keisan/Calculator.tsx` 627〜647 行）**：発効済みなら「{県}の最低賃金は **{revision.yen}円（{日付}発効）**」と出し、
+  比較は 1 段だけ（「上回っています／下回っています」）。発効前は現行どおり「{pref.currentYen}円（改定後は◯円）」と 2 段。
+  文言はチェッカーと**同じ純関数（`wageMessages(check)`）を共有**し、最低限でも基準額は `inForceYen` を使う。
+  「現行額」という語は発効済みの分岐では使わない
 - `DATA_CHECKED_AT` と registry の `updatedAt` を、厚労省の全国一覧と発効日を照合した日に上げる（`updatedAt` は sitemap の `lastmod` と IndexNow の差分送信に効く）
 - **テスト**（`tools/tests/saitei-chingin.test.ts`）：
   - `checkWage(東京, 1250, 2026-10-05)` → `current.meets === false`（基準 1,280 円）、`shortfall === 30`
   - `checkWage(東京, 1250, 2026-09-30)` → `current.meets === true`（基準 1,226 円）、`revised.meets === false`
   - `checkWage(沖縄, x, 2026-12-01)` は発効前の 2 段、`2026-12-02` は 1 段
   - 47 都道府県すべてで「発効日の前日は `pref.currentYen`・当日は `revision.yen`」が基準になる
+  - **日付はローカル時刻で作る**（`new Date(2026, 9, 1)`）。`toYmd()` は端末のローカル時刻で日付を取るので、
+    `new Date('2026-10-01')`（UTC として解釈される）で作ると CI の TZ によって 1 日ずれる
+  - **残業代**（`tools/tests/zangyodai.test.ts`）：東京・時給換算 1,250 円・`asOf = new Date(2026, 9, 5)` で、
+    最低賃金の比較が基準 1,280 円・下回る になり、文言に「1,226円」と「発効済み」が並ばない
 - **CI で止める**：`tools/` には描画テストの道具（testing-library）が入っていないので、上段と判定の**文言を組み立てる純関数**
   （例 `wageMessages(check)`）を `lib/saitei-chingin.ts` に切り出し、`Calculator.tsx` はそれを表示するだけにする。
   単体テストで「東京・`asOf = 2026-10-05` の文言に『1,226円を』『足りなくなります』『（いま）』が出ない」を固定する
@@ -139,6 +150,7 @@
 ### 確認手順（テスト環境で運営者が見る）
 
 1. 最低賃金：東京・時給 1250 → 「下回っています」「30 円足りません」。沖縄（12-02 発効）・時給 1000 → 2 段のまま
+1. 残業代計算：東京・時給換算が 1,250 円になる入力 → 「参考：最低賃金との比較」が「1,280円（2026年10月1日発効）」で「下回っています」。「1,226円（発効済み）」と出ない
 2. 最低賃金：表の見出しが「令和7年度（改定前）」
 3. 医療費控除：FAQ「2026 年で終わるのですか？」の答えが「終わりません」
 4. 年齢計算：FAQ「満18歳になるのは何年生まれですか？」の学年が「2008年4月2日〜2009年4月1日生まれ」
@@ -156,12 +168,13 @@
 
 | 作業 | 消費トークン（目安） |
 |---|---|
-| 1. `checkWage()` の基準額・`Calculator.tsx` の発効前後の分岐・`page.tsx` の見出しと文面・テスト（47 都道府県の前日／当日・描画） | 45k |
+| 1. `checkWage()` の基準額・`Calculator.tsx` の発効前後の分岐・`page.tsx` の見出しと文面・テスト（47 都道府県の前日／当日・文言の純関数） | 45k |
+| 1'. 残業代計算の「参考：最低賃金との比較」の分岐（同じ純関数を使う）＋ テスト | 15k |
 | 2. 国税庁で成立・施行日を確認・`SELF_MED` の期限区分・FAQ と本文・テスト | 25k |
 | 3. 学年の式を `ageAt()` から組み立てる・テスト | 10k |
 | 4. FAQ 1 問の書き換えと出典 | 5k |
 | registry `updatedAt`・DECISIONS.md・テスト環境での確認 | 10k |
-| **合計** | **約 95k**（1 だけなら約 55k） |
+| **合計** | **約 110k**（1・1' だけなら約 70k） |
 
 ## やらないこと
 
