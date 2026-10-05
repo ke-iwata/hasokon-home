@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { metadata } from '@/app/saitei-chingin/page';
+import { tools } from '@/lib/registry';
 import {
   DATA_CHECKED_AT,
   MEYASU_BY_RANK,
@@ -875,5 +877,20 @@ describe('表示のヘルパー', () => {
   it('formatDate は和暦を使わず YYYY年M月D日 にする', () => {
     expect(formatDate('2026-10-01')).toBe('2026年10月1日');
     expect(formatDate('2025-11-21')).toBe('2025年11月21日');
+  });
+});
+
+/**
+ * 「見込み」の文面は施行日ではなく、全県が答申済みかどうかで決まる。
+ * 表示の条件分岐（答申前なら「見込み」を出すコード）は来年度のために残し、説明の文面だけを外す。
+ *
+ * 仕様: docs/features/r8-10gatsu-shikogo-copy-sweep.md
+ */
+describe('全県が答申済みのときの文面', () => {
+  const allAnswered = PREFECTURES.every((p) => p.answered !== undefined);
+
+  it.runIf(allAnswered)('全県が answered を持つとき、description に「見込み」が無い', () => {
+    expect(String(metadata.description)).not.toContain('見込み');
+    expect(tools.find((t) => t.slug === 'saitei-chingin')!.description).not.toContain('見込み');
   });
 });
