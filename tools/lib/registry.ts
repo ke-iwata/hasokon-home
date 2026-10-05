@@ -147,6 +147,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    // 仕様: docs/features/nenkin-seikatsusha-shien-kyufukin.md
+    slug: 'nenkin-shien-kyufukin',
+    // HandCoins は年末調整、Coins は iDeCo、PiggyBank・Wallet・MoneyWavy も使用済み。
+    // 年金に上乗せされる硬貨の絵で CoinVertical
+    icon: 'CoinVertical',
+    name: '年金生活者支援給付金 対象判定・月額 計算機',
+    description:
+      '2026年10月分から所得基準が826,500円に上がった年金生活者支援給付金を判定。生年月日・前年の年金収入・保険料の納付済／免除の月数を入れると、対象か・補足的給付か・月いくら（満額5,620円）かを日本年金機構の式どおりに出します。障害・遺族にも対応。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-11-15 まで（仕様書の「公開条件」。12 月の初回支給の前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-05',
+  },
+  {
     slug: 'kosei-nenkin-jogen',
     icon: 'TrendUp',
     name: '厚生年金 上限引き上げ 計算機',
