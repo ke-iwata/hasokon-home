@@ -74,7 +74,7 @@ const ENTRIES: Entry[] = [
     slug: 'invoice-nozeigaku',
     effectiveOn: INVOICE_70_FROM,
     patterns: [/80%から70%に下がります/],
-    sourcePatterns: [/80%から70%に下がります/],
+    sourcePatterns: [/80%から70%に下がります/, /割合が下がります/, /同時に切り替わる/],
     description: String(invoiceMeta.description),
   },
   {
