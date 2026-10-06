@@ -247,6 +247,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-05',
   },
   {
+    // 仕様: docs/features/juminzei-hikazei-hantei.md
+    slug: 'juminzei-hikazei',
+    // 6月に届く住民税の通知書。EnvelopeOpen はほかで使っていない
+    icon: 'EnvelopeOpen',
+    name: '住民税 非課税 判定',
+    description:
+      '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-06',
+  },
+  {
     slug: 'jutaku-loan-kojo',
     icon: 'House',
     name: '住宅ローン控除 計算機',

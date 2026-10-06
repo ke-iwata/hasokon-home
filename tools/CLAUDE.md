@@ -220,6 +220,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
+| 税制改正時（住民税の非課税限度額・給与所得控除） | `lib/juminzei-hikazei.ts` の `NENDO_RULES`（年度ごとの給与所得控除・所得税の基礎控除・扶養の所得要件）と `LIMIT_*`・`SPECIAL_LIMIT`・`KYUCHI_RATE`。条文は e-Gov 法令API で地方税法（`325AC0000000226`）の295条・附則3条の3、施行令（`325CO0000000245`）47条の3、施行規則（`329M50000002023`）9条の21を引く。**令和11年度（2028年の収入）は給与所得控除の特例5万円が切れる**ので、その年度を足すときに最低保障を確かめる。`nenshu-kabe` の119万円とは `tests/juminzei-hikazei.test.ts` が突き合わせている |
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 毎年1月（国民年金保険料の翌年度額が公表されたら） | `lib/kokunen-ikuji-menjo.ts` の `MONTHLY_PREMIUM` に翌年度の月額を1行足し、`DATA_CHECKED_AT` を直す（日本年金機構「国民年金保険料」を正とする）。足すまでは未公表の年度を最新年度の額で概算し、画面に「概算」と出る |
@@ -249,9 +250,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール53本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
+- **ツール59本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`nenkin-shien-kyufukin`・`juminzei-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
