@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { trackToolUse } from '@/lib/analytics';
 import {
-  CURRENT_FY_LABEL,
   DATA_CHECKED_AT,
   PREFECTURES,
   REVISED_FY_LABEL,
@@ -14,7 +13,9 @@ import {
   formatYen,
   nextWallFor,
   prefectureByCode,
+  revisionHeadline,
   revisionOf,
+  wageMessages,
   type RevisionStatus,
 } from '@/lib/saitei-chingin';
 
@@ -92,13 +93,7 @@ export default function Calculator() {
           <span className="unit">円</span>
         </div>
         <p className="hint" style={{ marginTop: 4 }}>
-          いまは <strong>{formatYen(pref.currentYen)}</strong>（{CURRENT_FY_LABEL}・
-          {formatDate(pref.currentEffectiveOn)}発効）。
-          <strong>
-            {revision.raise > 0 ? `+${revision.raise}円` : `${revision.raise}円`}（
-            {revision.raisePercent}%）
-          </strong>
-          の引き上げです。
+          {revisionHeadline(pref, revision)}
         </p>
       </div>
 
@@ -177,42 +172,20 @@ export default function Calculator() {
 
       {check && (
         <div className="panel">
-          <div className="metric">
-            <span className="label">{CURRENT_FY_LABEL}（いま）の最低賃金と比べると</span>
-            <span className="value" style={{ fontSize: 'var(--fs-lg)' }}>
-              {check.current.meets ? '足りています' : '下回っています'}
-            </span>
-          </div>
-          <p className="hint" style={{ marginTop: 4 }}>
-            {check.current.meets
-              ? `${formatYen(pref.currentYen)}を${
-                  check.current.surplus === 0
-                    ? 'ちょうど満たしています'
-                    : `${formatYen(check.current.surplus)}上回っています`
-                }。`
-              : `${formatYen(pref.currentYen)}に${formatYen(
-                  check.current.shortfall,
-                )}足りません。最低賃金を下回る取り決めは無効で、差額を請求できます。`}
-          </p>
-
-          <div className="metric" style={{ marginTop: 12 }}>
-            <span className="label">
-              {REVISED_FY_LABEL}の改定後
-              {revision.status === '目安' ? '（見込み）' : ''}は
-            </span>
-            <span className="value" style={{ fontSize: 'var(--fs-lg)' }}>
-              {check.revised.meets ? '足りています' : '下回ります'}
-            </span>
-          </div>
-          <p className="hint" style={{ marginTop: 4 }}>
-            {check.revised.meets
-              ? `改定後の${formatYen(revision.yen)}も満たしています。`
-              : `改定後は${formatYen(revision.yen)}になるため、いまの時給のままだと${formatYen(
-                  check.revised.shortfall,
-                )}足りなくなります。`}
-            {revision.status === '目安' &&
-              '（この額は答申前の見込みです。確定額は県の答申で変わることがあります）'}
-          </p>
+          {/* 発効済みの県は「いま」の1段だけ、発効前の県は「いま」と「改定後」の2段（lib の wageMessages） */}
+          {wageMessages(check).map((m, i) => (
+            <div key={m.label}>
+              <div className="metric" style={i > 0 ? { marginTop: 12 } : undefined}>
+                <span className="label">{m.label}</span>
+                <span className="value" style={{ fontSize: 'var(--fs-lg)' }}>
+                  {m.result}
+                </span>
+              </div>
+              <p className="hint" style={{ marginTop: 4 }}>
+                {m.detail}
+              </p>
+            </div>
+          ))}
         </div>
       )}
 
@@ -285,7 +258,7 @@ export default function Calculator() {
 
       {!hasHourly && (
         <p className="hint">
-          時給を入力すると、いまの最低賃金と改定後の額の両方で足りているかを判定します。
+          時給を入力すると、いまの最低賃金（改定の発効前なら改定後の額も）で足りているかを判定します。
         </p>
       )}
     </div>

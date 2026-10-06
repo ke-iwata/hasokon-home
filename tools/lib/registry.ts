@@ -199,7 +199,7 @@ export const tools: ToolDef[] = [
       '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-16',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'tabako-zei-neage',
@@ -494,7 +494,7 @@ export const tools: ToolDef[] = [
       '1年間に払った医療費から、控除額と実際に戻る額（所得税の還付＋翌年の住民税の軽減）を計算。セルフメディケーション税制と並べて、どちらが得かも判定します。医療費が10万円以下でも控除できる場合に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-31',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'saitei-chingin',
@@ -504,7 +504,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'zangyodai-keisan',
@@ -514,7 +514,7 @@ export const tools: ToolDef[] = [
       '月給と今月の残業時間から、法定どおりの残業代を計算。1時間あたりの賃金の出しかた（除外できる手当）・月60時間超の5割増・深夜・法定休日の内訳まで出します。時給換算が最低賃金を下回っていないかも同じ画面で判定。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'tsukin-teate-hikazei',
@@ -602,7 +602,7 @@ export const tools: ToolDef[] = [
       '生年月日から満年齢と満何歳何ヶ月を計算。年齢早見表・「◯歳は何年生まれ」の逆引き、西暦⇔和暦（明治〜令和）の変換、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-18',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'nissu-keisan',

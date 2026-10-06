@@ -6,7 +6,16 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
-import { REFUND_CLAIM_YEARS, SELF_MED_CHECKED_AT } from '@/lib/iryohi-kojo';
+import {
+  REFUND_CLAIM_YEARS,
+  SELF_MED_CHECKED_AT,
+  SELF_MED_EXPIRES_AT,
+  SELF_MED_REFORM_EFFECTIVE_ON,
+  SELF_MED_REFORM_LAW,
+} from '@/lib/iryohi-kojo';
+
+/** 非スイッチOTC等の期限。型の上では null（期限なし）もあり得るので、ここで文字列に確定させる */
+const OTHER_EXPIRES_AT = SELF_MED_EXPIRES_AT.other ?? '';
 import Calculator from './Calculator';
 
 const title = '医療費控除 計算機｜いくら戻る・セルフメディケーション税制とどちらが得か';
@@ -53,9 +62,7 @@ const faq = [
   },
   {
     q: 'セルフメディケーション税制は2026年で終わるのですか？',
-    a: `現時点で決まっている適用期限は${formatDate(
-      '2026-12-31',
-    )}までの購入分です（${formatDate(SELF_MED_CHECKED_AT)}時点）。延長されるかどうかは令和9年度税制改正の議論次第で、まだ決まっていません。「今年で終わり」と断定されている情報を見かけますが、過去にも延長された経緯があります。期限内に使うつもりであれば、健康診断などの「一定の取組」を年内に済ませておく必要がある点にご注意ください。`,
+    a: `2026年で終わりません。令和8年度の税制改正（${SELF_MED_REFORM_LAW}）で、${formatDate(SELF_MED_REFORM_EFFECTIVE_ON)}から、スイッチOTC医薬品は期限が無くなり、それ以外の対象医薬品も${formatDate(OTHER_EXPIRES_AT)}までの購入分に延長されました（${formatDate(SELF_MED_CHECKED_AT)}時点）。同じ日に対象医薬品の範囲も見直されるので、2027年以降に買う薬が対象かは厚生労働省の対象品目一覧で確かめてください。なお、使う年ごとに健康診断などの「一定の取組」を済ませておく必要がある点は変わりません。`,
   },
   {
     q: '高額療養費とは何が違いますか？',
@@ -287,9 +294,10 @@ export default function Page() {
         医療費が足切りに届かない年でも、対象のOTC医薬品を12,000円以上買っていればこちらが使えることがあります。本ツールは両方を計算して、戻る額が大きいほうを示します。
       </p>
       <div className="note">
-        <strong>適用期限は現時点で{formatDate('2026-12-31')}までの購入分です</strong>（
-        {formatDate(SELF_MED_CHECKED_AT)}時点）。
-        延長されるかどうかは令和9年度税制改正の議論次第で、まだ決まっていません。過去にも延長された経緯があるため、「今年で終わり」と断定されている情報には注意してください。対象品目の一覧は厚生労働省のサイトで公開されています。
+        <strong>2026年で終わりません。</strong>令和8年度の税制改正（{SELF_MED_REFORM_LAW}）で、
+        {formatDate(SELF_MED_REFORM_EFFECTIVE_ON)}から
+        <strong>スイッチOTC医薬品は期限が無くなり、それ以外の対象医薬品も{formatDate(OTHER_EXPIRES_AT)}までの購入分に延長</strong>
+        されました（{formatDate(SELF_MED_CHECKED_AT)}時点）。同じ日に対象医薬品の範囲も見直されます。対象品目の一覧は厚生労働省のサイトで公開されています。
       </div>
 
       <h2>高額療養費との違い</h2>

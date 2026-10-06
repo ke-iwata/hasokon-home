@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import {
   BASIC_INCOME_RATES,
   CHILD_AGE_LABELS,
@@ -602,5 +603,25 @@ describe('権利者の年収が算定表の横軸を超えた場合', () => {
       children: ['0-14'],
     });
     expect(beyond.beyondObligeeAxis).toBe(true);
+  });
+});
+
+/**
+ * 養育費の終期は法律で決まっていない。成年年齢の引下げで当然に「18歳まで」にはならない（法務省）。
+ * 18歳で終わるのは法定養育費だけ。
+ *
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10.md の 4
+ */
+describe('FAQ「いつまで払うのですか？」', () => {
+  const page = readFileSync(new URL('../app/yoikuhi-keisan/page.tsx', import.meta.url), 'utf8');
+
+  it('「原則は子が成年に達する（18歳）まで」と言い切らない', () => {
+    expect(page).not.toContain('原則は子が成年に達する（18歳）まで');
+    expect(page).toContain('終わる年齢は法律で決まっていません');
+    expect(page).toContain('20歳までと解されます');
+  });
+
+  it('出典に法務省「成年年齢の引下げに伴う養育費の取決めへの影響について」がある', () => {
+    expect(page).toContain('https://www.moj.go.jp/MINJI/minji07_00230.html');
   });
 });

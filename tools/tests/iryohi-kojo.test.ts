@@ -3,13 +3,17 @@ import {
   MEDICAL_CAP,
   MEDICAL_THRESHOLD_FIXED,
   SELF_MED_CAP,
+  SELF_MED_EXPIRES_AT,
+  SELF_MED_REFORM_EFFECTIVE_ON,
   SELF_MED_THRESHOLD,
   calcIryohiKojo,
   medicalDeduction,
   medicalThreshold,
+  selfMedInPeriod,
   selfMedicationDeduction,
   type IryohiInput,
 } from '@/lib/iryohi-kojo';
+import { readFileSync } from 'node:fs';
 import { salaryIncome } from '@/lib/furusato-nozei';
 import { RULES_R8, calcYearTax } from '@/lib/nenmatsu-chosei';
 
@@ -395,5 +399,38 @@ describe('異常値', () => {
     // 33%帯に収まる控除なので、限界税率での概算とほぼ一致する（別の値ではない）
     const naive = r.medical.deduction * r.marginalRate * 1.021;
     expect(Math.abs(r.medical.incomeTaxRefund - naive)).toBeLessThanOrEqual(200);
+  });
+});
+
+/**
+ * 令和8年度改正（令和8年法律第12号・2027-01-01施行）でセルフメディケーション税制は
+ * 2026年で終わらない。スイッチOTCは期限なし、それ以外は2031-12-31まで。
+ *
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10.md の 2
+ */
+describe('セルフメディケーション税制の適用期限（令和8年度改正）', () => {
+  it('スイッチOTCは期限なし、それ以外は2031年12月31日まで', () => {
+    expect(SELF_MED_EXPIRES_AT['switch-otc']).toBeNull();
+    expect(SELF_MED_EXPIRES_AT.other).toBe('2031-12-31');
+    expect(SELF_MED_REFORM_EFFECTIVE_ON).toBe('2027-01-01');
+  });
+
+  it('2026年分と2027年分以降で、期間内かどうかが切れ目なくつながる', () => {
+    for (const c of ['switch-otc', 'other'] as const) {
+      expect(selfMedInPeriod(c, '2016-12-31'), c).toBe(false);
+      expect(selfMedInPeriod(c, '2017-01-01'), c).toBe(true);
+      expect(selfMedInPeriod(c, '2026-12-31'), c).toBe(true);
+      expect(selfMedInPeriod(c, '2027-01-01'), c).toBe(true);
+      expect(selfMedInPeriod(c, '2031-12-31'), c).toBe(true);
+    }
+    expect(selfMedInPeriod('other', '2032-01-01')).toBe(false);
+    expect(selfMedInPeriod('switch-otc', '2032-01-01')).toBe(true);
+  });
+
+  it('ページに「令和9年度税制改正」待ちの文面が残っていない', () => {
+    const page = readFileSync(new URL('../app/iryohi-kojo/page.tsx', import.meta.url), 'utf8');
+    expect(page).not.toContain('令和9年度税制改正');
+    expect(page).not.toContain('まだ決まっていません');
+    expect(page).toContain('2026年で終わりません');
   });
 });

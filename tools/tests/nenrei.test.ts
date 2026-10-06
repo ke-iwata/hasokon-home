@@ -14,6 +14,8 @@ import {
   fromWareki,
   GYAKUBIKI_MAX_AGE,
   gyakubikiTable,
+  gradeRangeLabel,
+  gradeTurningAge,
   HAYAMIHYO_BASE_YEAR,
   isLeapYear,
   isValidDate,
@@ -675,5 +677,48 @@ describe('calcNenrei に満◯歳◯ヶ月が入る', () => {
     const result = calcNenrei(d('1990-05-15'), d('2026-08-18'));
     expect(result?.age).toBe(36);
     expect(result?.detail).toEqual({ years: 36, months: 3, days: 3, totalMonths: 435 });
+  });
+});
+
+/**
+ * 「◯年度に18歳になる学年」は年齢の計算から組み立てる（式を文字列に直書きしていて1年ずれた）。
+ *
+ * 年齢は誕生日の前日の終了時に増える。`ageAt()` は誕生日の当日から1つ増やす数え方なので、
+ * 「年度の初めの時点」＝3月31日の終了時は `ageAt(birth, 4月1日)`、
+ * 「年度末の終了時」は `ageAt(birth, 翌年4月1日)` で見る（4月1日生まれが前の学年に入る理由）。
+ *
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10.md の 3
+ */
+describe('その年度に18歳になる学年（gradeTurningAge）', () => {
+  const baseYear = HAYAMIHYO_BASE_YEAR;
+  const grade = gradeTurningAge(18, baseYear);
+  const startOfFy = { year: baseYear, month: 4, day: 1 };
+  const endOfFy = { year: baseYear + 1, month: 4, day: 1 };
+
+  it('2026年度は 2008年4月2日〜2009年4月1日生まれ（2008年度生まれ）', () => {
+    const g = gradeTurningAge(18, 2026);
+    expect(g.from).toEqual({ year: 2008, month: 4, day: 2 });
+    expect(g.to).toEqual({ year: 2009, month: 4, day: 1 });
+    expect(g.cohortYear).toBe(2008);
+    expect(gradeRangeLabel(g)).toBe('2008年4月2日〜2009年4月1日生まれ');
+  });
+
+  it('学年の両端は、年度の初めに17歳・年度末の終了時に18歳', () => {
+    for (const birth of [grade.from, grade.to]) {
+      expect(ageAt(birth, startOfFy), formatJa(birth)).toBe(17);
+      expect(ageAt(birth, endOfFy), formatJa(birth)).toBe(18);
+    }
+  });
+
+  it('学年の外側（1日前・1日後の生まれ）は入らない', () => {
+    // 1日早い生まれは年度の初めにもう18歳
+    expect(ageAt({ year: grade.from.year, month: 4, day: 1 }, startOfFy)).toBe(18);
+    // 1日遅い生まれは年度末の終了時にまだ17歳
+    expect(ageAt({ year: grade.to.year, month: 4, day: 2 }, endOfFy)).toBe(17);
+  });
+
+  it('学年の数え方は schoolYears と同じ', () => {
+    expect(schoolYears(grade.from).cohortYear).toBe(grade.cohortYear);
+    expect(schoolYears(grade.to).cohortYear).toBe(grade.cohortYear);
   });
 });
