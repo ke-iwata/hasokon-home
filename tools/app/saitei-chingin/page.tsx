@@ -151,9 +151,10 @@ export default function Page() {
 
       <h2>都道府県別の早見表</h2>
       <p>
-        現行額は{CURRENT_FY_LABEL}の地域別最低賃金（厚生労働省の全国一覧）です。
+        改定前の額は{CURRENT_FY_LABEL}の地域別最低賃金（厚生労働省の全国一覧）です。
         {REVISED_FY_LABEL}
-        の欄は各都道府県の<strong>答申額</strong>です。
+        の欄は各都道府県の<strong>答申額</strong>です。47都道府県すべて答申済みで、10月1日から順に発効しています（最後は沖縄の12月2日）。
+        発効日を過ぎた県では{REVISED_FY_LABEL}の額がいまの最低賃金です。発効済みかどうかは、上のチェッカーが開いた日で判定します。
       </p>
       <div style={{ overflowX: 'auto' }}>
         <table>
@@ -161,7 +162,7 @@ export default function Page() {
             <tr>
               <th>都道府県</th>
               <th>ランク</th>
-              <th>{CURRENT_FY_LABEL}（現行）</th>
+              <th>{CURRENT_FY_LABEL}（改定前）</th>
               <th>{REVISED_FY_LABEL}</th>
               <th>引上げ額</th>
               <th>状態</th>

@@ -64,7 +64,7 @@
 import { evaluateKabe, nextWall, type KabeResult } from './nenshu-kabe';
 
 /** データ全体の最終確認日 'YYYY-MM-DD'。ページに「データ最終更新日」として表示する */
-export const DATA_CHECKED_AT = '2026-09-28';
+export const DATA_CHECKED_AT = '2026-10-05';
 
 /** 現行（改定前）の年度。表の見出しに使う */
 export const CURRENT_FY_LABEL = '令和7年度';
@@ -1220,11 +1220,21 @@ export interface WageCheck {
   prefecture: Prefecture;
   /** 入力された時給（円） */
   hourlyYen: number;
-  /** 現行（令和7年度）の最低賃金との比較 */
+  /**
+   * **いま有効な**最低賃金との比較。基準は `inForceYen`。
+   * 令和8年度額の発効日を過ぎた県では令和8年度額、発効前の県では令和7年度額と比べる
+   */
   current: WageVerdict;
-  /** 令和8年度の改定額との比較。改定額は revision.status で確からしさが分かる */
+  /**
+   * 令和8年度の改定額との比較。改定額は revision.status で確からしさが分かる。
+   * 発効済みの県では `current` と同じ（「改定後」という未来は無いので、UIは出さない）
+   */
   revised: WageVerdict;
   revision: Revision;
+  /** いま有効な最低賃金（円）。発効済みなら revision.yen、発効前なら pref.currentYen */
+  inForceYen: number;
+  /** `inForceYen` がどちらの年度の額か */
+  inForceFy: typeof CURRENT_FY_LABEL | typeof REVISED_FY_LABEL;
 }
 
 function verdict(hourlyYen: number, minimumYen: number): WageVerdict {
@@ -1239,7 +1249,11 @@ function verdict(hourlyYen: number, minimumYen: number): WageVerdict {
 }
 
 /**
- * 時給が最低賃金を下回っていないかを、現行額と令和8年度額の両方で判定する。
+ * 時給が最低賃金を下回っていないかを、いま有効な額と令和8年度額の両方で判定する。
+ *
+ * 「いま」の基準は `asOf` で決まる。令和8年度額の発効日を過ぎた県で令和7年度額と
+ * 比べると、すでに下回っている人に「足りています」と答えてしまう
+ * （docs/features/kokai-tool-seikaku-2026-10.md）。
  *
  * 端数のある時給（1,050.5円など）も入力され得るが、最低賃金の比較は
  * 実際の時間給と最低賃金額をそのまま比べるので、丸めずに扱う。
@@ -1250,13 +1264,100 @@ export function checkWage(
   asOf: Date = new Date(),
 ): WageCheck {
   const revision = revisionOf(pref, asOf);
+  const inForce = revision.status === '発効済み';
+  const inForceYen = inForce ? revision.yen : pref.currentYen;
   return {
     prefecture: pref,
     hourlyYen,
-    current: verdict(hourlyYen, pref.currentYen),
+    current: verdict(hourlyYen, inForceYen),
     revised: verdict(hourlyYen, revision.yen),
     revision,
+    inForceYen,
+    inForceFy: inForce ? REVISED_FY_LABEL : CURRENT_FY_LABEL,
   };
+}
+
+/**
+ * 上段（選んだ県の額）の補足文。時給の入力が無くても出すので、check ではなく revision から作る。
+ *
+ * 発効済みの県で「いまは（令和7年度の額）」と書くと、旧い額を「いま」と呼ぶことになる。
+ */
+export function revisionHeadline(pref: Prefecture, revision: Revision): string {
+  const raise = `${revision.raise > 0 ? '+' : ''}${revision.raise}円（${revision.raisePercent}%）`;
+  if (revision.status === '発効済み' && revision.effectiveOn) {
+    return `${formatDate(revision.effectiveOn)}から${formatYen(revision.yen)}になりました（${CURRENT_FY_LABEL}は${formatYen(pref.currentYen)}。${raise}の引き上げ）。`;
+  }
+  return `いまは${formatYen(pref.currentYen)}（${CURRENT_FY_LABEL}・${formatDate(pref.currentEffectiveOn)}発効）。${raise}の引き上げです。`;
+}
+
+/** 判定1段ぶんの文言 */
+export interface WageVerdictMessage {
+  /** 「◯◯と比べると」の見出し */
+  label: string;
+  /** 「足りています」「下回っています」など */
+  result: string;
+  /** 補足の1文 */
+  detail: string;
+}
+
+/**
+ * 判定の文言を組み立てる。発効済みの県では「いま」の1段だけ、発効前の県では「いま」と「改定後」の2段。
+ *
+ * `Calculator.tsx` はこれを表示するだけにする（tools/ には描画テストの道具が無いので、
+ * 文言を純関数にして単体テストで固定する）。
+ */
+export function wageMessages(check: WageCheck): WageVerdictMessage[] {
+  const { revision } = check;
+  const inForceMessage = (label: string, after?: string): WageVerdictMessage => ({
+    label,
+    result: check.current.meets ? '足りています' : '下回っています',
+    detail: check.current.meets
+      ? `${formatYen(check.inForceYen)}を${
+          check.current.surplus === 0
+            ? 'ちょうど満たしています'
+            : `${formatYen(check.current.surplus)}上回っています`
+        }。`
+      : `${formatYen(check.inForceYen)}に${formatYen(
+          check.current.shortfall,
+        )}足りません。最低賃金を下回る取り決めは無効で、${after ? `${after}に働いた分は` : ''}差額を請求できます。`,
+  });
+
+  if (revision.status === '発効済み' && revision.effectiveOn) {
+    const on = formatDate(revision.effectiveOn);
+    return [
+      inForceMessage(`いまの最低賃金（${REVISED_FY_LABEL}・${on}発効）と比べると`, `${on}以降`),
+    ];
+  }
+
+  const estimate = revision.status === '目安';
+  return [
+    inForceMessage(`${CURRENT_FY_LABEL}（いま）の最低賃金と比べると`),
+    {
+      label: `${REVISED_FY_LABEL}の改定後${estimate ? '（見込み）' : ''}は`,
+      result: check.revised.meets ? '足りています' : '下回ります',
+      detail:
+        (check.revised.meets
+          ? `改定後の${formatYen(revision.yen)}も満たしています。`
+          : `改定後は${formatYen(revision.yen)}になるため、いまの時給のままだと${formatYen(
+              check.revised.shortfall,
+            )}足りなくなります。`) +
+        (estimate ? '（この額は答申前の見込みです。確定額は県の答申で変わることがあります）' : ''),
+    },
+  ];
+}
+
+/**
+ * 残業代計算などで「◯◯県の最低賃金は X円（…）」と出すときの括弧の中身まで含めた額の表記。
+ * 発効済みなら発効日、発効前なら改定後の額を添える。旧い額に「発効済み」を付けない
+ */
+export function minimumWageLabel(check: WageCheck): string {
+  const { revision } = check;
+  if (revision.status === '発効済み' && revision.effectiveOn) {
+    return `${formatYen(check.inForceYen)}（${formatDate(revision.effectiveOn)}発効）`;
+  }
+  return `${formatYen(check.inForceYen)}（改定後は${formatYen(revision.yen)}${
+    revision.status === '目安' ? '・見込み' : ''
+  }）`;
 }
 
 /** 年間の週数。月収は「週の労働時間 × 52週 ÷ 12か月」で均した概算にする */

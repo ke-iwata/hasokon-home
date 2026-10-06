@@ -12,10 +12,13 @@ import {
   estimateIncome,
   formatDate,
   formatYen,
+  minimumWageLabel,
   nextWallFor,
   prefectureByCode,
   prefectureByName,
+  revisionHeadline,
   revisionOf,
+  wageMessages,
   wallsFor,
   type Prefecture,
 } from '@/lib/saitei-chingin';
@@ -809,6 +812,132 @@ describe('checkWage', () => {
     const r = checkWage(byName('沖縄'), 1200, asOf);
     expect(r.current.meets).toBe(true);
     expect(r.current.surplus).toBe(177); // 1200 - 1023
+  });
+});
+
+/**
+ * 発効済みの県では「いま」の基準を令和8年度額にする。
+ *
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10.md の 1
+ * （発効日を過ぎた県で令和7年度額と比べ、下回っている人に「足りています」と出していた）。
+ *
+ * **日付はローカル時刻で作る**（`new Date(2026, 9, 5)`）。`toYmd()` は端末のローカル時刻で
+ * 日付を取るので、`new Date('2026-10-05')`（UTC）で作ると TZ によって1日ずれる。
+ */
+describe('checkWage の「いま」の基準（発効日の前後）', () => {
+  const local = (y: number, m: number, d: number) => new Date(y, m - 1, d);
+  const fromYmd = (s: string) => {
+    const [y, m, d] = s.split('-').map(Number);
+    return local(y, m, d);
+  };
+  const dayBefore = (s: string) => {
+    const dt = fromYmd(s);
+    dt.setDate(dt.getDate() - 1);
+    return dt;
+  };
+
+  it('東京・時給1,250円・2026-10-05 は令和8年度の1,280円と比べて下回る', () => {
+    const r = checkWage(byName('東京'), 1250, local(2026, 10, 5));
+    expect(r.revision.status).toBe('発効済み');
+    expect(r.inForceYen).toBe(1280);
+    expect(r.inForceFy).toBe('令和8年度');
+    expect(r.current.minimumYen).toBe(1280);
+    expect(r.current.meets).toBe(false);
+    expect(r.current.shortfall).toBe(30);
+  });
+
+  it('東京・時給1,250円・2026-09-30 は令和7年度の1,226円と比べて足り、改定後は下回る', () => {
+    const r = checkWage(byName('東京'), 1250, local(2026, 9, 30));
+    expect(r.revision.status).toBe('答申');
+    expect(r.inForceYen).toBe(1226);
+    expect(r.inForceFy).toBe('令和7年度');
+    expect(r.current.meets).toBe(true);
+    expect(r.revised.meets).toBe(false);
+  });
+
+  it('沖縄（12-02 発効）は 12-01 まで2段、12-02 から1段', () => {
+    const okinawa = byName('沖縄');
+    expect(okinawa.answered?.effectiveOn).toBe('2026-12-02');
+    const before = checkWage(okinawa, 1050, local(2026, 12, 1));
+    expect(before.inForceYen).toBe(okinawa.currentYen);
+    expect(wageMessages(before)).toHaveLength(2);
+    const after = checkWage(okinawa, 1050, local(2026, 12, 2));
+    expect(after.inForceYen).toBe(okinawa.answered?.yen);
+    expect(wageMessages(after)).toHaveLength(1);
+  });
+
+  it('47都道府県すべてで、発効日の前日は令和7年度額・当日は令和8年度額が基準になる', () => {
+    expect(PREFECTURES).toHaveLength(47);
+    for (const p of PREFECTURES) {
+      const on = p.answered?.effectiveOn;
+      expect(on, `${p.name} の発効日`).toMatch(ymd);
+      if (!on) continue;
+      const before = checkWage(p, 1000, dayBefore(on));
+      expect(before.inForceYen, `${p.name} 前日`).toBe(p.currentYen);
+      expect(before.current.minimumYen, `${p.name} 前日`).toBe(p.currentYen);
+      const onDay = checkWage(p, 1000, fromYmd(on));
+      expect(onDay.inForceYen, `${p.name} 当日`).toBe(p.answered?.yen);
+      expect(onDay.current.minimumYen, `${p.name} 当日`).toBe(p.answered?.yen);
+      // 発効済みなら「改定後」は「いま」と同じ額
+      expect(onDay.revised.minimumYen, `${p.name} 当日`).toBe(onDay.current.minimumYen);
+    }
+  });
+});
+
+describe('wageMessages / revisionHeadline / minimumWageLabel（画面の文言）', () => {
+  const asOf = new Date(2026, 9, 5);
+
+  it('東京・2026-10-05 の文言に旧い額との比較と未来形が出ない', () => {
+    const tokyo = byName('東京');
+    const check = checkWage(tokyo, 1250, asOf);
+    const messages = wageMessages(check);
+    expect(messages).toHaveLength(1);
+    const text = [
+      revisionHeadline(tokyo, check.revision),
+      ...messages.flatMap((m) => [m.label, m.result, m.detail]),
+    ].join('\n');
+    expect(text).not.toContain('1,226円を');
+    expect(text).not.toContain('足りなくなります');
+    expect(text).not.toContain('（いま）');
+    expect(text).not.toContain('いまは');
+    expect(messages[0].label).toBe('いまの最低賃金（令和8年度・2026年10月1日発効）と比べると');
+    expect(messages[0].result).toBe('下回っています');
+    expect(messages[0].detail).toContain('1,280円に30円足りません');
+    expect(messages[0].detail).toContain('2026年10月1日以降に働いた分は差額を請求できます');
+    expect(revisionHeadline(tokyo, check.revision)).toBe(
+      '2026年10月1日から1,280円になりました（令和7年度は1,226円。+54円（4.4%）の引き上げ）。',
+    );
+  });
+
+  it('発効前は「いま」と「改定後」の2段で、従来どおりの文言', () => {
+    const tokyo = byName('東京');
+    const check = checkWage(tokyo, 1250, new Date(2026, 8, 30));
+    const [now, revised] = wageMessages(check);
+    expect(now.label).toBe('令和7年度（いま）の最低賃金と比べると');
+    expect(now.result).toBe('足りています');
+    expect(now.detail).toBe('1,226円を24円上回っています。');
+    expect(revised.result).toBe('下回ります');
+    expect(revised.detail).toBe('改定後は1,280円になるため、いまの時給のままだと30円足りなくなります。');
+    expect(revisionHeadline(tokyo, check.revision)).toContain('いまは1,226円');
+  });
+
+  it('目安の県（架空）は「見込み」を添える', () => {
+    const check = checkWage(notAnsweredPref, 1050, asOf);
+    const [, revised] = wageMessages(check);
+    expect(revised.label).toContain('（見込み）');
+    expect(revised.detail).toContain('答申前の見込み');
+    expect(minimumWageLabel(check)).toContain('・見込み');
+  });
+
+  it('ちょうど同額なら「ちょうど満たしています」', () => {
+    const [m] = wageMessages(checkWage(byName('東京'), 1280, asOf));
+    expect(m.result).toBe('足りています');
+    expect(m.detail).toBe('1,280円をちょうど満たしています。');
+  });
+
+  it('minimumWageLabel は発効済みなら発効日、発効前なら改定後の額を添える（旧い額に「発効済み」を付けない）', () => {
+    expect(minimumWageLabel(checkWage(byName('東京'), 1250, asOf))).toBe('1,280円（2026年10月1日発効）');
+    expect(minimumWageLabel(checkWage(byName('沖縄'), 1050, asOf))).toBe('1,023円（改定後は1,086円）');
   });
 });
 

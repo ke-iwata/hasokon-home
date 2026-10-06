@@ -15,7 +15,7 @@ import {
   type ZangyodaiInput,
   type ZangyodaiRow,
 } from '@/lib/zangyodai';
-import { prefectureByCode } from '@/lib/saitei-chingin';
+import { minimumWageLabel, prefectureByCode } from '@/lib/saitei-chingin';
 
 /**
  * 残業代（割増賃金）計算のテスト。
@@ -209,6 +209,8 @@ describe('最低賃金との比較（lib/saitei-chingin.ts の checkWage を共�
       ...base,
       allowances: { commuteFamily: 10_000, attendance: 5_000 },
       prefectureCode: 13,
+      // 令和8年度額の発効前（東京は 2026-10-01 発効）。基準は令和7年度額
+      asOf: new Date(2026, 8, 30),
     });
     expect(r.minWageCheck?.prefecture.name).toBe('東京');
     expect(r.minWageCheck?.hourlyYen).toBeCloseTo(285_000 / ((245 * 8) / 12), 6);
@@ -235,6 +237,40 @@ describe('最低賃金との比較（lib/saitei-chingin.ts の checkWage を共�
       prefectureCode: 13,
     });
     expect(r.minWageCheck?.current.meets).toBe(false);
+  });
+});
+
+describe('最低賃金との比較：発効済みの県（docs/features/kokai-tool-seikaku-2026-10.md）', () => {
+  // 日付はローカル時刻で作る（lib/saitei-chingin.ts の toYmd がローカル時刻で日付を取るため）
+  const asOf = new Date(2026, 9, 5);
+
+  it('東京・時給換算1,250円・2026-10-05 は令和8年度の1,280円と比べて下回る', () => {
+    const r = calcZangyodai({ wageType: 'hourly', hourlyWage: 1_250, prefectureCode: 13, asOf });
+    const check = r.minWageCheck;
+    expect(check?.inForceYen).toBe(1_280);
+    expect(check?.current.minimumYen).toBe(1_280);
+    expect(check?.current.meets).toBe(false);
+    expect(check?.current.shortfall).toBe(30);
+  });
+
+  it('画面に出す額の表記に「1,226円」と「発効済み」が並ばない', () => {
+    const r = calcZangyodai({ wageType: 'hourly', hourlyWage: 1_250, prefectureCode: 13, asOf });
+    const label = minimumWageLabel(r.minWageCheck!);
+    expect(label).toBe('1,280円（2026年10月1日発効）');
+    expect(label).not.toContain('1,226円');
+    expect(label).not.toContain('発効済み');
+  });
+
+  it('発効前の日付なら令和7年度額で比べ、改定後の額を添える', () => {
+    const r = calcZangyodai({
+      wageType: 'hourly',
+      hourlyWage: 1_250,
+      prefectureCode: 13,
+      asOf: new Date(2026, 8, 30),
+    });
+    expect(r.minWageCheck?.current.meets).toBe(true);
+    expect(r.minWageCheck?.revised.meets).toBe(false);
+    expect(minimumWageLabel(r.minWageCheck!)).toBe('1,226円（改定後は1,280円）');
   });
 });
 
