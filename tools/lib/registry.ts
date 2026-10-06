@@ -464,6 +464,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-03',
   },
   {
+    // 仕様: docs/features/kodomo-nisa.md
+    slug: 'kodomo-nisa',
+    // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
+    icon: 'Plant',
+    name: 'こどもNISA シミュレーター',
+    description:
+      '2027年1月に始まる0〜17歳のつみたて投資枠（年60万円・上限600万円）。子の生年月日と毎月の積立額から、600万円に届く月・12歳以降に払い出せる年・大人のNISAへ移る日を日付で出します。利回りによる評価額は出しません。',
+    category: 'お金・社会保険',
+    // public の前に運営者が J-PlatPat で「こどもNISA」の商標を確認する（仕様書「公開条件」）
+    stage: 'preview',
+    updatedAt: '2026-10-06',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
