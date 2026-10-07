@@ -392,7 +392,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         {insured === 'type3'
           ? '第3号被保険者は今回の改正の対象外で、限度額は月2.3万円のまま変わりません。'
           : r.gainRatio !== null && r.gainRatio > 1
-            ? `限度額は約${r.gainRatio.toFixed(1)}倍になります。`
+            ? `限度額は約${r.gainRatio.toFixed(1)}倍${r.reformApplied ? 'になりました' : 'になります'}。`
             : '限度額は変わりません。'}
       </p>
 
@@ -454,8 +454,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
       <h3 style={{ marginTop: 22 }}>加入可能年齢までの累計</h3>
       <p className="hint" style={{ marginTop: 0 }}>
         加入可能年齢も{JOIN_AGE_LIMIT_BEFORE}歳未満から{JOIN_AGE_LIMIT_AFTER}
-        歳未満に延びます（老齢基礎年金・iDeCoの老齢給付金を受給していないことが条件）。
+        歳未満に{r.reformApplied ? '延びました' : '延びます'}
+        （加入を続けられる条件は下の解説をご覧ください）。
         いまの拠出額・いまの課税所得のまま続けた場合の累計です。
+        {JOIN_AGE_LIMIT_AFTER}歳までの累計は、60歳以降も加入を続けられる条件に当たる場合の計算です。
       </p>
       <table>
         <thead>

@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import { keikaSochiUntilLabel } from '@/lib/ideco';
 import Calculator from './Calculator';
 
 const title = 'iDeCo 拠出限度額・節税額 計算機｜2026年12月改正で会社員は月6.2万円へ';
@@ -18,6 +19,8 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/ideco/` },
   robots: robotsFor('ideco'),
 };
+
+const keikaSochiUntil = keikaSochiUntilLabel();
 
 const faq = [
   {
@@ -46,7 +49,7 @@ const faq = [
   },
   {
     q: '何歳まで加入できますか？',
-    a: '加入可能年齢が65歳未満から70歳未満に引き上げられます。老齢基礎年金・iDeCoの老齢給付金を受給していないことが条件です。積み立てられる期間が最大5年延びるため、その分だけ累計の節税額が増えます。本ツールでは65歳までと70歳までの累計を並べて表示します。',
+    a: `加入可能年齢が65歳未満から70歳未満に引き上げられます。60〜64歳で会社員・公務員（第2号）や国民年金の任意加入の方は、これまでどおり加入できます。国民年金に加入していない60〜69歳の方は、①直前までiDeCoに掛金を出していた ②直前まで運用指図者だった ③企業型DCなどの資産をiDeCoに移す、のいずれかなら70歳まで加入できます。${keikaSochiUntil}までは経過措置で、これに当たらない方も新たに加入できます。老齢基礎年金やiDeCoの老齢給付金を受け取り始めた方は加入できません。積み立てられる期間が最大5年延びるため、その分だけ累計の節税額が増えます。本ツールでは65歳までと70歳までの累計を並べて表示します（70歳までの累計は、60歳以降も加入を続けられる条件に当たる場合の計算です）。`,
   },
   {
     q: '受け取るときの税金は考えなくていいですか？',
@@ -209,10 +212,18 @@ export default function Page() {
 
       <h2>加入できる年齢も70歳未満まで延びます</h2>
       <p>
-        加入可能年齢が<strong>65歳未満から70歳未満</strong>に引き上げられます
-        （老齢基礎年金・iDeCoの老齢給付金を受給していないことが条件）。
+        加入可能年齢が<strong>65歳未満から70歳未満</strong>に引き上げられます。
         積み立てられる期間が最大5年延びるので、
         同じ掛金でも累計の拠出額と節税額がその分だけ増えます。
+      </p>
+      <p>
+        ただし60歳以降も誰でも加入できるわけではありません。
+        <strong>60〜64歳で会社員・公務員（第2号）や国民年金の任意加入の方は、これまでどおり加入できます。</strong>
+        国民年金に加入していない60〜69歳の方は、
+        ①直前までiDeCoに掛金を出していた ②直前まで運用指図者だった
+        ③企業型DCなどの資産をiDeCoに移す、のいずれかなら70歳まで加入できます。
+        <strong>{keikaSochiUntil}までは経過措置で、これに当たらない方も新たに加入できます。</strong>
+        老齢基礎年金やiDeCoの老齢給付金を受け取り始めた方は加入できません。
       </p>
 
       <h2>節税になる仕組み</h2>
@@ -262,6 +273,14 @@ export default function Page() {
           rel="nofollow noopener noreferrer"
         >
           厚生労働省 社会保障審議会 企業年金・個人年金部会 資料
+        </a>
+        ／
+        <a
+          href="https://www.mhlw.go.jp/content/12500000/001714615.pdf"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          厚生労働省「iDeCo 加入可能年齢の引上げについて」
         </a>
         ／
         <a

@@ -2,24 +2,31 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { metadata as hatarakizonMeta } from '@/app/hatarakizon/page';
+import { metadata as idecoMeta } from '@/app/ideco/page';
 import { metadata as invoiceMeta } from '@/app/invoice-nozeigaku/page';
+import { metadata as iryohiMeta } from '@/app/iryohi-kojo/page';
 import { metadata as kokunenMeta } from '@/app/kokunen-ikuji-menjo/page';
 import { metadata as nenshuKabeMeta } from '@/app/nenshu-kabe/page';
 import { metadata as saiteiChinginMeta } from '@/app/saitei-chingin/page';
 import { metadata as shuzeiMeta } from '@/app/shuzei-kaisei/page';
 import { metadata as tabakoMeta } from '@/app/tabako-zei-neage/page';
+import { metadata as tedoriMeta } from '@/app/tedori-keisan/page';
+import { REFORM_EFFECTIVE_FROM } from '@/lib/ideco';
 import { PURCHASE_TRANSITION } from '@/lib/invoice-nozeigaku';
+import { SELF_MED_REFORM_EFFECTIVE_ON } from '@/lib/iryohi-kojo';
 import { IKUJI_START } from '@/lib/kokunen-ikuji-menjo';
 import { WAGE_REQUIREMENT_ABOLISHED_ON } from '@/lib/nenshu-kabe';
 import { tools } from '@/lib/registry';
 import { REVISION_DATE } from '@/lib/shuzei-kaisei';
 import { HEATED_ALIGNED_FROM } from '@/lib/tabako-zei';
+import { WITHHOLDING_TABLE_EFFECTIVE_ON } from '@/lib/tedori-keisan';
 
 /**
  * 施行日を過ぎたのに「これから」の文面（未来形）が残っていないかを、施行日を持つツール全体で見る。
  * 静的HTMLに焼き込む文面は開いた日で切り替わらないので、期日を過ぎたら書き換えで追従する必要がある。
  *
  * 仕様: docs/features/r8-10gatsu-shikogo-copy-sweep.md
+ *       docs/features/r8-12gatsu-1gatsu-shikogo-copy.md（12-01・01-01 施行分）
  */
 
 type Entry = {
@@ -33,6 +40,12 @@ type Entry = {
    * 過去の扱いを説明する段落が本文に正しく残るページ（酒税・たばこ）は空にして description だけを見る
    */
   sourcePatterns: RegExp[];
+  /**
+   * page.tsx 以外に検査するファイル（同じディレクトリ）。Calculator.tsx は施行前の枝に未来形が
+   * 正しく残るので、sourcePatterns ではなく extraPatterns（分岐の外に置いてはいけない文面）だけで見る
+   */
+  extraFiles?: string[];
+  extraPatterns?: RegExp[];
   description: string;
 };
 
@@ -91,6 +104,41 @@ const ENTRIES: Entry[] = [
     sourcePatterns: [],
     description: String(tabakoMeta.description),
   },
+  {
+    slug: 'ideco',
+    effectiveOn: REFORM_EFFECTIVE_FROM,
+    patterns: [/6\.2万円に。/, /6\.2万円へ/, /6\.2万円になります/],
+    // title は page.tsx の const title にあり description の検査では見えないので、本文側にも入れる
+    sourcePatterns: [
+      /6\.2万円へ/,
+      /6\.2万円になります/,
+      /いますぐ月6\.2万円/,
+      /必ず並べて表示します/,
+      /広がります/,
+      /延びます/,
+      /引き上げられます/,
+      /7\.5万円になります/,
+      /から出せる額は違います/,
+    ],
+    extraFiles: ['Calculator.tsx'],
+    extraPatterns: [/延びます（老齢基礎年金/],
+    description: String(idecoMeta.description),
+  },
+  {
+    // 「11月までの源泉徴収に反映されていない」は施行後も正しい説明なので見ない
+    slug: 'tedori-keisan',
+    effectiveOn: WITHHOLDING_TABLE_EFFECTIVE_ON,
+    patterns: [],
+    sourcePatterns: [/給与明細に現れるのは2027年1月から/, /天引きが変わるのは2027年1月から/],
+    description: String(tedoriMeta.description),
+  },
+  {
+    slug: 'iryohi-kojo',
+    effectiveOn: SELF_MED_REFORM_EFFECTIVE_ON,
+    patterns: [],
+    sourcePatterns: [/見直されるので/],
+    description: String(iryohiMeta.description),
+  },
 ];
 
 /** 実行環境のローカル日付 'YYYY-MM-DD'（各ツールの Calculator と同じ判定。UTC の CI では 09:00 JST から） */
@@ -109,8 +157,8 @@ export function stripLinks(source: string): string {
   return source.replace(/<a\b[^>]*>[\s\S]*?<\/a>/g, '');
 }
 
-function pageSource(slug: string): string {
-  return readFileSync(join(__dirname, `../app/${slug}/page.tsx`), 'utf8');
+function pageSource(slug: string, file = 'page.tsx'): string {
+  return readFileSync(join(__dirname, `../app/${slug}/${file}`), 'utf8');
 }
 
 describe('stripLinks（出典の題名を検査から外す）', () => {
@@ -137,6 +185,10 @@ describe('施行日を過ぎたら「これから」の文面が残っていな�
     for (const e of ENTRIES) {
       expect(e.effectiveOn, e.slug).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(tools.find((t) => t.slug === e.slug), e.slug).toBeDefined();
+      // extraFiles を書き間違えると検査が空振りするので、ファイルが読めることを確かめる
+      for (const file of e.extraFiles ?? []) {
+        expect(pageSource(e.slug, file).length, `${e.slug}/${file}`).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -151,6 +203,12 @@ describe('施行日を過ぎたら「これから」の文面が残っていな�
       const body = stripLinks(pageSource(e.slug));
       for (const re of e.sourcePatterns) {
         expect(body, `page.tsx の本文・FAQ に ${re}`).not.toMatch(re);
+      }
+      for (const file of e.extraFiles ?? []) {
+        const extra = stripLinks(pageSource(e.slug, file));
+        for (const re of e.extraPatterns ?? []) {
+          expect(extra, `${file} に ${re}`).not.toMatch(re);
+        }
       }
     });
   }
