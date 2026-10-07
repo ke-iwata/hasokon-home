@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { categories, publicTools, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { breadcrumbList, breadcrumbTrail, PUBLISHER } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
-import ToolArt, { categoryStyle } from '@/app/ToolArt';
+import { categoryStyle } from '@/app/ToolArt';
+import ToolPreview from '@/app/ToolPreview';
 
 /**
  * 自己参照canonical（docs/features/self-canonical-coverage.md）。
@@ -80,14 +81,23 @@ export default function Home() {
               <h2>{cat}</h2>
               <span className="count">{list.length}件</span>
             </div>
-            <div className="tool-grid">
+            {/* カードの絵は「そのツールで出てくる答えの形」（app/ToolPreview.tsx）。
+                幅いっぱいに置くので、タイル用の .icon の大きさをインラインで上書きしている
+                （クラスを増やさない約束。docs/features/card-illustrations.md） */}
+            <div className="tool-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))' }}>
               {list.map((t) => (
                 <Link key={t.slug} className="tool-card" style={categoryStyle(t.category)} href={`/${t.slug}/`}>
-                  <div className="icon">
-                    <ToolArt slug={t.slug} icon={t.icon} />
+                  <div className="icon" style={{ width: '100%', height: 'auto', display: 'block', borderRadius: 12, overflow: 'hidden' }}>
+                    <ToolPreview slug={t.slug} />
                   </div>
                   <div className="name">{t.name}</div>
-                  <div className="desc">{t.description}</div>
+                  {/* 一覧では2行で切る（絵が答えの形を見せるので、説明は入口の一言で足りる。全文は各ページに） */}
+                  <div
+                    className="desc"
+                    style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                  >
+                    {t.description}
+                  </div>
                 </Link>
               ))}
             </div>

@@ -57,6 +57,8 @@
   --cat-life-bg: #fdf0e0;
   --cat-pick: #6d28d9;
   --cat-pick-bg: #f0e9fd;
+  /* 一覧カードの「結果の形」の絵（app/ToolPreview.tsx）で、1点だけ目立たせる色（あなた・期限・課税される分など） */
+  --cat-mark: #c2410c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -98,6 +100,7 @@
     --cat-life-bg: #4a3713;
     --cat-pick: #c4a7f8;
     --cat-pick-bg: #3a2a59;
+    --cat-mark: #fb923c;
   }
 }
 

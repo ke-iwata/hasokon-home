@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// トップ（home/index.html）のカードの絵を、tools / games の一覧ページのビルド結果から写す。
+// トップ（home/index.html）のカードの絵を、tools / games のビルド結果から写す。
 //
 // home/ にはビルド工程が無く、React の絵をそのまま使えない。これまでもアイコンの SVG は
 // 手で写していた（index.html のコメント参照）。その写しを機械にやらせるためのもの。
@@ -12,7 +12,9 @@
 //
 // 仕様: docs/features/card-illustrations.md
 //
-// - 絵は一覧ページ（tools/out/index.html・games/out/index.html）のカードから取る
+// - 絵はツールの404ページ（tools/out/404.html）とゲームの一覧ページ（games/out/index.html）の
+//   カードから取る。ツールの一覧（/tools/）は「結果の形」の大きい絵（ToolPreview.tsx）に
+//   なったので、小さいタイルの絵（ToolArt.tsx）が並ぶ404ページを写し元にしている
 // - カードの <a> にはタイルの2色をインラインの変数で渡す（ツールは分類ごと、ゲームは1色）
 // - 何度かけても同じ結果になる（style と絵を置き換えるだけ）
 // - 写せなかったカードがあれば終了コード1（home にだけあって一覧に無いカード＝公開前や削除済み）
@@ -87,11 +89,11 @@ function main(argv) {
   };
   const homePath = opt('--home', `${ROOT}/home/index.html`);
   const art = {
-    tools: collectArt(readFileSync(opt('--tools', `${ROOT}/tools/out/index.html`), 'utf8'), 'tools'),
+    tools: collectArt(readFileSync(opt('--tools', `${ROOT}/tools/out/404.html`), 'utf8'), 'tools'),
     games: collectArt(readFileSync(opt('--games', `${ROOT}/games/out/index.html`), 'utf8'), 'games'),
   };
   if (art.tools.size === 0 || art.games.size === 0) {
-    console.error('一覧ページから絵を1つも拾えなかった。先に tools と games をビルドしてください');
+    console.error('ビルド結果から絵を1つも拾えなかった。先に tools と games をビルドしてください');
     return 2;
   }
   const { html, updated, missing } = applyArt(readFileSync(homePath, 'utf8'), art);

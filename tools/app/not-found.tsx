@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import ToolArt, { categoryStyle } from '@/app/ToolArt';
 import { categories, publicTools } from '@/lib/registry';
 
 export const metadata: Metadata = {
@@ -27,13 +28,19 @@ export default function NotFound() {
         return (
           <section key={cat}>
             <h2>{cat}</h2>
-            <ul>
+            {/* 小さいタイルの絵（app/ToolArt.tsx）で並べる。トップ（home/index.html）のカードの絵は
+                scripts/sync-home-card-art.mjs がこのページ（out/404.html）から写す。
+                一覧（/tools/）は「結果の形」の大きい絵なので、写し元にできない */}
+            <div className="tool-grid">
               {list.map((t) => (
-                <li key={t.slug}>
-                  <Link href={`/${t.slug}/`}>{t.name}</Link>
-                </li>
+                <Link key={t.slug} className="tool-card" style={categoryStyle(t.category)} href={`/${t.slug}/`}>
+                  <div className="icon">
+                    <ToolArt slug={t.slug} icon={t.icon} />
+                  </div>
+                  <div className="name">{t.name}</div>
+                </Link>
               ))}
-            </ul>
+            </div>
           </section>
         );
       })}
