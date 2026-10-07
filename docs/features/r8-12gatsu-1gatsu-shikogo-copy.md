@@ -107,7 +107,7 @@
   patterns: [], sourcePatterns: [/見直されるので/], ... },
 ```
 
-- **`Calculator.tsx` も検査する**：いまの `Entry` は `../app/${slug}/page.tsx` しか読まない。`extraFiles?: string[]` を足し、同じディレクトリのファイルを `sourcePatterns` で検査する。
+- **`Calculator.tsx` も検査する**：いまの `Entry` は `../app/${slug}/page.tsx` しか読まない。`extraFiles?: string[]` を足し、同じディレクトリのファイルを `extraPatterns` で検査する（`sourcePatterns` は page.tsx 用のまま）。
   ただし Calculator の「延びます」「倍になります」は `reformApplied` の分岐で**施行前の枝に残るのが正しい**ので、Calculator には別の `extraPatterns` を持たせ、
   **分岐の外に置いてはいけない文面**（`/延びます（老齢基礎年金/`＝条件つきの旧い注記）だけを見る。分岐が正しく効くかは `ideco.test.ts` に
   「asOf 2026-12-01 で `reformApplied` が true」の既存ケースがあり、表示の文面は Calculator のレンダリングテストを 1 件足して見る（asOf 2026-12-01 で「延びました」「倍になりました」が出る）
