@@ -368,6 +368,41 @@ export function gyakubikiTable(
   return rows;
 }
 
+/** ある年度中に、ちょうどその年齢になる学年 */
+export interface GradeTurningAge {
+  /** 学年の最初の生年月日（cohortYear 年4月2日） */
+  from: DateParts;
+  /** 学年の最後の生年月日（cohortYear+1 年4月1日。早生まれの最後） */
+  to: DateParts;
+  /** 何年度生まれの学年か（`schoolYears().cohortYear` と同じ数え方） */
+  cohortYear: number;
+}
+
+/**
+ * fiscalYear 年度（4月1日〜翌年3月31日）の間に、全員が満 age 歳になる学年。
+ *
+ * 年齢は誕生日の前日の終了時に1つ増える（年齢計算ニ関スル法律・民法143条）ので、
+ * 4月1日生まれは3月31日の終了時に加齢し、前の学年（早生まれ）に入る。
+ * したがって fiscalYear 年度に age 歳になるのは「(fiscalYear − age) 年度生まれ」
+ * ＝ (fiscalYear − age) 年4月2日〜(fiscalYear − age + 1) 年4月1日生まれ。
+ *
+ * ページの解説文（「◯年度に18歳になる学年」）はここから組み立てる。
+ * 文字列に式を直書きしていたら1年ずれた（docs/features/kokai-tool-seikaku-2026-10.md）。
+ */
+export function gradeTurningAge(age: number, fiscalYear: number): GradeTurningAge {
+  const cohortYear = fiscalYear - age;
+  return {
+    from: { year: cohortYear, month: 4, day: 2 },
+    to: { year: cohortYear + 1, month: 4, day: 1 },
+    cohortYear,
+  };
+}
+
+/** '2008年4月2日〜2009年4月1日生まれ' */
+export function gradeRangeLabel(grade: GradeTurningAge): string {
+  return `${formatJa(grade.from)}〜${formatJa(grade.to)}生まれ`;
+}
+
 // ---------------------------------------------------------------- 干支
 
 /** 十干 */

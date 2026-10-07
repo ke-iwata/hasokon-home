@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import {
+  ArrowsOutCardinalIcon,
   BinocularsIcon,
   BombIcon,
   CardsIcon,
@@ -1162,6 +1163,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   TargetNumber: TargetNumberIcon,
   // 間違い探し。既存タイトルの絵柄は使わず、見比べる道具（双眼鏡）で表す（盤面の絵は `public` にするPRで描く）
   Binoculars: BinocularsIcon,
+  // 矢印ぬき。海外アプリの絵柄はなぞらず、四方へ抜ける矢印で表す（盤面の絵は `public` にするPRで描く）
+  ArrowsOutCardinal: ArrowsOutCardinalIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

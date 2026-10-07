@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { trackToolUse } from '@/lib/analytics';
-import { PREFECTURES } from '@/lib/saitei-chingin';
+import { PREFECTURES, minimumWageLabel } from '@/lib/saitei-chingin';
 import {
   DEFAULT_ANNUAL_WORK_DAYS,
   MONTHLY_OVERTIME_THRESHOLD,
@@ -629,18 +629,18 @@ export default function Calculator() {
           <strong>参考：最低賃金との比較</strong>
           <p className="hint" style={{ marginBottom: 0 }}>
             {check.prefecture.name}の最低賃金は{' '}
-            <strong>{check.current.minimumYen.toLocaleString('ja-JP')}円</strong>
-            （{check.revision.status === '発効済み' ? '発効済み' : `改定後は${check.revision.yen.toLocaleString('ja-JP')}円`}）。
+            <strong>{minimumWageLabel(check)}</strong>。
             あなたの時給換算は <strong>{rateYen(check.hourlyYen)}円</strong> で、
+            {/* 基準は「いま有効な額」（発効済みなら令和8年度額）。lib/saitei-chingin.ts の checkWage */}
             {check.current.meets ? (
-              <>現行額を{Math.floor(check.current.surplus).toLocaleString('ja-JP')}円上回っています。</>
+              <>最低賃金を{Math.floor(check.current.surplus).toLocaleString('ja-JP')}円上回っています。</>
             ) : (
               <>
-                現行額を<strong>{Math.ceil(check.current.shortfall).toLocaleString('ja-JP')}円下回っています</strong>
+                最低賃金を<strong>{Math.ceil(check.current.shortfall).toLocaleString('ja-JP')}円下回っています</strong>
                 。勤務先か労働局にご確認ください。
               </>
             )}
-            {!check.revised.meets && check.current.meets && (
+            {check.revision.status !== '発効済み' && !check.revised.meets && check.current.meets && (
               <>
                 {' '}
                 改定後の額（{check.revision.yen.toLocaleString('ja-JP')}円）は下回ります。

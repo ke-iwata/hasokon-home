@@ -8,6 +8,8 @@ import ToolMeta from '@/app/ToolMeta';
 import {
   ageForBirthYear,
   ERAS,
+  gradeRangeLabel,
+  gradeTurningAge,
   gyakubikiTable,
   GYAKUBIKI_MAX_AGE,
   HAYAMIHYO_BASE_YEAR,
@@ -21,6 +23,8 @@ import Calculator from './Calculator';
  * （年が変わると `tests/nenrei.test.ts` が落ちて更新を促す）。
  */
 const baseYear = HAYAMIHYO_BASE_YEAR;
+/** baseYear 年度中に全員18歳になる学年。式を文字列に直書きしない（lib の gradeTurningAge） */
+const grade18 = gradeTurningAge(18, baseYear);
 
 const title = `年齢計算・年齢早見表【${baseYear}年版】｜満何歳何ヶ月と西暦和暦変換`;
 const description = `生年月日から満年齢と「満何歳何ヶ月」を計算。${baseYear}年版の年齢早見表（生まれ年→満年齢）と、「18歳は何年生まれ？」を引ける逆引き早見表つき。西暦と和暦（明治・大正・昭和・平成・令和）を相互に変換でき、「昭和45年生まれは何歳」「令和8年は西暦何年」もすぐ分かります。誕生日までの日数・干支・入学卒業年の目安つきの無料ツールです。`;
@@ -35,7 +39,7 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: '満18歳になるのは何年生まれですか？',
-    a: `${baseYear}年に満18歳になるのは、誕生日を迎えたあとの人が${baseYear - 18}年（${warekiYearLabels(baseYear - 18).join('・')}）生まれ、誕生日がまだの人が${baseYear - 19}年（${warekiYearLabels(baseYear - 19).join('・')}）生まれです。満年齢は誕生日で変わるため、同じ「18歳」でも生まれ年は2つにまたがります。学年でまとめて言いたいときは「${baseYear - 19}年4月2日〜${baseYear - 18}年4月1日生まれ」が同じ学年（${baseYear - 19}年度生まれ）で、この学年が${baseYear}年度中に全員18歳になります。ほかの年齢はこのページの「年齢の逆引き早見表」で0歳から100歳まで引けます。`,
+    a: `${baseYear}年に満18歳になるのは、誕生日を迎えたあとの人が${baseYear - 18}年（${warekiYearLabels(baseYear - 18).join('・')}）生まれ、誕生日がまだの人が${baseYear - 19}年（${warekiYearLabels(baseYear - 19).join('・')}）生まれです。満年齢は誕生日で変わるため、同じ「18歳」でも生まれ年は2つにまたがります。学年でまとめて言いたいときは「${gradeRangeLabel(grade18)}」が同じ学年（${grade18.cohortYear}年度生まれ）で、この学年が${baseYear}年度中に全員18歳になります。ほかの年齢はこのページの「年齢の逆引き早見表」で0歳から100歳まで引けます。`,
   },
   {
     q: '満何歳何ヶ月はどう数えますか？',
@@ -308,8 +312,8 @@ export default function Page() {
       </p>
       <p>
         学年で数えたいときは1つずれることがあります。たとえば
-        {baseYear}年度に18歳になる学年は「{baseYear - 19}年4月2日〜{baseYear - 18}年4月1日生まれ」（
-        {baseYear - 19}年度生まれ）で、{baseYear - 19}年生まれと{baseYear - 18}
+        {baseYear}年度に18歳になる学年は「{gradeRangeLabel(grade18)}」（
+        {grade18.cohortYear}年度生まれ）で、{grade18.from.year}年生まれと{grade18.to.year}
         年生まれの両方を含みます。年齢の要件が年度で決まる手続き（受験・免許・各種手当など）では、生まれ年ではなく生年月日で確認してください。
       </p>
       <GyakubikiTable />

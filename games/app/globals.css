@@ -465,6 +465,7 @@ ol {
 .hp-board,
 .hn-board,
 .ts-board,
+.yn-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -5637,6 +5638,241 @@ button.hf-card {
   line-height: 1.35;
 }
 
+/* ---- 矢印ぬき ----
+   盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。`--chrome` / `--board-max` は星置きと同じく
+   盤ではなく入れ物（`.yn-game`）に置き、作成中の幕（`.yn-loading`）と盤が同じ値を継承する。
+   `--chrome` は盤以外が使う高さ（パンくず・見出し・リード文・段・ハートの行・
+   結果の1行・ボタンの行・記録の帯）。
+   矢印は SVG の線（`.yn-arrow`）。抜けるかどうかを色で教えない（答えになる） */
+.yn-game {
+  --chrome: 470px;
+  --board-max: 460px;
+}
+
+.yn-modes {
+  margin: 4px 0 2px;
+}
+
+/* ハート・ミス・タイム・ヒント。**高さを固定**して、文言が変わっても盤を動かさない（画面の約束1） */
+.yn-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin: 2px 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.yn-hearts {
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.yn-hearts .on {
+  color: var(--danger);
+}
+
+.yn-hearts .off {
+  color: var(--muted);
+}
+
+.yn-misses {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.yn-time {
+  margin-left: auto;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.yn-hint-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.yn-hint-penalty {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* 読み上げだけに出す「のこり◯本」 */
+.yn-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.yn-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--yn-n, 7), 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  border: 2px solid var(--muted);
+  border-radius: 6px;
+  /* 抜けていく矢印は盤の縁で見えなくなる */
+  overflow: hidden;
+  background: var(--surface);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.yn-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  /* grid の 1fr は min-content より縮まないので、マス自身にも下限を外させる */
+  min-width: 0;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: default;
+}
+
+.yn-cell.has {
+  cursor: pointer;
+}
+
+.yn-cell:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: -3px;
+}
+
+.yn-glyph,
+.yn-fly {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.yn-arrow {
+  width: 78%;
+  height: 78%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ヒント：抜けられる矢印を 1 本、1 秒光らせる */
+.yn-cell.hint {
+  color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+/* ぶつかった：相手の手前まで進んで戻る（`--yn-dx` / `--yn-dy` は Game.tsx が渡す）。赤くして「ミス」を見せる */
+.yn-cell.bump {
+  color: var(--danger);
+}
+
+.yn-cell.bump .yn-glyph {
+  animation: yn-bump 300ms ease-in-out;
+}
+
+@keyframes yn-bump {
+  45% {
+    transform: translate(var(--yn-dx, 0), var(--yn-dy, 0));
+  }
+}
+
+/* 抜けていく矢印の残像。盤の 1 マスぶんの大きさで、向きの方向へ 150ms で滑って消える */
+.yn-fly {
+  position: absolute;
+  width: calc(100% / var(--yn-n, 7));
+  height: calc(100% / var(--yn-n, 7));
+  color: var(--text);
+  pointer-events: none;
+  animation: 150ms ease-in forwards;
+}
+
+.yn-fly-up { animation-name: yn-fly-up; }
+.yn-fly-down { animation-name: yn-fly-down; }
+.yn-fly-left { animation-name: yn-fly-left; }
+.yn-fly-right { animation-name: yn-fly-right; }
+
+@keyframes yn-fly-up { to { transform: translateY(-300%); opacity: 0; } }
+@keyframes yn-fly-down { to { transform: translateY(300%); opacity: 0; } }
+@keyframes yn-fly-left { to { transform: translateX(-300%); opacity: 0; } }
+@keyframes yn-fly-right { to { transform: translateX(300%); opacity: 0; } }
+
+/* 動きを減らす設定では、抜ける矢印は即時に消し、ぶつかったときは赤くするだけ */
+@media (prefers-reduced-motion: reduce) {
+  .yn-fly {
+    display: none;
+  }
+
+  .yn-cell.bump .yn-glyph {
+    animation: none;
+  }
+}
+
+/* 作成中の幕。**式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること** */
+.yn-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* 結果の 1 行。**空でも枠は置く**（1 行ぶんの高さを確保して盤を動かさない） */
+.yn-note {
+  height: 1.6rem;
+  line-height: 1.6rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.yn-note.win {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.yn-note.lose {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* やり直し・新しい盤・結果をコピー。中身が変わっても高さは 1 行で固定する */
+.yn-actions {
+  justify-content: center;
+  flex-wrap: nowrap;
+  height: 44px;
+  margin-top: 6px;
+}
+
+.yn-actions .btn {
+  min-height: 44px;
+}
+
 @media (max-width: 600px) {
   /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
   .card {
@@ -6181,6 +6417,27 @@ button.hf-card {
 
   .ms-status {
     gap: 6px;
+  }
+
+  /* 矢印ぬき。**狭い画面では高さから盤を縮めない**（390px 幅で 9×9 でも 1 マス 38px 以上が確認条件）。
+     カードの内側の余白（10px）のままだと 390px 幅で盤が 336px（1 マス 37px）になるので、
+     マッチ3と同じく左右に 9px ずつはみ出させる（354px・枠を除いて 1 マス 38.9px） */
+  .yn-game {
+    --chrome: 300px;
+    --board-max: 400px;
+  }
+
+  .yn-wrap {
+    margin-inline: -9px;
+  }
+
+  .yn-status {
+    gap: 8px;
+  }
+
+  .yn-hint-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
   }
 
   /* 320px 幅（iPhone SE 第1世代級）で残り数の行が「やり直す」まで収まるように、
