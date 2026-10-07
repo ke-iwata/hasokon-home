@@ -5,6 +5,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   ageForBirthYear,
   ERAS,
@@ -323,6 +324,22 @@ export default function Page() {
         <div key={f.q}>
           <h3>{f.q}</h3>
           <p>{f.a}</p>
+          {f.q === '満年齢と数え年の違いは何ですか？' && (
+            <>
+              <PublicToolLink slug="shichigosan">
+                <p>
+                  七五三の年は数え年・満年齢の両方で
+                  <ToolLink slug="shichigosan">七五三 早見表</ToolLink>で調べられます。
+                </p>
+              </PublicToolLink>
+              <PublicToolLink slug="yakudoshi">
+                <p>
+                  厄年や還暦などの年は
+                  <ToolLink slug="yakudoshi">厄年・長寿祝い 早見表</ToolLink>で調べられます。
+                </p>
+              </PublicToolLink>
+            </>
+          )}
         </div>
       ))}
 

@@ -242,6 +242,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | インボイスの経過措置が改正されたとき | `lib/invoice-nozeigaku.ts` の `YEARS`（年ごとに使える特例）・`SPECIAL_RATES`（2割・3割）・`BUSINESS_TYPES`（みなし仕入率）・`PURCHASE_TRANSITION`（7・5・3割控除）。国税庁のインボイス特設サイトとインボイスQ&Aを正とする。**3割特例は2028年分で終わる**ので、それ以降の措置が決まるまで追加は不要 |
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
+| 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
