@@ -128,28 +128,31 @@ export default function Page() {
       </p>
 
       <h2>給与収入・年金収入の早見表（1級地）</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>配偶者・扶養の人数</th>
-            <th>令和9年度 給与（均等割も非課税）</th>
-            <th>令和9年度 給与（所得割が非課税）</th>
-            <th>令和8年度 給与（均等割も非課税）</th>
-            <th>65歳以上 年金だけ（均等割も非課税）</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rowsR9.map((r, i) => (
-            <tr key={r.dependents}>
-              <td>{r.dependents === 0 ? 'なし（単身）' : `${r.dependents}人`}</td>
-              <td>{fmtYen(r.salaryNone)}以下</td>
-              <td>{fmtYen(r.salaryShotokuwari)}以下</td>
-              <td>{fmtYen(rowsR8[i].salaryNone)}以下</td>
-              <td>{fmtYen(r.pensionNone)}以下</td>
+      {/* 列が5つあるので、320px では表の中だけ横にスクロールさせる（furusato-nozei と同じ） */}
+      <div style={{ overflowX: 'auto' }}>
+        <table>
+          <thead>
+            <tr>
+              <th>配偶者・扶養の人数</th>
+              <th>令和9年度 給与（均等割も非課税）</th>
+              <th>令和9年度 給与（所得割が非課税）</th>
+              <th>令和8年度 給与（均等割も非課税）</th>
+              <th>65歳以上 年金だけ（均等割も非課税）</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rowsR9.map((r, i) => (
+              <tr key={r.dependents}>
+                <td>{r.dependents === 0 ? 'なし（単身）' : `${r.dependents}人`}</td>
+                <td>{fmtYen(r.salaryNone)}以下</td>
+                <td>{fmtYen(r.salaryShotokuwari)}以下</td>
+                <td>{fmtYen(rowsR8[i].salaryNone)}以下</td>
+                <td>{fmtYen(r.pensionNone)}以下</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="hint">
         障害者・ひとり親等は、給与収入{fmtYen(specialR9)}以下（令和9年度）・{fmtYen(specialR8)}
         以下（令和8年度）で非課税。給与収入が660万円未満の帯は、給与所得を所得税法の別表第五（4,000円刻み）で求めているので、境目が「◯万3,999円」のような端数になります。2・3級地では均等割の線が下がるので、上の計算機で級地を選んでください。

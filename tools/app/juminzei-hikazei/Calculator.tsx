@@ -247,7 +247,15 @@ export default function Calculator() {
       {/* 入力を1つ変えたとき、結論の1行がスクロールせずに見えるよう画面の下に貼り付ける（仕様書「公開条件」） */}
       <div
         className="panel"
-        style={{ position: 'sticky', bottom: 8, zIndex: 1, boxShadow: 'var(--shadow-md)' }}
+        style={{
+          // 320×568 で入力欄を隠しすぎないよう、余白と文字を詰めて1〜2行に収める
+          position: 'sticky',
+          bottom: 8,
+          zIndex: 1,
+          boxShadow: 'var(--shadow-md)',
+          padding: '8px 12px',
+          fontSize: 'var(--fs-sm)',
+        }}
         aria-live="polite"
       >
         <strong>
