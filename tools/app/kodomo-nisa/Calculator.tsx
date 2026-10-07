@@ -64,7 +64,9 @@ export default function Calculator() {
           max="2044-12"
           onChange={(e) => setStartYm(e.target.value < START_YM ? START_YM : e.target.value)}
         />
-        <p className="hint">制度は2027年1月に始まるので、それより前は選べません。</p>
+        <p className="hint">
+          制度は2027年1月に始まるので、それより前は選べません。月を選ぶ欄が出ないブラウザでは「2027-01」の形で入れてください。
+        </p>
       </div>
       <div className="field">
         <label htmlFor="kodomo-nisa-monthly">毎月の積立額（円）</label>

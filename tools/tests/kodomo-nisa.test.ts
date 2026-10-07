@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   ANNUAL_CAP,
+  ageOnLegal,
   LEARN_NISA_PATH,
   LIFETIME_CAP,
   MONTHLY_CAP,
@@ -104,8 +105,12 @@ describe('contributionSchedule', () => {
   it('2027年1月1日にすでに18歳以上なら使えない', () => {
     const r = contributionSchedule({ birth: { year: 2009, month: 1, day: 1 }, startYm: START_YM, monthly: 50_000 });
     expect(r).toBe('too-old');
-    // 2009-01-02 生まれは2027年1月1日に17歳なので、2027年の1年だけ使える
-    const ok = run('2009-01-02', 50_000);
+    // 2009-01-02 生まれも1月1日の満了時に18歳になるので「1月1日において18歳」に入る
+    expect(
+      contributionSchedule({ birth: { year: 2009, month: 1, day: 2 }, startYm: START_YM, monthly: 50_000 }),
+    ).toBe('too-old');
+    // 2009-01-03 生まれは2027年1月1日に17歳なので、2027年の1年だけ使える
+    const ok = run('2009-01-03', 50_000);
     expect(ok.lastYm).toBe('2027-12');
     expect(ok.total).toBe(600_000);
   });
@@ -134,11 +139,12 @@ describe('firstWithdrawalYear（その年3月31日に12歳以上の最初の年�
     expect(run('2012-04-02', 50_000).withdrawableFromStart).toBe(true);
   });
 
-  it('3/31 生まれと 4/1 生まれで1年ずれる', () => {
+  it('4/1 生まれと 4/2 生まれで1年ずれる（学年の区切りと同じ。年齢は誕生日の前日の満了時に増える）', () => {
     expect(firstWithdrawalYear({ year: 2015, month: 3, day: 31 }, 2027)).toBe(2027);
-    expect(firstWithdrawalYear({ year: 2015, month: 4, day: 1 }, 2027)).toBe(2028);
-    expect(firstWithdrawalYear({ year: 2020, month: 3, day: 31 }, 2027)).toBe(2032);
-    expect(firstWithdrawalYear({ year: 2020, month: 4, day: 1 }, 2027)).toBe(2033);
+    expect(firstWithdrawalYear({ year: 2015, month: 4, day: 1 }, 2027)).toBe(2027);
+    expect(firstWithdrawalYear({ year: 2015, month: 4, day: 2 }, 2027)).toBe(2028);
+    expect(firstWithdrawalYear({ year: 2020, month: 4, day: 1 }, 2027)).toBe(2032);
+    expect(firstWithdrawalYear({ year: 2020, month: 4, day: 2 }, 2027)).toBe(2033);
   });
 
   it('0歳で始めた子は開始年から払い出せるわけではない', () => {
@@ -148,25 +154,43 @@ describe('firstWithdrawalYear（その年3月31日に12歳以上の最初の年�
 });
 
 describe('18歳の区切り', () => {
-  it('積み立てられる最後の年は1月1日に17歳の年（1月1日生まれだけ1年早い）', () => {
+  it('積み立てられる最後の年は1月1日に17歳の年（1月1日・1月2日生まれは1年早い）', () => {
     expect(lastContributionYear({ year: 2020, month: 1, day: 1 })).toBe(2037);
-    expect(lastContributionYear({ year: 2020, month: 1, day: 2 })).toBe(2038);
+    expect(lastContributionYear({ year: 2020, month: 1, day: 2 })).toBe(2037);
+    expect(lastContributionYear({ year: 2020, month: 1, day: 3 })).toBe(2038);
     expect(lastContributionYear({ year: 2020, month: 12, day: 31 })).toBe(2038);
   });
 
   it('大人のNISAへ移る日は翌年の1月1日', () => {
     expect(transferDate({ year: 2020, month: 1, day: 1 })).toEqual({ year: 2038, month: 1, day: 1 });
+    expect(transferDate({ year: 2020, month: 1, day: 2 })).toEqual({ year: 2038, month: 1, day: 1 });
+    expect(transferDate({ year: 2020, month: 1, day: 3 })).toEqual({ year: 2039, month: 1, day: 1 });
     expect(transferDate({ year: 2020, month: 6, day: 15 })).toEqual({ year: 2039, month: 1, day: 1 });
   });
 
   it('払出しの制限が外れる日（3月31日に18歳の年の1月1日）', () => {
-    // 1月2日〜4月1日生まれは移行の1年前に制限が外れる
+    // 1月3日〜4月1日生まれは移行の1年前に制限が外れる
     expect(restrictionEndDate({ year: 2020, month: 2, day: 1 })).toEqual({ year: 2038, month: 1, day: 1 });
     expect(transferDate({ year: 2020, month: 2, day: 1 })).toEqual({ year: 2039, month: 1, day: 1 });
+    expect(restrictionEndDate({ year: 2020, month: 4, day: 1 })).toEqual({ year: 2038, month: 1, day: 1 });
+    expect(transferDate({ year: 2020, month: 4, day: 1 })).toEqual({ year: 2039, month: 1, day: 1 });
+    // 1月2日生まれは移行と同じ日
+    expect(restrictionEndDate({ year: 2020, month: 1, day: 2 })).toEqual(transferDate({ year: 2020, month: 1, day: 2 }));
     // 4月2日以降生まれは移行と同じ日
     expect(restrictionEndDate({ year: 2020, month: 4, day: 2 })).toEqual(transferDate({ year: 2020, month: 4, day: 2 }));
     // 1月1日生まれも同じ日
     expect(restrictionEndDate({ year: 2020, month: 1, day: 1 })).toEqual(transferDate({ year: 2020, month: 1, day: 1 }));
+  });
+});
+
+describe('ageOnLegal（その日において満◯歳）', () => {
+  it('誕生日の前日の満了時に年をとる', () => {
+    expect(ageOnLegal({ year: 2015, month: 4, day: 1 }, { year: 2027, month: 3, day: 31 })).toBe(12);
+    expect(ageOnLegal({ year: 2015, month: 4, day: 2 }, { year: 2027, month: 3, day: 31 })).toBe(11);
+    expect(ageOnLegal({ year: 2009, month: 1, day: 2 }, { year: 2027, month: 1, day: 1 })).toBe(18);
+    // 2月29日生まれ：平年は2月28日の満了時に年をとる
+    expect(ageOnLegal({ year: 2016, month: 2, day: 29 }, { year: 2028, month: 2, day: 28 })).toBe(12);
+    expect(ageOnLegal({ year: 2016, month: 2, day: 29 }, { year: 2027, month: 2, day: 27 })).toBe(10);
   });
 });
 

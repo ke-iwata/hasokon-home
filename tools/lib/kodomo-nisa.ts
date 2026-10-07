@@ -18,16 +18,17 @@
  * - 基準年：**その年3月31日において18歳である年**。払出しの制限は基準年の前年12月31日まで
  *   （措法37の14⑤六ホ⑶）
  *
- * 「◯月◯日において◯歳」の満年齢は `ageAt()`（誕生日の当日から新しい年齢）で数える。
- * 大人の NISA の「1月1日において18歳以上」が「1月1日生まれまで」と案内されているのと同じ数え方で、
- * 4月1日生まれは3月31日にはまだ前の年齢になる（3/31生まれと4/1生まれで1年ずれる）。
+ * 「◯月◯日において◯歳」の満年齢は、年齢計算ニ関スル法律・民法143条のとおり
+ * **誕生日の前日の満了時に1つ増える**数え方で判定する（`ageOnLegal()`。`ikuji-jitan-kyufu.ts` と同じ）。
+ * 4月1日生まれは3月31日の満了時に年をとるので「3月31日において12歳」に入り、学年の区切り
+ * （4/1 と 4/2 の間）と一致する。大人の NISA の「1月1日において18歳以上」も1月2日生まれまでが入る。
  *
  * 600万円が大人の1,800万円の内に数えられるか・払い出した分の枠が戻るかは
  * 政省令・金融庁Q&A待ち（仕様書の要確認3・4）。本ツールは**払い出さない前提**で計算し、
  * 大人の枠の残りは出さない。
  */
 import { ageAt } from './nenrei';
-import type { DateParts } from './date-parts';
+import { addDays, type DateParts } from './date-parts';
 
 // ─────────────────────────────────────────────
 // 【データ更新箇所】制度の数字（政省令・金融庁Q&Aが出たら見直す）
@@ -80,6 +81,14 @@ const ymIndex = ({ year, month }: YearMonth) => year * 12 + (month - 1);
 const fromIndex = (i: number): YearMonth => ({ year: Math.floor(i / 12), month: (i % 12) + 1 });
 
 /**
+ * 法令上の「その日において満◯歳」。年齢は誕生日の前日の満了時（24時）に増えるので、
+ * その日の終わりの年齢＝翌日の `ageAt()` になる（例：4月1日生まれは3月31日において新しい年齢）。
+ */
+export function ageOnLegal(birth: DateParts, date: DateParts): number {
+  return ageAt(birth, addDays(date, 1));
+}
+
+/**
  * 毎月の積立額を制度の範囲に収める。
  * 上限（月5万円＝年60万円）を超えたら5万円に丸め、`capped` を立てる（画面で断るため）。
  */
@@ -95,19 +104,19 @@ export function clampMonthly(monthly: number): { monthly: number; capped: boolea
  * **開始年より前なら開始年を返す**（2027年1月にすでに14歳の子は、始めた年から払い出せる）。
  */
 export function firstWithdrawalYear(birth: DateParts, startYear: number): number {
-  // 3月31日に12歳になっている最初の年。誕生日が3/31以前なら生年+12、4/1以降なら生年+13
+  // 3月31日に12歳になっている最初の年。4/1 生まれまでは生年+12、4/2 生まれからは生年+13
   let year = birth.year + WITHDRAWAL_AGE;
-  if (ageAt(birth, { year, month: 3, day: 31 }) < WITHDRAWAL_AGE) year += 1;
+  if (ageOnLegal(birth, { year, month: 3, day: 31 }) < WITHDRAWAL_AGE) year += 1;
   return Math.max(year, startYear);
 }
 
 /**
  * 積み立てられる最後の年（その年1月1日に満18歳未満である最後の年）。
- * 1月1日生まれは生年+17、それ以外は生年+18。
+ * 1月1日・1月2日生まれは生年+17、それ以外は生年+18。
  */
 export function lastContributionYear(birth: DateParts): number {
   let year = birth.year + ADULT_AGE;
-  while (ageAt(birth, { year, month: 1, day: 1 }) >= ADULT_AGE) year -= 1;
+  while (ageOnLegal(birth, { year, month: 1, day: 1 }) >= ADULT_AGE) year -= 1;
   return year;
 }
 
@@ -121,11 +130,11 @@ export function transferDate(birth: DateParts): DateParts {
 
 /**
  * 払出しの制限が外れる日（基準年＝その年3月31日に満18歳である年の1月1日）。
- * 1月2日〜4月1日生まれは、大人の NISA へ移る日の1年前になる。
+ * 1月3日〜4月1日生まれは、大人の NISA へ移る日の1年前になる。
  */
 export function restrictionEndDate(birth: DateParts): DateParts {
   let year = birth.year + ADULT_AGE;
-  if (ageAt(birth, { year, month: 3, day: 31 }) < ADULT_AGE) year += 1;
+  if (ageOnLegal(birth, { year, month: 3, day: 31 }) < ADULT_AGE) year += 1;
   return { year, month: 1, day: 1 };
 }
 
