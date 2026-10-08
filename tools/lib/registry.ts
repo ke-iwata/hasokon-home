@@ -605,6 +605,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-06',
   },
   {
+    slug: 'renkyu-keisan',
+    icon: 'CalendarStar',
+    name: '連休計算機',
+    description:
+      '使える有給の日数を入れると、土日・祝日・会社の年末年始休暇をつないで最も長い連休になる日を時期ごとに計算。2026〜27年の年末年始は有給1日で9連休。「この期間を休むには有給が何日？」の逆算もできます。',
+    category: '計算・変換',
+    // 公開は遅くとも 2026-11-30 まで（仕様書の「公開条件」。2026-27 年末年始の有給申請の前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolPreview.tsx・ToolArt.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-08',
+  },
+  {
     slug: 'nissu-keisan',
     icon: 'CalendarCheck',
     name: '日数計算・期日計算',
