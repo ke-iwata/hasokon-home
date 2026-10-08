@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// トップ（home/index.html）のカードの絵を、tools / games の一覧ページのビルド結果から写す。
+// トップ（home/index.html）のカードの絵を、tools / games のビルド結果から写す。
 //
 // home/ にはビルド工程が無く、React の絵をそのまま使えない。これまでもアイコンの SVG は
 // 手で写していた（index.html のコメント参照）。その写しを機械にやらせるためのもの。
@@ -12,7 +12,9 @@
 //
 // 仕様: docs/features/card-illustrations.md
 //
-// - 絵は一覧ページ（tools/out/index.html・games/out/index.html）のカードから取る
+// - 絵は一覧ページ（tools/out/index.html・games/out/index.html）のカードから取る。
+//   どちらも「結果の形」「遊んでいる画面」の大きい絵（ToolPreview.tsx・GamePreview.tsx）で、
+//   トップも同じ絵を幅いっぱいに置く（2026-10-08 から。それまでは小さいタイルの絵）
 // - カードの <a> にはタイルの2色をインラインの変数で渡す（ツールは分類ごと、ゲームは1色）
 // - 何度かけても同じ結果になる（style と絵を置き換えるだけ）
 // - 写せなかったカードがあれば終了コード1（home にだけあって一覧に無いカード＝公開前や削除済み）
@@ -23,8 +25,8 @@ import { dirname, resolve } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** ゲームは1分類なので、タイルの色は1つ */
-export const GAME_TILE_STYLE = '--tile-ink:var(--cat-play);--tile-bg:var(--cat-play-bg)';
+/** ゲームは1分類なので、タイルの色は1つ。目立たせる色も線（赤）と見分けがつく黄土に差し替える */
+export const GAME_TILE_STYLE = '--tile-ink:var(--cat-play);--tile-bg:var(--cat-play-bg);--cat-mark:var(--cat-play-mark)';
 
 /** 開始タグから属性を1つ取り出す（属性の並び順に依存しない） */
 function attr(tag, name) {
@@ -91,7 +93,7 @@ function main(argv) {
     games: collectArt(readFileSync(opt('--games', `${ROOT}/games/out/index.html`), 'utf8'), 'games'),
   };
   if (art.tools.size === 0 || art.games.size === 0) {
-    console.error('一覧ページから絵を1つも拾えなかった。先に tools と games をビルドしてください');
+    console.error('ビルド結果から絵を1つも拾えなかった。先に tools と games をビルドしてください');
     return 2;
   }
   const { html, updated, missing } = applyArt(readFileSync(homePath, 'utf8'), art);

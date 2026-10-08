@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   chojuTable,
   taiyakuBirthYears,
@@ -192,9 +193,13 @@ export default function Page() {
         年の1年間ずっと42歳です。地域によっては年齢や区切りの日（1月1日か立春か）が異なるため、このページの表は一般的な数え方による目安です。
       </p>
       <p>
-        七五三の年は<Link href="/shichigosan/">七五三 早見表</Link>、満年齢や和暦は
-        <Link href="/nenrei-keisan/">年齢計算</Link>で調べられます。
+        満年齢や和暦は<Link href="/nenrei-keisan/">年齢計算</Link>で調べられます。
       </p>
+      <PublicToolLink slug="shichigosan">
+        <p>
+          七五三の年は<ToolLink slug="shichigosan">七五三 早見表</ToolLink>で調べられます。
+        </p>
+      </PublicToolLink>
 
       <h2>よくある質問</h2>
       {faq.map((f) => (

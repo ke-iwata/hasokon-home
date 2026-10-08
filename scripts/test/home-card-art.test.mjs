@@ -44,9 +44,10 @@ describe('トップのカードの絵', () => {
     assert.ok(cards.filter((c) => c.site === 'games').length >= 10, 'ゲームのカードが少なすぎる');
   });
 
-  it('どのカードも 64×64 の新しい絵とタイルの2色を持つ（sync-home-card-art.mjs の写し忘れ）', () => {
+  it('どのカードも 340×150 の大きい絵とタイルの2色を持つ（sync-home-card-art.mjs の写し忘れ）', () => {
+    // 2026-10-08 から、トップも一覧と同じ「結果の形」「遊んでいる画面」の絵（ToolPreview・GamePreview）
     const stale = cards
-      .filter((c) => !c.style?.includes('--tile-ink:') || !c.style.includes('--tile-bg:') || !c.icon.includes('viewBox="0 0 64 64"'))
+      .filter((c) => !c.style?.includes('--tile-ink:') || !c.style.includes('--tile-bg:') || !c.icon.includes('viewBox="0 0 340 150"'))
       .map((c) => `${c.site}/${c.slug}`);
     assert.deepEqual(stale, [], `node scripts/sync-home-card-art.mjs を回していないカード: ${stale.join(', ')}`);
   });
@@ -78,7 +79,7 @@ describe('トップのカードの絵', () => {
   it('タイルの色は明るいテーマと暗いテーマの両方で定義がある', () => {
     const dark = INDEX_HTML.slice(INDEX_HTML.indexOf('@media (prefers-color-scheme: dark)'));
     for (const token of [...Object.values(CATEGORY_TOKEN), 'play']) {
-      for (const name of [`--cat-${token}:`, `--cat-${token}-bg:`]) {
+      for (const name of [`--cat-${token}:`, `--cat-${token}-bg:`, '--cat-mark:', '--cat-play-mark:']) {
         assert.ok(INDEX_HTML.split(name).length - 1 >= 2, `${name} が明暗の2か所に無い`);
         assert.ok(dark.includes(name), `${name} が暗いテーマに無い`);
       }
@@ -90,7 +91,7 @@ describe('sync-home-card-art.mjs', () => {
   const toolsHtml =
     '<a class="tool-card" style="--tile-ink:var(--cat-calc);--tile-bg:var(--cat-calc-bg)" href="/tools/qr-code/">' +
     '<div class="icon"><svg viewBox="0 0 64 64"><rect/></svg></div></a>';
-  const gamesHtml = '<a class="game-card" href="/games/snake/"><div class="icon"><svg viewBox="0 0 64 64"><path/></svg></div></a>';
+  const gamesHtml = '<a class="game-card" href="/games/snake/"><div class="icon" aria-hidden="true" style="width:100%"><svg viewBox="0 0 340 150"><path/></svg></div></a>';
   const art = { tools: collectArt(toolsHtml, 'tools'), games: collectArt(gamesHtml, 'games') };
 
   it('一覧ページから slug ごとの絵と style を拾う', () => {
@@ -109,7 +110,7 @@ describe('sync-home-card-art.mjs', () => {
     assert.deepEqual(once.updated, ['games/snake']);
     assert.ok(!once.html.includes('SnakeIcon'));
     assert.ok(once.html.includes(`style="${GAME_TILE_STYLE}"`));
-    assert.ok(once.html.includes('<svg viewBox="0 0 64 64"><path/></svg>'));
+    assert.ok(once.html.includes('<svg viewBox="0 0 340 150"><path/></svg>'));
     assert.equal(applyArt(once.html, art).html, once.html);
   });
 

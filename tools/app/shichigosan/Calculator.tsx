@@ -158,7 +158,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           >
             {choices.map((y) => (
               <option key={y} value={y}>
-                {y}年{y === thisYear ? '（今年）' : y === thisYear + 1 ? '（来年）' : ''}
+                {y}{y === thisYear ? '（今年）' : y === thisYear + 1 ? '（来年）' : '年'}
               </option>
             ))}
           </select>

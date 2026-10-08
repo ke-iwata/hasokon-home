@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   SHICHIGOSAN_YEAR,
   shichigosanDescription,
@@ -152,10 +153,12 @@ export default function Page() {
         1月1日から4月1日までに生まれた子（早生まれ）は、同じ暦年の4月2日以降に生まれた子より1学年上になります。同じ学年の多くの子が満3歳になる年に、早生まれの子はまだ満2歳です。そのため、満年齢で祝うと同じ学年のお友だちより1年遅れ、数え年で祝うと同じ学年の多くの子の満年齢の年と揃います。上の計算機は、早生まれのときだけ「同じ学年のお友だちと揃えるなら◯年」を足して表示します。
       </p>
 
-      <p>
-        厄年や還暦・古希などの長寿祝いの年は
-        <Link href="/yakudoshi/">厄年・長寿祝い 早見表</Link>で調べられます。
-      </p>
+      <PublicToolLink slug="yakudoshi">
+        <p>
+          厄年や還暦・古希などの長寿祝いの年は
+          <ToolLink slug="yakudoshi">厄年・長寿祝い 早見表</ToolLink>で調べられます。
+        </p>
+      </PublicToolLink>
 
       <h2>よくある質問</h2>
       {faq.map((f) => (
