@@ -37,9 +37,9 @@ app/
   sitemap.ts          registryから自動生成
   contact/            AdSense審査に必要な固定ページ（プライバシーポリシーはサイト全体で
                       home 実体の /privacy.html 1枚。tools/ 側には置かない）
-  not-found.tsx       404ページ（out/404.html になる）。トップの絵の写し元も兼ねる（ToolArt のタイルが全部並ぶ）
-  ToolPreview.tsx     ツール一覧のカードの「結果の形」の絵
-  ToolArt.tsx         トップ・関連ツール・404 のタイルの絵
+  not-found.tsx       404ページ（out/404.html になる。ToolArt のタイルで全ツールを並べる）
+  ToolPreview.tsx     ツール一覧とトップのカードの「結果の形」の絵
+  ToolArt.tsx         関連ツール・404 のタイルの絵
   AdUnit.tsx          広告枠。lib/adsense.ts が未設定なら何も出さない
   Analytics.tsx       ページビュー送信。lib/analytics.ts が未設定なら何もしない
   {slug}/
@@ -105,12 +105,11 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
    （[docs/features/ai-assistant-channel.md](../docs/features/ai-assistant-channel.md)）。
    `updatedAt` には**中身を更新した日**を入れる（sitemap の lastmod になる。ビルド日ではない）
 6. **`public` にするPRで、カードの絵を2枚描く**（どちらも slug をキーに1つ。色は直書きしない）。
-   - `app/ToolPreview.tsx`：ツール一覧（/tools/）の大きい絵。**そのツールで出てくる答えの形**を
+   - `app/ToolPreview.tsx`：ツール一覧（/tools/）とトップの大きい絵。**そのツールで出てくる答えの形**を
      340×150 で描く。人によって変わる額は［◯円］の伏せ字（`tests/tool-preview.test.ts`）
-   - `app/ToolArt.tsx`：トップ・関連ツール・404 の小さいタイルの絵（64×64の2トーン。`tests/tool-art.test.ts`）
+   - `app/ToolArt.tsx`：関連ツール・404 の小さいタイルの絵（64×64の2トーン。`tests/tool-art.test.ts`）
 
-   トップのカードは `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で写す
-   （写し元は `out/404.html`）。仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
+   トップのカードは `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で一覧ページから写す。仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
 7. `npm test && npm run build` が通ることを確認
 
 ## AdSense

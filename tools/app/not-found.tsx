@@ -28,9 +28,8 @@ export default function NotFound() {
         return (
           <section key={cat}>
             <h2>{cat}</h2>
-            {/* 小さいタイルの絵（app/ToolArt.tsx）で並べる。トップ（home/index.html）のカードの絵は
-                scripts/sync-home-card-art.mjs がこのページ（out/404.html）から写す。
-                一覧（/tools/）は「結果の形」の大きい絵なので、写し元にできない */}
+            {/* 小さいタイルの絵（app/ToolArt.tsx）で並べる。探し物の途中なので、
+                一覧（/tools/）の大きい絵より一度に多く見渡せるほうを選んだ */}
             <div className="tool-grid">
               {list.map((t) => (
                 <Link key={t.slug} className="tool-card" style={categoryStyle(t.category)} href={`/${t.slug}/`}>

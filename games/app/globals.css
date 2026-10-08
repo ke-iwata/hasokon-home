@@ -78,6 +78,9 @@
      「この色のタイルはゲーム」と覚えてもらえる。仕様は docs/features/card-illustrations.md */
   --cat-play: #be123c;
   --cat-play-bg: #fde9ee;
+  /* 一覧カードの「遊んでいる画面」の絵（app/GamePreview.tsx）で、1点だけ目立たせる色。
+     線の色（赤）と見分けがつくよう、黄土にしてある */
+  --cat-mark: #b45309;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -132,6 +135,7 @@
     /* 暗いテーマでは地を持ち上げる（カードの地と 1.3 離す。実測して決めた） */
     --cat-play: #fb8a9c;
     --cat-play-bg: #552536;
+    --cat-mark: #fbbf24;
   }
 }
 

@@ -12,9 +12,9 @@
 //
 // 仕様: docs/features/card-illustrations.md
 //
-// - 絵はツールの404ページ（tools/out/404.html）とゲームの一覧ページ（games/out/index.html）の
-//   カードから取る。ツールの一覧（/tools/）は「結果の形」の大きい絵（ToolPreview.tsx）に
-//   なったので、小さいタイルの絵（ToolArt.tsx）が並ぶ404ページを写し元にしている
+// - 絵は一覧ページ（tools/out/index.html・games/out/index.html）のカードから取る。
+//   どちらも「結果の形」「遊んでいる画面」の大きい絵（ToolPreview.tsx・GamePreview.tsx）で、
+//   トップも同じ絵を幅いっぱいに置く（2026-10-08 から。それまでは小さいタイルの絵）
 // - カードの <a> にはタイルの2色をインラインの変数で渡す（ツールは分類ごと、ゲームは1色）
 // - 何度かけても同じ結果になる（style と絵を置き換えるだけ）
 // - 写せなかったカードがあれば終了コード1（home にだけあって一覧に無いカード＝公開前や削除済み）
@@ -25,8 +25,8 @@ import { dirname, resolve } from 'node:path';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-/** ゲームは1分類なので、タイルの色は1つ */
-export const GAME_TILE_STYLE = '--tile-ink:var(--cat-play);--tile-bg:var(--cat-play-bg)';
+/** ゲームは1分類なので、タイルの色は1つ。目立たせる色も線（赤）と見分けがつく黄土に差し替える */
+export const GAME_TILE_STYLE = '--tile-ink:var(--cat-play);--tile-bg:var(--cat-play-bg);--cat-mark:var(--cat-play-mark)';
 
 /** 開始タグから属性を1つ取り出す（属性の並び順に依存しない） */
 function attr(tag, name) {
@@ -89,7 +89,7 @@ function main(argv) {
   };
   const homePath = opt('--home', `${ROOT}/home/index.html`);
   const art = {
-    tools: collectArt(readFileSync(opt('--tools', `${ROOT}/tools/out/404.html`), 'utf8'), 'tools'),
+    tools: collectArt(readFileSync(opt('--tools', `${ROOT}/tools/out/index.html`), 'utf8'), 'tools'),
     games: collectArt(readFileSync(opt('--games', `${ROOT}/games/out/index.html`), 'utf8'), 'games'),
   };
   if (art.tools.size === 0 || art.games.size === 0) {
