@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { formatDate, formatJa, parseDate, type DateParts } from '@/lib/date-parts';
 import { HOLIDAY_LAST_YEAR } from '@/lib/nissu-keisan';
 import {
+  calendarCaption,
   calendarWeeks,
   defaultYear,
   DEFAULT_RULE,
@@ -58,6 +59,9 @@ function MiniCalendar({ plan, rule }: { plan: Pick<Plan, 'start' | 'end' | 'leav
       aria-label={`${formatMd(plan.start)}〜${formatMd(plan.end)}のカレンダー`}
       style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'separate', borderSpacing: 2, marginTop: 8 }}
     >
+      <caption style={{ captionSide: 'top', textAlign: 'left', fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
+        {calendarCaption(weeks)}
+      </caption>
       <thead>
         <tr>
           {WEEK_HEAD.map((w) => (
@@ -90,8 +94,7 @@ function MiniCalendar({ plan, rule }: { plan: Pick<Plan, 'start' | 'end' | 'leav
                     opacity: cell.inPlan ? 1 : 0.7,
                   }}
                 >
-                  {cell.date.day === 1 || cell === week[0] ? `${cell.date.month}/` : ''}
-                  {cell.date.day}
+                  <span style={{ fontWeight: cell.date.day === 1 ? 800 : undefined }}>{cell.date.day}</span>
                   <br />
                   <span aria-hidden={s.mark === ''}>{s.mark || ' '}</span>
                 </td>
@@ -175,6 +178,11 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
     setToday(t);
     setYear(defaultYear(t));
   }, []);
+
+  // 条件を変えたら「ほかの時期も見る」を閉じ直す
+  useEffect(() => {
+    setShowAll(false);
+  }, [year, maxLeave, weekend, newYear, summer]);
 
   const rule: OffRule = { weekend, newYear, summer };
   const cards = groupPlans(findPlans(year, maxLeave, rule).filter((p) => isUpcoming(p, today)));
@@ -391,7 +399,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             )}
             {range.unconfirmed && (
               <p className="hint" style={{ margin: '6px 0 0' }}>
-                {HOLIDAY_LAST_YEAR + 1}年の祝日は未確定のため、元日以外は土日（休みの曜日）だけで計算しています。
+                {HOLIDAY_LAST_YEAR + 1}年の祝日は未確定のため、元日以外は休みの曜日と会社の休みだけで計算しています。
               </p>
             )}
           </div>

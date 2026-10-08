@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { formatDate, type DateParts } from '@/lib/date-parts';
 import { HOLIDAY_LAST_YEAR } from '@/lib/nissu-keisan';
 import {
+  calendarCaption,
   calendarWeeks,
   DEFAULT_RULE,
   defaultYear,
@@ -286,6 +287,17 @@ describe('calendarWeeks（ミニカレンダー）', () => {
     expect(byIso.get('2027-01-01')?.kind).toBe('holiday');
     expect(byIso.get('2027-01-01')?.label).toBe('元日');
     expect(byIso.get('2027-01-04')?.inPlan).toBe(false);
+  });
+});
+
+describe('calendarCaption（ミニカレンダーの見出し）', () => {
+  it('年をまたぐ・月をまたぐ・1 か月に収まる', () => {
+    const newYear = plansOf(2026, 1, DEFAULT_RULE, '年末年始', 1)[0];
+    expect(calendarCaption(calendarWeeks(newYear, DEFAULT_RULE))).toBe('2026年12月〜2027年1月');
+    const gw = plansOf(2027, 1, DEFAULT_RULE, 'GW', 1)[0];
+    expect(calendarCaption(calendarWeeks(gw, DEFAULT_RULE))).toBe('2027年4月〜5月');
+    const range = { start: d('2027-07-17'), end: d('2027-07-19'), leaveDays: [] };
+    expect(calendarCaption(calendarWeeks(range, DEFAULT_RULE))).toBe('2027年7月');
   });
 });
 

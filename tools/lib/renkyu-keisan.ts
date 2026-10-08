@@ -378,6 +378,19 @@ export function calendarWeeks(plan: Pick<Plan, 'start' | 'end' | 'leaveDays'>, r
   return weeks;
 }
 
+/**
+ * ミニカレンダーの見出し。'2026年12月〜2027年1月' / '2027年5月'。
+ * マスには日だけを書く（320 幅では '10/11' がマスに収まらないため）。
+ */
+export function calendarCaption(weeks: CalendarCell[][]): string {
+  const first = weeks[0][0].date;
+  const lastWeek = weeks[weeks.length - 1];
+  const last = lastWeek[lastWeek.length - 1].date;
+  const head = `${first.year}年${first.month}月`;
+  if (first.year === last.year && first.month === last.month) return head;
+  return `${head}〜${first.year === last.year ? '' : `${last.year}年`}${last.month}月`;
+}
+
 // ---------------------------------------------------------------- 表示用の文字列
 
 /** '12/28（月）' */
