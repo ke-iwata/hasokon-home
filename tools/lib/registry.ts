@@ -605,6 +605,26 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-06',
   },
   {
+    slug: 'shichigosan',
+    icon: 'Baby',
+    name: '七五三はいつ？早見表・計算',
+    description:
+      '子どもの生年月日から、3歳・5歳・7歳の七五三の年を数え年・満年齢の両方で計算。11月15日の曜日と、早生まれの子が同じ学年と揃える年も表示。今年の早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
+  },
+  {
+    slug: 'yakudoshi',
+    icon: 'Shield',
+    name: '厄年・長寿祝い 早見表',
+    description:
+      '生年月日から前厄・本厄・後厄の年を数え年で一生分計算。還暦・古希・喜寿・米寿など長寿祝いの年も数え年・満年齢の両方で表示。男女別の厄年早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
+  },
+  {
     slug: 'nissu-keisan',
     icon: 'CalendarCheck',
     name: '日数計算・期日計算',
