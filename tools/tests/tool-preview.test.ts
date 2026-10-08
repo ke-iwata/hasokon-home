@@ -46,7 +46,7 @@ describe('一覧カードの「結果の形」の絵', () => {
     expect(approx, `概数: ${approx.join(', ')}`).toHaveLength(0);
   });
 
-  it('一覧ページは結果の形の絵を、404ページは小さいタイルの絵を使う（トップの写し元が404のため）', () => {
+  it('一覧ページは結果の形の絵を、404ページは小さいタイルの絵を使う', () => {
     const page = readFileSync(`${appDir}page.tsx`, 'utf8');
     const notFound = readFileSync(`${appDir}not-found.tsx`, 'utf8');
     expect(page).toContain('<ToolPreview');
