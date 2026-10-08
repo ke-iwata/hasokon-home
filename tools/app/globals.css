@@ -473,6 +473,7 @@ input[type='time'],
 /* date / search は otc-ruijiyaku で初めて使った。ここに入れないとUA既定のままで、
    フォントが16px未満になりiOSでタップ時にページがズームする */
 input[type='date'],
+input[type='month'],
 input[type='search'],
 textarea,
 select {

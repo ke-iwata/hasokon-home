@@ -221,6 +221,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年8月1日（育児休業給付） | `lib/ikuji-kyugyo.ts` の `WAGE_DAILY_MAX` / `WAGE_DAILY_MIN` と支給上限額・下限額（`UNIT_CAP_*` / `UNIT_FLOOR_*` / `SHUSSHOGO_CAP` / `SHUSSHOGO_FLOOR` / `SHUSSHOJI_CAP`）を、厚労省「育児休業等給付の内容と支給申請手続」の改訂版か支給限度額のリーフレットから写し、`LIMIT_LABEL` / `LIMIT_EFFECTIVE_FROM` / `LIMIT_EFFECTIVE_UNTIL` / `DATA_CHECKED_AT` を直す。**失業保険と同じ日に改定されるが別表**（年齢区分が無い）なので、`lib/shitsugyo-hoken.ts` の値を写し合わせないこと。一次情報も基本手当の告示ではなく育児休業給付側から取る。給付率（67%/50%/13%）と180日・28日は法律なので毎年は変わらない。**同じPRで `lib/ikuji-jitan-kyufu.ts`（育児時短就業給付）の `START_WAGE_DAILY_MAX` / `START_WAGE_DAILY_MIN`（同じ表）と支給限度額 `LIMIT_MAX`・最低限度額 `LIMIT_MIN`、`LIMIT_*` / `DATA_CHECKED_AT` も直す**（`tests/ikuji-jitan-kyufu.test.ts` が2本の食い違いを落とす） |
 | 毎年8〜10月（最低賃金） | 各労働局の答申 →**決定・公示**を追って `lib/saitei-chingin.ts` の `PREFECTURES` を更新する。**`effectiveOn` には決定公示で確認した日付だけを入れる**（答申文の「最短で」「早ければ」は入れない）。確認できない県は厚労省の別紙の「発効日（予定）」を `plannedEffectiveOn` に入れる（**予定日では「発効済み」にしない**。予定日を過ぎたら `plannedDatePassed` が立ち、UIは日付を引っ込める）。決定公示が確認できたら `plannedEffectiveOn` を `effectiveOn` に移して出典も差し替える。`DATA_CHECKED_AT` も毎回進める。出典は `node scripts/check-sources.mjs` で生存確認する |
 | 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
+| こどもNISAの政省令・金融庁Q&Aが出たとき | `lib/kodomo-nisa.ts` の冒頭の定数と `DATA_CHECKED_AT`。**600万円が大人の1,800万円の内か・払い出した分の枠が戻るか**が確定したら、ページの「政省令待ち」の文言を直す（[仕様](../docs/features/kodomo-nisa.md)の要確認3・4） |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
@@ -252,9 +253,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール53本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
+- **ツール54本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
