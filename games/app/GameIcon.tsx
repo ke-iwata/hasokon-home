@@ -10,6 +10,7 @@ import {
   GridFourIcon,
   GridNineIcon,
   KeyboardIcon,
+  NumberCircleNineIcon,
   RacquetIcon,
   SpadeIcon,
   SquaresFourIcon,
@@ -1165,6 +1166,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Binoculars: BinocularsIcon,
   // 矢印ぬき。海外アプリの絵柄はなぞらず、四方へ抜ける矢印で表す（盤面の絵は `public` にするPRで描く）
   ArrowsOutCardinal: ArrowsOutCardinalIcon,
+  // 数字けし。海外アプリの絵柄はなぞらず、丸で囲んだ数で表す（盤面の絵は `public` にするPRで描く）
+  NumberCircleNine: NumberCircleNineIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
