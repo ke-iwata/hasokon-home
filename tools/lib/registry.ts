@@ -464,6 +464,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-03',
   },
   {
+    // 仕様: docs/features/kakutei-shinkoku-hitsuyo-hantei.md
+    slug: 'kakutei-shinkoku-hantei',
+    // 申告書なので ClipboardText。Receipt は医療費控除・年末調整などで使用中
+    icon: 'ClipboardText',
+    name: '確定申告が必要か 判定（令和8年分）',
+    description:
+      '給与・年金・副業・控除の状況を選ぶと、所得税の確定申告が「必要」「不要」「不要だが申告すれば戻る（還付申告）」のどれかと、所得税は不要でも住民税の申告が要るかを分けて答えます。申告の期限と還付申告を出せる期間、次に使う計算機も出します。',
+    category: 'お金・社会保険',
+    // テスト環境で運営者が仕様書の11ケースを確認したら public（遅くとも 2026-12-25）
+    stage: 'preview',
+    updatedAt: '2026-10-11',
+  },
+  {
     // 仕様: docs/features/kodomo-nisa.md
     slug: 'kodomo-nisa',
     // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
