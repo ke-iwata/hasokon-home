@@ -294,36 +294,45 @@ export function judge(input: HanteiInput): HanteiResult {
   // 120条：基礎控除を引いても課税所得が残るか（概算。税額控除・社会保険料控除は見ない）
   const taxDue = totalIncome - basicDeductionIncomeTax(totalIncome) > 0;
 
-  const reasons: Reason[] = [];
+  let reasons: Reason[] = [];
   const unwithheld = hasPension && input.unwithheldPension;
 
   if (!hasSalary && !hasPension && other === 0) {
     reasons.push('no-income');
   } else {
-    // 給与（No.1900）。年金の雑所得は「給与所得・退職所得以外の所得」に入る
+    // 給与（No.1900・所法121①）。年金の雑所得は「給与所得・退職所得以外の所得」に入る
+    const salaryReasons: Reason[] = [];
     if (hasSalary) {
       const nonSalary = other + pensionInc;
       if (salaryTotal > SALARY_LIMIT) {
-        reasons.push('salary-over-20m');
+        salaryReasons.push('salary-over-20m');
       } else if (input.salaryTwoOrMore) {
         const exempt = salaryTotal <= TWO_SALARIES_EXEMPT_LIMIT && nonSalary <= OTHER_INCOME_LIMIT;
-        if (!exempt && salarySub + nonSalary > OTHER_INCOME_LIMIT) reasons.push('two-salaries');
-        else reasons.push('two-salaries-under-limit');
+        if (!exempt && salarySub + nonSalary > OTHER_INCOME_LIMIT) salaryReasons.push('two-salaries');
+        else salaryReasons.push('two-salaries-under-limit');
       } else if (nonSalary > OTHER_INCOME_LIMIT) {
-        reasons.push('salary-other-income-over-200k');
+        salaryReasons.push('salary-other-income-over-200k');
       } else {
-        reasons.push('salary-other-income-under-200k');
+        salaryReasons.push('salary-other-income-under-200k');
       }
     }
-    // 公的年金等（No.1600）。給与所得は「公的年金等に係る雑所得以外の所得」に入る
+    // 公的年金等（No.1600・所法121③）。給与所得は「公的年金等に係る雑所得以外の所得」に入る
+    const pensionReasons: Reason[] = [];
     if (hasPension) {
       const nonPension = other + salaryInc;
-      if (pensionAnnual > PENSION_LIMIT) reasons.push('pension-over-4m');
-      if (nonPension > OTHER_INCOME_LIMIT) reasons.push('pension-other-income-over-200k');
-      if (unwithheld) reasons.push('no-withholding-pension');
-      if (pensionAnnual <= PENSION_LIMIT && nonPension <= OTHER_INCOME_LIMIT && !unwithheld) {
-        reasons.push('pension-under-4m');
-      }
+      if (pensionAnnual > PENSION_LIMIT) pensionReasons.push('pension-over-4m');
+      if (nonPension > OTHER_INCOME_LIMIT) pensionReasons.push('pension-other-income-over-200k');
+      if (unwithheld) pensionReasons.push('no-withholding-pension');
+      if (pensionReasons.length === 0) pensionReasons.push('pension-under-4m');
+    }
+    const salaryExempt = hasSalary && !salaryReasons.some(isRequiredReason);
+    const pensionExempt = hasPension && !pensionReasons.some(isRequiredReason);
+    // 121条1項（給与）と3項（年金）はそれぞれ独立の特例で、どちらか一方に当たれば申告は要らない。
+    // 当たった側の理由だけを返す（外れた側の「要る」理由を並べると、答えと理由が食い違って見える）
+    if (hasSalary && hasPension && (salaryExempt || pensionExempt)) {
+      reasons = [...(salaryExempt ? salaryReasons : []), ...(pensionExempt ? pensionReasons : [])];
+    } else {
+      reasons = [...salaryReasons, ...pensionReasons];
     }
     // 給与も年金も無い（事業・不動産・副業だけ）：120条そのもの
     if (!hasSalary && !hasPension && taxDue) reasons.push('business-tax-due');

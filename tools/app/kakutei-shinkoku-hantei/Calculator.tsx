@@ -5,6 +5,7 @@ import { trackToolUse } from '@/lib/analytics';
 import {
   EMPTY_REFUND,
   NO_KINDS,
+  TAX_YEAR,
   REFUND_HINT_TOOL,
   filingDeadline,
   filingStart,
@@ -110,7 +111,7 @@ export default function Calculator() {
     <div className="card">
       <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
         <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>
-          1. 2026年の収入の種類（いくつでも）
+          {TAX_YEAR}年の収入の種類（いくつでも）
         </legend>
         {KIND_OPTIONS.map((o) => (
           <label key={o.key} style={checkRow}>
@@ -139,15 +140,18 @@ export default function Calculator() {
 
       {!none && kinds.salary && (
         <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
-          <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>2. 給与</legend>
+          <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>給与</legend>
           <div className="field">
             <label>
               何か所から
               <select value={twoOrMore ? '2' : '1'} onChange={(e) => setTwoOrMore(e.target.value === '2')}>
-                <option value="1">1か所（年の途中の転職で、前の勤務先の分も年末調整されたものを含む）</option>
+                <option value="1">1か所</option>
                 <option value="2">2か所以上（掛け持ち）</option>
               </select>
             </label>
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              年の途中で転職して、前の勤務先の分も新しい勤務先で年末調整されたなら「1か所」。
+            </p>
           </div>
           <div className="field">
             <label>
@@ -187,7 +191,7 @@ export default function Calculator() {
 
       {!none && kinds.pension && (
         <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
-          <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>3. 公的年金</legend>
+          <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>公的年金</legend>
           <div className="field-row">
             <label className="field">
               公的年金等の収入（年額・万円）
@@ -222,7 +226,7 @@ export default function Calculator() {
       {!none && hasOther && (
         <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
           <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>
-            4. 給与・年金以外の所得
+            給与・年金以外の所得
           </legend>
           <label className="field">
             所得の合計（万円）
@@ -244,7 +248,7 @@ export default function Calculator() {
       {answered && (
         <fieldset style={{ border: 0, padding: 0, margin: '0 0 14px' }}>
           <legend style={{ fontWeight: 600, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>
-            5. 戻るかもしれないもの（当てはまれば）
+            戻るかもしれないもの（当てはまれば）
           </legend>
           {REFUND_OPTIONS.map((o) => (
             <label key={o.key} style={checkRow}>
@@ -291,7 +295,7 @@ export default function Calculator() {
             <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>還付申告</div>
             {r.refundHints.length === 0 ? (
               <p style={{ margin: '6px 0 0', fontSize: 'var(--fs-sm)' }}>
-                5. のチェックに当てはまるものが無いので、還付申告の候補は見つかりませんでした。
+                「戻るかもしれないもの」に当てはまるものが無いので、還付申告の候補は見つかりませんでした。
               </p>
             ) : (
               <>

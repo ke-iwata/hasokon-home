@@ -148,7 +148,7 @@ describe('仕様書のテスト11ケース', () => {
     expect(r.reasons).toContain('no-withholding-pension');
   });
 
-  it('年金と給与：給与の所得は「年金以外の所得」に入る', () => {
+  it('年金と給与：どちらの特例にも当たらなければ要（給与の所得は「年金以外の所得」、年金の所得は「給与以外の所得」に入る）', () => {
     const r = judge({
       ...BASE,
       kinds: { ...NO_KINDS, salary: true, pension: true },
@@ -156,7 +156,42 @@ describe('仕様書のテスト11ケース', () => {
       pensionAnnual: 2_000_000,
     });
     expect(r.incomeTax).toBe('required');
-    expect(r.reasons).toContain('pension-other-income-over-200k');
+    expect(r.reasons).toEqual(['salary-other-income-over-200k', 'pension-other-income-over-200k']);
+  });
+
+  it('給与500万円＋年金100万円（年金の雑所得0円）→ 121条1項の特例で不要（#369 レビュー A）', () => {
+    const r = judge({
+      ...BASE,
+      kinds: { ...NO_KINDS, salary: true, pension: true },
+      salaryMain: 5_000_000,
+      pensionAnnual: 1_000_000,
+    });
+    expect(r.incomeTax).toBe('notRequired');
+    expect(r.reasons).toEqual(['salary-other-income-under-200k']);
+    expect(r.residentTax).toBe('notRequired');
+  });
+
+  it('年金300万円＋給与60万円（給与所得0円）→ 121条3項の特例で不要（#369 レビュー B）', () => {
+    const r = judge({
+      ...BASE,
+      kinds: { ...NO_KINDS, salary: true, pension: true },
+      salaryMain: 600_000,
+      pensionAnnual: 3_000_000,
+    });
+    expect(r.incomeTax).toBe('notRequired');
+    expect(r.reasons).toEqual(['pension-under-4m']);
+    expect(r.residentTax).toBe('notRequired');
+  });
+
+  it('給与と年金の両方の特例に当たるときは、両方の理由を返す', () => {
+    const r = judge({
+      ...BASE,
+      kinds: { ...NO_KINDS, salary: true, pension: true },
+      salaryMain: 600_000,
+      pensionAnnual: 1_000_000,
+    });
+    expect(r.incomeTax).toBe('notRequired');
+    expect(r.reasons).toEqual(['salary-other-income-under-200k', 'pension-under-4m']);
   });
 
   it('8. 事業所得50万円のみ → 所得税額0で不要（120条）・住民税 要', () => {
