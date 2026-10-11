@@ -147,6 +147,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
+    slug: 'kyuyo-nenkin-kojo',
+    // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
+    icon: 'ArrowLineUp',
+    name: '給与と年金の控除 280万円上限 計算機',
+    description:
+      '2027年分から、給与所得控除と公的年金等控除の合計が280万円を超えると年金の控除が削られます。給与と年金の年額を入れると、削られる控除・増える所得税と住民税の目安・上限にかかり始める給与を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-11',
+  },
+  {
     // 仕様: docs/features/nenkin-seikatsusha-shien-kyufukin.md
     slug: 'nenkin-shien-kyufukin',
     // HandCoins は年末調整、Coins は iDeCo、PiggyBank・Wallet・MoneyWavy も使用済み。

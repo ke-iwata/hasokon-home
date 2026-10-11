@@ -1,4 +1,5 @@
 import {
+  ArrowLineUpIcon,
   ArticleIcon,
   BabyIcon,
   BabyCarriageIcon,
@@ -78,6 +79,7 @@ import {
 type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
+  ArrowLineUp: ArrowLineUpIcon,
   Article: ArticleIcon,
   Baby: BabyIcon,
   BabyCarriage: BabyCarriageIcon,
