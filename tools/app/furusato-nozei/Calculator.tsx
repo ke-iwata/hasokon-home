@@ -1,11 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   calcFurusato,
+  DEFAULT_TAX_YEAR,
+  showTaxYearSelector,
+  SPECIAL_CAP_FIXED,
+  TAX_YEARS,
+  taxYearLabel,
   type HousingLoanTier,
   type SpouseType,
+  type TaxYear,
 } from '@/lib/furusato-nozei';
+import { toYmd } from '@/lib/nenshu-kabe';
 import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
@@ -88,7 +95,19 @@ function Row({
   );
 }
 
-export default function Calculator() {
+/** 年分の選択肢の表記（例: 「令和9年分（2027年の寄附）」） */
+const taxYearText = (y: TaxYear) => `${taxYearLabel(y)}（${y}年の寄附）`;
+
+export default function Calculator({ buildDate }: { buildDate: string }) {
+  const [taxYear, setTaxYear] = useState<TaxYear>(DEFAULT_TAX_YEAR);
+  // 年分の切り替えを出す期間かどうか。静的HTMLはビルド日で描き、マウント後に開いた日で評価し直す
+  const [asOfYmd, setAsOfYmd] = useState(() => toYmd(new Date(buildDate)));
+  useEffect(() => {
+    setAsOfYmd(toYmd(new Date()));
+  }, []);
+  const selectable = showTaxYearSelector(asOfYmd);
+  // 切り替えを畳んだあとは、既定の年分で計算する
+  const year = selectable ? taxYear : DEFAULT_TAX_YEAR;
   const [incomeMan, setIncomeMan] = useState('500');
   const [spouse, setSpouse] = useState<SpouseType>('none');
   const [depGeneral, setDepGeneral] = useState(0);
@@ -118,13 +137,35 @@ export default function Calculator() {
     onestop,
     housingLoanCredit: manToYen(loanMan),
     housingLoanTier: loanTier,
-  });
+  }, { taxYear: year });
   const b = r.breakdown;
   const usingLimit = !donationInput || Number(donationInput) <= 0;
+
+  const fixedCap = SPECIAL_CAP_FIXED[year];
 
   return (
     <div className="card">
       <div style={{ display: 'grid', gap: 14 }}>
+        {selectable && (
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 6 }}>寄附する年（年分）</div>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 'var(--fs-sm)' }}>
+              {TAX_YEARS.map((y) => (
+                <label key={y} style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <input
+                    type="radio"
+                    name="tax-year"
+                    checked={year === y}
+                    onChange={() => setTaxYear(y)}
+                    style={{ width: 'auto' }}
+                  />
+                  {taxYearText(y)}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
         <label>
           給与収入（額面・万円）
           <input
@@ -290,7 +331,8 @@ export default function Calculator() {
           textAlign: 'center'}}
       >
         <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', fontWeight: 600 }}>
-          自己負担2,000円で寄付できる上限額
+          {taxYearText(year)}の上限額
+          <span style={{ display: 'block', fontWeight: 400 }}>自己負担2,000円で寄付できる額</span>
         </div>
         <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 700, color: 'var(--accent)', lineHeight: 1.3 }}>
           {r.limit.toLocaleString('ja-JP')}
@@ -298,6 +340,12 @@ export default function Calculator() {
         </div>
         <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
           住民税の所得割額 {yen(r.residentTax.incomeLevy)} をもとに計算しています
+          {r.specialCapKind === 'fixed' && fixedCap !== null && (
+            <>
+              <br />
+              特例分の定額上限（{yen(fixedCap)}）で頭打ちになっています
+            </>
+          )}
         </div>
       </div>
 
@@ -366,7 +414,10 @@ export default function Calculator() {
       {b.specialCapped && b.donation > 0 && (
         <div className="note" style={{ marginTop: 14 }}>
           <strong>上限額を超えています。</strong>
-          特例分が住民税所得割額の20%（{yen(Math.floor(r.residentTax.incomeLevy * 0.2))}）で頭打ちになったため、超えた分はほとんど戻ってきません。自己負担は {yen(b.outOfPocket)} です。上限額の {yen(r.limit)} 以内に収めることをおすすめします。
+          {b.specialCapKind === 'fixed'
+            ? `特例分が${taxYearLabel(year)}から加わった定額の上限（${yen(r.specialCap)}）で頭打ちになったため、`
+            : `特例分が住民税所得割額の20%（${yen(r.specialCap)}）で頭打ちになったため、`}
+          超えた分はほとんど戻ってきません。自己負担は {yen(b.outOfPocket)} です。上限額の {yen(r.limit)} 以内に収めることをおすすめします。
         </div>
       )}
 
@@ -424,6 +475,12 @@ export default function Calculator() {
             ）があり、それも超えた分は切り捨てになります。
           </p>
         </details>
+      )}
+
+      {year >= 2027 && (
+        <p style={{ marginTop: 14, fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
+          給与と公的年金の両方がある方は、令和9年分から控除が280万円で頭打ちになるため、上限額が下がることがあります（この計算機は年金収入を扱いません）。
+        </p>
       )}
 
       {r.limit === 0 && (
