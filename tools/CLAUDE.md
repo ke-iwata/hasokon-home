@@ -224,7 +224,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | こどもNISAの政省令・金融庁Q&Aが出たとき | `lib/kodomo-nisa.ts` の冒頭の定数と `DATA_CHECKED_AT`。**600万円が大人の1,800万円の内か・払い出した分の枠が戻るか**が確定したら、ページの「政省令待ち」の文言を直す（[仕様](../docs/features/kodomo-nisa.md)の要確認3・4） |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
-| ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
+| 毎年1月1日（ふるさと納税の年分） | `lib/furusato-nozei.ts` の `DEFAULT_TAX_YEAR` を1行上げ、`app/furusato-nozei/page.tsx` の title・description の「令和N年分」を直す（元日以降の CI を `tests/furusato-tax-year.test.ts` が落として知らせる）。新しい年分は `TAX_YEARS` と `SPECIAL_CAP_FIXED`（特例分の定額上限。令和9年分から193万円）に1行ずつ足す。年分の切り替えのラジオは `TAX_YEAR_SELECTOR_UNTIL`（2027-03-15）を過ぎると畳まれる。[仕様](../docs/features/furusato-nozei-r9-kirikae.md) |
+| ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**title・description の年表記**（「令和8年分」）。早見表の数値と見出しの年分は `DEFAULT_TAX_YEAR` から生成されるので自動で追随するが、title・description と本文の改正の説明の年の文字列は追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 毎年1月（国民年金保険料の翌年度額が公表されたら） | `lib/kokunen-ikuji-menjo.ts` の `MONTHLY_PREMIUM` に翌年度の月額を1行足し、`DATA_CHECKED_AT` を直す（日本年金機構「国民年金保険料」を正とする）。足すまでは未公表の年度を最新年度の額で概算し、画面に「概算」と出る |
 | 贈与税・相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/zoyozei-keisan.ts` の速算表2本（`GENERAL_BRACKETS` / `SPECIAL_BRACKETS`）・`BASIC_DEDUCTION`・`EXTENDED_EXCLUSION`・精算課税の `SETTLEMENT_*`・加算期間の切り替え日 `TRANSITION`。国税庁 No.4408・No.4161・No.4103 を正とし、`DATA_CHECKED_AT` を進める。`app/zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の**適用期限**（住宅取得等資金 2026-12-31・結婚子育て 2027-03-31）も同じときに確かめる。**加算されるかは贈与日ではなく相続開始日で決まる**（「2026年内に駆け込むと有利」と読める文言を置かない） |
