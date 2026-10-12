@@ -284,7 +284,7 @@ export const tools: ToolDef[] = [
       '119万・130万・178万…あなたに関係する「年収の壁」と影響を判定。2026年10月の106万円の壁撤廃（週20時間の壁）と保険料調整制度に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'jutaku-loan-kojo',
@@ -348,7 +348,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃と保険料調整制度（本人負担25〜48%）に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'shitsugyo-hoken',

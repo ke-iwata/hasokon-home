@@ -4,6 +4,7 @@ import {
   HOKENRYO_CHOSEI_NOTE,
   evaluateKabe,
   evaluateShaho,
+  isStudentFor,
   nextWall,
   WAGE_REQUIREMENT_ABOLISHED_ON,
   type KabeInput,
@@ -49,14 +50,14 @@ describe('evaluateKabe（該当する壁の抽出）', () => {
     expect(labels).not.toContain('106万円の壁');
   });
 
-  it('学生(19-22歳)は130万ではなく150万の壁になり、159/163/197万の壁が出る', () => {
-    const labels = evaluateKabe({ ...base, position: 'student' }).map((r) => r.label);
-    expect(labels).toContain('150万円の壁（学生）');
+  it('19〜22歳の学生は130万ではなく150万の壁になり、159/163/197万の壁が出る', () => {
+    const labels = evaluateKabe({ ...base, position: 'age19to22', isStudent: true }).map((r) => r.label);
+    expect(labels).toContain('150万円の壁（19〜22歳）');
     expect(labels).not.toContain('130万円の壁');
-    expect(labels).toContain('159万円の壁（学生）');
-    expect(labels).toContain('163万円の壁（学生）');
+    expect(labels).toContain('159万円の壁（19〜22歳）');
+    expect(labels).toContain('163万円の壁（勤労学生）');
     // 特定親族特別控除が消失するのは197万円（配偶者特別控除の207万円と混同しない）
-    expect(labels).toContain('197万円の壁（学生）');
+    expect(labels).toContain('197万円の壁（19〜22歳）');
     expect(labels).not.toContain('207万円の壁（配偶者）');
     expect(labels).not.toContain('136万円の壁（配偶者）');
   });
@@ -96,12 +97,12 @@ describe('evaluateKabe（超過判定と差分）', () => {
     expect(rs.find((r) => r.label === '130万円の壁')!.over).toBe(false);
   });
 
-  it('106万・150万（学生）の壁もちょうどで「超えた」扱い', () => {
+  it('106万・150万（19〜22歳）の壁もちょうどで「超えた」扱い', () => {
     const shaho = evaluateKabe({ ...base, income: 106 * M, workplace: 'over51', hours20: true });
     expect(shaho.find((r) => r.label === '106万円の壁')!.over).toBe(true);
 
-    const gakusei = evaluateKabe({ ...base, position: 'student', income: 150 * M });
-    expect(gakusei.find((r) => r.label === '150万円の壁（学生）')!.over).toBe(true);
+    const gakusei = evaluateKabe({ ...base, position: 'age19to22', isStudent: true, income: 150 * M });
+    expect(gakusei.find((r) => r.label === '150万円の壁（19〜22歳）')!.over).toBe(true);
   });
 
   it('税金の壁ちょうどは「超えていない」扱い（超えた分にだけ課税されるため）', () => {
@@ -204,7 +205,7 @@ describe('evaluateShaho（勤務先の社会保険に加入するか）', () => 
   });
 });
 
-// 昼間部の学生は社会保険の適用除外だが、position: 'student' は昼間部とは限らないので
+// 昼間部の学生は社会保険の適用除外だが、isStudent（学生か）は昼間部とは限らないので
 // 判定からは外さず注記で補っている（DAYTIME_STUDENT_EXCLUSION_NOTE）。
 // 「注記に逃がした」という判断そのものを、あとから読んで分かる形で固定しておく。
 /**
@@ -281,7 +282,13 @@ describe('保険料調整制度の注記（金額は持たない）', () => {
 });
 
 describe('昼間部の学生の適用除外（注記で補う）', () => {
-  const gakusei: KabeInput = { ...base, position: 'student', workplace: 'over51', hours20: true };
+  const gakusei: KabeInput = {
+    ...base,
+    position: 'age19to22',
+    isStudent: true,
+    workplace: 'over51',
+    hours20: true,
+  };
 
   it('注記が昼間部の除外と、夜間部などが対象であることの両方に触れている', () => {
     expect(DAYTIME_STUDENT_EXCLUSION_NOTE).toContain('昼間部');
@@ -298,13 +305,13 @@ describe('昼間部の学生の適用除外（注記で補う）', () => {
     expect(evaluateShaho({ ...gakusei, workplace: 'not-covered', asOf: ON }).kind).toBe('not-applicable');
   });
 
-  it('150万円の壁（学生）の扱いも変わっていない', () => {
+  it('150万円の壁（19〜22歳）の扱いも変わっていない', () => {
     // 施行前: 106万円の壁とあわせて出る / 施行後: 加入するので扶養の壁には到達しない
     expect(evaluateKabe({ ...gakusei, asOf: BEFORE }).map((r) => r.label)).toContain(
-      '150万円の壁（学生）'
+      '150万円の壁（19〜22歳）'
     );
     expect(evaluateKabe({ ...gakusei, asOf: ON }).map((r) => r.label)).not.toContain(
-      '150万円の壁（学生）'
+      '150万円の壁（19〜22歳）'
     );
   });
 });
@@ -339,12 +346,85 @@ describe('扶養の壁との重複解消', () => {
   it('施行後、社保に加入する学生には150万円の壁が出ない', () => {
     const labels = evaluateKabe({
       ...base,
-      position: 'student',
+      position: 'age19to22',
+      isStudent: true,
       workplace: 'over51',
       hours20: true,
       asOf: ON,
     }).map((r) => r.label);
-    expect(labels).not.toContain('150万円の壁（学生）');
-    expect(labels).toContain('159万円の壁（学生）');
+    expect(labels).not.toContain('150万円の壁（19〜22歳）');
+    expect(labels).toContain('159万円の壁（19〜22歳）');
+  });
+});
+
+/**
+ * 19〜22歳の150万円・特定親族特別控除は「年齢だけ」が要件で、学生であることは求めない
+ * （日本年金機構 Q&A「学生であることの要件は求めません。あくまでも、年齢によって判断します」）。
+ * 勤労学生控除・昼間部の適用除外は「学生であること」が要件で、年齢は問わない。
+ * 入力をこの2軸（position: 'age19to22' と isStudent）に分けた回のテスト。
+ * docs/features/fuyo-19-22sai-nenrei-kijun.md
+ */
+describe('19〜22歳の基準と学生の基準は別の軸', () => {
+  const labelsOf = (input: Partial<KabeInput>) =>
+    evaluateKabe({ ...base, income: 140 * M, ...input }).map((r) => r.label);
+
+  it('19〜22歳・学生でない・140万円: 150万円の壁が次、130万・136万（扶養）は出ず、159万が出る', () => {
+    const rs = evaluateKabe({ ...base, income: 140 * M, position: 'age19to22', isStudent: false });
+    const labels = rs.map((r) => r.label);
+    expect(labels).toContain('150万円の壁（19〜22歳）');
+    expect(rs.find((r) => r.label === '150万円の壁（19〜22歳）')!.over).toBe(false);
+    expect(nextWall(rs)!.label).toBe('150万円の壁（19〜22歳）');
+    expect(labels).not.toContain('130万円の壁');
+    // 19〜22歳は136万円を超えても特定親族特別控除（63万円）が満額で続く
+    expect(labels).not.toContain('136万円の壁（扶養）');
+    expect(labels).toContain('159万円の壁（19〜22歳）');
+    expect(labels).toContain('197万円の壁（19〜22歳）');
+    // 学生でなければ勤労学生控除の壁は出さない
+    expect(labels).not.toContain('163万円の壁（勤労学生）');
+  });
+
+  it('isStudent を省略しても学生でない扱い（既定 false）', () => {
+    expect(labelsOf({ position: 'age19to22' })).not.toContain('163万円の壁（勤労学生）');
+  });
+
+  it('19〜22歳・学生: 上に加えて163万円（勤労学生）が出る', () => {
+    const labels = labelsOf({ position: 'age19to22', isStudent: true });
+    expect(labels).toContain('150万円の壁（19〜22歳）');
+    expect(labels).toContain('159万円の壁（19〜22歳）');
+    expect(labels).toContain('163万円の壁（勤労学生）');
+    expect(labels).not.toContain('130万円の壁');
+    expect(labels).not.toContain('136万円の壁（扶養）');
+  });
+
+  it('それ以外の年齢・学生（例: 24歳の院生）: 130万・136万・163万が出て、150万・159万は出ない', () => {
+    const labels = labelsOf({ position: 'dependent', isStudent: true });
+    expect(labels).toContain('130万円の壁');
+    expect(labels).toContain('136万円の壁（扶養）');
+    expect(labels).toContain('163万円の壁（勤労学生）');
+    expect(labels).not.toContain('150万円の壁（19〜22歳）');
+    expect(labels).not.toContain('159万円の壁（19〜22歳）');
+    expect(labels).not.toContain('197万円の壁（19〜22歳）');
+  });
+
+  it('それ以外の年齢・学生でない: いままでどおり130万・136万（扶養）で、163万は出ない', () => {
+    const labels = labelsOf({ position: 'dependent' });
+    expect(labels).toContain('130万円の壁');
+    expect(labels).toContain('136万円の壁（扶養）');
+    expect(labels).not.toContain('163万円の壁（勤労学生）');
+  });
+
+  it('配偶者の扶養で isStudent が残っていても、163万円（勤労学生）と昼間部の注記は出ない', () => {
+    // チェックを入れてから「配偶者の扶養内」に切り替えた状態
+    const input: KabeInput = { ...base, income: 140 * M, position: 'spouse', isStudent: true };
+    expect(evaluateKabe(input).map((r) => r.label)).not.toContain('163万円の壁（勤労学生）');
+    expect(isStudentFor(input)).toBe(false);
+  });
+
+  it('isStudentFor: 学生で配偶者の扶養でなければ年齢を問わず true', () => {
+    expect(isStudentFor({ position: 'age19to22', isStudent: true })).toBe(true);
+    expect(isStudentFor({ position: 'dependent', isStudent: true })).toBe(true);
+    expect(isStudentFor({ position: 'none', isStudent: true })).toBe(true);
+    expect(isStudentFor({ position: 'age19to22', isStudent: false })).toBe(false);
+    expect(isStudentFor({ position: 'age19to22' })).toBe(false);
   });
 });

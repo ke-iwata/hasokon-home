@@ -15,7 +15,7 @@
  * - 社会保険 106万円の壁: 短時間労働者が加入対象の勤務先・週20時間以上。賃金要件は
  *   2026年10月1日に撤廃され、以降は「金額の壁」ではなくなる
  *   （WALL_DEFS の effectiveUntil で自動的に消える）
- * - 社会保険 130万円の壁: 扶養認定基準（19〜22歳の学生は150万円）。
+ * - 社会保険 130万円の壁: 扶養認定基準（19〜22歳は150万円。学生要件なし）。
  *   2026年4月から残業代を含まず基本給ベースで判定
  * - 配偶者控除136万円（=74+62） / 配偶者特別控除169万円（=74+95）で減額開始・207万円（=74+133）で消失
  * - 特定親族特別控除（19〜22歳）: 159万円（=74+85）まで満額63万円・197万円（=74+123）で消失
@@ -29,8 +29,8 @@
 /** 立場 */
 export type Position =
   | 'spouse' // 配偶者の扶養内で働く（パート等）
-  | 'student' // 親の扶養内・19〜22歳の学生
-  | 'dependent' // 親の扶養内・その他
+  | 'age19to22' // 親の扶養内・19〜22歳（12月31日時点。学生かどうかは問わない）
+  | 'dependent' // 親の扶養内・それ以外の年齢
   | 'none'; // 扶養に入っていない
 
 /**
@@ -56,6 +56,12 @@ export interface KabeInput {
   workplace: Workplace;
   /** 週の所定労働時間が20時間以上 */
   hours20: boolean;
+  /**
+   * 学生か（昼間部・夜間部とも）。既定 false。
+   * 年齢（`position: 'age19to22'`）とは別の軸。勤労学生控除・昼間部の適用除外の注記だけがこれで決まる。
+   * `spouse` のときは画面に出さないので、値が残っていても効かない（`isStudentFor()`）
+   */
+  isStudent?: boolean;
   /**
    * 判定の基準日。省略時は実行時の現在日。
    * 静的書き出しのサイトなので、ビルド時刻で固定すると施行日をまたいでも
@@ -116,12 +122,24 @@ export const WAGE_REQUIREMENT_ABOLISHED_ON = '2026-10-01';
  * 短時間労働者の社会保険の適用拡大では、**昼間部の学生は適用除外**（健康保険法第3条第9項）。
  * 夜間部・定時制・通信制、休学中の方は適用の対象になる。
  *
- * 判定ロジックからは外していない。`position: 'student'` は「親の扶養内・19〜22歳の学生」
- * という意味しか持たず昼間部とは限らないため、除外してしまうと夜間・定時制の方を
- * 取りこぼす。どちらか分からない以上、ロジックで断定せず注記で補う。
+ * 判定ロジックからは外していない。入力は「年齢の帯」（`position: 'age19to22'` など）と
+ * 「学生か」（`isStudent`。昼間部・夜間部とも）の2軸で、昼間部かどうかは分からないため、
+ * 除外してしまうと夜間・定時制の方を取りこぼす。どちらか分からない以上、ロジックで断定せず注記で補う。
+ * 注記を出すのは `isStudentFor()` が true のとき（年齢は問わない）。
  */
 export const DAYTIME_STUDENT_EXCLUSION_NOTE =
   '昼間部の学生は適用除外のため加入しません（夜間部・定時制・通信制、休学中の方は対象です）。';
+
+/**
+ * 学生として扱うか（勤労学生控除の163万円の壁・昼間部の適用除外の注記）。
+ *
+ * 学生のチェックボックスは `spouse` では隠れるが、先にチェックしてから切り替えると
+ * `isStudent: true` が状態に残る。画面でも `false` にして渡すが、片方が漏れても
+ * 誤った壁を出さないよう、ここでも `spouse` を落とす。
+ */
+export function isStudentFor(input: { position: Position; isStudent?: boolean }): boolean {
+  return input.isStudent === true && input.position !== 'spouse';
+}
 
 /**
  * 保険料調整制度（2026年10月1日〜）の注記。
@@ -175,15 +193,15 @@ export const WALL_DEFS: WallDef[] = [
   },
   {
     amount: 150 * M,
-    label: '150万円の壁（学生）',
+    label: '150万円の壁（19〜22歳）',
     category: '社会保険',
     effect:
       '家族の社会保険の扶養から外れ、自分で国民年金・国民健康保険に加入する必要があります。手取りが大きく減ります。',
-    note: '19〜22歳の学生は一般の130万円より基準が緩和されています。条件は「150万円未満」のため、ちょうど150万円でも扶養から外れます。',
+    note: '19〜22歳（12月31日時点。学生でなくても）は一般の130万円より基準が緩和されています。条件は「150万円未満」のため、ちょうど150万円でも扶養から外れます。',
     impact: 'high',
     inclusive: true,
     // 130万円の壁と同じ理由で、勤務先の社保に加入する人には到達しない
-    applies: (i) => i.position === 'student' && evaluateShaho(i).kind !== 'enrolled',
+    applies: (i) => i.position === 'age19to22' && evaluateShaho(i).kind !== 'enrolled',
   },
   {
     amount: 136 * M,
@@ -206,24 +224,25 @@ export const WALL_DEFS: WallDef[] = [
   },
   {
     amount: 159 * M,
-    label: '159万円の壁（学生）',
+    label: '159万円の壁（19〜22歳）',
     category: '税金',
     effect:
       '親が受けられる特定親族特別控除（最大63万円）が満額でなくなり、段階的に減り始めます（197万円で消失）。',
     note: '19〜22歳が対象。令和7年分の「150万円」から引き上げられました。控除が完全になくなるのは197万円（配偶者特別控除の207万円とは異なります）。',
     impact: 'mid',
     inclusive: false,
-    applies: (i) => i.position === 'student',
+    applies: (i) => i.position === 'age19to22',
   },
   {
     amount: 163 * M,
-    label: '163万円の壁（学生）',
+    label: '163万円の壁（勤労学生）',
     category: '税金',
     effect: '勤労学生控除が使えなくなり、本人の所得税・住民税が増えます。',
     note: '給与所得控除74万円 + 合計所得金額の要件89万円。',
     impact: 'low',
     inclusive: false,
-    applies: (i) => i.position === 'student',
+    // 勤労学生控除は学生であることが要件で、年齢は問わない（国税庁 No.1175）
+    applies: (i) => isStudentFor(i),
   },
   {
     amount: 169 * M,
@@ -237,12 +256,12 @@ export const WALL_DEFS: WallDef[] = [
   },
   {
     amount: 197 * M,
-    label: '197万円の壁（学生）',
+    label: '197万円の壁（19〜22歳）',
     category: '税金',
     effect: '親が受けられる特定親族特別控除が完全になくなります。',
     impact: 'low',
     inclusive: false,
-    applies: (i) => i.position === 'student',
+    applies: (i) => i.position === 'age19to22',
   },
   {
     amount: 178 * M,
