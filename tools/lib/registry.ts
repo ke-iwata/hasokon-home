@@ -283,6 +283,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-24',
   },
   {
+    // 仕様: docs/features/loan-hensai-simulation.md
+    slug: 'loan-hensai',
+    icon: 'CurrencyJpy',
+    name: 'ローン返済シミュレーション',
+    description:
+      '借入額・返済期間・金利から毎月の返済額・総返済額・利息の合計・年末残高を計算。元利均等と元金均等の比較、ボーナス払い、繰上返済（期間短縮／返済額軽減）、変動金利の5年ルール・125%ルールで金利が上がったときの返済額と払いきれない利息まで出します。',
+    category: 'お金・社会保険',
+    // テスト環境で運営者が仕様書「テスト」の表の8ケースを確かめたら `public`。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
+  },
+  {
     slug: 'invoice-nozeigaku',
     icon: 'Receipt',
     name: 'インボイス 納税額 比較計算機',
