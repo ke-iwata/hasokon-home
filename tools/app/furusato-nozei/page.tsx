@@ -2,7 +2,17 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { robotsFor, SITE_URL } from '@/lib/registry';
 import { EMPLOYMENT_RATE, HEALTH_RATE, PENSION_RATE, ratePercent } from '@/lib/shaho-ryoritsu';
-import { hayamihyo, hayamihyoNoBenefit, HAYAMIHYO_FAMILIES } from '@/lib/furusato-nozei';
+import {
+  DEFAULT_TAX_YEAR,
+  hayamihyo,
+  hayamihyoNoBenefit,
+  HAYAMIHYO_FAMILIES,
+  HAYAMIHYO_INCOMES,
+  type HayamihyoRow,
+  TAX_YEARS,
+  taxYearLabel,
+  type TaxYear,
+} from '@/lib/furusato-nozei';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -31,8 +41,12 @@ const faq = [
     a: '変わる人がいます。令和8年分から基礎控除が最大104万円、給与所得控除の最低保障額が74万円に引き上げられたため、課税所得が下がって所得税率の区分が1段下がる人がいます。ふるさと納税の上限額は所得税率が高いほど大きくなるので、税率区分が下がった人は上限額も下がります。たとえば給与収入500万円の独身の方は所得税率が10%から5%になり、上限額は数千円下がります。前年と同じ感覚で寄付すると自己負担が2,000円で収まらなくなるため、必ず計算し直してください。',
   },
   {
+    q: '2027年から ふるさと納税に上限ができるのですか？',
+    a: 'いまの「住民税所得割額の20%」の上限に加えて、定額の上限（193万円）が加わります。2027年（令和9年）の寄附から、住民税の特例分（道府県民税と市町村民税の合計）が193万円で頭打ちになります（令和10年度分の住民税から）。特例分が193万円を超えるのは給与収入でおおむね1億円からなので、多くの人の上限額は変わりません。2026年の寄附（令和8年分）には関係ありません。寄附額そのものに上限ができるわけではなく、超えた分にも所得税分と住民税の基本分の控除はあります。この計算機で「令和9年分」を選ぶと、193万円の上限にかかるかどうかを確かめられます。なお上限額の引き下げを求める声もあり、今後さらに見直される可能性があります。',
+  },
+  {
     q: '上限額を超えて寄付するとどうなりますか？',
-    a: '超えた分はほとんど戻ってきません。住民税の特例分は「住民税所得割額の20%」が上限で、そこで頭打ちになるためです。超過分に対して戻るのは所得税分と住民税の基本分だけなので、所得税率5%の人なら超過額の約15%しか戻らず、残り85%が自己負担になります。この計算機では上限を超えた場合に警告と実際の自己負担額を表示します。',
+    a: '超えた分はほとんど戻ってきません。住民税の特例分は「住民税所得割額の20%」が上限で、そこで頭打ちになるためです。2027年の寄附からは、特例分が193万円で頭打ちになる上限も加わります。超過分に対して戻るのは所得税分と住民税の基本分だけなので、所得税率5%の人なら超過額の約15%しか戻らず、残り85%が自己負担になります。この計算機では上限を超えた場合に警告と実際の自己負担額を表示します。',
   },
   {
     q: 'ワンストップ特例と確定申告で、戻ってくる金額は変わりますか？',
@@ -107,13 +121,77 @@ const box = {
  * 表の数値は手書きせず lib のロジックから生成するので、上の計算機と食い違わない。
  * 生成の前提は lib/furusato-nozei.ts の hayamihyoInput にあり、表の直下で開示している。
  */
-const hayamihyoRows = hayamihyo();
+const hayamihyoRows = hayamihyo(DEFAULT_TAX_YEAR);
+
+/**
+ * 既定以外の年分の早見表。表の範囲（年収1,500万円まで）では193万円の上限が効かず
+ * 既定の年分と同じ額になるので、そのときは表を重ねず一文で知らせる（same）。
+ */
+const otherYearTables = TAX_YEARS.filter((y) => y !== DEFAULT_TAX_YEAR).map((year) => {
+  const rows = hayamihyo(year);
+  const same = rows.every((row, i) =>
+    row.limits.every((limit, j) => limit === hayamihyoRows[i].limits[j]),
+  );
+  return { year, rows, same };
+});
+const maxIncome = HAYAMIHYO_INCOMES[HAYAMIHYO_INCOMES.length - 1];
 
 /** 列見出しの年齢注記など、見出しに添える小さい文字 */
 const subLabel = { fontWeight: 400, fontSize: '0.85em' };
 
 const man = (yen: number) => `${(yen / 10_000).toLocaleString('ja-JP')}万円`;
 const formatYen = (yen: number) => `${yen.toLocaleString('ja-JP')}円`;
+
+/** 年分の見出し（例: 「2026年・令和8年分」） */
+const yearHeading = (y: TaxYear) => `${y}年・${taxYearLabel(y)}`;
+
+/** 早見表の本体。年分ごとに同じ形で出す */
+function HayamihyoTable({ rows }: { rows: HayamihyoRow[] }) {
+  return (
+    /*
+      6桁の金額 × 5列は折り返しの典型なので、表を nowrap にして
+      外側の overflow-x で横スクロールさせる（waribiki-percent と同じ形）。
+    */
+    <div style={{ overflowX: 'auto' }}>
+      <table style={{ whiteSpace: 'nowrap' }}>
+        <thead>
+          <tr>
+            <th>年収（額面）</th>
+            {HAYAMIHYO_FAMILIES.map((f) => (
+              <th key={f.id}>
+                {f.label}
+                <br />
+                <span style={subLabel}>{f.note}</span>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.income}>
+              <th scope="row">{man(row.income)}</th>
+              {row.limits.map((limit, i) => (
+                <td key={HAYAMIHYO_FAMILIES[i].id}>
+                  {formatYen(limit)}
+                  {/*
+                    上限額が自己負担の2,000円まで下がったセルは「2,000円まで寄付できる」と
+                    読めてしまう。表は注記から切り離して持ち帰られるので、セル自身に添える。
+                  */}
+                  {hayamihyoNoBenefit(limit) && (
+                    <>
+                      <br />
+                      <span style={subLabel}>（実質的な効果なし）</span>
+                    </>
+                  )}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function Page() {
   return (
@@ -134,58 +212,39 @@ export default function Page() {
         をどうぞ。2026年（令和8年）の税制改正に対応。
       </p>
 
-      <Calculator />
+      <Calculator buildDate={new Date().toISOString()} />
 
       <AdUnit position="below-tool" />
 
-      <h2 id="hayamihyo">控除上限額の早見表（2026年・令和8年分）</h2>
+      <h2 id="hayamihyo">控除上限額の早見表（{yearHeading(DEFAULT_TAX_YEAR)}）</h2>
       <p>
         計算機に数字を入れる前に規模感を知りたいときは、こちらをご覧ください。年収（額面）と家族構成から、自己負担が2,000円で収まる寄付額の目安が分かります。
         <strong>この表は上の計算機とまったく同じロジックから作っている</strong>
         ので、表と計算結果が食い違うことはありません。令和8年分の基礎控除・給与所得控除の改正も織り込み済みです。
       </p>
-      {/*
-        6桁の金額 × 5列は折り返しの典型なので、表を nowrap にして
-        外側の overflow-x で横スクロールさせる（waribiki-percent と同じ形）。
-      */}
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ whiteSpace: 'nowrap' }}>
-          <thead>
-            <tr>
-              <th>年収（額面）</th>
-              {HAYAMIHYO_FAMILIES.map((f) => (
-                <th key={f.id}>
-                  {f.label}
-                  <br />
-                  <span style={subLabel}>{f.note}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {hayamihyoRows.map((row) => (
-              <tr key={row.income}>
-                <th scope="row">{man(row.income)}</th>
-                {row.limits.map((limit, i) => (
-                  <td key={HAYAMIHYO_FAMILIES[i].id}>
-                    {formatYen(limit)}
-                    {/*
-                      上限額が自己負担の2,000円まで下がったセルは「2,000円まで寄付できる」と
-                      読めてしまう。表は注記から切り離して持ち帰られるので、セル自身に添える。
-                    */}
-                    {hayamihyoNoBenefit(limit) && (
-                      <>
-                        <br />
-                        <span style={subLabel}>（実質的な効果なし）</span>
-                      </>
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <HayamihyoTable rows={hayamihyoRows} />
+      <p className="note">
+        <strong>
+          この表は{taxYearLabel(DEFAULT_TAX_YEAR)}（{DEFAULT_TAX_YEAR}年1〜12月の寄附）です。
+        </strong>
+        {otherYearTables
+          .filter((t) => t.same)
+          .map((t) => (
+            <span key={t.year}>
+              {taxYearLabel(t.year)}（{t.year}年の寄附）も、この表の範囲（年収{man(maxIncome)}まで）では同じ額です。
+              {t.year >= 2027 &&
+                '2027年の寄附から加わる特例分の193万円の上限が効くのは、給与収入でおおむね1億円からです。'}
+            </span>
+          ))}
+      </p>
+      {otherYearTables
+        .filter((t) => !t.same)
+        .map((t) => (
+          <div key={t.year}>
+            <h3>控除上限額の早見表（{yearHeading(t.year)}）</h3>
+            <HayamihyoTable rows={t.rows} />
+          </div>
+        ))}
       <p className="note">
         <strong>表の前提：</strong>
         収入は額面の給与のみ（給与所得控除は令和8年分）。社会保険料は協会けんぽの全国平均・本人負担分（健康保険{ratePercent(HEALTH_RATE)}・厚生年金{ratePercent(PENSION_RATE)}・雇用保険{ratePercent(EMPLOYMENT_RATE)}。厚生年金の標準報酬月額の上限を反映）で概算し、
@@ -253,6 +312,10 @@ export default function Page() {
       <p style={box}>住民税所得割額 × 20% ÷（90% − 所得税率 × 1.021）+ 2,000円</p>
       <p>
         つまり上限額を決めるのは<strong>住民税所得割額</strong>と<strong>所得税率</strong>の2つで、年収そのものではありません。同じ年収でも、扶養家族が多い人や社会保険料が高い人は課税所得が小さくなるため上限額は下がります。
+      </p>
+      <p>
+        <strong>2027年（令和9年）の寄附からは、特例分に193万円の定額の上限も加わります</strong>
+        （道府県民税と市町村民税の合計。令和10年度分の住民税から）。式の「住民税所得割額 × 20%」が193万円を超える人は、193万円で頭打ちになります。所得割がおよそ965万円を超える人、単身の給与収入でおおむね1億円からなので、多くの人には影響しません。計算機で「令和9年分」を選ぶと反映されます。
       </p>
 
       <h2>2026年（令和8年）の改正で上限額が下がる人がいます</h2>
@@ -354,7 +417,15 @@ export default function Page() {
         >
           総務省「個人住民税の住宅ローン控除」
         </a>
-        ほか公的資料にもとづき作成。基礎控除・給与所得控除の額は所得税法等の一部を改正する法律（令和8年法律第12号）による令和8年分の内容です。
+        、
+        <a
+          href="https://www.soumu.go.jp/main_content/001047636.pdf"
+          target="_blank"
+          rel="nofollow noopener noreferrer"
+        >
+          総務省「令和８年度地方税制改正(案)について」
+        </a>
+        ほか公的資料にもとづき作成。特例控除額の193万円の上限（令和9年寄附分から）は同資料によります。基礎控除・給与所得控除の額は所得税法等の一部を改正する法律（令和8年法律第12号）による令和8年分の内容です。
       </ToolMeta>
     </>
   );

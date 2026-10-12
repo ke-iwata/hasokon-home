@@ -126,6 +126,22 @@ const STYLE_HTML = `
         border-color: var(--testenv-line);
       }
 
+      /* 公開中のカードの絵は幅いっぱいの大きい絵だが、未公開のカードはフラスコの印だけなので
+         小さいタイルに戻す（幅いっぱいに引き伸ばすとフラスコが巨大になる） */
+      .card-unreleased .card-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+        border-radius: 14px;
+      }
+
+      .card-unreleased .card-icon svg {
+        width: 28px;
+        height: 28px;
+      }
+
       .badge-unreleased {
         display: inline-block;
         margin-inline-start: 6px;

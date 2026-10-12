@@ -1,5 +1,5 @@
 /**
- * ふるさと納税 控除額計算ロジック（令和8年分＝2026年の寄付）
+ * ふるさと納税 控除額計算ロジック（令和8年分＝2026年の寄付・令和9年分＝2027年の寄付）
  *
  * ふるさと納税の控除は3階建てで、寄付額から2,000円を引いた額が
  * 次の3つに分かれて戻ってくる（合計すると寄付額 − 2,000円になる）。
@@ -13,6 +13,12 @@
  *
  * 3の上限から逆算したものが「控除上限額」。
  *   控除上限額 = 住民税所得割額 × 20% ÷（90% − 所得税率 × 1.021）+ 2,000円
+ *
+ * 令和9年分（2027年の寄附＝令和10年度分の住民税）からは、特例分に193万円の定額上限が
+ * 加わる（道府県民税・市町村民税の合計。令和8年度地方税制改正）。特例分の上限は
+ * min(所得割額 × 20%, 193万円) になり、上の式の「住民税所得割額 × 20%」もこれに置き換わる。
+ * 効くのは所得割がおよそ965万円を超える人＝単身の給与収入でおおむね1億円から。
+ * 仕様: docs/features/furusato-nozei-r9-kirikae.md
  *
  * 1.021 は復興特別所得税（基準所得税額の2.1%。平成25年〜令和19年）。
  *
@@ -29,6 +35,12 @@
  * このため令和8年分は、所得税の課税所得が下がって税率区分が1段下がる人がいる。
  * 上の式のとおり所得税率が下がると控除上限額も下がるので、
  * 前年と同じ感覚で寄付すると自己負担が増える場合がある。
+ *
+ * 令和9年分も上の3点は同じ（基礎控除の特例加算と、給与所得控除の74万円のうち5万円は
+ * 令和8・9年分の2年間の時限措置。総務省「令和8年度地方税制改正(案)について」）。
+ * 令和9年分で計算が変わるのは特例分の193万円の上限（SPECIAL_CAP_FIXED）だけ。
+ * 給与と公的年金の控除の合計280万円の頭打ちも令和9年分からだが、この計算機は
+ * 給与収入しか受け取らないので計算には入らない（画面の注記で知らせる）。
  *
  * 【データ更新箇所】税制改正があったら SALARY_DEDUCTION / BASIC_DEDUCTION_INCOME /
  * BASIC_DEDUCTION_RESIDENT / INCOME_TAX_BRACKETS / 各控除額の定数を更新する。
@@ -65,6 +77,67 @@ export const RESIDENT_RATE = 0.1;
 
 /** 特例分の上限（住民税所得割額に対する割合） */
 export const SPECIAL_CAP_RATE = 0.2;
+
+/**
+ * 計算できる年分（寄付した年）。2026 = 令和8年分、2027 = 令和9年分。
+ * 【データ更新箇所】年分を足すときは、SPECIAL_CAP_FIXED にも同じ年の行を足す。
+ */
+export type TaxYear = 2026 | 2027;
+
+/** 画面で選べる年分（古い順） */
+export const TAX_YEARS: readonly TaxYear[] = [2026, 2027];
+
+/**
+ * 既定の年分。ビルド時に固定する（静的エクスポートなので、開いた日で切り替えない）。
+ *
+ * 【データ更新箇所】年が明けたら1行上げ、app/furusato-nozei/page.tsx の title・description の
+ * 「令和N年分」も直す。直し忘れは tests/furusato-tax-year.test.ts が元日以降の CI で落とす。
+ * 切り替えは本番リリース（運営者の承認）で行う。
+ */
+export const DEFAULT_TAX_YEAR: TaxYear = 2026;
+
+/**
+ * 年分の切り替え（画面のラジオ）を出しておく最後の日。1〜3月は前年分を確定申告で
+ * 確かめる人がいるので、申告期限まで残す。過ぎたら DEFAULT_TAX_YEAR の年分だけを出す。
+ */
+export const TAX_YEAR_SELECTOR_UNTIL = '2027-03-15';
+
+/** 年分の切り替えを出すか（基準日 'YYYY-MM-DD' が TAX_YEAR_SELECTOR_UNTIL 以前なら出す） */
+export function showTaxYearSelector(asOfYmd: string): boolean {
+  return asOfYmd <= TAX_YEAR_SELECTOR_UNTIL;
+}
+
+/** 年分の和暦の表記（例: 2027 → 「令和9年分」） */
+export function taxYearLabel(year: TaxYear): string {
+  return `令和${year - 2018}年分`;
+}
+
+/**
+ * 特例分の定額上限（道府県民税・市町村民税の合計・円）。null は定額上限なし。
+ * 令和9年寄附分（令和10年度分の住民税）から193万円。総務省「令和8年度地方税制改正(案)について」。
+ * 【データ更新箇所】上限額が見直されたらここ（指定都市市長会が引き下げを要望している）。
+ */
+export const SPECIAL_CAP_FIXED: Record<TaxYear, number | null> = {
+  2026: null,
+  2027: 1_930_000,
+};
+
+/** 特例分がどちらの上限で頭打ちになるか */
+export type SpecialCapKind = 'rate' | 'fixed';
+
+/**
+ * 特例分の上限額と、どちらの上限が効いているか。
+ * 所得割額の20%と定額上限（ある年分だけ）の小さいほう。同額なら所得割の20%として扱う。
+ */
+export function specialCapFor(
+  incomeLevy: number,
+  taxYear: TaxYear,
+): { cap: number; kind: SpecialCapKind } {
+  const byRate = Math.floor(Math.max(0, incomeLevy) * SPECIAL_CAP_RATE);
+  const fixed = SPECIAL_CAP_FIXED[taxYear];
+  if (fixed !== null && fixed < byRate) return { cap: fixed, kind: 'fixed' };
+  return { cap: byRate, kind: 'rate' };
+}
 
 /** 基本分の対象になる寄付額の上限（総所得金額等に対する割合） */
 export const BASIC_LIMIT_RATE = 0.3;
@@ -387,11 +460,15 @@ export interface FurusatoBreakdown {
   housingLoanLoss: number;
   /** 自己負担額（2,000円で収まっているかの確認に使う） */
   outOfPocket: number;
-  /** 特例分が上限（所得割額の20%）に達したか。達していると自己負担が増える */
+  /** 特例分が上限（所得割額の20%、令和9年分からは193万円も）に達したか。達していると自己負担が増える */
   specialCapped: boolean;
+  /** 特例分の上限がどちらで決まっているか（specialCapped のときの警告の出し分けに使う） */
+  specialCapKind: SpecialCapKind;
 }
 
 export interface FurusatoResult {
+  /** 計算した年分 */
+  taxYear: TaxYear;
   /** 給与所得控除 */
   salaryDeduction: number;
   /** 合計所得金額（給与所得） */
@@ -423,6 +500,10 @@ export interface FurusatoResult {
     /** 所得割額（ふるさと納税の上限を決める額） */
     incomeLevy: number;
   };
+  /** 特例分の上限額（所得割額の20%と、定額上限のある年分ではその額の小さいほう） */
+  specialCap: number;
+  /** 特例分の上限がどちらで決まっているか */
+  specialCapKind: SpecialCapKind;
   /** 控除上限額（自己負担が2,000円で収まる寄付額の上限） */
   limit: number;
   /** 寄付額に対する控除の内訳 */
@@ -438,6 +519,12 @@ export interface FurusatoResult {
   onestopAdvantage: number;
 }
 
+/** calcFurusato の計算の条件 */
+export interface FurusatoOptions {
+  /** 年分（寄付した年）。省略時は DEFAULT_TAX_YEAR */
+  taxYear?: TaxYear;
+}
+
 /** 課税所得は1,000円未満を切り捨てる */
 const floorTo1000 = (v: number) => Math.max(0, Math.floor(v / 1000) * 1000);
 
@@ -445,9 +532,13 @@ const floorTo1000 = (v: number) => Math.max(0, Math.floor(v / 1000) * 1000);
  * ふるさと納税の控除上限額と、寄付額に対する控除の内訳を計算する。
  *
  * @param input 給与収入・家族構成・寄付額など
+ * @param options 年分。省略時は DEFAULT_TAX_YEAR
  * @returns 計算の途中経過を含む結果。UIで内訳を見せるため中間値も返す
  */
-export function calcFurusato(input: FurusatoInput): FurusatoResult {
+export function calcFurusato(
+  input: FurusatoInput,
+  { taxYear = DEFAULT_TAX_YEAR }: FurusatoOptions = {},
+): FurusatoResult {
   const income = Math.max(0, input.income);
   const deduction = salaryDeduction(income);
   const totalIncome = salaryIncome(income);
@@ -498,12 +589,12 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
     Math.floor(taxableResidentTax * RESIDENT_RATE) - adjustment,
   );
 
-  // 控除上限額。特例分の上限（所得割額の20%）から逆算する。
+  // 控除上限額。特例分の上限（所得割額の20%。令和9年分からは193万円も）から逆算する。
   // 基本分の対象になる寄付額の上限（総所得金額等の30%）も超えられないので、
   // 小さいほうを採用する（通常は特例分のほうが先に効く）
+  const special = specialCapFor(incomeLevy, taxYear);
   const denominator = 0.9 - rate * RECONSTRUCTION_RATE;
-  const fromSpecial =
-    incomeLevy <= 0 ? 0 : (incomeLevy * SPECIAL_CAP_RATE) / denominator + SELF_PAY;
+  const fromSpecial = incomeLevy <= 0 ? 0 : special.cap / denominator + SELF_PAY;
   const fromBasicCap = totalIncome * BASIC_LIMIT_RATE;
   const limit = Math.max(0, Math.floor(Math.min(fromSpecial, fromBasicCap)));
 
@@ -542,7 +633,7 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
   const breakdown = calcBreakdown({
     donation,
     rate,
-    incomeLevy,
+    specialCap: special,
     totalIncome,
     onestop: input.onestop,
     housingLoanLoss: lossFor(housingLoan),
@@ -553,6 +644,7 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
   const onestopAdvantage = credit > 0 ? lossFor(housingLoanFor(false)) - lossFor(housingLoanFor(true)) : 0;
 
   return {
+    taxYear,
     salaryDeduction: Math.floor(deduction),
     totalIncome,
     socialInsurance,
@@ -573,6 +665,8 @@ export function calcFurusato(input: FurusatoInput): FurusatoResult {
       adjustment,
       incomeLevy,
     },
+    specialCap: special.cap,
+    specialCapKind: special.kind,
     limit,
     breakdown,
     housingLoanBase,
@@ -688,8 +782,12 @@ export function hayamihyoInput(income: number, family: HayamihyoFamily): Furusat
 }
 
 /** 早見表に載せる控除上限額（HAYAMIHYO_UNIT 単位に切り捨て） */
-export function hayamihyoLimit(income: number, family: HayamihyoFamily): number {
-  const { limit } = calcFurusato(hayamihyoInput(income, family));
+export function hayamihyoLimit(
+  income: number,
+  family: HayamihyoFamily,
+  taxYear: TaxYear = DEFAULT_TAX_YEAR,
+): number {
+  const { limit } = calcFurusato(hayamihyoInput(income, family), { taxYear });
   return Math.floor(limit / HAYAMIHYO_UNIT) * HAYAMIHYO_UNIT;
 }
 
@@ -713,11 +811,11 @@ export interface HayamihyoRow {
   limits: number[];
 }
 
-/** 年収 × 家族構成の控除上限額 早見表。ビルド時に静的HTMLへ焼き込む */
-export function hayamihyo(): HayamihyoRow[] {
+/** 年収 × 家族構成の控除上限額 早見表（年分ごと）。ビルド時に静的HTMLへ焼き込む */
+export function hayamihyo(taxYear: TaxYear = DEFAULT_TAX_YEAR): HayamihyoRow[] {
   return HAYAMIHYO_INCOMES.map((income) => ({
     income,
-    limits: HAYAMIHYO_FAMILIES.map((family) => hayamihyoLimit(income, family)),
+    limits: HAYAMIHYO_FAMILIES.map((family) => hayamihyoLimit(income, family, taxYear)),
   }));
 }
 
@@ -730,14 +828,15 @@ export function hayamihyo(): HayamihyoRow[] {
 function calcBreakdown({
   donation,
   rate,
-  incomeLevy,
+  specialCap,
   totalIncome,
   onestop,
   housingLoanLoss,
 }: {
   donation: number;
   rate: number;
-  incomeLevy: number;
+  /** 特例分の上限（specialCapFor の結果） */
+  specialCap: { cap: number; kind: SpecialCapKind };
   totalIncome: number;
   onestop: boolean;
   /** 住宅ローン控除が使えなくなった額。そのまま自己負担の増加になる */
@@ -756,6 +855,7 @@ function calcBreakdown({
       housingLoanLoss: 0,
       outOfPocket: donation,
       specialCapped: false,
+      specialCapKind: specialCap.kind,
     };
   }
 
@@ -767,11 +867,10 @@ function calcBreakdown({
   const fromIncomeTaxFull = Math.floor(incomeTaxBase * rateWithSurtax);
   const residentBasic = Math.floor(basicBase * RESIDENT_RATE);
 
-  // 特例分。所得割額の20%が上限で、超えた分は自己負担になる
-  const specialCap = Math.floor(incomeLevy * SPECIAL_CAP_RATE);
+  // 特例分。所得割額の20%（令和9年分からは193万円も）が上限で、超えた分は自己負担になる
   const specialRaw = Math.floor(base * (0.9 - rateWithSurtax));
-  const specialCapped = specialRaw > specialCap;
-  const residentSpecial = specialCapped ? specialCap : specialRaw;
+  const specialCapped = specialRaw > specialCap.cap;
+  const residentSpecial = specialCapped ? specialCap.cap : specialRaw;
 
   // ワンストップ特例では所得税から引かれず、同額が住民税に回る
   const fromIncomeTax = onestop ? 0 : fromIncomeTaxFull;
@@ -792,5 +891,6 @@ function calcBreakdown({
     // 住宅ローン控除が目減りした分は、戻ってこないお金なので自己負担に足す
     outOfPocket: donation - total + housingLoanLoss,
     specialCapped,
+    specialCapKind: specialCap.kind,
   };
 }

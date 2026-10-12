@@ -8,6 +8,18 @@ hasokon.com のルートドメイン側で、何を・なぜ作ったかの記�
 
 ---
 
+## 2026-10-08：トップのカードの絵を、一覧と同じ大きい絵（結果の形・遊んでいる画面）にした
+
+運営者の「ゲームの方とホームもお願い」から。[card-illustrations.md](./features/card-illustrations.md)。
+
+- **トップの75枚のカードの絵を、ツール一覧・ゲーム一覧と同じ 340×150 の大きい絵にした。**
+  2列（スマホは1列）で幅いっぱいに置き、説明は2行で切る。スマホで絵を左に置く横並びはやめた
+- `scripts/sync-home-card-art.mjs` の写し元を一覧ページに戻した（前日に tools は404へ移していた）。
+  ゲームのカードには目立たせる色を黄土に差し替える `--cat-mark:var(--cat-play-mark)` を渡す
+- テスト環境だけに出る「本番未公開」のカードは、フラスコの印を60pxのタイルのまま出す
+  （幅いっぱいに引き伸ばすと巨大になるため。`scripts/build-test-home.mjs`）
+- トップのHTMLは約128KBから約245KBに増えた（SVGの繰り返しなので圧縮は効く）。`sitemap-home.xml` の `lastmod` を上げた
+
 ## 2026-10-03：tools／games／learn の Next.js を 16.3.8 に揃え、lockfile の drift をテストで止め、Dependabot で毎週見る
 
 [dependency-vulnerability-audit.md](./features/dependency-vulnerability-audit.md) の A-0・A・B-1。

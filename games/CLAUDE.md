@@ -108,11 +108,14 @@ npmコマンドはすべて `games/` ディレクトリ内で実行します。
    `app/_records/Records.tsx`（`useRecords` / `useStopwatch` / `RecordStrip`）を使い、
    **ゲームごとに個別の localStorage キーを作らない**
    （[docs/features/game-records.md](../docs/features/game-records.md)）
-6. **`public` にするPRで、一覧カードの盤面の絵を `app/GameIcon.tsx` の `BOARD` に描く**
-   （registry の `icon` 名をキーに1つ。盤面をそのまま描く・直角の折り返しで数字の形を作らない）。
-   トップのカードは `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で写す。
+6. **`public` にするPRで、カードの絵を2枚描く**（直角の折り返しで数字の形を作らない・色は直書きしない）
+   - `app/GamePreview.tsx`：ゲーム一覧とトップの大きい絵。**遊んでいる最中の画面**を 340×150 で描く
+     （slug をキーに1つ。点数・記録は［◯］の伏せ字。`tests/game-preview.test.ts`）
+   - `app/GameIcon.tsx` の `BOARD`：各ページの「他のゲーム」の小さいタイルの絵
+     （registry の `icon` 名をキーに1つ。`tests/game-art.test.ts`）
+
+   トップのカードは `node scripts/sync-home-card-art.mjs`（リポジトリ直下で）で一覧ページから写す。
    仕様は [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)
-   （絵の無い公開中ゲームは `tests/game-art.test.ts` が落とす）
 7. `npm test && npm run build` が通ることを確認
 
 ## AdSense / アクセス解析

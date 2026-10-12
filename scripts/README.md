@@ -388,8 +388,9 @@ cp home/index.html /tmp/index.html && node scripts/build-test-home.mjs --file /t
 
 ## sync-home-card-art.mjs
 
-トップ（`home/index.html`）のカードの絵とタイルの色を、tools / games の一覧ページの
-**ビルド結果**から写すスクリプトです。原本は `tools/app/ToolArt.tsx` と
+トップ（`home/index.html`）のカードの絵とタイルの色を、tools / games の
+**ビルド結果**から写すスクリプトです。一覧ページ（`tools/out/index.html`・`games/out/index.html`）の
+大きい絵（「結果の形」「遊んでいる画面」）を写します。原本は `tools/app/ToolArt.tsx` と
 `games/app/GameIcon.tsx` の `BOARD` で、このスクリプトは原本を書き換えません。
 
 仕様: [docs/features/card-illustrations.md](../docs/features/card-illustrations.md)

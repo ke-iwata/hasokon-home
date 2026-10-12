@@ -268,3 +268,21 @@ describe('扶養親族の所得要件', () => {
     }
   });
 });
+
+describe('ほかのツールと表を二重に持たない', () => {
+  it('公的年金等控除は lib/nenkin-kojo.ts の額と一致する', async () => {
+    const { publicPensionDeduction } = await import('@/lib/nenkin-kojo');
+    for (const p of [500_000, 1_100_000, 1_550_000, 3_300_001, 5_000_000]) {
+      expect(nenkinKojo(p, true)).toBe(publicPensionDeduction(true, p, 0));
+      expect(nenkinKojo(p, false)).toBe(publicPensionDeduction(false, p, 0));
+    }
+  });
+
+  it('280万円の上限（所得税法35条5項）は本ツールの年度より後から始まる', async () => {
+    const { FIRST_RESIDENT_FISCAL_YEAR } = await import('@/lib/kyuyo-nenkin-kojo');
+    // 令和10年度を足すときは、上限を judge() に入れること
+    for (const n of ['R8', 'R9'] as const) {
+      expect(NENDO_RULES[n].fiscalYear).toBeLessThan(FIRST_RESIDENT_FISCAL_YEAR);
+    }
+  });
+});

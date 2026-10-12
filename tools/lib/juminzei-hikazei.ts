@@ -62,11 +62,12 @@
  * 【データ更新箇所】
  * - 年度を足すときは NENDO_RULES に1行。給与所得控除・所得税の基礎控除の関数を差し替える
  * - 非課税限度額（35万円・21万円・32万円・10万円・135万円）が改正されたら LIMIT_* を直す
- * - 公的年金等控除の表は PENSION_TABLE_*（令和2年分以後、改正なし）
+ * - 公的年金等控除の表は lib/nenkin-kojo.ts（ここには持たない）
  */
 
 import { basicDeductionIncomeTax, salaryDeduction } from '@/lib/furusato-nozei';
 import { basicDeductionIncomeTaxR7, salaryDeductionR7 } from '@/lib/nenmatsu-chosei';
+import { pensionIncome, publicPensionDeduction } from '@/lib/nenkin-kojo';
 import { ageAt, type DateParts } from '@/lib/nenrei';
 
 // ---------------------------------------------------------------- 定数
@@ -177,24 +178,21 @@ export function kyuyoShotoku(income: number, nendo: Nendo): number {
 }
 
 /**
- * 公的年金等控除（公的年金等以外の合計所得金額が1,000万円以下の場合。所得税法 35条4項・
- * 租税特別措置法 41条の15の3）。
+ * 公的年金等控除。表は lib/nenkin-kojo.ts だけが持つ（同じ表を2か所に書かない）。
+ * otherIncome は年金以外の合計所得金額（給与所得。所得金額調整控除を引く前）。
+ * 本ツールは入力の上限（MAX_INCOME）で 1,000万円以下の表に収まる。
+ *
+ * 所得税法35条5項（給与所得控除と公的年金等控除の合計 280万円の上限）は令和9年分（＝令和10年度の住民税）
+ * からなので、本ツールの令和8・9年度には効かない（lib/kyuyo-nenkin-kojo.ts の FIRST_RESIDENT_FISCAL_YEAR）。
  */
-export function nenkinKojo(pension: number, over65: boolean): number {
-  const p = clampIncome(pension);
-  if (p <= 0) return 0;
-  if (over65 && p <= 3_300_000) return Math.min(p, 1_100_000);
-  if (!over65 && p <= 1_300_000) return Math.min(p, 600_000);
-  if (p <= 4_100_000) return Math.floor(p * 0.25 + 275_000);
-  if (p <= 7_700_000) return Math.floor(p * 0.15 + 685_000);
-  if (p <= 10_000_000) return Math.floor(p * 0.05 + 1_455_000);
-  return 1_955_000;
+export function nenkinKojo(pension: number, over65: boolean, otherIncome = 0): number {
+  return publicPensionDeduction(over65, clampIncome(pension), otherIncome);
 }
 
 /** 公的年金等に係る雑所得 */
-export function nenkinShotoku(pension: number, over65: boolean): number {
+export function nenkinShotoku(pension: number, over65: boolean, otherIncome = 0): number {
   const p = clampIncome(pension);
-  return Math.max(0, p - nenkinKojo(p, over65));
+  return pensionIncome(p, nenkinKojo(p, over65, otherIncome));
 }
 
 /**
@@ -302,7 +300,7 @@ function normalize(input: PersonInput): PersonInput {
 export function totalIncomeOf(input: PersonInput, nendo: Nendo) {
   const p = normalize(input);
   const kyuyoRaw = kyuyoShotoku(p.salary, nendo);
-  const nenkin = nenkinShotoku(p.pension, p.over65);
+  const nenkin = nenkinShotoku(p.pension, p.over65, kyuyoRaw);
   const chosei = shotokuChoseiKojo(kyuyoRaw, nenkin);
   const kyuyo = kyuyoRaw - chosei;
   return { kyuyo, nenkin, chosei, total: kyuyo + nenkin };
