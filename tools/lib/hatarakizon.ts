@@ -144,9 +144,9 @@ export const CURVE_MAX = 3_000_000;
 /** 賃金要件（月額8.8万円）を年収に直した額。撤廃日までの加入ライン */
 export const WAGE_GATE_INCOME = 1_060_000;
 
-/** 社会保険の扶養認定基準（年収）。19〜22歳の学生は150万円 */
+/** 社会保険の扶養認定基準（年収）。19〜22歳は150万円（学生要件なし） */
 export const DEPENDENT_LIMIT = 1_300_000;
-export const DEPENDENT_LIMIT_STUDENT = 1_500_000;
+export const DEPENDENT_LIMIT_19_22 = 1_500_000;
 
 /** 課税所得は1,000円未満を切り捨てる */
 const floorTo1000 = (v: number) => Math.max(0, Math.floor(v / 1000) * 1000);
@@ -415,6 +415,11 @@ export interface HatarakizonInput {
   /** 週の所定労働時間が20時間以上 */
   hours20: boolean;
   /**
+   * 学生か（昼間部・夜間部とも）。既定 false。扶養内の上限には効かず（上限は年齢の帯で決まる）、
+   * 昼間部の適用除外の注記を出すかどうかだけに使う（`isStudentFor()`。`spouse` では効かない）
+   */
+  isStudent?: boolean;
+  /**
    * 勤務先が保険料調整制度を使い始めてから何年目か。既定は使っていない。
    *
    * 対象外の勤務先（`workplace: 'over51'`）や施行日前は、値にかかわらず効かない
@@ -499,14 +504,14 @@ function enrolledAt(gross: number, shaho: ShahoStatus): boolean {
  *
  * 賃金要件が残っている間（〜2026年9月30日）は106万円で加入してしまうので、そこが上限。
  * 撤廃後（2026年10月1日〜）は週20時間未満に抑えるしかなく、金額の上限は
- * 家族の扶養認定基準（130万円。19〜22歳の学生は150万円）になる。
+ * 家族の扶養認定基準（130万円。19〜22歳は150万円）になる。
  */
 function ceilingFor(input: HatarakizonInput, shaho: ShahoStatus): { limit: number; label: string } {
   if (shaho.kind === 'wage-gate') {
     return { limit: shaho.threshold, label: '106万円の壁（社会保険の賃金要件）' };
   }
-  return input.position === 'student'
-    ? { limit: DEPENDENT_LIMIT_STUDENT, label: '150万円の壁（学生の扶養認定基準）' }
+  return input.position === 'age19to22'
+    ? { limit: DEPENDENT_LIMIT_19_22, label: '150万円の壁（19〜22歳の扶養認定基準）' }
     : { limit: DEPENDENT_LIMIT, label: '130万円の壁（社会保険の扶養認定基準）' };
 }
 
