@@ -5877,6 +5877,211 @@ button.hf-card {
   min-height: 44px;
 }
 
+/* ---- 数字けし ----
+   盤は横に 6 列（9 列）で、書き足すと縦に伸びる。**枠（`.sjk-frame`）の高さを固定し、枠の中だけを縦にスクロール**する
+   （ページ自体はスクロールさせず、盤の外の見出し・ボタンの位置は書き足しの前後で変わらない。画面の約束1）。
+   盤は正方形ではないので「盤を画面の高さに合わせる」節の共通指定には乗せず、枠の高さを `--chrome` から決める。
+   **押す先は隙間を引いて 44px 以上**：320px 幅では入れ物をカードの余白ぶん（11px）はみ出させて 288px、
+   隙間 3px × 5 を引いて 1 マス 45.5px（隙間は 4px 以下。広げたくなったら余白か列数を削る）。
+   広い画面では 1 マス 64px までに抑える（Game.tsx の `CELL_MAX_PX`）。
+   組の判定に色だけを使わない（選んだマスは枠の太さでも示す） */
+.sjk-game {
+  --chrome: 430px;
+}
+
+.sjk-modes {
+  align-items: center;
+  margin: 4px 0 2px;
+}
+
+.sjk-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.sjk-option input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+}
+
+/* 残り・タイム・ヒント。**高さを固定**して、文言が変わっても盤を動かさない（画面の約束1） */
+.sjk-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  margin: 2px 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sjk-left {
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sjk-time {
+  margin-left: auto;
+  font-size: 0.95rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sjk-hint-btn {
+  min-height: 44px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.sjk-hint-penalty {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* 読み上げだけに出す「のこり◯個」 */
+.sjk-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 盤の枠。**高さは `height` で固定**し、あふれた分は枠の中だけを縦にスクロールする。横にはスクロールさせない */
+.sjk-frame {
+  height: clamp(220px, calc(100dvh - var(--chrome)), 600px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 6px;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.sjk-board {
+  display: grid;
+  grid-template-columns: repeat(var(--sjk-cols, 6), minmax(0, 1fr));
+  gap: 3px;
+  width: 100%;
+  max-width: calc(var(--sjk-cols, 6) * 64px + (var(--sjk-cols, 6) - 1) * 3px);
+  margin-inline: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.sjk-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--sjk-font, 1.6rem);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+/* 消えたマスは薄い枠だけ残す */
+.sjk-cell.gone {
+  background: transparent;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--border) 60%, transparent);
+  cursor: default;
+}
+
+.sjk-cell:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: -3px;
+}
+
+/* 選んだマス：色だけでなく枠の太さでも示す */
+.sjk-cell.selected {
+  border: 4px solid var(--brand);
+  background: color-mix(in srgb, var(--brand) 18%, var(--surface));
+}
+
+/* 組める位置（設定でオンのときだけ）。薄く示す */
+.sjk-cell.partner {
+  border-style: dashed;
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+}
+
+/* ヒント：消せる組を 1 つ光らせる */
+.sjk-cell.hint,
+.sjk-append.hint {
+  box-shadow: 0 0 0 3px var(--warn-border);
+}
+
+.sjk-cell.hint {
+  background: var(--warn-bg);
+}
+
+.sjk-board.done .sjk-cell {
+  cursor: default;
+}
+
+.sjk-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+}
+
+/* 結果の 1 行。**空でも枠は置く**（1 行ぶんの高さを確保して盤を動かさない） */
+.sjk-note {
+  height: 1.6rem;
+  line-height: 1.6rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.sjk-note.win {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.sjk-note.lose,
+.sjk-note.warn {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* 書き足す・やり直し・結果をコピー。中身が変わっても高さは 1 行で固定する */
+.sjk-actions {
+  justify-content: center;
+  flex-wrap: nowrap;
+  height: 44px;
+  margin-top: 6px;
+}
+
+.sjk-actions .btn {
+  min-height: 44px;
+}
+
+
 @media (max-width: 600px) {
   /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
   .card {
@@ -6441,6 +6646,30 @@ button.hf-card {
 
   .yn-hint-btn {
     padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  /* 数字けし。入れ物をカードの内側の余白（10px）＋枠（1px）ぶん左右にはみ出させる。
+     320px 幅で 288px になり、6 列・隙間 3px で 1 マス 45.5px（押す先 44px を割らない）。
+     `--chrome` は 390×844 で「書き足す」の行まで画面に入る値（実測で枠の上端 339px・枠の下からボタンの行の下まで約 95px） */
+  .sjk-game {
+    --chrome: 440px;
+  }
+
+  .sjk-wrap {
+    margin-inline: -11px;
+  }
+
+  .sjk-status {
+    gap: 8px;
+  }
+
+  .sjk-hint-btn {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .sjk-option {
     font-size: 0.8rem;
   }
 

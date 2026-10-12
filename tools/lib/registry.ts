@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-21',
+    updatedAt: '2026-10-11',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -137,6 +137,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/seimei-hokenryo-kojo.md
+    slug: 'seimei-hokenryo-kojo',
+    // 保険の絵で Umbrella（傘＝備え）
+    icon: 'Umbrella',
+    name: '生命保険料控除 計算機',
+    description:
+      '控除証明書の支払額を新・旧契約×3区分で入れると、保険料控除申告書に書く生命保険料控除（所得税・住民税）を計算。令和8年分から始まる「23歳未満の扶養親族がいると一般の上限6万円」の特例と、新旧の有利な採り方を自動で当てはめます。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-10-31 まで（仕様書の「公開条件」。保険料控除申告書を書く10月下旬〜11月に間に合わせる）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',
@@ -145,6 +159,32 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-08-13',
+  },
+  {
+    // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
+    slug: 'kyuyo-nenkin-kojo',
+    // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
+    icon: 'ArrowLineUp',
+    name: '給与と年金の控除 280万円上限 計算機',
+    description:
+      '2027年分から、給与所得控除と公的年金等控除の合計が280万円を超えると年金の控除が削られます。給与と年金の年額を入れると、削られる控除・増える所得税と住民税の目安・上限にかかり始める給与を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-11',
+  },
+  {
+    // 仕様: docs/features/nenkin-gensen-12gatsu-seisan.md
+    slug: 'nenkin-gensen',
+    // 12月の精算で取りすぎた分が戻る絵で ArrowCounterClockwise
+    icon: 'ArrowCounterClockwise',
+    name: '年金の源泉徴収税額 計算機',
+    description:
+      '年金から引かれる所得税を、2026年2〜10月・12月の精算・2027年以後の3つで計算。令和8年度改正で12月の年金支払時に1年分が精算され、取りすぎた分が戻ります。2027年からは年金214万円未満（65歳未満164万円未満）なら源泉徴収されません。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-12-01 まで（仕様書の「公開条件」。12月の支払通知書が届く前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
   },
   {
     // 仕様: docs/features/nenkin-seikatsusha-shien-kyufukin.md
@@ -464,6 +504,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-03',
   },
   {
+    // 仕様: docs/features/kodomo-nisa.md
+    slug: 'kodomo-nisa',
+    // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
+    icon: 'Plant',
+    name: 'こどもNISA シミュレーター',
+    description:
+      '2027年1月に始まる0〜17歳のつみたて投資枠（年60万円・上限600万円）。子の生年月日と毎月の積立額から、600万円に届く月・12歳以降に払い出せる年・大人のNISAへ移る日を日付で出します。利回りによる評価額は出しません。',
+    category: 'お金・社会保険',
+    // public の前に運営者が J-PlatPat で「こどもNISA」の商標を確認する（仕様書「公開条件」）
+    stage: 'preview',
+    updatedAt: '2026-10-06',
+  },
+  {
     // 仕様: docs/features/otc-ruijiyaku-tokubetsu-futan.md
     slug: 'otc-ruijiyaku',
     // Hospital は高額療養費、FirstAidKit は医療費控除が使っている。
@@ -623,6 +676,18 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'preview',
     updatedAt: '2026-10-07',
+  },
+  {
+    slug: 'renkyu-keisan',
+    icon: 'CalendarStar',
+    name: '連休計算機',
+    description:
+      '使える有給の日数を入れると、土日・祝日・会社の年末年始休暇をつないで最も長い連休になる日を時期ごとに計算。2026〜27年の年末年始は有給1日で9連休。「この期間を休むには有給が何日？」の逆算もできます。',
+    category: '計算・変換',
+    // 公開は遅くとも 2026-11-30 まで（仕様書の「公開条件」。2026-27 年末年始の有給申請の前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolPreview.tsx・ToolArt.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-08',
   },
   {
     slug: 'nissu-keisan',

@@ -1,4 +1,6 @@
 import {
+  ArrowCounterClockwiseIcon,
+  ArrowLineUpIcon,
   ArticleIcon,
   BabyIcon,
   BabyCarriageIcon,
@@ -9,6 +11,7 @@ import {
   CalendarHeartIcon,
   CalendarDotsIcon,
   CalendarPlusIcon,
+  CalendarStarIcon,
   CarIcon,
   CigaretteIcon,
   ClockAfternoonIcon,
@@ -36,6 +39,7 @@ import {
   PackageIcon,
   PercentIcon,
   PillIcon,
+  PlantIcon,
   PiggyBankIcon,
   QrCodeIcon,
   ReceiptIcon,
@@ -52,6 +56,7 @@ import {
   TranslateIcon,
   TrendUpIcon,
   TruckIcon,
+  UmbrellaIcon,
   UsersThreeIcon,
   WallIcon,
   WalletIcon,
@@ -76,6 +81,8 @@ import {
 type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
+  ArrowCounterClockwise: ArrowCounterClockwiseIcon,
+  ArrowLineUp: ArrowLineUpIcon,
   Article: ArticleIcon,
   Baby: BabyIcon,
   BabyCarriage: BabyCarriageIcon,
@@ -86,6 +93,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   CalendarHeart: CalendarHeartIcon,
   CalendarDots: CalendarDotsIcon,
   CalendarPlus: CalendarPlusIcon,
+  CalendarStar: CalendarStarIcon,
   Car: CarIcon,
   Cigarette: CigaretteIcon,
   ClockAfternoon: ClockAfternoonIcon,
@@ -113,6 +121,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Package: PackageIcon,
   Percent: PercentIcon,
   Pill: PillIcon,
+  Plant: PlantIcon,
   PiggyBank: PiggyBankIcon,
   QrCode: QrCodeIcon,
   Receipt: ReceiptIcon,
@@ -129,6 +138,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Translate: TranslateIcon,
   TrendUp: TrendUpIcon,
   Truck: TruckIcon,
+  Umbrella: UmbrellaIcon,
   UsersThree: UsersThreeIcon,
   Wall: WallIcon,
   Wallet: WalletIcon,
