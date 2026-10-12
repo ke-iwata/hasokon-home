@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-21',
+    updatedAt: '2026-10-11',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -145,6 +145,32 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-08-13',
+  },
+  {
+    // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
+    slug: 'kyuyo-nenkin-kojo',
+    // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
+    icon: 'ArrowLineUp',
+    name: '給与と年金の控除 280万円上限 計算機',
+    description:
+      '2027年分から、給与所得控除と公的年金等控除の合計が280万円を超えると年金の控除が削られます。給与と年金の年額を入れると、削られる控除・増える所得税と住民税の目安・上限にかかり始める給与を出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-11',
+  },
+  {
+    // 仕様: docs/features/nenkin-gensen-12gatsu-seisan.md
+    slug: 'nenkin-gensen',
+    // 12月の精算で取りすぎた分が戻る絵で ArrowCounterClockwise
+    icon: 'ArrowCounterClockwise',
+    name: '年金の源泉徴収税額 計算機',
+    description:
+      '年金から引かれる所得税を、2026年2〜10月・12月の精算・2027年以後の3つで計算。令和8年度改正で12月の年金支払時に1年分が精算され、取りすぎた分が戻ります。2027年からは年金214万円未満（65歳未満164万円未満）なら源泉徴収されません。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-12-01 まで（仕様書の「公開条件」。12月の支払通知書が届く前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
   },
   {
     // 仕様: docs/features/nenkin-seikatsusha-shien-kyufukin.md

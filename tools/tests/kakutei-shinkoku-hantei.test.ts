@@ -6,11 +6,14 @@ import {
   filingDeadline,
   filingStart,
   judge,
-  pensionIncome,
   refundDeadline,
   refundStart,
   type HanteiInput,
 } from '@/lib/kakutei-shinkoku-hantei';
+import { pensionIncome, publicPensionDeduction } from '@/lib/nenkin-kojo';
+
+/** 年金以外の所得なしでの公的年金等に係る雑所得 */
+const pIncome = (p: number, over65: boolean) => pensionIncome(p, publicPensionDeduction(over65, p, 0));
 
 /**
  * 仕様: docs/features/kakutei-shinkoku-hitsuyo-hantei.md の「テスト」11ケース。
@@ -57,12 +60,12 @@ describe('期日（TAX_YEAR から組み立てる）', () => {
 
 describe('公的年金等に係る雑所得（No.1600 の計算例）', () => {
   it('65歳以上・収入350万円 → 235万円', () => {
-    expect(pensionIncome(3_500_000, true)).toBe(2_350_000);
+    expect(pIncome(3_500_000, true)).toBe(2_350_000);
   });
   it('65歳以上は110万円まで0、65歳未満は60万円まで0', () => {
-    expect(pensionIncome(1_100_000, true)).toBe(0);
-    expect(pensionIncome(600_000, false)).toBe(0);
-    expect(pensionIncome(1_000_000, false)).toBe(400_000);
+    expect(pIncome(1_100_000, true)).toBe(0);
+    expect(pIncome(600_000, false)).toBe(0);
+    expect(pIncome(1_000_000, false)).toBe(400_000);
   });
 });
 

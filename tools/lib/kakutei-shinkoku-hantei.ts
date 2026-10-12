@@ -27,7 +27,7 @@
  *   不要な人を「要」と出す側に倒れる。申告漏れの側には倒れない）
  *
  * 【データ更新箇所】年分を上げるときは TAX_YEAR と下の閾値（一次確認の差分）だけ。
- * 給与所得控除・基礎控除は lib/furusato-nozei.ts のものを使っているので、ここには持たない。
+ * 給与所得控除・基礎控除は lib/furusato-nozei.ts、公的年金等控除は lib/nenkin-kojo.ts のものを使っているので、ここには持たない。
  */
 
 import {
@@ -36,6 +36,7 @@ import {
   salaryIncome,
 } from '@/lib/furusato-nozei';
 import { isBusinessDay } from '@/lib/nissu-keisan';
+import { pensionIncome, publicPensionDeduction } from '@/lib/nenkin-kojo';
 
 // ---------------------------------------------------------------- 制度データ
 
@@ -56,26 +57,6 @@ export const TWO_SALARIES_EXEMPT_LIMIT = 1_500_000;
 
 /** 公的年金等の収入がこれ以下なら申告不要（No.1600） */
 export const PENSION_LIMIT = 4_000_000;
-
-/**
- * 公的年金等控除（令和2年分以後・公的年金等以外の合計所得 1,000万円以下の表）。
- * 年齢は12月31日時点で65歳以上かどうか。No.1600「公的年金等に係る雑所得の速算表」
- */
-export function pensionDeduction(income: number, over65: boolean): number {
-  if (income <= 0) return 0;
-  const minimum = over65 ? 1_100_000 : 600_000;
-  let d: number;
-  if (income <= 4_100_000) d = income * 0.25 + 275_000;
-  else if (income <= 7_700_000) d = income * 0.15 + 685_000;
-  else if (income <= 10_000_000) d = income * 0.05 + 1_455_000;
-  else d = 1_955_000;
-  return Math.min(income, Math.max(minimum, d));
-}
-
-/** 公的年金等に係る雑所得 */
-export function pensionIncome(income: number, over65: boolean): number {
-  return Math.max(0, Math.floor(income - pensionDeduction(income, over65)));
-}
 
 // ---------------------------------------------------------------- 期日
 
@@ -288,7 +269,11 @@ export function judge(input: HanteiInput): HanteiResult {
   const other = hasOther ? amount(input.otherIncome) : 0;
 
   const salaryInc = salaryIncome(salaryTotal);
-  const pensionInc = pensionIncome(pensionAnnual, input.over65);
+  // 公的年金等控除の表は lib/nenkin-kojo.ts だけが持つ。表を選ぶ「年金以外の合計所得」には給与所得を含める
+  const pensionInc = pensionIncome(
+    pensionAnnual,
+    publicPensionDeduction(input.over65, pensionAnnual, salaryInc + other),
+  );
   const totalIncome = salaryInc + pensionInc + other;
 
   // 120条：基礎控除を引いても課税所得が残るか（概算。税額控除・社会保険料控除は見ない）
