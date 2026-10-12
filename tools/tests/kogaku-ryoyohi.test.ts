@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   LIMIT_TABLES,
   MULTI_THRESHOLD_COUNT,
   annualPeriodOf,
   bracketsFor,
+  ageGroupOf,
   calcKogakuRyoyohi,
+  defaultCopay,
   tableFor,
   toYm,
   type KogakuInput,
@@ -442,5 +446,134 @@ describe('入力の検証', () => {
   it('診療月を省略すると当月で判定する', () => {
     const r = calcKogakuRyoyohi({ ...base, treatmentMonth: undefined });
     expect(r.treatmentMonth).toBe(toYm(new Date()));
+  });
+});
+
+/**
+ * 70〜74歳と75歳以上の窓口負担割合の既定値。
+ * 仕様: docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の A
+ * 以前は一般・低所得IIが2割（70〜74歳）、低所得Iが1割（75歳以上）と、同じ表の中で年齢の前提が混ざっていた
+ */
+describe('70歳以上の窓口負担割合の既定値（70〜74歳と75歳以上）', () => {
+  const brackets = bracketsFor('over70', '2026-08');
+  const byId = (id: string) => brackets.find((b) => b.id === id)!;
+
+  it.each([
+    ['o70-geneki1', true, 30],
+    ['o70-ippan', true, 20],
+    ['o70-hikazei2', true, 20],
+    ['o70-hikazei1', true, 20],
+    ['o70-geneki1', false, 30],
+    ['o70-ippan', false, 10],
+    ['o70-hikazei2', false, 10],
+    ['o70-hikazei1', false, 10],
+  ] as const)('%s・70〜74歳=%s → %i%%', (id, age7074, expected) => {
+    expect(defaultCopay(byId(id), age7074)).toBe(expected);
+    expect(
+      calcKogakuRyoyohi({
+        ageGroup: 'over70',
+        bracketId: id,
+        medicalCost: 100_000,
+        pastCount: 0,
+        treatmentMonth: '2026-08',
+        age7074,
+      }).copayPercent,
+    ).toBe(expected);
+  });
+
+  it('現役並みはI〜IIIのどれも年齢にかかわらず3割', () => {
+    for (const id of ['o70-geneki1', 'o70-geneki2', 'o70-geneki3']) {
+      expect(defaultCopay(byId(id), true)).toBe(30);
+      expect(defaultCopay(byId(id), false)).toBe(30);
+    }
+  });
+
+  it('70歳未満は年齢の帯に関係なく区分の既定値（3割）', () => {
+    for (const b of bracketsFor('under70', '2026-08')) {
+      expect(defaultCopay(b, true)).toBe(30);
+      expect(defaultCopay(b, false)).toBe(30);
+    }
+  });
+
+  it('改正前の表でも同じ既定値になる（診療月で年齢の前提が変わらない）', () => {
+    const before = bracketsFor('over70', '2026-07');
+    for (const b of before.filter((x) => x.copayPercent !== 30)) {
+      expect(defaultCopay(b, true)).toBe(20);
+      expect(defaultCopay(b, false)).toBe(10);
+    }
+  });
+
+  const hikazei1Outpatient = {
+    ageGroup: 'over70' as const,
+    bracketId: 'o70-hikazei1',
+    medicalCost: 100_000,
+    pastCount: 0,
+    treatmentMonth: '2026-08',
+    outpatientOnly: true,
+  };
+
+  it('再現手順：低所得I・外来のみ・医療費10万円・70〜74歳 → 窓口20,000円・自己負担8,000円', () => {
+    const r = calcKogakuRyoyohi({ ...hikazei1Outpatient, age7074: true });
+    expect(r.copay).toBe(20_000);
+    expect(r.payment).toBe(8_000);
+    expect(r.refund).toBe(12_000);
+  });
+
+  it('再現手順：低所得I・外来のみ・医療費10万円・75歳以上 → 窓口10,000円・自己負担8,000円', () => {
+    const r = calcKogakuRyoyohi({ ...hikazei1Outpatient, age7074: false });
+    expect(r.copay).toBe(10_000);
+    expect(r.payment).toBe(8_000);
+    expect(r.refund).toBe(2_000);
+  });
+
+  it('年齢の帯を省略すると70〜74歳（2割）として扱う（窓口負担を安く見せない）', () => {
+    expect(calcKogakuRyoyohi(hikazei1Outpatient).copayPercent).toBe(20);
+  });
+
+  it('窓口負担割合を選び直せば既定値より優先される（75歳以上の一定以上所得は2割）', () => {
+    const r = calcKogakuRyoyohi({
+      ...hikazei1Outpatient,
+      bracketId: 'o70-ippan',
+      age7074: false,
+      copayPercent: 20,
+    });
+    expect(r.copayPercent).toBe(20);
+  });
+
+  it('画面の年齢は3つで、70〜74歳と75歳以上は同じ限度額の表を引く', () => {
+    expect(ageGroupOf('under70')).toBe('under70');
+    expect(ageGroupOf('age70to74')).toBe('over70');
+    expect(ageGroupOf('over75')).toBe('over70');
+  });
+});
+
+/**
+ * 多数回該当を「全区分で据え置き」と言い切らない。
+ * 70歳以上の低所得IIは月額 24,600円 → 25,700円に上がり、多数回該当 24,600円が新設された。
+ * 仕様: docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の B
+ */
+describe('多数回該当の「据え置き」の書き方', () => {
+  const page = readFileSync(join(__dirname, '../app/kogaku-ryoyohi/page.tsx'), 'utf8');
+
+  it('「70歳未満」を前置きしない「多数回該当…据え置」が本文に残っていない', () => {
+    const hits = [...page.matchAll(/(.{0,12})多数回該当[^。]{0,40}据え置/g)];
+    expect(hits.length).toBeGreaterThanOrEqual(3);
+    for (const m of hits) {
+      expect(m[1], `前置きの無い「${m[0]}」`).toMatch(/70歳未満の(<strong>)?$/);
+    }
+  });
+
+  it('低所得IIの多数回該当の新設を本文で説明している', () => {
+    expect(page).toMatch(/25,700円/);
+    expect(page.match(/多数回該当24,600円が新設/g)?.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('コード上も低所得IIは改正後に多数回該当を持ち、改正前は持たない', () => {
+    const after = bracketsFor('over70', '2026-08').find((b) => b.id === 'o70-hikazei2')!;
+    const before = bracketsFor('over70', '2026-07').find((b) => b.id === 'o70-hikazei2')!;
+    expect(after.limit.base).toBe(25_700);
+    expect(after.limit.multi).toBe(24_600);
+    expect(before.limit.base).toBe(24_600);
+    expect(before.limit.multi).toBeUndefined();
   });
 });
