@@ -216,6 +216,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
 | 公的年金等控除・280万円上限の改正時 | `lib/nenkin-kojo.ts` の表（条文の形：イ・ロ・最低額。**公的年金等控除の表はここだけ**）と `lib/kyuyo-nenkin-kojo.ts` の `CAP`。所得金額調整控除は租税特別措置法**41条の3の11**（旧41条の3の3）。基礎控除の特例加算は令和9年分まで（令和10年分は `basicDeductionIncomeTax()` を年分の引数つきにする） |
 | 年金の源泉徴収の基礎的控除額・人的控除の改正時 | `lib/nenkin-gensen.ts` の `BASIC_2026_MONTHLY` / `BASIC_SETTLEMENT_AND_2027`・`PERSONAL_MONTHLY`・`EXEMPT_BELOW`。国税庁「源泉所得税の改正のあらまし」の公的年金等の表を正とする。**令和10年分以後は242万円超が ×25%＋75,000円に変わる**ので、2028年の各回を出すなら年分の引数を足す |
+| 生命保険料控除の改正時（23歳未満の扶養の特例の延長も。毎年12月の税制改正大綱を見る） | `lib/seimei-hokenryo-kojo.ts` の `RULES_BY_YEAR`（年分ごとの特例の有無。**令和8・9年分だけ**が特例あり。延長されたら1行足す）と控除額の表（`SHOTOKU_*`・`JUMIN_*`）。国税庁 No.1140 と「令和◯年分 年末調整のしかた」を正とする。年分を上げるときは `DEFAULT_YEAR` と `app/seimei-hokenryo-kojo/page.tsx` の title・本文の「令和8年分」・画面の「2026/12/31時点」も直す |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・出産手当金・働き損・在職老齢年金の5ツールが参照） |
 | 厚生年金の標準報酬月額の上限が改正されたとき | `lib/shaho-grades.ts` の `PENSION_CAP_STAGES`（施行日つき。厚生年金 上限引き上げ計算機が `pensionCapAt(date)` で参照）。**`PENSION_STANDARD_MAX` はまだ 650,000 の1値**で、手取り・賞与手取り・働き損・ふるさと納税・在職老齢年金が参照している。**2027-08 までに施行日つきへ置き換える**（[仕様](../docs/features/kosei-nenkin-hyojun-hoshu-jogen.md)の「置き換えの約束」。基準日はツールごとに決めて引数で渡す） |
 | 全被保険者の標準報酬月額の平均額の改定時 | `lib/kenpo-daily-amount.ts` の `SHORT_TENURE_CAP`（被保険者期間12か月未満の上限。**傷病手当金・出産手当金の2ツールに効く**。協会けんぽを正とする。健保組合は別の額を定めている場合がある） |
@@ -256,10 +257,11 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール56本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
+- **ツール57本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
   `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
   `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
+  `seimei-hokenryo-kojo`（生命保険料控除）は運営者の確認後 2026-10-31 までに、
   `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、

@@ -137,6 +137,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/seimei-hokenryo-kojo.md
+    slug: 'seimei-hokenryo-kojo',
+    // 保険の絵で Umbrella（傘＝備え）
+    icon: 'Umbrella',
+    name: '生命保険料控除 計算機',
+    description:
+      '控除証明書の支払額を新・旧契約×3区分で入れると、保険料控除申告書に書く生命保険料控除（所得税・住民税）を計算。令和8年分から始まる「23歳未満の扶養親族がいると一般の上限6万円」の特例と、新旧の有利な採り方を自動で当てはめます。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-10-31 まで（仕様書の「公開条件」。保険料控除申告書を書く10月下旬〜11月に間に合わせる）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',
