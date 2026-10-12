@@ -6,6 +6,7 @@ import { metadata as idecoMeta } from '@/app/ideco/page';
 import { metadata as invoiceMeta } from '@/app/invoice-nozeigaku/page';
 import { metadata as iryohiMeta } from '@/app/iryohi-kojo/page';
 import { metadata as kokunenMeta } from '@/app/kokunen-ikuji-menjo/page';
+import { metadata as nenkinGensenMeta } from '@/app/nenkin-gensen/page';
 import { metadata as nenshuKabeMeta } from '@/app/nenshu-kabe/page';
 import { metadata as saiteiChinginMeta } from '@/app/saitei-chingin/page';
 import { metadata as shuzeiMeta } from '@/app/shuzei-kaisei/page';
@@ -15,6 +16,7 @@ import { REFORM_EFFECTIVE_FROM } from '@/lib/ideco';
 import { PURCHASE_TRANSITION } from '@/lib/invoice-nozeigaku';
 import { SELF_MED_REFORM_EFFECTIVE_ON } from '@/lib/iryohi-kojo';
 import { IKUJI_START } from '@/lib/kokunen-ikuji-menjo';
+import { SETTLEMENT_PAYMENT_ON } from '@/lib/nenkin-gensen';
 import { WAGE_REQUIREMENT_ABOLISHED_ON } from '@/lib/nenshu-kabe';
 import { tools } from '@/lib/registry';
 import { REVISION_DATE } from '@/lib/shuzei-kaisei';
@@ -138,6 +140,15 @@ const ENTRIES: Entry[] = [
     patterns: [],
     sourcePatterns: [/見直されるので/],
     description: String(iryohiMeta.description),
+  },
+  {
+    // 12月の精算（2026-12-15 の年金支払）を過ぎたら「戻ります」「差し引かれます」を過去形に直す。
+    // FAQ の「精算します」は仕組みの説明なので見ない。仕様: docs/features/nenkin-gensen-12gatsu-seisan.md
+    slug: 'nenkin-gensen',
+    effectiveOn: SETTLEMENT_PAYMENT_ON,
+    patterns: [/が戻ります/, /精算されます/],
+    sourcePatterns: [/足りなければ戻ります/, /差し引かれます/],
+    description: String(nenkinGensenMeta.description),
   },
 ];
 
