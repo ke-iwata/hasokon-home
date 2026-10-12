@@ -17,7 +17,7 @@
  */
 
 import { addDays, compareDate, dayOfWeek, daysBetween, weekdayLabel, type DateParts } from './date-parts';
-import { HOLIDAY_LAST_YEAR, inHolidayRange, isBusinessDay, nonBusinessReason } from './nissu-keisan';
+import { HOLIDAY_LAST_YEAR, holidayName, inHolidayRange, isBusinessDay, nonBusinessReason } from './nissu-keisan';
 
 export { formatDate, parseDate, type DateParts } from './date-parts';
 
@@ -46,6 +46,12 @@ export interface Rule {
   onsetLabel: string;
   /** 起点 B の入力欄のラベル */
   recoveryLabel: string;
+  /** カレンダーの起点 A の印（1 文字）と凡例の名前。起点 A が無い病気では使わない */
+  onsetMark: string;
+  onsetName: string;
+  /** カレンダーの起点 B の印（1 文字）と凡例の名前。起点 B が無い病気では使わない */
+  recoveryMark: string;
+  recoveryName: string;
   /** 「まだ◯」の選択肢の文面（起点 B が無い病気では使わない） */
   notYetLabel: string;
   /** 日付にできない条件（「全身状態が良好になるまで」など）。あれば画面に併記 */
@@ -66,6 +72,10 @@ export const RULES: Record<Exclude<Disease, 'other'>, Rule> = {
     onsetLabel: '発症した日（熱などの症状が出た日）',
     recoveryLabel: '解熱した日',
     notYetLabel: 'まだ熱がある',
+    onsetMark: '発',
+    onsetName: '発症した日',
+    recoveryMark: '解',
+    recoveryName: '解熱した日',
   },
   covid19: {
     name: '新型コロナ',
@@ -76,6 +86,10 @@ export const RULES: Record<Exclude<Disease, 'other'>, Rule> = {
     onsetLabel: '発症した日（熱などの症状が出た日）',
     recoveryLabel: '症状が軽快した日',
     notYetLabel: 'まだ症状が軽快していない',
+    onsetMark: '発',
+    onsetName: '発症した日',
+    recoveryMark: '軽',
+    recoveryName: '症状が軽快した日',
   },
   measles: {
     name: '麻しん（はしか）',
@@ -86,6 +100,10 @@ export const RULES: Record<Exclude<Disease, 'other'>, Rule> = {
     onsetLabel: '発症した日',
     recoveryLabel: '解熱した日',
     notYetLabel: 'まだ熱がある',
+    onsetMark: '発',
+    onsetName: '発症した日',
+    recoveryMark: '解',
+    recoveryName: '解熱した日',
   },
   mumps: {
     name: 'おたふくかぜ（流行性耳下腺炎）',
@@ -96,6 +114,10 @@ export const RULES: Record<Exclude<Disease, 'other'>, Rule> = {
     onsetLabel: '腫れが出た日（耳の下・あごの下が腫れた日）',
     recoveryLabel: '',
     notYetLabel: '',
+    onsetMark: '腫',
+    onsetName: '腫れが出た日',
+    recoveryMark: '',
+    recoveryName: '',
     extraCondition: '「全身状態が良好になるまで」は日付にできません。この日より後でも、元気になっていなければ出席停止が続きます',
   },
   pcf: {
@@ -107,6 +129,10 @@ export const RULES: Record<Exclude<Disease, 'other'>, Rule> = {
     onsetLabel: '発症した日',
     recoveryLabel: '主な症状（熱・のどの痛み・目の充血）が消えた日',
     notYetLabel: 'まだ症状がある',
+    onsetMark: '発',
+    onsetName: '発症した日',
+    recoveryMark: '消',
+    recoveryName: '主な症状が消えた日',
   },
 };
 
@@ -328,4 +354,4 @@ export function buildCalendar(r: ReturnResult, onset: DateParts | null): (Calend
 }
 
 /** 祝日データの最終年（画面の注記用） */
-export { HOLIDAY_LAST_YEAR };
+export { HOLIDAY_LAST_YEAR, holidayName, inHolidayRange };

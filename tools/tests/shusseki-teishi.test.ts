@@ -53,6 +53,15 @@ describe('条文の日数', () => {
     expect(RULES.covid19.afterOnsetDays).toBe(5);
     for (const g of ['school', 'preschool', 'adult'] as const) expect(RULES.covid19.afterRecoveryDays!(g)).toBe(1);
   });
+  it('カレンダーの印と凡例の名前は病気の起点に合わせる（おたふくかぜは「腫れが出た日」）', () => {
+    expect(RULES.mumps.onsetMark).toBe('腫');
+    expect(RULES.mumps.onsetName).toBe('腫れが出た日');
+    expect(RULES.covid19.recoveryName).toBe('症状が軽快した日');
+    for (const r of Object.values(RULES)) {
+      if (r.afterOnsetDays !== null) expect(r.onsetMark).toHaveLength(1);
+      if (r.afterRecoveryDays !== null) expect(r.recoveryMark).toHaveLength(1);
+    }
+  });
   it('おたふくかぜは日付にできない条件を併記する', () => {
     expect(RULES.mumps.extraCondition).toContain('全身状態が良好');
   });

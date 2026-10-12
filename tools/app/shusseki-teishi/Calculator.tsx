@@ -14,11 +14,13 @@ import {
   formatDate,
   formatMd,
   headline,
+  holidayName,
   parseDate,
   type CalendarCell,
   type DateParts,
   type Disease,
   type Group,
+  type Rule,
 } from '@/lib/shusseki-teishi';
 
 const DISEASES: Disease[] = ['influenza', 'covid19', 'measles', 'mumps', 'pcf', 'other'];
@@ -51,7 +53,7 @@ const WEEK = ['日', '月', '火', '水', '木', '金', '土'];
 /** 320px 幅で 7 列が収まるよう余白を詰める */
 const cellBase = { padding: '4px 2px', textAlign: 'center' as const, fontSize: '0.8rem', lineHeight: 1.3 };
 
-function Cell({ c, recLabel }: { c: CalendarCell | null; recLabel: string }) {
+function Cell({ c, rule }: { c: CalendarCell | null; rule: Rule }) {
   if (!c) return <td style={cellBase} />;
   const style = {
     ...cellBase,
@@ -68,16 +70,26 @@ function Cell({ c, recLabel }: { c: CalendarCell | null; recLabel: string }) {
       </div>
       {c.state === 'stop' ? (
         <div className="hint" style={{ fontSize: '0.7rem' }}>
-          {c.onsetIndex !== null && <div>発{c.onsetIndex}</div>}
+          {c.onsetIndex !== null && (
+            <div>
+              {rule.onsetMark}
+              {c.onsetIndex}
+            </div>
+          )}
           {c.recoveryIndex !== null && (
             <div>
-              {recLabel[0]}
+              {rule.recoveryMark}
               {c.recoveryIndex}
             </div>
           )}
         </div>
       ) : (
         c.state === 'return' && <div style={{ fontSize: '0.7rem' }}>OK</div>
+      )}
+      {holidayName(c.date) && (
+        <div className="hint" style={{ fontSize: '0.7rem' }} title={holidayName(c.date) ?? undefined}>
+          祝
+        </div>
       )}
     </td>
   );
@@ -158,7 +170,7 @@ export default function Calculator() {
       </div>
 
       {rule && (
-        <div className="field-row">
+        <div>
           {usesOnset && (
             <div className="field">
               <label htmlFor="shusseki-onset">{rule.onsetLabel}</label>
@@ -177,7 +189,7 @@ export default function Calculator() {
               <input
                 id="shusseki-recovery"
                 type="date"
-                value={recovery}
+                value={notYet ? '' : recovery}
                 disabled={notYet}
                 onChange={(e) => setRecovery(e.target.value)}
                 onBlur={() => trackToolUse('shusseki-teishi', 'recovery')}
@@ -190,6 +202,7 @@ export default function Calculator() {
                   style={{ width: 'auto' }}
                 />
                 {rule.notYetLabel}
+                {notYet && '（今日として計算します）'}
               </label>
             </div>
           )}
@@ -271,7 +284,14 @@ export default function Calculator() {
 
           <table style={{ marginTop: 10, width: '100%', tableLayout: 'fixed' }}>
             <caption className="hint" style={{ textAlign: 'left' }}>
-              灰色が出席停止の日、枠が{VERB[group]}できる日。「発」は発症日から、「{recLabel[0]}」は{recLabel}した日から数えた日数（その日が0日目）
+              灰色が出席停止の日、枠が{VERB[group]}できる日。
+              {[
+                result.byOnset && `「${rule.onsetMark}」は${rule.onsetName}から`,
+                result.byRecovery && `「${rule.recoveryMark}」は${rule.recoveryName}から`,
+              ]
+                .filter(Boolean)
+                .join('、')}
+              数えた日数（その日が0日目）。「祝」は祝日
             </caption>
             <thead>
               <tr>
@@ -286,7 +306,7 @@ export default function Calculator() {
               {buildCalendar(result, onsetDate).map((week, i) => (
                 <tr key={i}>
                   {week.map((c, j) => (
-                    <Cell key={c ? formatDate(c.date) : `x${j}`} c={c} recLabel={recLabel} />
+                    <Cell key={c ? formatDate(c.date) : `x${j}`} c={c} rule={rule} />
                   ))}
                 </tr>
               ))}
