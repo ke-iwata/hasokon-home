@@ -214,6 +214,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年3月 | 協会けんぽの料率改定を `lib/shaho-ryoritsu.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照）。**保険料率の定義は `lib/shaho-ryoritsu.ts` の1か所だけ**で、`lib/hatarakizon.ts` は同名で re-export しているだけ。**働き損・手取り・ふるさと納税・年末調整・iDeCo・医療費控除の6ツールに効く** |
 | 毎年4月 | 雇用保険料率（労働者負担・一般の事業）を `lib/shaho-ryoritsu.ts` の `EMPLOYMENT_RATE` に反映。厚生労働省が毎年出す「令和◯年度の雇用保険料率」のPDF（[令和8年度](https://www.mhlw.go.jp/content/001692566.pdf)）を正とする（令和8年度は 5/1,000。**①労働者負担の欄を見る**。合計の 13.5/1,000 や事業主負担と取り違えないこと）。`tests/hatarakizon.test.ts` が率そのものを固定しているので、直し忘れではなく「直したこと」が差分に出る |
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
+| 公的年金等控除・280万円上限の改正時 | `lib/nenkin-kojo.ts` の表（条文の形：イ・ロ・最低額。**公的年金等控除の表はここだけ**）と `lib/kyuyo-nenkin-kojo.ts` の `CAP`。所得金額調整控除は租税特別措置法**41条の3の11**（旧41条の3の3）。基礎控除の特例加算は令和9年分まで（令和10年分は `basicDeductionIncomeTax()` を年分の引数つきにする） |
 | 等級表の改定時 | `lib/shaho-grades.ts` の `GRADES`（支援金・傷病手当金・出産手当金・働き損・在職老齢年金の5ツールが参照） |
 | 厚生年金の標準報酬月額の上限が改正されたとき | `lib/shaho-grades.ts` の `PENSION_CAP_STAGES`（施行日つき。厚生年金 上限引き上げ計算機が `pensionCapAt(date)` で参照）。**`PENSION_STANDARD_MAX` はまだ 650,000 の1値**で、手取り・賞与手取り・働き損・ふるさと納税・在職老齢年金が参照している。**2027-08 までに施行日つきへ置き換える**（[仕様](../docs/features/kosei-nenkin-hyojun-hoshu-jogen.md)の「置き換えの約束」。基準日はツールごとに決めて引数で渡す） |
 | 全被保険者の標準報酬月額の平均額の改定時 | `lib/kenpo-daily-amount.ts` の `SHORT_TENURE_CAP`（被保険者期間12か月未満の上限。**傷病手当金・出産手当金の2ツールに効く**。協会けんぽを正とする。健保組合は別の額を定めている場合がある） |
@@ -221,9 +222,11 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年8月1日（育児休業給付） | `lib/ikuji-kyugyo.ts` の `WAGE_DAILY_MAX` / `WAGE_DAILY_MIN` と支給上限額・下限額（`UNIT_CAP_*` / `UNIT_FLOOR_*` / `SHUSSHOGO_CAP` / `SHUSSHOGO_FLOOR` / `SHUSSHOJI_CAP`）を、厚労省「育児休業等給付の内容と支給申請手続」の改訂版か支給限度額のリーフレットから写し、`LIMIT_LABEL` / `LIMIT_EFFECTIVE_FROM` / `LIMIT_EFFECTIVE_UNTIL` / `DATA_CHECKED_AT` を直す。**失業保険と同じ日に改定されるが別表**（年齢区分が無い）なので、`lib/shitsugyo-hoken.ts` の値を写し合わせないこと。一次情報も基本手当の告示ではなく育児休業給付側から取る。給付率（67%/50%/13%）と180日・28日は法律なので毎年は変わらない。**同じPRで `lib/ikuji-jitan-kyufu.ts`（育児時短就業給付）の `START_WAGE_DAILY_MAX` / `START_WAGE_DAILY_MIN`（同じ表）と支給限度額 `LIMIT_MAX`・最低限度額 `LIMIT_MIN`、`LIMIT_*` / `DATA_CHECKED_AT` も直す**（`tests/ikuji-jitan-kyufu.test.ts` が2本の食い違いを落とす） |
 | 毎年8〜10月（最低賃金） | 各労働局の答申 →**決定・公示**を追って `lib/saitei-chingin.ts` の `PREFECTURES` を更新する。**`effectiveOn` には決定公示で確認した日付だけを入れる**（答申文の「最短で」「早ければ」は入れない）。確認できない県は厚労省の別紙の「発効日（予定）」を `plannedEffectiveOn` に入れる（**予定日では「発効済み」にしない**。予定日を過ぎたら `plannedDatePassed` が立ち、UIは日付を引っ込める）。決定公示が確認できたら `plannedEffectiveOn` を `effectiveOn` に移して出典も差し替える。`DATA_CHECKED_AT` も毎回進める。出典は `node scripts/check-sources.mjs` で生存確認する |
 | 毎年8月1日（失業保険） | `lib/shitsugyo-hoken.ts` の `BENEFIT_RATE_RULES` / `WAGE_DAILY_MIN` / `BENEFIT_DAILY_MIN` / `TAPER_FROM` を、厚労省が7月末の官報公布後に出す「基本手当日額の計算式及び金額」のPDF（[令和8年8月1日～](https://www.mhlw.go.jp/content/001726936.pdf)）から写し、`RATE_TABLE_LABEL` / `RATE_TABLE_EFFECTIVE_FROM` / `DATA_CHECKED_AT` を直す。**屈折点（80%が終わる額・逓減帯の上端）も毎年動く**ので上限額だけ直さないこと。所定給付日数のテーブルは法律なので毎年は変わらない |
+| こどもNISAの政省令・金融庁Q&Aが出たとき | `lib/kodomo-nisa.ts` の冒頭の定数と `DATA_CHECKED_AT`。**600万円が大人の1,800万円の内か・払い出した分の枠が戻るか**が確定したら、ページの「政省令待ち」の文言を直す（[仕様](../docs/features/kodomo-nisa.md)の要確認3・4） |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
-| ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**早見表の見出し・title・description の年表記**（「2026年・令和8年分」）。早見表の数値はロジックから生成されるので自動で追随するが、年の文字列だけは追随しない |
+| 毎年1月1日（ふるさと納税の年分） | `lib/furusato-nozei.ts` の `DEFAULT_TAX_YEAR` を1行上げ、`app/furusato-nozei/page.tsx` の title・description の「令和N年分」を直す（元日以降の CI を `tests/furusato-tax-year.test.ts` が落として知らせる）。新しい年分は `TAX_YEARS` と `SPECIAL_CAP_FIXED`（特例分の定額上限。令和9年分から193万円）に1行ずつ足す。年分の切り替えのラジオは `TAX_YEAR_SELECTOR_UNTIL`（2027-03-15）を過ぎると畳まれる。[仕様](../docs/features/furusato-nozei-r9-kirikae.md) |
+| ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**title・description の年表記**（「令和8年分」）。早見表の数値と見出しの年分は `DEFAULT_TAX_YEAR` から生成されるので自動で追随するが、title・description と本文の改正の説明の年の文字列は追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 毎年1月（国民年金保険料の翌年度額が公表されたら） | `lib/kokunen-ikuji-menjo.ts` の `MONTHLY_PREMIUM` に翌年度の月額を1行足し、`DATA_CHECKED_AT` を直す（日本年金機構「国民年金保険料」を正とする）。足すまでは未公表の年度を最新年度の額で概算し、画面に「概算」と出る |
 | 贈与税・相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/zoyozei-keisan.ts` の速算表2本（`GENERAL_BRACKETS` / `SPECIAL_BRACKETS`）・`BASIC_DEDUCTION`・`EXTENDED_EXCLUSION`・精算課税の `SETTLEMENT_*`・加算期間の切り替え日 `TRANSITION`。国税庁 No.4408・No.4161・No.4103 を正とし、`DATA_CHECKED_AT` を進める。`app/zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の**適用期限**（住宅取得等資金 2026-12-31・結婚子育て 2027-03-31）も同じときに確かめる。**加算されるかは贈与日ではなく相続開始日で決まる**（「2026年内に駆け込むと有利」と読める文言を置かない） |
@@ -252,9 +255,10 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール59本（`nenkin-shien-kyufukin`・`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`shusseki-teishi` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
+- **ツール62本（`nenkin-shien-kyufukin`・`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`renkyu-keisan`・`shusseki-teishi` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`shusseki-teishi`（出席停止期間）は冬の流行期の前の 2026-11-30 までに `public` にする）** /
+  `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`renkyu-keisan`（連休計算機）と `shusseki-teishi`（出席停止期間）は運営者の確認後 2026-11-30 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
