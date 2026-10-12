@@ -1,4 +1,5 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowLineUpIcon,
   ArticleIcon,
   BabyIcon,
@@ -79,6 +80,7 @@ import {
 type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
+  ArrowCounterClockwise: ArrowCounterClockwiseIcon,
   ArrowLineUp: ArrowLineUpIcon,
   Article: ArticleIcon,
   Baby: BabyIcon,

@@ -159,6 +159,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-11',
   },
   {
+    // 仕様: docs/features/nenkin-gensen-12gatsu-seisan.md
+    slug: 'nenkin-gensen',
+    // 12月の精算で取りすぎた分が戻る絵で ArrowCounterClockwise
+    icon: 'ArrowCounterClockwise',
+    name: '年金の源泉徴収税額 計算機',
+    description:
+      '年金から引かれる所得税を、2026年2〜10月・12月の精算・2027年以後の3つで計算。令和8年度改正で12月の年金支払時に1年分が精算され、取りすぎた分が戻ります。2027年からは年金214万円未満（65歳未満164万円未満）なら源泉徴収されません。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-12-01 まで（仕様書の「公開条件」。12月の支払通知書が届く前）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
+  },
+  {
     // 仕様: docs/features/nenkin-seikatsusha-shien-kyufukin.md
     slug: 'nenkin-shien-kyufukin',
     // HandCoins は年末調整、Coins は iDeCo、PiggyBank・Wallet・MoneyWavy も使用済み。
