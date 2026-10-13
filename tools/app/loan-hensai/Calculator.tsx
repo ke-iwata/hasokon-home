@@ -8,11 +8,13 @@ import {
   PREPAY_TYPE_LABEL,
   RATE_CHANGES_MAX,
   compareMethods,
+  effectivePrepayments,
   formatMonths,
   formatYen as yen,
   kojoLimitRange,
   parseNumber,
   prepayEffect,
+  rateChangesWithinTerm,
   burdenRatio,
   simulate,
   validate,
@@ -30,6 +32,9 @@ const MAN = 10_000;
 const TABLE_FIRST_ROWS = 10;
 /** 繰上返済の入力欄の数 */
 const PREPAY_SLOTS = 3;
+/** 返済開始（年）として受け付ける範囲 */
+const START_YEAR_MIN = 1980;
+const START_YEAR_MAX = 2100;
 
 interface PrepayRow {
   year: string;
@@ -70,6 +75,12 @@ export default function Calculator() {
   const [rule125, setRule125] = useState(true);
   const [incomeMan, setIncomeMan] = useState('');
   const [showAll, setShowAll] = useState(false);
+  // 返済開始（年）は入力欄の文字列を持ち、年として読めるときだけ使う（打ち直しの途中の「202」を通さない）
+  // null の間は start.y（来月の年）をそのまま見せる
+  const [startYearText, setStartYearText] = useState<string | null>(null);
+  const typedYear = startYearText === null ? NaN : parseNumber(startYearText);
+  const startYear =
+    Number.isInteger(typedYear) && typedYear >= START_YEAR_MIN && typedYear <= START_YEAR_MAX ? typedYear : start.y;
 
   const baseRate = parseNumber(rate);
   const input: LoanInput = {
@@ -92,9 +103,12 @@ export default function Calculator() {
   const r = error ? null : simulate(input);
   const cmp = error ? null : compareMethods(input);
   const effect = error ? null : prepayEffect(input);
-  const hasRateChange = (input.rateChanges ?? []).length > 0;
+  // 返済期間の中で実際に金利が変わるときだけ「金利が上がったとき」を出す（lib の 125%ルールと同じ判定）
+  const hasRateChange = !error && rateChangesWithinTerm(input);
+  // 最終年の終わりなど、計算に入らない繰上返済があるか
+  const droppedPrepay = (input.prepayments ?? []).length > effectivePrepayments(input).length;
   const flat = hasRateChange && !error ? simulate({ ...input, rateChanges: [] }) : null;
-  const table = r ? yearEndTable(r, start.y, start.m) : [];
+  const table = r ? yearEndTable(r, startYear, start.m) : [];
   const ratio = r ? burdenRatio(r, parseNumber(incomeMan) * MAN) : null;
   const limits = kojoLimitRange();
   const linkKojo = isPublicTool('jutaku-loan-kojo');
@@ -161,8 +175,14 @@ export default function Calculator() {
           </label>
           <label>
             返済開始（年）
-            <input type="number" inputMode="numeric" value={start.y}
-              onChange={(e) => setStart({ ...start, y: Math.floor(parseNumber(e.target.value)) || start.y })} />
+            <input type="number" inputMode="numeric" min={START_YEAR_MIN} max={START_YEAR_MAX}
+              value={startYearText ?? String(start.y)}
+              onChange={(e) => setStartYearText(e.target.value)}
+              onBlur={() => {
+                // 確定した値だけを残す。読めない値なら直前の年に戻す
+                setStart({ ...start, y: startYear });
+                setStartYearText(null);
+              }} />
           </label>
           <label>
             返済開始（月）
@@ -206,6 +226,11 @@ export default function Calculator() {
         <p className="hint" style={{ marginTop: 4 }}>
           「10年目の終わり」は120回目の返済の後に元金へ充てる扱いです。手数料は含めていません。ボーナス払いの分には充てません。
         </p>
+        {droppedPrepay && (
+          <p className="hint" style={{ marginTop: 4 }}>
+            返済の最終年（{years}年目）の終わり以降には繰上返済を入れられません。その行は計算に入れていません。
+          </p>
+        )}
       </details>
 
       <details style={{ marginTop: 10 }}>
@@ -300,7 +325,7 @@ export default function Calculator() {
             </tbody>
           </table>
           {table.length > TABLE_FIRST_ROWS && (
-            <button type="button" onClick={() => setShowAll(!showAll)} style={{ marginTop: 8 }}>
+            <button type="button" onClick={() => setShowAll(!showAll)} style={{ marginTop: 8, padding: '10px 16px', minHeight: 44 }}>
               {showAll ? '最初の10年だけ表示' : `すべて表示（${table.length}年分）`}
             </button>
           )}

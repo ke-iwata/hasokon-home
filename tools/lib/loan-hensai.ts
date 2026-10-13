@@ -366,6 +366,29 @@ export function rateSchedule(ratePercent: number, changes: RateChange[] = []): (
   };
 }
 
+/** 返済期間の中で、当初と違う金利になる月があるか（期間の外の変化・変化幅 0 は数えない） */
+export function rateChangesWithinTerm(input: LoanInput): boolean {
+  const months = input.years * 12;
+  if (!Number.isFinite(months)) return false;
+  const base = toRateMilli(input.ratePercent);
+  const rateAt = rateSchedule(input.ratePercent, input.rateChanges);
+  for (let m = 1; m <= months; m += 1) if (rateAt(m) !== base) return true;
+  return false;
+}
+
+/**
+ * 計算に使う繰上返済（1 回目の返済の後〜最終回の前まで・額が正のものだけ）。
+ * 最終年の終わり（`afterPayment` が返済回数以上）は入れられない。
+ */
+export function effectivePrepayments(input: LoanInput): Prepayment[] {
+  const months = input.years * 12;
+  return (input.prepayments ?? []).filter((p) => {
+    if (!Number.isFinite(p.afterPayment) || !Number.isFinite(p.amount) || p.amount <= 0) return false;
+    const k = Math.floor(p.afterPayment);
+    return k >= 1 && k < months;
+  });
+}
+
 /** ローン返済のシミュレーション。入力が範囲外なら null */
 export function simulate(input: LoanInput): LoanResult | null {
   if (validate(input)) return null;
@@ -373,16 +396,14 @@ export function simulate(input: LoanInput): LoanResult | null {
   const bonusPrincipal = Math.floor(input.bonusPrincipal ?? 0);
   const months = input.years * 12;
   const rateAt = rateSchedule(input.ratePercent, input.rateChanges);
-  // 5年ルール・125%ルールは元利均等で、金利の変化を入れたときだけ当てる。
+  // 5年ルール・125%ルールは元利均等で、**返済期間の中で実際に金利が変わるときだけ**当てる。
   // 金利が変わらないのに見直しで引き直すと、端数で 1 円ずつ動いて最終回の額がずれる
-  const rule125 =
-    input.method === 'ganri' && (input.rule125 ?? false) && (input.rateChanges ?? []).length > 0;
+  // （期間の外の変化や「+0%」でも同じ。上がったはずなのに利息が少なく見えてしまう）
+  const rule125 = input.method === 'ganri' && (input.rule125 ?? false) && rateChangesWithinTerm(input);
 
   const prepayments = new Map<number, Prepayment[]>();
-  for (const p of input.prepayments ?? []) {
-    if (!Number.isFinite(p.afterPayment) || !Number.isFinite(p.amount) || p.amount <= 0) continue;
+  for (const p of effectivePrepayments(input)) {
     const k = Math.floor(p.afterPayment);
-    if (k < 1 || k >= months) continue;
     prepayments.set(k, [...(prepayments.get(k) ?? []), p]);
   }
 
@@ -512,19 +533,23 @@ export interface PrepayEffect {
 
 /** 繰上返済の効果。繰上返済の無い同じ条件と比べる */
 export function prepayEffect(input: LoanInput): PrepayEffect | null {
-  const pre = input.prepayments ?? [];
+  // simulate と同じ条件で絞る。効く繰上返済が無ければ「減る利息 0円」と出さずに null を返す
+  const pre = effectivePrepayments(input);
   if (pre.length === 0) return null;
   const withPre = simulate(input);
   const without = simulate({ ...input, prepayments: [] });
   if (!withPre || !without) return null;
   const lastAfter = Math.max(...pre.map((p) => Math.floor(p.afterPayment)));
+  // 期間短縮では返済額の「下がった分」を出さない（元金均等の期間短縮でも利息が減って額は下がるが、
+  // 期間短縮なのに額が下がると読めて紛らわしいため。仕様書「出力」4）
+  const lastType = pre.filter((p) => Math.floor(p.afterPayment) === lastAfter).at(-1)?.type;
   const rowAfter = withPre.monthly.rows.find((r) => r.k === lastAfter + 1);
   const rowBefore = without.monthly.rows.find((r) => r.k === lastAfter + 1);
   const paymentAfter = rowAfter?.payment ?? 0;
   return {
     monthsShortened: without.monthly.lastMonth - withPre.monthly.lastMonth,
     interestSaved: without.totalInterest - withPre.totalInterest,
-    paymentDrop: rowAfter && rowBefore ? rowBefore.payment - rowAfter.payment : 0,
+    paymentDrop: lastType === 'reduce' && rowAfter && rowBefore ? rowBefore.payment - rowAfter.payment : 0,
     paymentAfter,
   };
 }

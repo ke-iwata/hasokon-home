@@ -8,6 +8,19 @@
 
 ---
 
+## 2026-10-12：年収の壁・働き損の2ツールで「19〜22歳」と「学生」を別の入力に分けた
+
+[features/fuyo-19-22sai-nenrei-kijun.md](../../docs/features/fuyo-19-22sai-nenrei-kijun.md)。
+社保の150万円・特定親族特別控除（159万・197万円）は**年齢だけ**が要件で学生要件は無い（日本年金機構 Q&A）のに、
+立場の選択肢「親の扶養内・19〜22歳の学生」に束ねていたため、学生でない19〜22歳に130万・136万円の誤った壁を出していた。
+
+- `Position` の `'student'` を **`'age19to22'`** に置き換え、学生かどうかは別のチェックボックス（`isStudent`）にした
+- 150万・159万・197万円は `age19to22`、163万円（ラベルは「（勤労学生）」）と昼間部の注記は **`isStudentFor()`**
+  （`isStudent && position !== 'spouse'`）。画面でも `spouse` のときは `isStudent: false` で渡す（2段で防ぐ）
+- `DEPENDENT_LIMIT_STUDENT` → `DEPENDENT_LIMIT_19_22` に改名
+- 「（学生）」「学生の扶養認定基準」「19〜22歳の学生は150万円」が戻らないよう `tests/fuyo-19-22-copy.test.ts` が見張る
+- 入力は URL・localStorage に保存していないので移行は不要（足すなら旧値 `student` は `age19to22` + `isStudent: true`）
+
 ## 2026-10-08：連休計算機を足した（stage: preview）
 
 [features/renkyu-keisan.md](../../docs/features/renkyu-keisan.md)。有給の日数から「何連休になるか」を時期ごとに出し、逆に期間から必要な有給を出す。

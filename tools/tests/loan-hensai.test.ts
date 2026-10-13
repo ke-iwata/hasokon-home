@@ -7,9 +7,11 @@ import {
   balanceAfter,
   burdenRatio,
   compareMethods,
+  effectivePrepayments,
   kojoEstimate,
   kojoLimitRange,
   prepayEffect,
+  rateChangesWithinTerm,
   simulate,
   validate,
   yearEndTable,
@@ -122,6 +124,21 @@ describe('5年ルール・125%ルール（7・7b・7c）', () => {
     expect(r.totalInterest).toBe(5_567_804);
   });
 
+  it('返済期間の外の変化・+0% の変化では、ルールを当てる設定でも 1 と同じ結果（#379 のレビュー）', () => {
+    for (const rateChanges of [
+      [{ fromPayment: 481, ratePercent: 2.0 }], // 40 年後から +1%（35 年ローンの期間の外）
+      [{ fromPayment: 61, ratePercent: 1.0 }], // 5 年後から +0%
+    ]) {
+      const input: LoanInput = { ...BASE, rule125: true, rateChanges };
+      expect(rateChangesWithinTerm(input)).toBe(false);
+      const r = run(input);
+      expect(r.monthly.reviews).toHaveLength(0);
+      expect(r.monthly.finalPayment).toBe(84_789);
+      expect(r.totalInterest).toBe(5_567_804);
+    }
+    expect(rateChangesWithinTerm({ ...BASE, rateChanges: [{ fromPayment: 420, ratePercent: 2.0 }] })).toBe(true);
+  });
+
   it('見直しまでのあいだに金利が変わっても、返済額は変えず内訳だけが変わる', () => {
     const r = run({ ...BASE, rule125: true, rateChanges: [{ fromPayment: 30, ratePercent: 2.0 }] });
     expect(r.monthly.rows[29].payment).toBe(84_685);
@@ -188,6 +205,25 @@ describe('繰上返済（8）', () => {
     expect(r.monthly.lastMonth).toBe(12);
     expect(r.monthly.totalPrepaid).toBe(29_280_480);
     expect(r.totalPaid).toBe(30_000_000 + r.totalInterest);
+  });
+
+  it('最終年の終わりの繰上返済は計算に入れず、効果も null（「減る利息 0円」と出さない）', () => {
+    const input: LoanInput = { ...BASE, prepayments: [{ afterPayment: 420, amount: 1_000_000, type: 'shorten' }] };
+    expect(effectivePrepayments(input)).toHaveLength(0);
+    expect(prepayEffect(input)).toBeNull();
+    expect(run(input).totalInterest).toBe(5_567_804);
+    // 419 回目の後は入れられる
+    expect(effectivePrepayments({ ...BASE, prepayments: [{ afterPayment: 419, amount: 10_000, type: 'shorten' }] })).toHaveLength(1);
+  });
+
+  it('期間短縮では「毎月の返済額が下がる」を出さない（元金均等でも）', () => {
+    const e = prepayEffect({
+      ...BASE,
+      method: 'gankin',
+      prepayments: [{ afterPayment: 120, amount: 1_000_000, type: 'shorten' }],
+    })!;
+    expect(e.paymentDrop).toBe(0);
+    expect(e.monthsShortened).toBeGreaterThan(0);
   });
 
   it('繰上返済が無ければ効果は null', () => {
