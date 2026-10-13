@@ -548,6 +548,23 @@ describe('70歳以上の窓口負担割合の既定値（70〜74歳と75歳以�
 });
 
 /**
+ * 医療費の入力欄のヒント。copayPercent / 10 は「割」の数で倍率ではないので、
+ * 「その◯倍」と書くと1割の人に「その1倍にあたる医療費の総額」という矛盾した文が出る（#378 のレビュー）
+ */
+describe('医療費の入力欄のヒント', () => {
+  const calculator = readFileSync(join(__dirname, '../app/kogaku-ryoyohi/Calculator.tsx'), 'utf8');
+
+  it('窓口負担の割の数を倍率として使っていない', () => {
+    expect(calculator).not.toMatch(/copayPercent \/ 10\}倍/);
+    expect(calculator).not.toMatch(/その\{[^}]*\}倍/);
+  });
+
+  it('「窓口で払った額（◯割）ではなく、医療費の総額（10割）」と案内している', () => {
+    expect(calculator).toMatch(/窓口で払った額（\{r\.copayPercent \/ 10\}割）ではなく、医療費の総額（10割）/);
+  });
+});
+
+/**
  * 多数回該当を「全区分で据え置き」と言い切らない。
  * 70歳以上の低所得IIは月額 24,600円 → 25,700円に上がり、多数回該当 24,600円が新設された。
  * 仕様: docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の B

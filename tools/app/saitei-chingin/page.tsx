@@ -111,7 +111,7 @@ export default function Page() {
       <h1>最低賃金 早見表・チェッカー</h1>
       <p className="lead">
         2026年（令和8年度）の改定は、10月1日から12月2日にかけて都道府県ごとに発効します（発効日は下の表）。全国加重平均は
-        {NATIONAL_AVERAGE.current}円 → {NATIONAL_AVERAGE.answered}円（+
+        {NATIONAL_AVERAGE.current.toLocaleString('ja-JP')}円 → {NATIONAL_AVERAGE.answered.toLocaleString('ja-JP')}円（+
         {NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}
         円。47都道府県の答申額ベース）。都道府県を選ぶと、いまの額・改定後の額・引上げ幅・発効日が分かります。自分の時給が下回っていないかの判定と、月収・年収への換算もできます。
       </p>

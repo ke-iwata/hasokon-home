@@ -132,7 +132,7 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
           onChange={(e) => setMedicalCost(e.target.value)}
         />
         <p className="hint">
-          窓口で払った額ではなく、その{r.copayPercent / 10}倍にあたる医療費の総額（10割）を入れてください。
+          窓口で払った額（{r.copayPercent / 10}割）ではなく、医療費の総額（10割）を入れてください。
           差額ベッド代・食事代・先進医療などの保険適用外の費用は含みません。
         </p>
       </div>
