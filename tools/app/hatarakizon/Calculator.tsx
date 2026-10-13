@@ -12,7 +12,12 @@ import {
   type HatarakizonResult,
   type TakeHome,
 } from '@/lib/hatarakizon';
-import { DAYTIME_STUDENT_EXCLUSION_NOTE, type Position, type Workplace } from '@/lib/nenshu-kabe';
+import {
+  DAYTIME_STUDENT_EXCLUSION_NOTE,
+  isStudentFor,
+  type Position,
+  type Workplace,
+} from '@/lib/nenshu-kabe';
 
 const yen = (v: number) => `${Math.round(v).toLocaleString('ja-JP')}円`;
 /** 円 → 「128.5万円」。比較の主役は万円単位なので小数第1位まで出す */
@@ -22,8 +27,8 @@ const manInt = (v: number) => `${Math.round(v / 10_000).toLocaleString('ja-JP')}
 
 const POSITIONS: { value: Position; label: string }[] = [
   { value: 'spouse', label: '配偶者の扶養内で働いている（パート等）' },
-  { value: 'student', label: '親の扶養内・19〜22歳の学生' },
-  { value: 'dependent', label: '親の扶養内・その他' },
+  { value: 'age19to22', label: '親の扶養内・19〜22歳' },
+  { value: 'dependent', label: '親の扶養内・それ以外の年齢' },
   { value: 'none', label: '扶養には入っていない' },
 ];
 
@@ -230,6 +235,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const [workplace, setWorkplace] = useState<Workplace>('over51');
   const [chosei, setChosei] = useState<ChoseiStage>('none');
   const [hours20, setHours20] = useState(true);
+  const [isStudent, setIsStudent] = useState(false);
   const [kaigo, setKaigo] = useState(false);
   const [autoBaseline, setAutoBaseline] = useState(true);
   const [baselineMan, setBaselineMan] = useState('');
@@ -239,9 +245,14 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
     setAsOf(new Date());
   }, []);
 
+  // 学生のチェックボックスは配偶者の扶養では隠れる。先にチェックしてから切り替えても
+  // 隠れた値が効かないよう、false として渡す（チェックの状態そのものは残す）
+  const showStudentInput = position !== 'spouse';
+  const effectiveIsStudent = showStudentInput && isStudent;
   const r = calcHatarakizon({
     income: (Number(incomeMan) || 0) * 10_000,
     position,
+    isStudent: effectiveIsStudent,
     workplace,
     chosei,
     hours20,
@@ -276,7 +287,23 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               </option>
             ))}
           </select>
+          <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
+            19〜22歳は12月31日時点の年齢。学生でなくても選べます
+          </span>
         </label>
+        {showStudentInput && (
+          <div style={{ fontSize: 'var(--fs-sm)' }}>
+            <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={isStudent}
+                onChange={(e) => setIsStudent(e.target.checked)}
+                style={{ width: 'auto' }}
+              />
+              学生（昼間部・夜間部とも）
+            </label>
+          </div>
+        )}
         <label>
           勤務先
           <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
@@ -362,7 +389,11 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </div>
         </div>
       ) : (
-        <Results r={r} position={position} chosei={chosei} />
+        <Results
+          r={r}
+          showStudentNote={isStudentFor({ position, isStudent: effectiveIsStudent })}
+          chosei={chosei}
+        />
       )}
     </div>
   );
@@ -370,11 +401,12 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 
 function Results({
   r,
-  position,
+  showStudentNote,
   chosei,
 }: {
   r: Extract<HatarakizonResult, { kind: 'compare' }>;
-  position: Position;
+  /** 昼間部の適用除外の注記を出すか（学生で、配偶者の扶養ではない） */
+  showStudentNote: boolean;
   chosei: ChoseiStage;
 }) {
   const losing = r.netDiff < 0;
@@ -429,7 +461,7 @@ function Results({
         </div>
       )}
 
-      {position === 'student' && (
+      {showStudentNote && (
         <div className="note" style={{ marginTop: 10, fontSize: 'var(--fs-sm)', lineHeight: 1.7 }}>
           ※ {DAYTIME_STUDENT_EXCLUSION_NOTE}
           保険料調整制度も学生は対象外です（夜間部・定時制・通信制、休学中の方は対象）。

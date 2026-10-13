@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
+import YenField from '@/app/YenField';
+import { parseLifeQuery } from '@/lib/seimei-hokenryo-kojo';
 import {
   calcNenmatsuChosei,
   type HousingLoanTier,
@@ -97,49 +100,6 @@ function Row({
   );
 }
 
-/** 円で入れる控除額の入力欄（保険料控除証明書や源泉徴収票の額をそのまま入れる想定） */
-function YenField({
-  label,
-  hint,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  hint?: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <label style={{ fontSize: 'var(--fs-sm)' }}>
-      {label}
-      <input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        step={1000}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
-      {hint && (
-        <span
-          style={{
-            display: 'block',
-            marginTop: 4,
-            color: 'var(--muted)',
-            fontWeight: 400,
-            fontSize: 'var(--fs-xs)',
-          }}
-        >
-          {hint}
-        </span>
-      )}
-    </label>
-  );
-}
-
 export default function Calculator() {
   const [incomeMan, setIncomeMan] = useState('500');
   const [withheldYen, setWithheldYen] = useState('');
@@ -157,6 +117,19 @@ export default function Calculator() {
   const [idecoYen, setIdecoYen] = useState('');
   const [loanYen, setLoanYen] = useState('');
   const [loanTier, setLoanTier] = useState<HousingLoanTier>('rate5');
+  const insuranceDetails = useRef<HTMLDetailsElement>(null);
+
+  /**
+   * 生命保険料控除 計算機からの引き継ぎ（`?life=<所得税の控除額>`）。
+   * `useSearchParams` は使わず、マウント後に `window.location.search` を読む（shussan-teate と同じ）。
+   * 整数 0〜120,000 以外は `parseLifeQuery()` が捨てる。受け取ったら欄の入った `<details>` を開いて見せる
+   */
+  useEffect(() => {
+    const life = parseLifeQuery(window.location.search);
+    if (life === undefined) return;
+    setLifeYen(String(life));
+    if (insuranceDetails.current) insuranceDetails.current.open = true;
+  }, []);
 
   const r = calcNenmatsuChosei({
     income: manToYen(incomeMan),
@@ -338,7 +311,7 @@ export default function Calculator() {
           16歳未満の子どもは扶養控除の対象外なので、人数に含めないでください。年収136万円を超える親族も含めません。
         </p>
 
-        <details>
+        <details ref={insuranceDetails}>
           <summary style={{ cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
             生命保険料控除・地震保険料控除・iDeCo を入れる
           </summary>
@@ -350,6 +323,13 @@ export default function Calculator() {
               onChange={setLifeYen}
               placeholder="例: 40000"
             />
+            <PublicToolLink slug="seimei-hokenryo-kojo">
+              <p style={{ margin: '-4px 0 0', fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
+                控除証明書の支払額から出すなら{' '}
+                <ToolLink slug="seimei-hokenryo-kojo">生命保険料控除 計算機</ToolLink>
+                （令和8年分の23歳未満の扶養の特例に対応）。
+              </p>
+            </PublicToolLink>
             <YenField
               label="地震保険料控除（円）"
               hint="所得税は最大5万円。"
