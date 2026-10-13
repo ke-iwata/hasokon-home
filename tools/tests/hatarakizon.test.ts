@@ -5,7 +5,7 @@ import {
   choseiShare,
   ratePercent,
   DEPENDENT_LIMIT,
-  DEPENDENT_LIMIT_STUDENT,
+  DEPENDENT_LIMIT_19_22,
   EMPLOYMENT_RATE,
   HEALTH_RATE,
   PENSION_RATE,
@@ -22,6 +22,7 @@ import {
   calcTakeHome,
   type HatarakizonInput,
 } from '@/lib/hatarakizon';
+import { isStudentFor } from '@/lib/nenshu-kabe';
 import { estimateSocialInsurance } from '@/lib/furusato-nozei';
 import {
   GRADES,
@@ -260,9 +261,30 @@ describe('calcHatarakizon（施行日をまたぐ挙動）', () => {
   });
 
   it('19〜22歳の学生は扶養認定基準150万円が上限になる', () => {
-    const r = compare({ position: 'student', asOf: AFTER });
-    expect(r.ceiling.limit).toBe(DEPENDENT_LIMIT_STUDENT);
-    expect(r.baseline.gross).toBe(DEPENDENT_LIMIT_STUDENT - STEP);
+    const r = compare({ position: 'age19to22', isStudent: true, asOf: AFTER });
+    expect(r.ceiling.limit).toBe(DEPENDENT_LIMIT_19_22);
+    expect(r.baseline.gross).toBe(DEPENDENT_LIMIT_19_22 - STEP);
+  });
+
+  // 19〜22歳の150万円は年齢だけが要件で、学生であることは求めない（日本年金機構 Q&A）。
+  // docs/features/fuyo-19-22sai-nenrei-kijun.md
+  it('19〜22歳なら学生でなくても150万円が上限（149万円で比べる）', () => {
+    const r = compare({ position: 'age19to22', isStudent: false, asOf: AFTER });
+    expect(DEPENDENT_LIMIT_19_22).toBe(1_500_000);
+    expect(r.ceiling.limit).toBe(1_500_000);
+    expect(r.baseline.gross).toBe(1_490_000);
+    expect(r.ceiling.label).toBe('150万円の壁（19〜22歳の扶養認定基準）');
+  });
+
+  it('それ以外の年齢の学生（例: 24歳の院生）は130万円が上限', () => {
+    const r = compare({ position: 'dependent', isStudent: true, asOf: AFTER });
+    expect(r.ceiling.limit).toBe(DEPENDENT_LIMIT);
+  });
+
+  it('配偶者の扶養で isStudent が残っていても上限は130万円、昼間部の注記は出さない', () => {
+    const input = { position: 'spouse' as const, isStudent: true, asOf: AFTER };
+    expect(compare(input).ceiling.limit).toBe(DEPENDENT_LIMIT);
+    expect(isStudentFor(input)).toBe(false);
   });
 });
 
@@ -270,7 +292,7 @@ describe('calcHatarakizon（逆転区間と損益分岐点）', () => {
   const cases: { name: string; input: Partial<HatarakizonInput> }[] = [
     { name: '賃金要件あり（2026-09-30）', input: { asOf: BEFORE } },
     { name: '賃金要件の撤廃後（2026-10-01）', input: { asOf: AFTER } },
-    { name: '学生・撤廃後', input: { asOf: AFTER, position: 'student' } },
+    { name: '19〜22歳の学生・撤廃後', input: { asOf: AFTER, position: 'age19to22', isStudent: true } },
     { name: '40〜64歳・撤廃後', input: { asOf: AFTER, kaigo: true } },
   ];
 
