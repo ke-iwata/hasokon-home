@@ -227,6 +227,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | こどもNISAの政省令・金融庁Q&Aが出たとき | `lib/kodomo-nisa.ts` の冒頭の定数と `DATA_CHECKED_AT`。**600万円が大人の1,800万円の内か・払い出した分の枠が戻るか**が確定したら、ページの「政省令待ち」の文言を直す（[仕様](../docs/features/kodomo-nisa.md)の要確認3・4） |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
+| 税制改正時（住民税の非課税限度額・給与所得控除） | `lib/juminzei-hikazei.ts` の `NENDO_RULES`（年度ごとの給与所得控除・所得税の基礎控除・扶養の所得要件）と `LIMIT_*`・`SPECIAL_LIMIT`・`KYUCHI_RATE`。条文は e-Gov 法令API で地方税法（`325AC0000000226`）の295条・附則3条の3、施行令（`325CO0000000245`）47条の3、施行規則（`329M50000002023`）9条の21を引く。**令和11年度（2028年の収入）は給与所得控除の特例5万円が切れる**ので、その年度を足すときに最低保障を確かめる。`nenshu-kabe` の119万円とは `tests/juminzei-hikazei.test.ts` が突き合わせている |
 | 毎年1月1日（ふるさと納税の年分） | `lib/furusato-nozei.ts` の `DEFAULT_TAX_YEAR` を1行上げ、`app/furusato-nozei/page.tsx` の title・description の「令和N年分」を直す（元日以降の CI を `tests/furusato-tax-year.test.ts` が落として知らせる）。新しい年分は `TAX_YEARS` と `SPECIAL_CAP_FIXED`（特例分の定額上限。令和9年分から193万円）に1行ずつ足す。年分の切り替えのラジオは `TAX_YEAR_SELECTOR_UNTIL`（2027-03-15）を過ぎると畳まれる。[仕様](../docs/features/furusato-nozei-r9-kirikae.md) |
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**title・description の年表記**（「令和8年分」）。早見表の数値と見出しの年分は `DEFAULT_TAX_YEAR` から生成されるので自動で追随するが、title・description と本文の改正の説明の年の文字列は追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
@@ -257,13 +258,13 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール58本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
+- **ツール65本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
   `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
   `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
   `seimei-hokenryo-kojo`（生命保険料控除）は運営者の確認後 2026-10-31 までに、
   `loan-hensai`（ローン返済シミュレーション。期日なし）は運営者がテスト環境で[仕様](../docs/features/loan-hensai-simulation.md)の「テスト」の8ケースを確かめたら、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
