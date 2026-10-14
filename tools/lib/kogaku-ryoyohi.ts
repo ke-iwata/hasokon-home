@@ -54,6 +54,42 @@ export type AgeGroup = 'under70' | 'over70';
 /** 窓口負担割合（％）。義務教育就学前は2割だが、このツールでは扱わない */
 export type CopayPercent = 30 | 20 | 10;
 
+/**
+ * 画面で選ぶ年齢。限度額の表は 70歳未満／70歳以上 の2つ（AgeGroup）だが、
+ * **窓口負担割合の既定値は 70〜74歳 と 75歳以上 で違う**ので、画面ではここを分けて聞く。
+ * 65〜74歳で障害の認定を受けて後期高齢者医療に加入している方は 'over75' を選ぶ
+ */
+export type AgeBand = 'under70' | 'age70to74' | 'over75';
+
+/** 画面の年齢から、限度額の表の年齢区分を引く（70〜74歳と75歳以上で限度額は共通） */
+export function ageGroupOf(band: AgeBand): AgeGroup {
+  return band === 'under70' ? 'under70' : 'over70';
+}
+
+/**
+ * 窓口負担割合の既定値。限度額の表（BracketDef.copayPercent）は 70〜74歳と75歳以上で
+ * 共通なので、70歳以上の既定値は年齢で引き直す。
+ *
+ * - 70歳未満：区分の既定値（3割）
+ * - 現役並み：年齢にかかわらず3割
+ * - 70〜74歳：2割（2014-04-02以降に70歳になった人が対象。2026年時点では70〜74歳の全員）
+ * - 75歳以上：1割（一定以上所得の2割は自動判定しない。画面の窓口負担割合で選ぶ）
+ *
+ * 一次情報：厚生労働省「窓口負担割合等のご相談窓口について」
+ * https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iryouhoken/newpage_00008.html
+ * （「70歳から74歳までは原則2割負担、75歳以上は原則1割負担」。2割は 1944-04-02 以降生まれから。
+ * 「70歳から74歳の方の医療費の窓口負担についてのお知らせ」
+ * https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryouhoken/iryouhifutan.html）
+ *
+ * 以前は区分の既定値をそのまま使っていて、一般・低所得IIは70〜74歳（2割）、
+ * 低所得Iは75歳以上（1割）に合わせてあり、同じ表の中で年齢の前提が混ざっていた
+ * （docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の A）
+ */
+export function defaultCopay(bracket: BracketDef, age7074: boolean): CopayPercent {
+  if (bracket.ageGroup === 'under70' || bracket.copayPercent === 30) return bracket.copayPercent;
+  return age7074 ? 20 : 10;
+}
+
 /** 1つの所得区分の限度額 */
 export interface LimitDef {
   /** 月単位の限度額の定額部分（円） */
@@ -89,7 +125,7 @@ export interface BracketDef {
   standard: string;
   /** 年収の目安。標準報酬月額を即答できる人は少ないので必ず併記する */
   incomeGuide: string;
-  /** 既定の窓口負担割合 */
+  /** 既定の窓口負担割合（70歳以上は defaultCopay() が年齢で引き直す。直接読まない） */
   copayPercent: CopayPercent;
   limit: LimitDef;
 }
@@ -357,7 +393,12 @@ export interface KogakuInput {
   treatmentMonth?: string;
   /** 70歳以上で、外来のみ（入院なし）か。外来特例（個人ごとの限度額）を使う */
   outpatientOnly?: boolean;
-  /** 窓口負担割合（％）。省略時は所得区分の既定値 */
+  /**
+   * 70歳以上のうち70〜74歳か（false なら75歳以上）。窓口負担割合の既定値だけに効く。
+   * 省略時は70〜74歳として扱う（窓口負担を実際より安く見せるほうが害が大きいため）
+   */
+  age7074?: boolean;
+  /** 窓口負担割合（％）。省略時は defaultCopay() の既定値 */
   copayPercent?: CopayPercent;
   /** 年間上限の対象期間のうち、この月より前にすでに支払った自己負担の累計（円） */
   annualPaidBefore?: number;
@@ -506,7 +547,7 @@ export function calcKogakuRyoyohi(input: KogakuInput): KogakuResult {
 
   const medicalCost = Math.max(0, Math.floor(input.medicalCost || 0));
   const pastCount = Math.max(0, Math.floor(input.pastCount || 0));
-  const copayPercent = input.copayPercent ?? bracket.copayPercent;
+  const copayPercent = input.copayPercent ?? defaultCopay(bracket, input.age7074 ?? true);
   const annualPaidBefore = Math.max(0, Math.floor(input.annualPaidBefore || 0));
 
   const multiApplied = pastCount >= MULTI_THRESHOLD_COUNT && bracket.limit.multi !== undefined;

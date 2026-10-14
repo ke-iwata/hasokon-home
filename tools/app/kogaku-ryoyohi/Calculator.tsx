@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import {
-  type AgeGroup,
+  type AgeBand,
   type CopayPercent,
+  ageGroupOf,
   bracketsFor,
   calcKogakuRyoyohi,
+  defaultCopay,
   toYm,
 } from '@/lib/kogaku-ryoyohi';
 
@@ -17,9 +19,11 @@ const fmtMonth = (ym: string) => {
   return `${y}年${m}月`;
 };
 
-const AGE_GROUPS: { value: AgeGroup; label: string }[] = [
+// 限度額の表は70歳未満／70歳以上の2つだが、窓口負担割合の既定値が70〜74歳と75歳以上で違うので3つで聞く
+const AGE_BANDS: { value: AgeBand; label: string }[] = [
   { value: 'under70', label: '70歳未満' },
-  { value: 'over70', label: '70歳以上' },
+  { value: 'age70to74', label: '70〜74歳' },
+  { value: 'over75', label: '75歳以上' },
 ];
 
 const COPAY_PERCENTS: { value: CopayPercent; label: string }[] = [
@@ -35,7 +39,7 @@ const COPAY_PERCENTS: { value: CopayPercent; label: string }[] = [
  *   改正前の限度額のまま表示されるのを防ぐため（lib/nenshu-kabe.ts と同じ考え方）
  */
 export default function Calculator({ buildMonth }: { buildMonth: string }) {
-  const [ageGroup, setAgeGroup] = useState<AgeGroup>('under70');
+  const [ageBand, setAgeBand] = useState<AgeBand>('under70');
   const [bracketId, setBracketId] = useState('u70-c');
   const [medicalCost, setMedicalCost] = useState('1000000');
   const [pastCount, setPastCount] = useState('0');
@@ -48,6 +52,9 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
   useEffect(() => {
     setTreatmentMonth(toYm(new Date()));
   }, []);
+
+  const ageGroup = ageGroupOf(ageBand);
+  const age7074 = ageBand === 'age70to74';
 
   // 診療月によって表が変わるので、選択肢もそのつど引き直す。
   // 年齢区分を切り替えた直後は前の区分IDが残るため、無ければ先頭に落とす
@@ -62,15 +69,19 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
     pastCount: Number(pastCount) || 0,
     treatmentMonth: month,
     outpatientOnly,
+    age7074,
     copayPercent: copayPercent === '' ? undefined : copayPercent,
     annualPaidBefore: Number(annualPaidBefore) || 0,
     lowIncomeConfirmed,
   });
 
-  const changeAgeGroup = (next: AgeGroup) => {
-    setAgeGroup(next);
-    setBracketId(bracketsFor(next, month)[0].id);
+  const changeAgeBand = (next: AgeBand) => {
+    setAgeBand(next);
+    // 窓口負担割合の既定値は年齢で変わるので、選び直した値は捨てる
     setCopayPercent('');
+    // 70〜74歳と75歳以上の行き来では限度額の表が同じなので、所得区分などは残す
+    if (ageGroupOf(next) === ageGroup) return;
+    setBracketId(bracketsFor(ageGroupOf(next), month)[0].id);
     setOutpatientOnly(false);
     setLowIncomeConfirmed(false);
   };
@@ -78,24 +89,23 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
   return (
     <div className="card">
       <div className="field">
-        <span className="field-label">年齢区分</span>
-        <div className="field-row">
-          {AGE_GROUPS.map((a) => (
-            <label
-              key={a.value}
-              style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 400 }}
-            >
-              <input
-                type="radio"
-                name="age-group"
-                checked={ageGroup === a.value}
-                onChange={() => changeAgeGroup(a.value)}
-                style={{ width: 'auto' }}
-              />
+        <label htmlFor="age-band">年齢区分</label>
+        <select
+          id="age-band"
+          value={ageBand}
+          onChange={(e) => changeAgeBand(e.target.value as AgeBand)}
+        >
+          {AGE_BANDS.map((a) => (
+            <option key={a.value} value={a.value}>
               {a.label}
-            </label>
+            </option>
           ))}
-        </div>
+        </select>
+        {ageBand === 'over75' && (
+          <p className="hint">
+            65〜74歳で障害の認定を受けて後期高齢者医療に加入している方は「75歳以上」を選んでください。
+          </p>
+        )}
       </div>
 
       <div className="field">
@@ -122,7 +132,7 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
           onChange={(e) => setMedicalCost(e.target.value)}
         />
         <p className="hint">
-          窓口で払った額ではなく、その{r.copayPercent / 10}倍にあたる医療費の総額（10割）を入れてください。
+          窓口で払った額（{r.copayPercent / 10}割）ではなく、医療費の総額（10割）を入れてください。
           差額ベッド代・食事代・先進医療などの保険適用外の費用は含みません。
         </p>
       </div>
@@ -162,7 +172,7 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
           <label>
             窓口負担割合
             <select
-              value={copayPercent === '' ? bracket.copayPercent : copayPercent}
+              value={copayPercent === '' ? defaultCopay(bracket, age7074) : copayPercent}
               onChange={(e) => setCopayPercent(Number(e.target.value) as CopayPercent)}
             >
               {COPAY_PERCENTS.map((c) => (

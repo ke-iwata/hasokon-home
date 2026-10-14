@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-11',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -562,7 +562,7 @@ export const tools: ToolDef[] = [
       '医療費が高額になったとき、1か月の自己負担がいくらまでで済むかを計算。2026年8月の改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応。改正前の額と並べて表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-13',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'iryohi-kojo',
@@ -582,7 +582,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'zangyodai-keisan',
