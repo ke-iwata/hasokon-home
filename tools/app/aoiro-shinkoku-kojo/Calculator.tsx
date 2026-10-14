@@ -101,6 +101,7 @@ export default function Calculator() {
   const [priorOver, setPriorOver] = useState(false);
   const [filingR8, setFilingR8] = useState<FilingR8>('paper');
   const [income, setIncome] = useState('');
+  const [otherIncome, setOtherIncome] = useState('');
   const [otherDeductions, setOtherDeductions] = useState('');
 
   const incomeYen = toYen(income);
@@ -113,6 +114,7 @@ export default function Calculator() {
     priorRevenueOver: priorOver,
     filingR8,
     incomeBeforeDeduction: incomeYen,
+    otherIncome: toYen(otherIncome) ?? 0,
     otherDeductions: toYen(otherDeductions) ?? 0,
   };
   const r = judge(input);
@@ -169,7 +171,7 @@ export default function Calculator() {
             { value: 'paper', label: '書面で期限内に提出する' },
             { value: 'late', label: '期限後になりそう' },
           ]}
-          hint={`確定申告の期限は${FIRST_TAX_YEAR + 1}年3月15日です。還付申告でも、65万円・75万円を受けるには期限までの提出が必要です。`}
+          hint={`確定申告の期限は${FIRST_TAX_YEAR + 1}年3月15日です。還付申告は期限後でも出せますが、その場合の控除は10万円です（65万円・75万円は期限内の提出が必要）。`}
         />
 
         {showEBook && (
@@ -247,9 +249,24 @@ export default function Calculator() {
               />
             </label>
             <label>
+              給与所得など、ほかの所得（円）
+              <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
+                会社員の副業などで給与がある方は、源泉徴収票の「給与所得控除後の金額」。給与の分で税率の帯が上がるので、入れると税額の目安が実際に近くなります
+              </span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                step={10000}
+                value={otherIncome}
+                placeholder="例：0"
+                onChange={(e) => setOtherIncome(e.target.value)}
+              />
+            </label>
+            <label>
               ほかの所得控除の合計（円）
               <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
-                基礎控除・社会保険料控除・小規模企業共済等掛金控除などの合計。給与などほかの所得がある方は、その所得を差し引いた額を入れてください
+                基礎控除・社会保険料控除・小規模企業共済等掛金控除などの合計
               </span>
               <input
                 type="number"
@@ -270,7 +287,7 @@ export default function Calculator() {
           {FIRST_TAX_YEAR}年分（令和9年分）の青色申告特別控除
         </div>
         <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--accent)' }}>
-          {r.r9 === 0 ? '0円（受けられない）' : man(r.r9)}
+          {r.r9 === 0 && !r.cappedByIncome ? '0円（受けられない）' : man(r.r9)}
         </div>
         <div style={{ fontSize: 'var(--fs-sm)' }}>
           {r.cappedByIncome

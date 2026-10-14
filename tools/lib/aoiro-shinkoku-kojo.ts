@@ -31,7 +31,8 @@
  *
  * ■ 税額の目安
  * 所得税は令和8年分・令和9年分それぞれの課税所得で速算表を通しで計算し（限界税率×差額で済ませない）、
- * 復興特別所得税を含めて ×1.021。住民税は所得割10%。どちらも「ほかの所得控除の合計」は利用者の入力のまま。
+ * 復興特別所得税を含めて ×1.021。住民税は所得割10%。給与所得などほかの所得は課税所得に足す
+ * （副業の人は、給与の分で税率の帯が上がる）。「ほかの所得控除の合計」は利用者の入力のまま。
  *
  * 【データ更新箇所】控除額が改正されたら DEDUCTION_R9 / DEDUCTION_R8 と PRIOR_REVENUE_LIMIT。
  * 所得税の速算表は lib/furusato-nozei.ts の `incomeTaxAmount()`（ここには持たない）。
@@ -103,7 +104,9 @@ export interface AoiroInput {
   filingR8: FilingR8;
   /** 任意：青色申告特別控除を引く前の所得（不動産所得＋事業所得。円） */
   incomeBeforeDeduction?: number;
-  /** 任意：ほかの所得（給与など）から引ききれない分も含めた、ほかの所得控除の合計（円） */
+  /** 任意：事業・不動産以外の所得（給与所得など。収入ではなく所得。円）。課税所得に足す */
+  otherIncome?: number;
+  /** 任意：ほかの所得控除の合計（基礎控除・社会保険料控除など。円） */
   otherDeductions?: number;
 }
 
@@ -188,9 +191,19 @@ export interface TaxSide {
   residentTax: number;
 }
 
-/** 控除額 `deduction` のときの税額の目安 */
-export function taxFor(income: number, otherDeductions: number, deduction: number): TaxSide {
-  const taxableIncome = floor1000(income - deduction - Math.max(0, otherDeductions));
+/**
+ * 控除額 `deduction` のときの税額の目安。
+ * `income` は青色申告特別控除を引く前の事業・不動産の所得、`otherIncome` は給与所得などほかの所得
+ */
+export function taxFor(
+  income: number,
+  otherDeductions: number,
+  deduction: number,
+  otherIncome = 0,
+): TaxSide {
+  const taxableIncome = floor1000(
+    income + Math.max(0, otherIncome) - deduction - Math.max(0, otherDeductions),
+  );
   return {
     taxableIncome,
     incomeTax: Math.floor(incomeTaxAmount(taxableIncome) * RECONSTRUCTION_RATE),
@@ -215,9 +228,10 @@ export function taxDiff(
   otherDeductions: number,
   fromDeduction: number,
   toDeduction: number,
+  otherIncome = 0,
 ): TaxDiff {
-  const before = taxFor(income, otherDeductions, fromDeduction);
-  const after = taxFor(income, otherDeductions, toDeduction);
+  const before = taxFor(income, otherDeductions, fromDeduction, otherIncome);
+  const after = taxFor(income, otherDeductions, toDeduction, otherIncome);
   const incomeTax = after.incomeTax - before.incomeTax;
   const residentTax = after.residentTax - before.residentTax;
   return { before, after, incomeTax, residentTax, total: incomeTax + residentTax };
@@ -283,6 +297,7 @@ export function judge(input: AoiroInput): AoiroResult {
   const income = input.incomeBeforeDeduction;
   const hasIncome = income !== undefined && Number.isFinite(income);
   const other = Math.max(0, input.otherDeductions ?? 0);
+  const otherIncome = Math.max(0, input.otherIncome ?? 0);
 
   const t9 = tierR9(input);
   const r9 = capByIncome(t9.amount, income);
@@ -299,7 +314,7 @@ export function judge(input: AoiroInput): AoiroResult {
       action,
       amount,
       gain,
-      taxSaving: hasIncome ? -taxDiff(income, other, r9, amount).total : undefined,
+      taxSaving: hasIncome ? -taxDiff(income, other, r9, amount, otherIncome).total : undefined,
       needsFromJan1: next.eBook === 'yuryo',
     });
   }
@@ -310,7 +325,7 @@ export function judge(input: AoiroInput): AoiroResult {
     reason: t9.reason,
     change: r9 - r8,
     cappedByIncome: hasIncome && r9 < t9.amount,
-    tax: hasIncome ? taxDiff(income, other, r8, r9) : undefined,
+    tax: hasIncome ? taxDiff(income, other, r8, r9, otherIncome) : undefined,
     upgrades,
   };
 }

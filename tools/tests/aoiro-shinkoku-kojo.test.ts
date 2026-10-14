@@ -318,6 +318,35 @@ describe('控除の上限と税額', () => {
     expect(d.total).toBe(0);
   });
 
+  it('給与所得などほかの所得は課税所得に足す（副業で税率の帯が上がる）', () => {
+    // 給与所得500万円＋事業所得300万円・所得控除100万円・複式簿記の書面申告（PR #387 のレビュー）
+    const r = judge({
+      ...base,
+      incomeBeforeDeduction: 3_000_000,
+      otherIncome: 5_000_000,
+      otherDeductions: 1_000_000,
+    });
+    expect(r.tax?.before.taxableIncome).toBe(6_450_000);
+    expect(r.tax?.after.taxableIncome).toBe(6_900_000);
+    expect(r.tax?.incomeTax).toBe(91_890);
+    expect(r.tax?.residentTax).toBe(45_000);
+    expect(r.tax?.total).toBe(136_890);
+    // 控除の上限は事業・不動産の所得だけで見る（給与所得は上限に入らない）
+    const capped = judge({
+      ...base,
+      filingR9: 'etax',
+      incomeBeforeDeduction: 400_000,
+      otherIncome: 5_000_000,
+    });
+    expect(capped.r9).toBe(400_000);
+  });
+
+  it('所得に0円を入れたときは「受けられない」ではなく所得の上限として扱う', () => {
+    const r = judge({ ...base, filingR9: 'etax', incomeBeforeDeduction: 0 });
+    expect(r.r9).toBe(0);
+    expect(r.cappedByIncome).toBe(true);
+  });
+
   it('所得を入れないときは税額を出さない', () => {
     expect(judge(base).tax).toBeUndefined();
   });
