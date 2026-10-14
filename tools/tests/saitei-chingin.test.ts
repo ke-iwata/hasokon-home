@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { metadata } from '@/app/saitei-chingin/page';
 import { tools } from '@/lib/registry';
@@ -1021,5 +1023,31 @@ describe('全県が答申済みのときの文面', () => {
   it.runIf(allAnswered)('全県が answered を持つとき、description に「見込み」が無い', () => {
     expect(String(metadata.description)).not.toContain('見込み');
     expect(tools.find((t) => t.slug === 'saitei-chingin')!.description).not.toContain('見込み');
+  });
+});
+
+/**
+ * リードを時点に依存しない文言にする（ビルドした日に左右されない）。
+ * 仕様: docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の D
+ */
+describe('リードと発効日の FAQ の時制', () => {
+  const page = readFileSync(join(__dirname, '../app/saitei-chingin/page.tsx'), 'utf8');
+  const lead = page.match(/<p className="lead">([\s\S]*?)<\/p>/)?.[1] ?? '';
+
+  it('リードを取り出せる', () => {
+    expect(lead).toMatch(/令和8年度/);
+  });
+
+  it('リードに「になります」「になりました」が無い', () => {
+    expect(lead).not.toMatch(/になります|になりました/);
+  });
+
+  it('FAQ の「令和8年度は越年なし」が、データ上も全都道府県で年内の発効になっている', () => {
+    expect(page).toMatch(/翌年にずれる県はありません/);
+    for (const p of PREFECTURES) {
+      const on = p.answered?.effectiveOn ?? p.answered?.plannedEffectiveOn;
+      expect(on, `${p.name} の発効日`).toBeDefined();
+      expect(on! <= '2026-12-31', `${p.name} ${on}`).toBe(true);
+    }
   });
 });

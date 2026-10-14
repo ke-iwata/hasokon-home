@@ -15,6 +15,7 @@ import {
   type DateParts,
 } from '@/lib/nenrei';
 import { trackToolUse } from '@/lib/analytics';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 
 type Mode = 'seireki' | 'wareki';
 
@@ -317,6 +318,16 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                   ))}
                 </tbody>
               </table>
+              <PublicToolLink slug="shichigosan">
+                <p className="hint" style={{ margin: '10px 0 0' }}>
+                  <ToolLink slug="shichigosan">この子の七五三はいつ？</ToolLink>
+                </p>
+              </PublicToolLink>
+              <PublicToolLink slug="yakudoshi">
+                <p className="hint" style={{ margin: '4px 0 0' }}>
+                  <ToolLink slug="yakudoshi">厄年・長寿祝いの年を見る</ToolLink>
+                </p>
+              </PublicToolLink>
             </div>
           </>
         )

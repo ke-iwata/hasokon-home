@@ -268,6 +268,20 @@ export const games: GameDef[] = [
     updatedAt: '2026-10-02',
   },
   {
+    // 9×9の将棋盤ではさんで取る昔ながらの遊び（docs/features/game-hasami-shogi.md）。特定の作品ではない遊びの総称。
+    // **名称と slug の J-PlatPat 確認（第9類・第28類・第41類）は運営者のタスク**で、済むまで `wip`
+    // （slug は公開後に動かせないので、確認してから `preview` に上げる。仕様書の着手条件。詰将棋と同じ扱い）。
+    // 盤と駒の描画は詰将棋と共通（app/_shogi/ShogiBoard.tsx）。カードの絵は `public` にするPRで描く
+    slug: 'hasami-shogi',
+    icon: 'HasamiShogi',
+    name: 'はさみ将棋',
+    description:
+      '9×9の将棋盤で、縦横に動く駒で相手の駒をはさんで取る昔ながらの遊び。CPUは3段階、隅取りのあり／なしと勝ちの枚数も選べます。',
+    keywords: ['隅取り', '5枚', '3枚差', '千日手', '待った', '投了'],
+    stage: 'wip',
+    updatedAt: '2026-10-14',
+  },
+  {
     // 「大富豪（大貧民）」は日本の伝統的なトランプ遊びの一般名称で、ルールも名称も
     // パブリックドメイン。商標の問題は無い
     // （docs/features/game-daifugo.md の「権利面が完全にクリーン」）

@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-11',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -149,6 +149,22 @@ export const tools: ToolDef[] = [
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
     stage: 'preview',
     updatedAt: '2026-10-12',
+  },
+  {
+    // 仕様: docs/features/shukuhakuzei-keisan.md
+    slug: 'shukuhakuzei',
+    // 宿泊の絵で Bed
+    icon: 'Bed',
+    name: '宿泊税 計算機',
+    description:
+      '泊まる場所と1人1泊の料金を入れると宿泊税がいくらかを計算。東京都の2027年4月からの3%（13,000円未満は非課税）、沖縄県の2027年2月からの2%（上限2,000円）、京都市・大阪府に対応し、改正前との差も出します。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2027-01-15 まで（仕様書の「公開条件」。沖縄の施行 2027-02-01 の2週間前）。
+    // 東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確認するまで上げない
+    // （lib/shukuhakuzei.ts の TOKYO_RATE_DETAILS_CONFIRMED / OKINAWA_SPLIT_CONFIRMED。テストが落とす）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-13',
   },
   {
     slug: 'zaishoku-rorei-nenkin',
@@ -542,6 +558,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-11',
   },
   {
+    // 仕様: docs/features/shusseki-teishi-keisan.md
+    slug: 'shusseki-teishi',
+    // 熱が下がった日から数えるツールなので Thermometer。ほかで使っていない
+    icon: 'Thermometer',
+    name: '出席停止期間 計算機（インフルエンザ・新型コロナほか）',
+    description:
+      '発症日と解熱日を入れると、学校保健安全法施行規則19条の「発症後5日・解熱後2日（幼児3日）」から、学校・保育園に行ける最も早い日を0日目からのカレンダーで出します。新型コロナ・はしか・おたふくかぜ・プール熱も。',
+    category: '生活・健康',
+    stage: 'preview',
+    updatedAt: '2026-10-08',
+  },
+  {
     // 仕様: docs/features/kodomo-nisa.md
     slug: 'kodomo-nisa',
     // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
@@ -575,7 +603,7 @@ export const tools: ToolDef[] = [
       '医療費が高額になったとき、1か月の自己負担がいくらまでで済むかを計算。2026年8月の改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応。改正前の額と並べて表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-13',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'iryohi-kojo',
@@ -595,7 +623,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'zangyodai-keisan',
@@ -694,6 +722,26 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'public',
     updatedAt: '2026-10-06',
+  },
+  {
+    slug: 'shichigosan',
+    icon: 'Baby',
+    name: '七五三はいつ？早見表・計算',
+    description:
+      '子どもの生年月日から、3歳・5歳・7歳の七五三の年を数え年・満年齢の両方で計算。11月15日の曜日と、早生まれの子が同じ学年と揃える年も表示。今年の早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
+  },
+  {
+    slug: 'yakudoshi',
+    icon: 'Shield',
+    name: '厄年・長寿祝い 早見表',
+    description:
+      '生年月日から前厄・本厄・後厄の年を数え年で一生分計算。還暦・古希・喜寿・米寿など長寿祝いの年も数え年・満年齢の両方で表示。男女別の厄年早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
   },
   {
     slug: 'renkyu-keisan',

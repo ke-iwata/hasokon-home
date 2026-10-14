@@ -14,12 +14,11 @@
  * 王手でない手・逃げられる王手は**指せるが不正解**で、理由を 1 行出してから指す前の局面に戻す。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyAs,
   candidateMoves,
   cellLabel,
-  colOf,
   dailyProblem,
   DAILY_VARIANT,
   defenderReply,
@@ -31,8 +30,6 @@ import {
   judge,
   PIECE_CHAR,
   PIECE_NAME,
-  rowOf,
-  SIZE,
   type Board,
   type HandPiece,
   type Move,
@@ -43,6 +40,7 @@ import { trackToolUse } from '@/lib/analytics';
 import { delayFor } from '@/app/_cpu/CpuSpeed';
 import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
 import { formatTime, type Improved } from '@/lib/records';
+import { ShogiBoard } from '@/app/_shogi/ShogiBoard';
 
 type Mode = '1' | '3' | 'daily';
 
@@ -76,19 +74,6 @@ const WRONG_HOLD = 1400;
 /** 「答えを見る」を出すまでの不正解の回数 */
 const REVEAL_AFTER = 3;
 
-/** 盤の外の番号のぶん、SVG の座標を広げる（上に筋、右に段） */
-const PAD = 0.6;
-const VIEW = SIZE + PAD;
-const FILE_LABELS = '９８７６５４３２１';
-const RANK_LABELS = '一二三四五六七八九';
-
-const KEY_DIR: Record<string, [number, number]> = {
-  ArrowUp: [-1, 0],
-  ArrowDown: [1, 0],
-  ArrowLeft: [0, -1],
-  ArrowRight: [0, 1],
-};
-
 export default function Game() {
   const [mode, setMode] = useState<Mode>('1');
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -113,7 +98,6 @@ export default function Game() {
   const counted = useRef(false);
   /** 進行中のタイマー（応手・戻し）。新しい問題に切り替えたら止める */
   const timers = useRef<number[]>([]);
-  const svgRef = useRef<SVGSVGElement>(null);
 
   const clearTimers = useCallback(() => {
     for (const t of timers.current) window.clearTimeout(t);
@@ -301,41 +285,6 @@ export default function Game() {
     [board, phase, selection, targetSquares, chooseTarget],
   );
 
-  const onBoardClick = useCallback(
-    (e: MouseEvent<SVGSVGElement>) => {
-      const svg = svgRef.current;
-      if (!svg) return;
-      const rect = svg.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * VIEW;
-      const y = ((e.clientY - rect.top) / rect.height) * VIEW - PAD;
-      const c = Math.floor(x);
-      const r = Math.floor(y);
-      if (r < 0 || c < 0 || r >= SIZE || c >= SIZE) return;
-      onCell(r * SIZE + c);
-    },
-    [onCell],
-  );
-
-  const onKeyDown = useCallback(
-    (e: KeyboardEvent<SVGSVGElement>) => {
-      const dir = KEY_DIR[e.key];
-      if (dir) {
-        e.preventDefault();
-        const r = Math.min(SIZE - 1, Math.max(0, rowOf(cursor) + dir[0]));
-        const c = Math.min(SIZE - 1, Math.max(0, colOf(cursor) + dir[1]));
-        setCursor(r * SIZE + c);
-        return;
-      }
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        onCell(cursor);
-        return;
-      }
-      if (e.key === 'Escape') setSelection(null);
-    },
-    [cursor, onCell],
-  );
-
   const onHand = useCallback(
     (piece: HandPiece) => {
       if (phase !== 'play') return;
@@ -441,58 +390,35 @@ export default function Game() {
         {board === null ? (
           <div className="ts-loading">問題を作っています…</div>
         ) : (
-          <svg
-            ref={svgRef}
-            className={`ts-board${phase === 'solved' ? ' done' : ''}`}
-            viewBox={`0 0 ${VIEW} ${VIEW}`}
-            role="application"
-            aria-label={`詰将棋の盤面。矢印キーでマスを移動、Enterで選択。いまのマス：${cellLabel(board, cursor)}`}
-            tabIndex={0}
-            onClick={onBoardClick}
-            onKeyDown={onKeyDown}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            {Array.from({ length: SIZE }, (_, c) => (
-              <text key={`f${c}`} className="ts-coord" x={c + 0.5} y={PAD * 0.62}>
-                {FILE_LABELS[c]}
-              </text>
-            ))}
-            {Array.from({ length: SIZE }, (_, r) => (
-              <text key={`r${r}`} className="ts-coord" x={SIZE + PAD / 2} y={PAD + r + 0.62}>
-                {RANK_LABELS[r]}
-              </text>
-            ))}
-            <rect className="ts-ground" x={0} y={PAD} width={SIZE} height={SIZE} />
-            {board.cells.map((s, i) => {
-              const x = colOf(i);
-              const y = rowOf(i) + PAD;
-              const cls = [
-                'ts-cell',
+          <ShogiBoard
+            className={phase === 'solved' ? 'done' : undefined}
+            ariaLabel={`詰将棋の盤面。矢印キーでマスを移動、Enterで選択。いまのマス：${cellLabel(board, cursor)}`}
+            cells={board.cells.map((s) =>
+              s
+                ? {
+                    char: PIECE_CHAR[s.piece],
+                    flip: s.side === 'D',
+                    className:
+                      [s.piece.startsWith('+') ? 'promoted' : '', s.side === 'D' ? 'def' : ''].filter(Boolean).join(' ') ||
+                      undefined,
+                  }
+                : null,
+            )}
+            cellClass={(i) =>
+              [
                 selection?.kind === 'cell' && selection.at === i ? 'selected' : '',
                 targetSquares.has(i) ? 'target' : '',
                 moved.includes(i) ? 'moved' : '',
               ]
                 .filter(Boolean)
-                .join(' ');
-              return (
-                <g key={i}>
-                  <rect className={cls} x={x} y={y} width={1} height={1} />
-                  {targetSquares.has(i) && !s ? <circle className="ts-dot" cx={x + 0.5} cy={y + 0.5} r={0.12} /> : null}
-                  {s ? (
-                    <text
-                      className={`ts-piece${s.piece.startsWith('+') ? ' promoted' : ''}${s.side === 'D' ? ' def' : ''}`}
-                      x={x + 0.5}
-                      y={y + 0.5}
-                      transform={s.side === 'D' ? `rotate(180 ${x + 0.5} ${y + 0.5})` : undefined}
-                    >
-                      {PIECE_CHAR[s.piece]}
-                    </text>
-                  ) : null}
-                </g>
-              );
-            })}
-            <rect className="ts-cursor" x={colOf(cursor)} y={rowOf(cursor) + PAD} width={1} height={1} />
-          </svg>
+                .join(' ')
+            }
+            dots={targetSquares}
+            cursor={cursor}
+            onCursor={setCursor}
+            onCell={onCell}
+            onEscape={() => setSelection(null)}
+          />
         )}
 
         {phase === 'promote' && pending ? (
