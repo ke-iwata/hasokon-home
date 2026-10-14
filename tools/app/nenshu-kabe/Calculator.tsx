@@ -7,6 +7,7 @@ import {
   HOKENRYO_CHOSEI_NOTE,
   evaluateKabe,
   evaluateShaho,
+  isStudentFor,
   nextWall,
   toYmd,
   type Position,
@@ -21,8 +22,8 @@ const fmtMan = (yen: number) => {
 
 const POSITIONS: { value: Position; label: string }[] = [
   { value: 'spouse', label: '配偶者の扶養内で働いている（パート等）' },
-  { value: 'student', label: '親の扶養内・19〜22歳の学生' },
-  { value: 'dependent', label: '親の扶養内・その他' },
+  { value: 'age19to22', label: '親の扶養内・19〜22歳' },
+  { value: 'dependent', label: '親の扶養内・それ以外の年齢' },
   { value: 'none', label: '扶養には入っていない' },
 ];
 
@@ -47,6 +48,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const [position, setPosition] = useState<Position>('spouse');
   const [workplace, setWorkplace] = useState<Workplace>('not-covered');
   const [hours20, setHours20] = useState(false);
+  const [isStudent, setIsStudent] = useState(false);
   const [asOf, setAsOf] = useState(() => new Date(buildDate));
 
   useEffect(() => {
@@ -54,14 +56,17 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   }, []);
 
   const income = (Number(incomeMan) || 0) * 10_000;
-  const input = { income, position, workplace, hours20, asOf };
+  // 学生のチェックボックスは配偶者の扶養では隠れる。先にチェックしてから切り替えても
+  // 隠れた値が効かないよう、lib には false で渡す（チェックの状態そのものは残す）
+  const showStudentInput = position !== 'spouse';
+  const input = { income, position, workplace, hours20, isStudent: showStudentInput && isStudent, asOf };
   const results = evaluateKabe(input);
   const next = nextWall(results);
   const shaho = evaluateShaho(input);
   const showShahoInputs = position !== 'none';
   // 昼間部の学生は適用除外だが、この選択肢だけでは昼間部かどうかが分からないので
   // 判定は変えず、加入の可能性を出しているときに注記だけ添える（施行の前後どちらも）
-  const showStudentNote = position === 'student' && shaho.kind !== 'not-applicable';
+  const showStudentNote = isStudentFor(input) && shaho.kind !== 'not-applicable';
   // 施行日前に「損得計算機で計算できます」と案内すると、あちらは年目のセレクトを
   // 出さないので行き止まりになる。施行日の扱いを2ツールで揃える
   const choseiStarted = toYmd(asOf) >= HOKENRYO_CHOSEI_STARTS_ON;
@@ -89,7 +94,23 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               </option>
             ))}
           </select>
+          <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
+            19〜22歳は12月31日時点の年齢。学生でなくても選べます
+          </span>
         </label>
+        {showStudentInput && (
+          <div style={{ fontSize: 'var(--fs-sm)' }}>
+            <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                type="checkbox"
+                checked={isStudent}
+                onChange={(e) => setIsStudent(e.target.checked)}
+                style={{ width: 'auto' }}
+              />
+              学生（昼間部・夜間部とも）
+            </label>
+          </div>
+        )}
         {showShahoInputs && (
           <label>
             勤務先

@@ -1,4 +1,5 @@
 import {
+  ArrowCounterClockwiseIcon,
   ArrowLineUpIcon,
   ArticleIcon,
   BabyIcon,
@@ -20,6 +21,7 @@ import {
   CropIcon,
   CurrencyJpyIcon,
   DiceFiveIcon,
+  EnvelopeOpenIcon,
   FirstAidKitIcon,
   GiftIcon,
   GraduationCapIcon,
@@ -56,6 +58,7 @@ import {
   TranslateIcon,
   TrendUpIcon,
   TruckIcon,
+  UmbrellaIcon,
   UsersThreeIcon,
   WallIcon,
   WalletIcon,
@@ -80,6 +83,7 @@ import {
 type PhosphorIcon = typeof WallIcon;
 
 const ICONS: Record<string, PhosphorIcon> = {
+  ArrowCounterClockwise: ArrowCounterClockwiseIcon,
   ArrowLineUp: ArrowLineUpIcon,
   Article: ArticleIcon,
   Baby: BabyIcon,
@@ -101,6 +105,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Crop: CropIcon,
   CurrencyJpy: CurrencyJpyIcon,
   DiceFive: DiceFiveIcon,
+  EnvelopeOpen: EnvelopeOpenIcon,
   FirstAidKit: FirstAidKitIcon,
   Gift: GiftIcon,
   GraduationCap: GraduationCapIcon,
@@ -137,6 +142,7 @@ const ICONS: Record<string, PhosphorIcon> = {
   Translate: TranslateIcon,
   TrendUp: TrendUpIcon,
   Truck: TruckIcon,
+  Umbrella: UmbrellaIcon,
   UsersThree: UsersThreeIcon,
   Wall: WallIcon,
   Wallet: WalletIcon,
