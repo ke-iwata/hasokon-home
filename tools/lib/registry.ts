@@ -137,6 +137,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/seimei-hokenryo-kojo.md
+    slug: 'seimei-hokenryo-kojo',
+    // 保険の絵で Umbrella（傘＝備え）
+    icon: 'Umbrella',
+    name: '生命保険料控除 計算機',
+    description:
+      '控除証明書の支払額を新・旧契約×3区分で入れると、保険料控除申告書に書く生命保険料控除（所得税・住民税）を計算。令和8年分から始まる「23歳未満の扶養親族がいると一般の上限6万円」の特例と、新旧の有利な採り方を自動で当てはめます。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2026-10-31 まで（仕様書の「公開条件」。保険料控除申告書を書く10月下旬〜11月に間に合わせる）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',
@@ -270,7 +284,19 @@ export const tools: ToolDef[] = [
       '119万・130万・178万…あなたに関係する「年収の壁」と影響を判定。2026年10月の106万円の壁撤廃（週20時間の壁）と保険料調整制度に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-10-12',
+  },
+  {
+    // 仕様: docs/features/juminzei-hikazei-hantei.md
+    slug: 'juminzei-hikazei',
+    // 6月に届く住民税の通知書。EnvelopeOpen はほかで使っていない
+    icon: 'EnvelopeOpen',
+    name: '住民税 非課税 判定',
+    description:
+      '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-06',
   },
   {
     slug: 'jutaku-loan-kojo',
@@ -281,6 +307,19 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'wip',
     updatedAt: '2026-09-24',
+  },
+  {
+    // 仕様: docs/features/loan-hensai-simulation.md
+    slug: 'loan-hensai',
+    icon: 'CurrencyJpy',
+    name: 'ローン返済シミュレーション',
+    description:
+      '借入額・返済期間・金利から毎月の返済額・総返済額・利息の合計・年末残高を計算。元利均等と元金均等の比較、ボーナス払い、繰上返済（期間短縮／返済額軽減）、変動金利の5年ルール・125%ルールで金利が上がったときの返済額と払いきれない利息まで出します。',
+    category: 'お金・社会保険',
+    // テスト環境で運営者が仕様書「テスト」の表の8ケースを確かめたら `public`。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'invoice-nozeigaku',
@@ -334,7 +373,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃と保険料調整制度（本人負担25〜48%）に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'shitsugyo-hoken',
