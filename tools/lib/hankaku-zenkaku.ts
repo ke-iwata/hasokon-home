@@ -196,31 +196,36 @@ export interface CharCount {
 }
 
 /**
+ * 半角（1）として数える範囲。列挙した範囲以外は全角。
+ * 迷う文字は多めに数える側に倒す（#382）。
+ *
+ * ①・※・℃・×・α・罫線・“” など East Asian Width が Ambiguous の文字や、
+ * é などのアクセント付きのラテン文字も全角に数える。
+ * 用途が「文字数制限を超えていないか」の確認なので、少なく数える側には外さない。
+ */
+export const HALF_WIDTH_RANGES: readonly (readonly [number, number])[] = [
+  // ASCII（改行・タブを含む）
+  [0x0000, 0x007f],
+  // 半角カナ・半角ハングル
+  [0xff61, 0xffdc],
+  // 半角の記号
+  [0xffe8, 0xffee],
+];
+
+/**
  * 文字数を数える。
  *
- * 全角/半角の判定は East Asian Width（全角・広い）にもとづく簡易版。
  * 「全角2文字・半角1文字」で文字数制限のあるフォームを想定している。
+ * 半角は HALF_WIDTH_RANGES だけで、それ以外はすべて全角。
  */
 export function countChars(input: string): CharCount {
   let full = 0;
   let half = 0;
   for (const ch of input) {
     const code = ch.codePointAt(0) ?? 0;
-    const isFull =
-      // 全角の記号・句読点・かな・漢字・全角英数など
-      (code >= 0x1100 && code <= 0x115f) ||
-      (code >= 0x2e80 && code <= 0xa4cf) ||
-      (code >= 0xac00 && code <= 0xd7a3) ||
-      (code >= 0xf900 && code <= 0xfaff) ||
-      (code >= 0xfe30 && code <= 0xfe6f) ||
-      (code >= 0xff00 && code <= 0xff60) ||
-      (code >= 0xffe0 && code <= 0xffe6) ||
-      // 絵文字（Unicodeの East Asian Width が Wide の範囲。記号・顔・乗り物など）
-      (code >= 0x1f300 && code <= 0x1faff) ||
-      // 追加面の漢字（𩸽 など）
-      code >= 0x20000;
-    if (isFull) full += 1;
-    else half += 1;
+    const isHalf = HALF_WIDTH_RANGES.some(([from, to]) => code >= from && code <= to);
+    if (isHalf) half += 1;
+    else full += 1;
   }
   return { total: full + half, full, half };
 }

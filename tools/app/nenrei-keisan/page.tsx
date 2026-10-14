@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 const faq = [
   {
     q: '満18歳になるのは何年生まれですか？',
-    a: `${baseYear}年に満18歳になるのは、誕生日を迎えたあとの人が${baseYear - 18}年（${warekiYearLabels(baseYear - 18).join('・')}）生まれ、誕生日がまだの人が${baseYear - 19}年（${warekiYearLabels(baseYear - 19).join('・')}）生まれです。満年齢は誕生日で変わるため、同じ「18歳」でも生まれ年は2つにまたがります。学年でまとめて言いたいときは「${gradeRangeLabel(grade18)}」が同じ学年（${grade18.cohortYear}年度生まれ）で、この学年が${baseYear}年度中に全員18歳になります。ほかの年齢はこのページの「年齢の逆引き早見表」で0歳から100歳まで引けます。`,
+    a: `いま満18歳であるのは、今年の誕生日を迎えた人が${baseYear - 18}年（${warekiYearLabels(baseYear - 18).join('・')}）生まれ、まだの人が${baseYear - 19}年（${warekiYearLabels(baseYear - 19).join('・')}）生まれです。${baseYear}年中に満18歳になるのは${baseYear - 18}年生まれです。満年齢は誕生日で変わるため、同じ「18歳」でも生まれ年は2つにまたがります。学年でまとめて言いたいときは「${gradeRangeLabel(grade18)}」が同じ学年（${grade18.cohortYear}年度生まれ）で、この学年が${baseYear}年度中に全員18歳になります。ほかの年齢はこのページの「年齢の逆引き早見表」で0歳から100歳まで引けます。`,
   },
   {
     q: '満何歳何ヶ月はどう数えますか？',

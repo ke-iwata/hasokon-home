@@ -180,6 +180,27 @@ describe('countChars', () => {
   it('空文字は0件', () => {
     expect(countChars('')).toEqual({ total: 0, full: 0, half: 0 });
   });
+
+  // #382（docs/features/kokai-tool-seikaku-2026-10-13.md）：ASCII と半角カナ類以外は全角
+  it('①・※・→・○・★・℃・× などの全角記号は全角として数える', () => {
+    expect(countChars('①※→○★℃×')).toEqual({ total: 7, full: 7, half: 0 });
+  });
+
+  it('ギリシャ文字・罫線・引用符・三点リーダーは全角として数える', () => {
+    expect(countChars('αΩ─“”…').full).toBe(6);
+  });
+
+  it('アクセント付きのラテン文字は全角に倒す（多めに数える側）', () => {
+    expect(countChars('café')).toEqual({ total: 4, full: 1, half: 3 });
+  });
+
+  it('改行は半角として数える', () => {
+    expect(countChars('a\nb')).toEqual({ total: 3, full: 0, half: 3 });
+  });
+
+  it('半角の記号（U+FFE8〜FFEE）は半角、全角の通貨記号（U+FFE0〜）は全角', () => {
+    expect(countChars('\uffe8\uffee\uffe0')).toEqual({ total: 3, full: 1, half: 2 });
+  });
 });
 
 /**

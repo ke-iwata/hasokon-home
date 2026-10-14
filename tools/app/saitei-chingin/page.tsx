@@ -35,8 +35,8 @@ export const metadata: Metadata = {
 
 const faq = [
   {
-    q: '2026年10月から最低賃金はいくら上がりますか？',
-    a: `2026年7月28日に中央最低賃金審議会が令和8年度の改定の目安を答申しました。引上げ額の目安はAランク54円、B・Cランク56円で、目安どおりに改定されれば全国加重平均は${NATIONAL_AVERAGE.current}円から${NATIONAL_AVERAGE.meyasu}円（+55円、+4.9%）になります。実際には目安を上回る額で答申した県があり、47都道府県の答申額でみた全国加重平均は${NATIONAL_AVERAGE.answered}円（+${NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}円）です。実際の金額は都道府県ごとの地方最低賃金審議会が決めます。このページでは47都道府県の答申額と発効日を表示しています。`,
+    q: '2026年（令和8年度）の最低賃金はいくら上がりましたか？',
+    a: `47都道府県の改定額（答申額）が出そろい、全国加重平均は${NATIONAL_AVERAGE.current}円から${NATIONAL_AVERAGE.answered}円（+${NATIONAL_AVERAGE.answered - NATIONAL_AVERAGE.current}円）です。発効日は10月1日から12月2日まで都道府県ごとに異なります。経緯としては、2026年7月28日に中央最低賃金審議会が引上げ額の目安（Aランク54円、B・Cランク56円）を答申し、目安を上回る額で答申した県もありました。このページでは47都道府県の答申額と発効日を表示しています。`,
   },
   {
     q: '発効日はいつですか？全国同じですか？',
