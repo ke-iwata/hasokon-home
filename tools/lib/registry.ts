@@ -161,6 +161,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-13',
   },
   {
+    // 仕様: docs/features/aoiro-shinkoku-tokubetsu-kojo-r9.md
+    slug: 'aoiro-shinkoku-kojo',
+    // 個人事業の帳簿と申告。Briefcase は事業の絵として使える
+    icon: 'Briefcase',
+    name: '青色申告特別控除 判定（令和9年分から）',
+    description:
+      '2027年分から書面申告の青色申告特別控除は上限10万円に。e-Taxで65万円、優良な電子帳簿かデジタルシームレス保存で75万円、簡易簿記で前々年の収入1,000万円超は0円。帳簿と申告の方法から控除額・令和8年分との差・税額の目安を判定します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-14',
+  },
+  {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
     slug: 'kyuyo-nenkin-kojo',
     // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
