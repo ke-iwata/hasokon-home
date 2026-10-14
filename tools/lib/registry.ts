@@ -529,6 +529,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-03',
   },
   {
+    // 仕様: docs/features/shusseki-teishi-keisan.md
+    slug: 'shusseki-teishi',
+    // 熱が下がった日から数えるツールなので Thermometer。ほかで使っていない
+    icon: 'Thermometer',
+    name: '出席停止期間 計算機（インフルエンザ・新型コロナほか）',
+    description:
+      '発症日と解熱日を入れると、学校保健安全法施行規則19条の「発症後5日・解熱後2日（幼児3日）」から、学校・保育園に行ける最も早い日を0日目からのカレンダーで出します。新型コロナ・はしか・おたふくかぜ・プール熱も。',
+    category: '生活・健康',
+    stage: 'preview',
+    updatedAt: '2026-10-08',
+  },
+  {
     // 仕様: docs/features/kodomo-nisa.md
     slug: 'kodomo-nisa',
     // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
