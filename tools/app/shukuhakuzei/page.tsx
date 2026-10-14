@@ -123,7 +123,7 @@ export default function Page() {
               .filter((p) => p.rule.kind !== 'none')
               .map((p) => (
                 <tr key={`${a.id}-${p.from}`}>
-                  <td style={{ textAlign: 'left' }}>{a.name}</td>
+                  <td style={{ textAlign: 'left', whiteSpace: 'nowrap' }}>{a.name}</td>
                   <td style={{ textAlign: 'left' }}>
                     {p.to ? `〜${formatYmdJa(p.to)}` : `${formatYmdJa(p.from)}〜`}
                   </td>

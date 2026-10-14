@@ -227,6 +227,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | こどもNISAの政省令・金融庁Q&Aが出たとき | `lib/kodomo-nisa.ts` の冒頭の定数と `DATA_CHECKED_AT`。**600万円が大人の1,800万円の内か・払い出した分の枠が戻るか**が確定したら、ページの「政省令待ち」の文言を直す（[仕様](../docs/features/kodomo-nisa.md)の要確認3・4） |
 | 拠出限度額の改定時（iDeCo） | `lib/ideco.ts` の `LIMITS` / `SHARED_FRAME_*` / `INNER_CAP_BEFORE`。加入可能年齢は `JOIN_AGE_LIMIT_*` |
 | 税制改正時 | `lib/nenshu-kabe.ts` の `WALL_DEFS` を更新 |
+| 税制改正時（住民税の非課税限度額・給与所得控除） | `lib/juminzei-hikazei.ts` の `NENDO_RULES`（年度ごとの給与所得控除・所得税の基礎控除・扶養の所得要件）と `LIMIT_*`・`SPECIAL_LIMIT`・`KYUCHI_RATE`。条文は e-Gov 法令API で地方税法（`325AC0000000226`）の295条・附則3条の3、施行令（`325CO0000000245`）47条の3、施行規則（`329M50000002023`）9条の21を引く。**令和11年度（2028年の収入）は給与所得控除の特例5万円が切れる**ので、その年度を足すときに最低保障を確かめる。`nenshu-kabe` の119万円とは `tests/juminzei-hikazei.test.ts` が突き合わせている |
 | 毎年1月1日（ふるさと納税の年分） | `lib/furusato-nozei.ts` の `DEFAULT_TAX_YEAR` を1行上げ、`app/furusato-nozei/page.tsx` の title・description の「令和N年分」を直す（元日以降の CI を `tests/furusato-tax-year.test.ts` が落として知らせる）。新しい年分は `TAX_YEARS` と `SPECIAL_CAP_FIXED`（特例分の定額上限。令和9年分から193万円）に1行ずつ足す。年分の切り替えのラジオは `TAX_YEAR_SELECTOR_UNTIL`（2027-03-15）を過ぎると畳まれる。[仕様](../docs/features/furusato-nozei-r9-kirikae.md) |
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**title・description の年表記**（「令和8年分」）。早見表の数値と見出しの年分は `DEFAULT_TAX_YEAR` から生成されるので自動で追随するが、title・description と本文の改正の説明の年の文字列は追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
@@ -250,6 +251,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 標準算定方式の改定時（養育費） | `lib/yoikuhi.ts` の `BASIC_INCOME_RATES` / `LIVING_COST_INDEX` / `INCOME_LIMIT`（裁判所の司法研究を正とする。現行は令和元年12月改定版）。法務省令が変わったら `STATUTORY_SUPPORT_PER_CHILD` / `LIEN_CAP_PER_CHILD` |
 | インボイスの経過措置が改正されたとき | `lib/invoice-nozeigaku.ts` の `YEARS`（年ごとに使える特例）・`SPECIAL_RATES`（2割・3割）・`BUSINESS_TYPES`（みなし仕入率）・`PURCHASE_TRANSITION`（7・5・3割控除）。国税庁のインボイス特設サイトとインボイスQ&Aを正とする。**3割特例は2028年分で終わる**ので、それ以降の措置が決まるまで追加は不要 |
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
+| 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 宿泊税の新設・改正時（2027-02・2027-04 の施行後と、以後は毎年4月に見直す） | `lib/shukuhakuzei.ts` の `AREAS` の `periods` に施行日つきの期間を1つ足し、`DATA_CHECKED_AT` を進める（確認しただけでも進める）。東京 3% の端数処理・上限を条例で確かめたら `TOKYO_2027` の値と `TOKYO_RATE_DETAILS_CONFIRMED`、沖縄の併課を確かめたら `OKINAWA_SPLIT_CONFIRMED` を直し、`tests/shukuhakuzei.test.ts` の `test.todo` を本テストにする |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
@@ -258,13 +260,15 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール58本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`shukuhakuzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの47本は `public`。
+- **ツール69本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
   `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
   `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
   `seimei-hokenryo-kojo`（生命保険料控除）は運営者の確認後 2026-10-31 までに、
+  `loan-hensai`（ローン返済シミュレーション。期日なし）は運営者がテスト環境で[仕様](../docs/features/loan-hensai-simulation.md)の「テスト」の8ケースを確かめたら、
+  `renkyu-keisan`（連休計算機）と `shusseki-teishi`（出席停止期間）は運営者の確認後 2026-11-30 までに、
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は

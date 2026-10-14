@@ -150,7 +150,7 @@ export const AREAS: Area[] = [
       },
     ],
     exemptions: ['修学旅行・部活動の大会参加などは課税免除です（証明書が必要）。'],
-    notes: ['石垣市・宮古島市などでは県分と市町村分に分かれます（合計は同じ）。'],
+    notes: ['石垣市・宮古島市などでは県分と市町村分に分かれます（合計は同じとみられます）。'],
   },
   {
     id: 'kyoto',
@@ -371,7 +371,7 @@ export function totalTax(
  * - 改正の予定も前の期間も無い自治体（京都市・大阪府）→ null（2 行目を出さない）
  */
 export type Revision =
-  | { kind: 'after'; from: string; tax: number; diff: number }
+  | { kind: 'after'; from: string; tax: number; diff: number; newlyIntroduced: boolean }
   | { kind: 'before'; until: string; tax: number; diff: number; newlyIntroduced: boolean };
 
 export function revisionCompare(area: Area, price: number, stayDate: string): Revision | null {
@@ -381,7 +381,13 @@ export function revisionCompare(area: Area, price: number, stayDate: string): Re
   const next = area.periods[i + 1];
   if (next) {
     const tax = taxByRule(next.rule, price).tax;
-    return { kind: 'after', from: next.from, tax, diff: tax - now.tax };
+    return {
+      kind: 'after',
+      from: next.from,
+      tax,
+      diff: tax - now.tax,
+      newlyIntroduced: now.period.rule.kind === 'none',
+    };
   }
   const prev = area.periods[i - 1];
   if (prev && prev.to) {

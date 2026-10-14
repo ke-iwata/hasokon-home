@@ -46,6 +46,7 @@ describe('東京都', () => {
       from: '2027-04-01',
       tax: 0,
       diff: -100,
+      newlyIntroduced: false,
     });
     expect(revisionCompare(tokyo, 12_000, '2027-04-01')).toMatchObject({
       kind: 'before',
@@ -94,6 +95,7 @@ describe('沖縄県', () => {
       from: '2027-02-01',
       tax: 600,
       diff: 600,
+      newlyIntroduced: true,
     });
   });
 

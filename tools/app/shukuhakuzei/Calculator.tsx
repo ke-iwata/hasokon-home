@@ -40,7 +40,7 @@ function noteText(note: Note): string {
 function revisionText(r: Revision): string {
   const sign = r.diff > 0 ? `+${yen(r.diff)}` : r.diff < 0 ? `−${yen(-r.diff)}` : '差なし';
   if (r.kind === 'after') {
-    return `施行後（${formatYmdJa(r.from)}〜）の宿泊なら1人1泊 ${yen(r.tax)}（改正で ${sign}）`;
+    return `施行後（${formatYmdJa(r.from)}〜）の宿泊なら1人1泊 ${yen(r.tax)}（${r.newlyIntroduced ? '新設' : `改正で ${sign}`}）`;
   }
   if (r.newlyIntroduced) return `${formatYmdJa(r.until)}までの宿泊は課税されていませんでした（新設）`;
   return `${formatYmdJa(r.until)}までの宿泊なら1人1泊 ${yen(r.tax)}（改正で ${sign}）`;

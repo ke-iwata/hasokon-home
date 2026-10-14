@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-11',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -303,6 +303,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-12',
   },
   {
+    // 仕様: docs/features/juminzei-hikazei-hantei.md
+    slug: 'juminzei-hikazei',
+    // 6月に届く住民税の通知書。EnvelopeOpen はほかで使っていない
+    icon: 'EnvelopeOpen',
+    name: '住民税 非課税 判定',
+    description:
+      '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-06',
+  },
+  {
     slug: 'jutaku-loan-kojo',
     icon: 'House',
     name: '住宅ローン控除 計算機',
@@ -311,6 +323,19 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'wip',
     updatedAt: '2026-09-24',
+  },
+  {
+    // 仕様: docs/features/loan-hensai-simulation.md
+    slug: 'loan-hensai',
+    icon: 'CurrencyJpy',
+    name: 'ローン返済シミュレーション',
+    description:
+      '借入額・返済期間・金利から毎月の返済額・総返済額・利息の合計・年末残高を計算。元利均等と元金均等の比較、ボーナス払い、繰上返済（期間短縮／返済額軽減）、変動金利の5年ルール・125%ルールで金利が上がったときの返済額と払いきれない利息まで出します。',
+    category: 'お金・社会保険',
+    // テスト環境で運営者が仕様書「テスト」の表の8ケースを確かめたら `public`。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'invoice-nozeigaku',
@@ -520,6 +545,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-03',
   },
   {
+    // 仕様: docs/features/shusseki-teishi-keisan.md
+    slug: 'shusseki-teishi',
+    // 熱が下がった日から数えるツールなので Thermometer。ほかで使っていない
+    icon: 'Thermometer',
+    name: '出席停止期間 計算機（インフルエンザ・新型コロナほか）',
+    description:
+      '発症日と解熱日を入れると、学校保健安全法施行規則19条の「発症後5日・解熱後2日（幼児3日）」から、学校・保育園に行ける最も早い日を0日目からのカレンダーで出します。新型コロナ・はしか・おたふくかぜ・プール熱も。',
+    category: '生活・健康',
+    stage: 'preview',
+    updatedAt: '2026-10-08',
+  },
+  {
     // 仕様: docs/features/kodomo-nisa.md
     slug: 'kodomo-nisa',
     // 育てる積立なので Plant。Baby / BabyCarriage は出産系で使用中
@@ -553,7 +590,7 @@ export const tools: ToolDef[] = [
       '医療費が高額になったとき、1か月の自己負担がいくらまでで済むかを計算。2026年8月の改正後の限度額と、新設された年間上限（8月〜翌年7月）に対応。改正前の額と並べて表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-08-13',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'iryohi-kojo',
@@ -573,7 +610,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-12',
   },
   {
     slug: 'zangyodai-keisan',
@@ -672,6 +709,26 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'public',
     updatedAt: '2026-10-06',
+  },
+  {
+    slug: 'shichigosan',
+    icon: 'Baby',
+    name: '七五三はいつ？早見表・計算',
+    description:
+      '子どもの生年月日から、3歳・5歳・7歳の七五三の年を数え年・満年齢の両方で計算。11月15日の曜日と、早生まれの子が同じ学年と揃える年も表示。今年の早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
+  },
+  {
+    slug: 'yakudoshi',
+    icon: 'Shield',
+    name: '厄年・長寿祝い 早見表',
+    description:
+      '生年月日から前厄・本厄・後厄の年を数え年で一生分計算。還暦・古希・喜寿・米寿など長寿祝いの年も数え年・満年齢の両方で表示。男女別の厄年早見表つき。',
+    category: '計算・変換',
+    stage: 'preview',
+    updatedAt: '2026-10-07',
   },
   {
     slug: 'renkyu-keisan',

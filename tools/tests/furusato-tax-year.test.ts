@@ -1,8 +1,11 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { metadata } from '@/app/furusato-nozei/page';
 import {
   calcFurusato,
   DEFAULT_TAX_YEAR,
+  RECONSTRUCTION_RATE,
   hayamihyo,
   hayamihyoInput,
   HAYAMIHYO_FAMILIES,
@@ -151,5 +154,36 @@ describe('特例分の193万円の定額上限（令和9年分から）', () => 
 
   it('早見表の範囲（年収1,500万円まで）では、令和9年分も令和8年分と同じ額', () => {
     expect(hayamihyo(2027)).toEqual(hayamihyo(2026));
+  });
+});
+
+/**
+ * 1.021 の説明。令和9年分（2027年の寄附）を選べるページなので、
+ * 「1.021 は復興特別所得税（所得税額の2.1%）」は令和9年分では誤り
+ * （2027年分からは復興1.1% + 防衛特別1.0%）。
+ * 仕様: docs/features/kogaku-furusato-saitei-seikaku-2026-10-12.md の C
+ */
+describe('1.021 の説明（令和9年分を選べるページ）', () => {
+  const page = readFileSync(join(__dirname, '../app/furusato-nozei/page.tsx'), 'utf8');
+
+  it('令和9年分を選べる', () => {
+    expect(TAX_YEARS).toContain(2027);
+  });
+
+  it('本文に「1.021 は復興特別所得税（所得税額の2.1%）」が出ない', () => {
+    expect(page).not.toMatch(/復興特別所得税（所得税額の2\.1%）/);
+    expect(page).not.toMatch(/1\.021 は復興特別所得税/);
+  });
+
+  it('2027年分からの復興1.1% + 防衛特別1.0% を説明している', () => {
+    expect(page).toMatch(/復興特別所得税1\.1%と防衛特別所得税1\.0%の合計/);
+  });
+
+  it('公開前（preview）の防衛特別所得税のページへリンクしない', () => {
+    expect(page).not.toMatch(/boei-tokubetsu-shotokuzei/);
+  });
+
+  it('掛け算の値 1.021 は変えない（合計2.1%は改正前後で同じ）', () => {
+    expect(RECONSTRUCTION_RATE).toBe(1.021);
   });
 });
