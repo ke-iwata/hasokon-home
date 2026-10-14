@@ -8,6 +8,18 @@
 
 ---
 
+## 2026-10-13：宿泊税 計算機を足した（stage: preview）
+
+[features/shukuhakuzei-keisan.md](../../docs/features/shukuhakuzei-keisan.md)。東京都（2027-04 から 3%）・沖縄県（2027-02 から 2%）・京都市・大阪府の宿泊税を、料金・人数・泊数・宿泊日から出し、改正の前後を並べる。
+
+- 税率表は `lib/shukuhakuzei.ts` の `AREAS`（自治体ごとの `periods`）。型は「区分ごとの定額」と「定率」の 2 つと、沖縄の施行前を表す `none`
+- 連泊は 1 泊ごとにその宿泊日の期間を引く（東京 2027-03-31 から 2 泊 = 200 + 600 円）
+- 率は百分率の整数で持つ（`ratePercent`）。小数の 0.03 を掛けると切り捨て前の誤差で 1 円ずれるため
+- **東京 3% の端数処理・上限は一次情報に書かれておらず仮置き**（1 円未満切り捨て・上限なし。画面に注記）。
+  `TOKYO_RATE_DETAILS_CONFIRMED` / `OKINAWA_SPLIT_CONFIRMED` が false のまま `stage` を `public` にするとテストが落ちる
+- 仕様のカテゴリ「税金」は registry に無いので `お金・社会保険` にした
+- 確認日 `DATA_CHECKED_AT` は形式だけをテストする（古さで CI を落とさない）
+
 ## 2026-10-08：出席停止期間 計算機を足した（stage: 'preview'）
 
 仕様は [shusseki-teishi-keisan.md](../../docs/features/shusseki-teishi-keisan.md)。
