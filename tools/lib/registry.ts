@@ -114,7 +114,7 @@ export const tools: ToolDef[] = [
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-27',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'furusato-nozei',
@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -302,7 +302,7 @@ export const tools: ToolDef[] = [
       '2026年10月1日にビール系飲料の酒税が1klあたり155,000円に一本化されました。ビールは350mlで9.10円の減税、発泡酒・第三のビールは7.26円、チューハイ等は7.00円の増税。週に飲む本数を入れると、種類ごとに1本あたり・年間でいくら変わったかが分かります。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-01',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'nenshu-kabe',
@@ -506,6 +506,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/sozokuzei-keisan.md
+    slug: 'sozokuzei-keisan',
+    // 相続人の構成（家系図）から数えるツールなので TreeStructure。ほかで使っていない
+    icon: 'TreeStructure',
+    name: '相続税 計算機',
+    description:
+      '遺産額と相続人の構成から、基礎控除（3,000万円＋600万円×法定相続人）・相続税の総額・1人ずつの納付額を計算。養子の数の上限、放棄した人、死亡保険金の非課税枠、配偶者の税額軽減、2割加算、未成年者控除まで。加算する生前贈与の額も入れられます（判定は贈与税の計算機）。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-15',
+  },
+  {
     // 仕様: docs/features/jutaku-shutoku-shikin-hikazei.md
     slug: 'jutaku-shutoku-shikin',
     // House は住宅ローン控除、HandArrowDown は贈与税が使っている。同じ住宅購入層で並ぶので、別の家の絵 HouseLine
@@ -555,6 +567,19 @@ export const tools: ToolDef[] = [
     category: '生活・健康',
     stage: 'preview',
     updatedAt: '2026-10-03',
+  },
+  {
+    // 仕様: docs/features/kakutei-shinkoku-hitsuyo-hantei.md
+    slug: 'kakutei-shinkoku-hantei',
+    // 申告書なので ClipboardText。Receipt は医療費控除・年末調整などで使用中
+    icon: 'ClipboardText',
+    name: '確定申告が必要か 判定（令和8年分）',
+    description:
+      '給与・年金・副業・控除の状況を選ぶと、所得税の確定申告が「必要」「不要」「不要だが申告すれば戻る（還付申告）」のどれかと、所得税は不要でも住民税の申告が要るかを分けて答えます。申告の期限と還付申告を出せる期間、次に使う計算機も出します。',
+    category: 'お金・社会保険',
+    // テスト環境で運営者が仕様書の11ケースを確認したら public（遅くとも 2026-12-25）
+    stage: 'preview',
+    updatedAt: '2026-10-11',
   },
   {
     // 仕様: docs/features/shusseki-teishi-keisan.md
@@ -622,7 +647,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'zangyodai-keisan',
@@ -720,7 +745,7 @@ export const tools: ToolDef[] = [
       '生年月日から満年齢と満何歳何ヶ月を計算。年齢早見表・「◯歳は何年生まれ」の逆引き、西暦⇔和暦（明治〜令和）の変換、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'shichigosan',
@@ -772,7 +797,7 @@ export const tools: ToolDef[] = [
       '文字数をその場でカウント。スペース・改行の有無、行数・段落数、原稿用紙換算、目標文字数に対応。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-17',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'qr-code',
@@ -811,7 +836,7 @@ export const tools: ToolDef[] = [
       '半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選べます。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-09-26',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'gazo-resize',

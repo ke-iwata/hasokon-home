@@ -228,13 +228,13 @@ export default function Calculator() {
           <div className="panel quiet">
             <p style={{ margin: '0 0 8px', fontWeight: 700 }}>
               {revised
-                ? '安く買えるようになったもの・高くなったもの'
+                ? '酒税が下がったもの・上がったもの'
                 : `${formatDate(REVISION_DATE)}をまたぐときの買い方`}
             </p>
             <dl className="kv">
               {sorted.buyBefore.length > 0 && (
                 <div>
-                  <dt>{revised ? '値上がりした（増税）' : '9月中に買うと得'}</dt>
+                  <dt>{revised ? '酒税が上がった（増税）' : '9月中に買うと得'}</dt>
                   <dd>
                     {sorted.buyBefore
                       .map((l) => `${l.category.calcLabel ?? l.category.label}（${l.ml}ml）`)
@@ -244,7 +244,7 @@ export default function Calculator() {
               )}
               {sorted.wait.length > 0 && (
                 <div>
-                  <dt>{revised ? '値下がりした（減税）' : '10月以降のほうが得'}</dt>
+                  <dt>{revised ? '酒税が下がった（減税）' : '10月以降のほうが得'}</dt>
                   <dd>
                     {sorted.wait
                       .map((l) => `${l.category.calcLabel ?? l.category.label}（${l.ml}ml）`)
@@ -264,7 +264,9 @@ export default function Calculator() {
               )}
             </dl>
             <p className="hint" style={{ marginTop: 8 }}>
-              増税になるものは施行前に、減税になるものは施行後に買うほうが酒税のぶんだけ得になります。ただし計算しているのは
+              {!revised &&
+                '増税になるものは施行前に、減税になるものは施行後に買うほうが酒税のぶんだけ得になります。ただし'}
+              計算しているのは
               <strong>酒税の額だけ</strong>
               です。店頭価格は各社の改定発表しだいで、酒税の増減がそのまま価格に乗るとは限りません。
               {MINOR_DRINKING_NOTE}飲みすぎにご注意ください。
