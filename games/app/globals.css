@@ -6176,6 +6176,216 @@ button.hf-card {
 }
 
 
+/* ---- ヒット＆ブロー ---- */
+
+/* 高さの優先順位は テンキー ＞ 入力欄 ＞ メモ ＞ 表（docs/features/game-hit-blow.md）。
+   表だけが画面の高さから `height` を決め、中だけがスクロールする。
+   `--hb-chrome` は表以外が使う高さの実測値（ページの頭から操作の行の下まで。390×844 と 1280×900 で
+   約 570px）。390×844 では開いた直後のままテンキーと「決定」まで画面に入り、320×568 では表が下限の
+   5 行（見出し＋4 手）になる */
+.hb-game {
+  --hb-row: 26px;
+  --hb-chrome: 585px;
+}
+
+.hb-modes,
+.hb-options {
+  margin: 0 0 8px;
+}
+
+/* 設定の行。モードで中身が変わっても高さは変えない */
+.hb-options {
+  height: 38px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.hb-option-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hb-match-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  height: 1.4rem;
+  line-height: 1.4rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.hb-match-head > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hb-logs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.hb-logs-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+/* 表の高さは「行数ぶん」を確保する（4 手〜10 手。画面の約束 1） */
+.hb-log {
+  height: clamp(
+    calc(var(--hb-row) * 5),
+    calc(100dvh - var(--hb-chrome)),
+    calc(var(--hb-row) * 11)
+  );
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.hb-log table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.hb-log th,
+.hb-log td {
+  height: var(--hb-row);
+  line-height: var(--hb-row);
+  padding: 0 6px;
+  text-align: center;
+}
+
+.hb-log th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hb-log td:first-child {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.hb-code {
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.hb-solved td {
+  background: color-mix(in srgb, var(--ok) 18%, var(--surface));
+}
+
+.hb-status {
+  height: 1.6rem;
+  line-height: 1.6rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.hb-slots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+}
+
+.hb-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.hb-slot-next {
+  border-color: var(--accent);
+}
+
+/* 対戦で自分の数を決めるあいだは、推測と見分けられるよう破線にする */
+.hb-slots-secret .hb-slot {
+  border-style: dashed;
+}
+
+.hb-keys {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.hb-key {
+  height: 48px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.hb-key:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hb-key:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.hb-key.hb-key-used {
+  border-color: var(--accent);
+}
+
+/* メモ：無い（灰）／ある（黄）。色だけでなく線でも見分けられるようにする */
+.hb-key.hb-memo-no {
+  background: var(--cell-closed);
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.hb-key.hb-memo-yes {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+
+.hb-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.hb-actions .btn {
+  min-height: 44px;
+  padding: 8px 16px;
+}
+
+.hb-memo-toggle.active {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+
 @media (max-width: 600px) {
   /* 内側の余白は18pxもあると上下で36px使う。狭い画面ではそのぶんを盤に回す */
   .card {
@@ -6765,6 +6975,14 @@ button.hf-card {
 
   .sjk-option {
     font-size: 0.8rem;
+  }
+
+  .hb-keys {
+    gap: 5px;
+  }
+
+  .hb-actions .btn {
+    padding: 8px 12px;
   }
 
   /* 320px 幅（iPhone SE 第1世代級）で残り数の行が「やり直す」まで収まるように、
