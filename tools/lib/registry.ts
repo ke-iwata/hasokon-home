@@ -760,7 +760,7 @@ export const tools: ToolDef[] = [
       '文字数をその場でカウント。スペース・改行の有無、行数・段落数、原稿用紙換算、目標文字数に対応。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-17',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'qr-code',

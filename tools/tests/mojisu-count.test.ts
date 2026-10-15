@@ -84,6 +84,12 @@ describe('countText 文字数', () => {
 });
 
 describe('countText 全角・半角の内訳', () => {
+  // 半角⇔全角と同じ定義（ASCII と半角カナ類以外は全角）。docs/features/kokai-tool-seikaku-2026-10-13.md
+  it('①・※・é などの記号やアクセント付き文字は全角として数える', () => {
+    expect(countText('①※é').full).toBe(3);
+    expect(countText('①※é').half).toBe(0);
+  });
+
   it('全角と半角を数え分け、合計は改行を除いた文字数と一致する', () => {
     const c = countText('あいうAB');
     expect(c.full).toBe(3);
