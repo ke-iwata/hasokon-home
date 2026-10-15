@@ -16,6 +16,7 @@ import {
   OTHER_SPARKLING_ABV_LIMIT_BEFORE,
   REVISION_DATE,
   SIZES,
+  SOURCE_NTA_RATES,
   STAGES,
   WEEKS_PER_YEAR,
   adviceFor,
@@ -607,5 +608,30 @@ describe('施行後の文面', () => {
 
   it('registry の updatedAt を施行日以降に上げている（sitemap の lastmod → IndexNow）', () => {
     expect(tools.find((t) => t.slug === 'shuzei-kaisei')!.updatedAt >= REVISION_DATE).toBe(true);
+  });
+});
+
+describe('公開中ツールの正確さ（2026-10-15 点検）', () => {
+  // docs/features/kokai-tool-seikaku-2026-10-15.md。faq は非 export の定数なのでファイルとして読む
+  const pageSource = readFileSync(join(__dirname, '../app/shuzei-kaisei/page.tsx'), 'utf8');
+
+  it('「2026年10月に動くのは発泡性酒類だけ」と言い切らない（低アルコールの蒸留酒類・リキュールの特例税率も上がった）', () => {
+    expect(pageSource).not.toContain('発泡性酒類だけ');
+  });
+
+  it('「扱わないこと」の清酒・ワイン・ウイスキーの箇条で「対象外」と言わない', () => {
+    const item = pageSource.match(/清酒・ワイン・ウイスキーなどの税率[\s\S]*?<\/li>/);
+    expect(item).not.toBeNull();
+    expect(item![0]).not.toContain('対象外');
+  });
+
+  it('特例税率に触れ、対象が「発泡性の無い」酒類だと書いている（チューハイのリキュール本則と食い違って読めないように）', () => {
+    expect(pageSource).toContain('特例税率');
+    expect(pageSource).toContain('発泡性の無い');
+  });
+
+  it('出典ラベルが改正前の期間を名乗らない（同じ URL が令和8年10月1日〜の表に差し替わった）', () => {
+    expect(SOURCE_NTA_RATES.label).not.toContain('令和８年９月30日');
+    expect(SOURCE_NTA_RATES.label).toContain('令和８年10月１日');
   });
 });

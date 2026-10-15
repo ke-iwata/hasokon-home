@@ -114,7 +114,7 @@ export const tools: ToolDef[] = [
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-27',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'furusato-nozei',
@@ -290,7 +290,7 @@ export const tools: ToolDef[] = [
       '2026年10月1日にビール系飲料の酒税が1klあたり155,000円に一本化されました。ビールは350mlで9.10円の減税、発泡酒・第三のビールは7.26円、チューハイ等は7.00円の増税。週に飲む本数を入れると、種類ごとに1本あたり・年間でいくら変わったかが分かります。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-01',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'nenshu-kabe',
