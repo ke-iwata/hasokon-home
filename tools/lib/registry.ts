@@ -151,6 +151,22 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-12',
   },
   {
+    // 仕様: docs/features/shukuhakuzei-keisan.md
+    slug: 'shukuhakuzei',
+    // 宿泊の絵で Bed
+    icon: 'Bed',
+    name: '宿泊税 計算機',
+    description:
+      '泊まる場所と1人1泊の料金を入れると宿泊税がいくらかを計算。東京都の2027年4月からの3%（13,000円未満は非課税）、沖縄県の2027年2月からの2%（上限2,000円）、京都市・大阪府に対応し、改正前との差も出します。',
+    category: 'お金・社会保険',
+    // 公開は遅くとも 2027-01-15 まで（仕様書の「公開条件」。沖縄の施行 2027-02-01 の2週間前）。
+    // 東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確認するまで上げない
+    // （lib/shukuhakuzei.ts の TOKYO_RATE_DETAILS_CONFIRMED / OKINAWA_SPLIT_CONFIRMED。テストが落とす）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-10-13',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',

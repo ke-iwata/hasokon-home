@@ -1378,6 +1378,100 @@ ol {
   margin-top: 6px;
 }
 
+/* ---- はさみ将棋 ----
+   仕様: docs/features/game-hasami-shogi.md「画面」。盤と駒は詰将棋と共通の部品（app/_shogi/ShogiBoard.tsx）で、
+   `.ts-board` ほかの規則をそのまま使う。大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。`--chrome` は盤以外が使う高さ（パンくず・見出し・リード文・
+   設定の段・ルールの畳み・状態の行・記録の帯・取った駒の2行・知らせの行・ボタンの行まで）の実測値 */
+.hs-game {
+  --chrome: 560px;
+  --board-max: 520px;
+}
+
+.hs-rules {
+  margin: 8px 0;
+}
+
+.hs-rules .btn-row {
+  margin-top: 8px;
+}
+
+/* 取った駒の行。枚数で伸び縮みしないよう高さを固定する（画面の約束 1） */
+.hs-captures {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 1.8em;
+  line-height: 1.8;
+  margin: 4px auto;
+  overflow: hidden;
+  font-size: 0.9rem;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+}
+
+.hs-captures-label {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+  width: 3.5em;
+}
+
+.hs-captures-pieces {
+  flex: 1;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.hs-captures-count {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* かんたんだけ：はさめるマスに枠（色だけに頼らず太い枠で示す） */
+.ts-cell.hs-hint {
+  stroke: var(--accent);
+  stroke-width: 0.1;
+}
+
+/* 取られた瞬間の光り（0.3 秒）。はさんだ駒と、取られた駒の残像 */
+.ts-cell.hs-flash {
+  fill: color-mix(in srgb, var(--accent) 45%, transparent);
+  animation: hs-flash 0.3s ease-out;
+}
+
+.hs-ghost {
+  animation: hs-ghost 0.3s ease-out forwards;
+}
+
+@keyframes hs-flash {
+  from {
+    fill: color-mix(in srgb, var(--accent) 80%, transparent);
+  }
+}
+
+@keyframes hs-ghost {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* 動きを減らす設定では光らせない（仕様書の「画面」） */
+@media (prefers-reduced-motion: reduce) {
+  .ts-cell.hs-flash {
+    fill: transparent;
+    animation: none;
+  }
+
+  .hs-ghost {
+    display: none;
+  }
+}
+
 /* ---- マッチ3パズル ----
 
    仕様: docs/features/game-match3.md「操作」「画面」。
