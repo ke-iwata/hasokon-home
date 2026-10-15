@@ -232,6 +232,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | ふるさと納税の年度改定時 | `lib/furusato-nozei.ts` の定数（給与所得控除・基礎控除・所得税の速算表・各控除額）と、`app/furusato-nozei/page.tsx` の**title・description の年表記**（「令和8年分」）。早見表の数値と見出しの年分は `DEFAULT_TAX_YEAR` から生成されるので自動で追随するが、title・description と本文の改正の説明の年の文字列は追随しない |
 | 電気料金改定時 | `lib/aircon-denkidai.ts` の単価目安を更新 |
 | 毎年1月（国民年金保険料の翌年度額が公表されたら） | `lib/kokunen-ikuji-menjo.ts` の `MONTHLY_PREMIUM` に翌年度の月額を1行足し、`DATA_CHECKED_AT` を直す（日本年金機構「国民年金保険料」を正とする）。足すまでは未公表の年度を最新年度の額で概算し、画面に「概算」と出る |
+| 相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/sozokuzei-keisan.ts` の冒頭の定数（`BASIC_FIXED`・`BASIC_PER_HEIR`・`BRACKETS`・`SPOUSE_RELIEF_FLOOR`・`SURCHARGE_RATE`・未成年者／障害者控除・非課税枠）と `DATA_CHECKED_AT`。国税庁 No.4152・4155 ほかと e-Gov の相続税法を正とする。**加算する生前贈与の期間はここに持たない**（`lib/zoyozei-keisan.ts` の `TRANSITION`）。総額用の相続人（`LegalHeirs`）と実際の取得者（`Acquirer`）は型を分けてあるので、混ぜないこと |
 | 贈与税・相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/zoyozei-keisan.ts` の速算表2本（`GENERAL_BRACKETS` / `SPECIAL_BRACKETS`）・`BASIC_DEDUCTION`・`EXTENDED_EXCLUSION`・精算課税の `SETTLEMENT_*`・加算期間の切り替え日 `TRANSITION`。国税庁 No.4408・No.4161・No.4103 を正とし、`DATA_CHECKED_AT` を進める。`app/zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の**適用期限**（住宅取得等資金 2026-12-31・結婚子育て 2027-03-31）も同じときに確かめる。**加算されるかは贈与日ではなく相続開始日で決まる**（「2026年内に駆け込むと有利」と読める文言を置かない） |
 | 毎年12月（税制改正大綱が出たら・住宅取得等資金の非課税） | `lib/jutaku-shutoku-shikin.ts` の `MEASURE.extension` を `'undecided'` → `'extended'` / `'ended'` に切り替える（画面の文言はこの1語で決まる）。延長なら `MEASURE.to`・`LIMITS`・床面積や所得の閾値も大綱と国税庁 No.4508 に合わせ、`DATA_CHECKED_AT` を進める。70条の2と70条の3の一方だけが延長されたら、そのときにフラグを2つに分ける。**延長の見通しを画面に書かない** |
 | 相続登記・相続の期限の改正時（登録免許税の免税措置の延長も） | `lib/sozoku-toki-kigen.ts` の冒頭の定数（`GIMUKA_START`・`KEIKA_SOCHI_DEADLINE`・期間4つ・`MENZEI_DEADLINE`）と `DATA_CHECKED_AT`。法務省「相続登記の申請義務化に関するQ&A」と e-Gov の条文を正とする。**免税措置（租特法84条の2の3）は現行 2027-03-31 まで**なので、毎年12月の税制改正大綱で延長を確かめる。税の期限の繰り下げは `nissu-keisan` の `HOLIDAYS` に乗っているので、祝日を足せば自動で追随する |
@@ -260,7 +261,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール70本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei`・`kakutei-shinkoku-hantei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
+- **ツール71本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei`・`kakutei-shinkoku-hantei`・`sozokuzei-keisan` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
   `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
   `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
@@ -268,7 +269,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   `loan-hensai`（ローン返済シミュレーション。期日なし）は運営者がテスト環境で[仕様](../docs/features/loan-hensai-simulation.md)の「テスト」の8ケースを確かめたら、
   `renkyu-keisan`（連休計算機）と `shusseki-teishi`（出席停止期間）は運営者の確認後 2026-11-30 までに、
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`kakutei-shinkoku-hantei` は運営者が仕様書の11ケースを確認したら 2026-12-25 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`kakutei-shinkoku-hantei` は運営者が仕様書の11ケースを確認したら 2026-12-25 までに、`sozokuzei-keisan`（相続税 計算機）は運営者がテスト環境で[仕様](../docs/features/sozokuzei-keisan.md)の検算ケースを確かめたら 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は

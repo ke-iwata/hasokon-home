@@ -494,6 +494,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 仕様: docs/features/sozokuzei-keisan.md
+    slug: 'sozokuzei-keisan',
+    // 相続人の構成（家系図）から数えるツールなので TreeStructure。ほかで使っていない
+    icon: 'TreeStructure',
+    name: '相続税 計算機',
+    description:
+      '遺産額と相続人の構成から、基礎控除（3,000万円＋600万円×法定相続人）・相続税の総額・1人ずつの納付額を計算。養子の数の上限、放棄した人、死亡保険金の非課税枠、配偶者の税額軽減、2割加算、未成年者控除まで。加算する生前贈与の額も入れられます（判定は贈与税の計算機）。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-15',
+  },
+  {
     // 仕様: docs/features/jutaku-shutoku-shikin-hikazei.md
     slug: 'jutaku-shutoku-shikin',
     // House は住宅ローン控除、HandArrowDown は贈与税が使っている。同じ住宅購入層で並ぶので、別の家の絵 HouseLine
