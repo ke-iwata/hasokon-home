@@ -117,6 +117,8 @@ describe('consistent（ヒントと矛盾しない候補）', () => {
   it('全 5,040 通りの答えで、ふつうの CPU の手順で当てきるまで答えが候補に残る', () => {
     const rng = mulberry32(2026);
     let maxMoves = 0;
+    // 5,040 局 × 数手ぶん expect を呼ぶと遅いので、外れた答えを集めて最後に 1 回だけ比べる
+    const lost: Code[] = [];
     for (const secret of allCodes(4)) {
       let cands: Code[] = [...allCodes(4)];
       let moves = 0;
@@ -126,13 +128,16 @@ describe('consistent（ヒントと矛盾しない候補）', () => {
         moves++;
         if (isSolved(fb, 4)) break;
         cands = consistent(cands, [{ guess, ...fb }]);
-        expect(cands).toContain(secret);
-        expect(cands).not.toContain(guess);
+        if (!cands.includes(secret) || cands.includes(guess)) {
+          lost.push(secret);
+          break;
+        }
       }
       maxMoves = Math.max(maxMoves, moves);
     }
+    expect(lost).toEqual([]);
     expect(maxMoves).toBeLessThanOrEqual(12);
-  });
+  }, 30_000);
 
   it('remainingCount は consistent の数と一致する', () => {
     const history = replay('5038', ['0123', '4567']);
