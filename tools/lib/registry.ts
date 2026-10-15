@@ -124,7 +124,7 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'nenmatsu-chosei',
@@ -623,7 +623,7 @@ export const tools: ToolDef[] = [
       '都道府県を選ぶと、いまの最低賃金と2026年10月改定後の額・引上げ幅が分かります。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'zangyodai-keisan',
@@ -721,7 +721,7 @@ export const tools: ToolDef[] = [
       '生年月日から満年齢と満何歳何ヶ月を計算。年齢早見表・「◯歳は何年生まれ」の逆引き、西暦⇔和暦（明治〜令和）の変換、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'shichigosan',
@@ -773,7 +773,7 @@ export const tools: ToolDef[] = [
       '文字数をその場でカウント。スペース・改行の有無、行数・段落数、原稿用紙換算、目標文字数に対応。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-17',
+    updatedAt: '2026-10-15',
   },
   {
     slug: 'qr-code',
@@ -812,7 +812,7 @@ export const tools: ToolDef[] = [
       '半角と全角をまとめて相互変換。英数字・カタカナ・記号・スペースを種類ごとに選べます。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-09-26',
+    updatedAt: '2026-10-14',
   },
   {
     slug: 'gazo-resize',
