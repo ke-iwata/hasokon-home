@@ -147,7 +147,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // 公開は遅くとも 2026-10-31 まで（仕様書の「公開条件」。保険料控除申告書を書く10月下旬〜11月に間に合わせる）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-12',
   },
   {
@@ -185,7 +185,7 @@ export const tools: ToolDef[] = [
     description:
       '2027年分から書面申告の青色申告特別控除は上限10万円に。e-Taxで65万円、優良な電子帳簿かデジタルシームレス保存で75万円、簡易簿記で前々年の収入1,000万円超は0円。帳簿と申告の方法から控除額・令和8年分との差・税額の目安を判定します。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-14',
   },
   {
@@ -197,7 +197,7 @@ export const tools: ToolDef[] = [
     description:
       '2027年分から、給与所得控除と公的年金等控除の合計が280万円を超えると年金の控除が削られます。給与と年金の年額を入れると、削られる控除・増える所得税と住民税の目安・上限にかかり始める給与を出します。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-11',
   },
   {
@@ -211,7 +211,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // 公開は遅くとも 2026-12-01 まで（仕様書の「公開条件」。12月の支払通知書が届く前）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-12',
   },
   {
@@ -226,7 +226,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // 公開は遅くとも 2026-11-15 まで（仕様書の「公開条件」。12 月の初回支給の前）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-05',
   },
   {
@@ -323,7 +323,7 @@ export const tools: ToolDef[] = [
     description:
       '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-06',
   },
   {
@@ -346,7 +346,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // テスト環境で運営者が仕様書「テスト」の表の8ケースを確かめたら `public`。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-12',
   },
   {
@@ -369,7 +369,7 @@ export const tools: ToolDef[] = [
     description:
       '2027年1月から始まる防衛特別所得税（所得税額の1%）を年収から計算。復興特別所得税が2.1%→1.1%に下がるので2027年の手取りは変わらないことを金額で示し、改正で新たに生じる2038年以降の負担（終期の定めなし）と年収別の早見表を出します。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-09-27',
   },
   {
@@ -514,7 +514,7 @@ export const tools: ToolDef[] = [
     description:
       '遺産額と相続人の構成から、基礎控除（3,000万円＋600万円×法定相続人）・相続税の総額・1人ずつの納付額を計算。養子の数の上限、放棄した人、死亡保険金の非課税枠、配偶者の税額軽減、2割加算、未成年者控除まで。加算する生前贈与の額も入れられます（判定は贈与税の計算機）。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-15',
   },
   {
@@ -565,7 +565,7 @@ export const tools: ToolDef[] = [
     description:
       '生年月日とカード表面の有効期限を入れると、カード本体（10回目の誕生日）と電子証明書（5回目の誕生日）の期限、更新できる日、通知書が届く目安を日付で出します。期限切れのときはマイナ保険証の3か月の猶予がいつまでかも。',
     category: '生活・健康',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-03',
   },
   {
@@ -578,7 +578,7 @@ export const tools: ToolDef[] = [
       '給与・年金・副業・控除の状況を選ぶと、所得税の確定申告が「必要」「不要」「不要だが申告すれば戻る（還付申告）」のどれかと、所得税は不要でも住民税の申告が要るかを分けて答えます。申告の期限と還付申告を出せる期間、次に使う計算機も出します。',
     category: 'お金・社会保険',
     // テスト環境で運営者が仕様書の11ケースを確認したら public（遅くとも 2026-12-25）
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-11',
   },
   {
@@ -590,7 +590,7 @@ export const tools: ToolDef[] = [
     description:
       '発症日と解熱日を入れると、学校保健安全法施行規則19条の「発症後5日・解熱後2日（幼児3日）」から、学校・保育園に行ける最も早い日を0日目からのカレンダーで出します。新型コロナ・はしか・おたふくかぜ・プール熱も。',
     category: '生活・健康',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-08',
   },
   {
@@ -754,7 +754,7 @@ export const tools: ToolDef[] = [
     description:
       '子どもの生年月日から、3歳・5歳・7歳の七五三の年を数え年・満年齢の両方で計算。11月15日の曜日と、早生まれの子が同じ学年と揃える年も表示。今年の早見表つき。',
     category: '計算・変換',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-07',
   },
   {
@@ -764,7 +764,7 @@ export const tools: ToolDef[] = [
     description:
       '生年月日から前厄・本厄・後厄の年を数え年で一生分計算。還暦・古希・喜寿・米寿など長寿祝いの年も数え年・満年齢の両方で表示。男女別の厄年早見表つき。',
     category: '計算・変換',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-07',
   },
   {
@@ -776,7 +776,7 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     // 公開は遅くとも 2026-11-30 まで（仕様書の「公開条件」。2026-27 年末年始の有給申請の前）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolPreview.tsx・ToolArt.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-08',
   },
   {

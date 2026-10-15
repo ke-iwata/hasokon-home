@@ -357,7 +357,7 @@ describe('ページ', () => {
     expect(calc).toContain('現在の市場金利ではありません');
   });
 
-  it('registry では preview（テスト環境で確かめてから public）', () => {
-    expect(tools.find((t) => t.slug === 'loan-hensai')?.stage).toBe('preview');
+  it('registry では public（2026-10-15 に運営者の指示で公開）', () => {
+    expect(tools.find((t) => t.slug === 'loan-hensai')?.stage).toBe('public');
   });
 });

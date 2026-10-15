@@ -91,7 +91,7 @@ export const FISCAL_YEARS: readonly FiscalYearData[] = [FY2026];
 export const CURRENT: FiscalYearData = FY2026;
 
 /** 制度データを最後に一次情報と突き合わせた日 */
-export const DATA_CHECKED_AT = '2026-10-05';
+export const DATA_CHECKED_AT = '2026-10-15';
 
 /** 9 月分までの所得基準額（令和7年度。本文の「上がった」の説明だけに使う） */
 export const PREVIOUS_INCOME_LIMIT = 809_000;
