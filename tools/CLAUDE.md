@@ -260,7 +260,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール69本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
+- **ツール70本（`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei`・`kakutei-shinkoku-hantei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
   防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
   `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
   `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
@@ -268,7 +268,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   `loan-hensai`（ローン返済シミュレーション。期日なし）は運営者がテスト環境で[仕様](../docs/features/loan-hensai-simulation.md)の「テスト」の8ケースを確かめたら、
   `renkyu-keisan`（連休計算機）と `shusseki-teishi`（出席停止期間）は運営者の確認後 2026-11-30 までに、
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`kakutei-shinkoku-hantei` は運営者が仕様書の11ケースを確認したら 2026-12-25 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
