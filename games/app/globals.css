@@ -7005,6 +7005,17 @@ button.hf-card {
     padding: 8px 12px;
   }
 
+  /* 強さ 3 つ＋先手・後手の 5 つを 320px でも 1 行に収める（折り返すとボタンが 48px になり、
+     高さ 38px の行で上下が切れる。#394 の再レビュー）。先手・後手の幅の下限 44px は保つ */
+  .hb-options .seg button {
+    padding-inline: 8px;
+    white-space: nowrap;
+  }
+
+  .hb-options {
+    gap: 4px;
+  }
+
   /* 320px 幅（iPhone SE 第1世代級）で残り数の行が「やり直す」まで収まるように、
      ヒントのペナルティの文言を外す（ボタンの aria-label とページ本文には残っている） */
   @media (max-width: 340px) {
