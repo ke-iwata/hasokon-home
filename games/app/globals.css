@@ -6217,9 +6217,29 @@ button.hf-card {
   white-space: nowrap;
 }
 
-.hb-match-head > span {
+.hb-match-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* 縮むのはラベルだけ。数字は `flex: none` で切らない */
+.hb-match-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hb-match-secret {
+  flex: none;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+/* 先手・後手は 2 文字なので、狭い画面で押す先が 44px を割らないよう幅の下限を置く */
+.hb-options .seg button {
+  min-width: 44px;
 }
 
 .hb-logs {

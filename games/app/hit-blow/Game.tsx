@@ -528,12 +528,16 @@ export default function Game() {
 
       {mode === 'cpu' ? (
         <>
+          {/* 自分の数は切れない場所に置く（ラベルだけが「…」で縮む。#394 のレビュー） */}
           <div className="hb-match-head">
-            <span>
-              あなたが当てる（{userFirstNow ? '先手' : '後手'}）
+            <span className="hb-match-cell">
+              <span className="hb-match-label">あなたの推理（{userFirstNow ? '先手' : '後手'}）</span>
             </span>
-            <span>
-              CPUが当てる・あなたの数 <strong className="hb-code">{userSecret || '----'}</strong>
+            <span className="hb-match-cell">
+              <span className="hb-match-label">CPU →</span>
+              <strong className="hb-code hb-match-secret" aria-label="あなたの数">
+                {userSecret || '----'}
+              </strong>
             </span>
           </div>
           <div className="hb-logs hb-logs-2">
