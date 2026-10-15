@@ -8,6 +8,25 @@
 
 ---
 
+## 2026-10-15：運営者の確認待ちだった15本をまとめて公開
+
+運営者の「ツール系で出せるものは全部出しましょう」から。公開条件が「運営者がテスト環境で確認」だけだった
+`preview` の15本を `public` にし、カードの絵（`ToolPreview.tsx`・`ToolArt.tsx`）とトップのカードを同じPRで足した。
+
+- 公開した15本：`seimei-hokenryo-kojo`・`nenkin-shien-kyufukin`・`boei-tokubetsu-shotokuzei`・`nenkin-gensen`・
+  `aoiro-shinkoku-kojo`・`juminzei-hikazei`・`sozokuzei-keisan`・`kakutei-shinkoku-hantei`・`kyuyo-nenkin-kojo`・
+  `loan-hensai`・`shusseki-teishi`・`mynumber-kigen`・`shichigosan`・`yakudoshi`・`renkyu-keisan`
+- **公開前に確かめた2点**：年金生活者支援給付金の「10月分から受けられる請求の期限」は日本年金機構のよくある質問で
+  **2027年1月4日（月）必着**と確認し、ぼかしていた本文を日付に差し替えた。生命保険料控除の式は国税庁
+  「令和8年分 年末調整のしかた」と突き合わせて一致を確かめた
+- **外した6本と理由**：`kodomo-nisa`（運営者の J-PlatPat の商標確認が公開条件）、`shukuhakuzei`
+  （東京3%の端数処理・上限と沖縄の県＋市町村の配分が未確認）、`kosei-nenkin-jogen`
+  （`PENSION_STANDARD_MAX` を施行日つきに置き換えるのが先）、`wip` の `jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`
+- 絵は一覧の大きさで明暗2枚を撮って確かめた。青色申告の棒が枠からはみ出していたので縮め、
+  連休のタイル（縦棒の並び）はバーコードに見えたので、両端の矢印つきの括りと4日の並びに描き直した
+
+---
+
 ## 2026-10-14：公開中ツールの正確さの修正（半角⇔全角の内訳・ふるさと納税・年齢計算・最低賃金の文面）
 
 [features/kokai-tool-seikaku-2026-10-13.md](../../docs/features/kokai-tool-seikaku-2026-10-13.md)。

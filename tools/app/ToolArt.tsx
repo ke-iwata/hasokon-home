@@ -476,6 +476,117 @@ const ART: Record<string, ReactNode> = {
       <circle cx="35" cy="47" r="2" {...CUT} />
     </>
   ),
+  // 保険の盾と、3つの枠
+  'seimei-hokenryo-kojo': (
+    <>
+      <path d="M32 6 L54 14 V30 C54 44 44 53 32 58 C20 53 10 44 10 30 V14 Z" {...F} />
+      <path d="M32 6 L54 14 V30 C54 44 44 53 32 58 C20 53 10 44 10 30 V14 Z" {...S} />
+      <path d="M32 44 C22 37 19 32 19 27 a6.5 6.5 0 0 1 13-1 a6.5 6.5 0 0 1 13 1 c0 5-3 10-13 17z" {...SOLID} />
+    </>
+  ),
+  // はがきの請求書と、届く硬貨
+  'nenkin-shien-kyufukin': (
+    <>
+      <rect x="6" y="6" width="34" height="46" rx="3" {...F} />
+      <rect x="6" y="6" width="34" height="46" rx="3" {...S} />
+      <rect x="26" y="11" width="9" height="11" rx="1.5" {...SOLID} />
+      <path d="M12 32h20 M12 40h14" {...S} strokeOpacity={0.55} />
+      <circle cx="45" cy="45" r="15" {...CUT} />
+      <YenCoin cx={45} cy={45} r={12} />
+    </>
+  ),
+  // 高さの同じ2本の柱。中身の内訳だけが入れ替わる
+  'boei-tokubetsu-shotokuzei': (
+    <>
+      <path d="M4 14 H60" {...S} strokeWidth={2} strokeDasharray="4 4" />
+      <rect x="10" y="14" width="18" height="42" rx="3" {...F} />
+      <rect x="10" y="14" width="18" height="42" rx="3" {...S} />
+      <rect x="36" y="35" width="18" height="21" rx="3" {...F} />
+      <rect x="36" y="35" width="18" height="21" rx="3" {...S} />
+      <rect x="36" y="14" width="18" height="21" rx="3" {...SOLID} />
+      <path d="M4 56 H60" {...S} />
+    </>
+  ),
+  // 2か月ごとの支給から引かれる分と、12月に戻る分
+  'nenkin-gensen': (
+    <>
+      {[6, 21, 36].map((x) => (
+        <g key={x}>
+          <rect x={x} y="24" width="11" height="32" rx="2.5" {...F} />
+          <rect x={x} y="24" width="11" height="9" rx="2.5" {...SOLID} />
+        </g>
+      ))}
+      <rect x="51" y="24" width="11" height="32" rx="2.5" {...F} />
+      <rect x="51" y="24" width="11" height="32" rx="2.5" {...S} />
+      <path d="M56.5 18 V6 M51 11 L56.5 5 L62 11" {...S} />
+    </>
+  ),
+  // 申告の方法で上がっていく3段
+  'aoiro-shinkoku-kojo': (
+    <>
+      <rect x="6" y="42" width="14" height="14" rx="2.5" {...F} />
+      <rect x="6" y="42" width="14" height="14" rx="2.5" {...S} />
+      <rect x="25" y="24" width="14" height="32" rx="2.5" {...F} />
+      <rect x="25" y="24" width="14" height="32" rx="2.5" {...S} />
+      <rect x="44" y="8" width="14" height="48" rx="2.5" {...SOLID} />
+      <path d="M47 30 l4 4 l6 -8" {...CUT_S} strokeWidth={2.6} />
+    </>
+  ),
+  // 住まいの印と、かからないの判定
+  'juminzei-hikazei': (
+    <>
+      <path d="M8 30 L32 9 L56 30 V56 H8 Z" {...F} />
+      <path d="M8 30 L32 9 L56 30 V56 H8 Z" {...S} />
+      <circle cx="32" cy="38" r="12" {...SOLID} />
+      <path d="M26 38 l4.5 4.5 l8 -9" {...CUT_S} />
+    </>
+  ),
+  // 遺産から3人へ分かれる線
+  'sozokuzei-keisan': (
+    <>
+      <rect x="22" y="5" width="20" height="16" rx="3" {...SOLID} />
+      <path d="M32 21 V30 M11 30 H53 M11 30 V38 M32 30 V38 M53 30 V38" {...S} />
+      <rect x="3" y="40" width="16" height="16" rx="3" {...SOLID} />
+      <rect x="24" y="40" width="16" height="16" rx="3" {...F} />
+      <rect x="24" y="40" width="16" height="16" rx="3" {...S} />
+      <rect x="45" y="40" width="16" height="16" rx="3" {...F} />
+      <rect x="45" y="40" width="16" height="16" rx="3" {...S} />
+    </>
+  ),
+  // 申告書と、印のついた欄
+  'kakutei-shinkoku-hantei': (
+    <>
+      <path d="M12 5 H40 L52 17 V59 H12 Z" {...F} />
+      <path d="M12 5 H40 L52 17 V59 H12 Z" {...S} />
+      <path d="M40 5 V17 H52" {...S} />
+      <rect x="18" y="25" width="10" height="10" rx="2" {...SOLID} />
+      <path d="M20 30 l2.5 2.5 l4 -5" {...CUT_S} strokeWidth={2.2} />
+      <path d="M33 30 H45" {...S} />
+      <rect x="18" y="42" width="10" height="10" rx="2" {...S} />
+      <path d="M33 47 H45" {...S} strokeOpacity={0.55} />
+    </>
+  ),
+  // 上限の線を越えた分が削られる帯
+  'kyuyo-nenkin-kojo': (
+    <>
+      <rect x="4" y="22" width="22" height="20" rx="3" {...F} />
+      <rect x="4" y="22" width="22" height="20" rx="3" {...S} />
+      <rect x="28" y="22" width="16" height="20" rx="3" {...SOLID} />
+      <rect x="48" y="22" width="12" height="20" rx="3" {...S} strokeDasharray="3 3" />
+      <path d="M46 10 V54" {...S} />
+      <path d="M50 28 l6 8 M56 28 l-6 8" {...S} strokeWidth={2.4} />
+    </>
+  ),
+  // 家と、減っていく残高
+  'loan-hensai': (
+    <>
+      <path d="M6 12 C20 16 36 30 54 56 H6 Z" {...F} />
+      <path d="M6 12 C20 16 36 30 54 56" {...S} />
+      <path d="M6 56 H58" {...S} />
+      <path d="M36 18 L47 8 L58 18 V30 H36 Z" {...SOLID} />
+      <rect x="44" y="22" width="6" height="8" {...CUT} />
+    </>
+  ),
   // ---- 生活・健康 ----
   // 水と缶詰
   'bosai-bichiku-keisan': (
@@ -526,6 +637,35 @@ const ART: Record<string, ReactNode> = {
       <path d="M30 35 L12.68 45 A20 20 0 0 1 30 15 Z" {...F} />
       <path d="M30 35 L12.68 45 A20 20 0 0 1 30 15 Z" {...S} />
       <path d="M35 30 L35 10 A20 20 0 0 1 52.32 40 Z" {...SOLID} />
+    </>
+  ),
+
+  // 日付の並びと、行ける最初の日
+  'shusseki-teishi': (
+    <>
+      <rect x="6" y="10" width="52" height="46" rx="5" {...F} />
+      <rect x="6" y="10" width="52" height="46" rx="5" {...S} />
+      <path d="M6 22 H58" {...S} />
+      <path d="M18 5 v9 M46 5 v9" {...S} />
+      {[0, 1, 2, 3].map((i) => (
+        <rect key={i} x={11 + i * 11.5} y="28" width="8" height="8" rx="1.5" {...SOLID} fillOpacity={0.45} />
+      ))}
+      {[0, 1].map((i) => (
+        <rect key={i} x={11 + i * 11.5} y="41" width="8" height="8" rx="1.5" {...SOLID} fillOpacity={0.45} />
+      ))}
+      <rect x="32.5" y="39" width="12" height="12" rx="2.5" {...SOLID} />
+    </>
+  ),
+  // 写真のあるカードと、期限の時計
+  'mynumber-kigen': (
+    <>
+      <rect x="4" y="10" width="46" height="32" rx="4" {...F} />
+      <rect x="4" y="10" width="46" height="32" rx="4" {...S} />
+      <rect x="10" y="16" width="12" height="15" rx="2" {...SOLID} />
+      <path d="M28 19 h15 M28 27 h10" {...S} strokeOpacity={0.6} />
+      <circle cx="46" cy="44" r="16" {...CUT} />
+      <circle cx="46" cy="44" r="13" {...SOLID} />
+      <path d="M46 36 V44 H52" {...CUT_S} />
     </>
   ),
 
@@ -657,6 +797,35 @@ const ART: Record<string, ReactNode> = {
       <rect x="7" y="12" width="18" height="24" rx="3" {...SOLID} fillOpacity={0.55} />
       <path d="M7 46h40 M7 43v6 M47 43v6" {...S} />
       <path d="M56 12v24 M53 12h6 M53 36h6" {...S} />
+    </>
+  ),
+  // 千歳飴の袋
+  shichigosan: (
+    <>
+      <path d="M22 6 L28 30 M42 6 L36 30" {...S} strokeWidth={5} />
+      <path d="M14 28 H50 L46 58 H18 Z" {...F} />
+      <path d="M14 28 H50 L46 58 H18 Z" {...S} />
+      <rect x="14" y="36" width="36" height="8" {...SOLID} />
+    </>
+  ),
+  // 鳥居（厄払い）
+  yakudoshi: (
+    <>
+      <path d="M4 12 C20 16 44 16 60 12 L58 20 C44 22 20 22 6 20 Z" {...SOLID} />
+      <path d="M10 30 H54" {...S} strokeWidth={4} />
+      <path d="M18 20 L16 58 M46 20 L48 58" {...S} strokeWidth={5} />
+      <path d="M32 21 V30" {...S} />
+    </>
+  ),
+  // つながった休みの並びと、有給の1日
+  'renkyu-keisan': (
+    <>
+      <path d="M5 22 V14 H59 V22" {...S} />
+      <path d="M5 14 l5 -5 M5 14 l5 5 M59 14 l-5 -5 M59 14 l-5 5" {...S} />
+      {[0, 1, 2, 3].map((i) => (
+        <rect key={i} x={4 + i * 14.5} y="30" width="12" height="22" rx="3" {...(i === 1 ? F : SOLID)} />
+      ))}
+      <rect x="18.5" y="30" width="12" height="22" rx="3" {...S} strokeWidth={2.4} />
     </>
   ),
 };

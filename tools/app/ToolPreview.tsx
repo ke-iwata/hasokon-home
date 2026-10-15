@@ -547,6 +547,160 @@ const PREVIEW: Record<string, ReactNode> = {
     </>
   ),
 
+  // 3区分の控除額と、令和8年分の23歳未満の扶養親族がいるときの特例
+  'seimei-hokenryo-kojo': (
+    <>
+      {['一般', '介護医療', '個人年金'].map((s, i) => (
+        <g key={s}>
+          <T x={24} y={42 + i * 30} s={11} c="muted">{s}</T>
+          <rect x="84" y={30 + i * 30} width="130" height="16" rx="5" {...TINT} />
+          <rect x="84" y={30 + i * 30} width={i === 0 ? 96 : 90} height="16" rx="5" {...INK} />
+          {i === 0 ? <rect x="182" y="30" width="32" height="16" rx="5" {...MARK} /> : null}
+        </g>
+      ))}
+      <T x={198} y={24} s={10} w={700} c="mark" a="middle">特例</T>
+      <T x={232} y={56} s={11} c="muted">所得税</T>
+      <T x={232} y={78} s={15} w={900} c="ink">［◯円］</T>
+      <T x={232} y={102} s={11} c="muted">住民税</T>
+      <T x={232} y={124} s={15} w={900} c="ink">［◯円］</T>
+    </>
+  ),
+  // 判定と月額（満額は令和8年度の額）
+  'nenkin-shien-kyufukin': (
+    <>
+      <rect x="24" y="24" width="120" height="82" rx="6" {...TINT} stroke="currentColor" strokeWidth={2} />
+      <rect x="116" y="30" width="20" height="24" rx="2" {...MID} />
+      <path d="M36 70 h70 M36 84 h50" {...LINE} strokeWidth={2.5} strokeOpacity={0.5} />
+      <rect x="164" y="26" width="150" height="30" rx="15" {...INK} />
+      <T x={239} y={46} s={13} w={700} c="bg" a="middle">対象です</T>
+      <T x={166} y={84} s={11} c="muted">毎月</T>
+      <T x={196} y={86} s={18} w={900} c="ink">［◯円］</T>
+      <T x={166} y={112} s={10} c="muted">満額は月5,620円</T>
+      <T x={24} y={130} s={10} c="mark" w={700}>2027年1月4日までの請求で10月分から</T>
+    </>
+  ),
+  // 復興特別所得税が下がった分を防衛特別所得税が埋め、合計は2.1%のまま。2038年以降は防衛分だけ残る
+  'boei-tokubetsu-shotokuzei': (
+    <>
+      <rect x="44" y="34" width="56" height="70" rx="4" {...MID} />
+      <rect x="138" y="69" width="56" height="35" rx="4" {...MID} />
+      <rect x="138" y="34" width="56" height="35" rx="4" {...INK} />
+      <rect x="232" y="69" width="56" height="35" rx="4" {...INK} />
+      <path d="M36 34 H200" stroke="currentColor" strokeWidth={1.5} strokeDasharray="4 4" />
+      <T x={204} y={38} s={10} c="muted">2.1%</T>
+      <T x={72} y={122} s={11} c="muted" a="middle">2026年</T>
+      <T x={166} y={122} s={11} c="muted" a="middle">2027年〜</T>
+      <T x={260} y={122} s={11} w={700} c="mark" a="middle">2038年〜</T>
+      <T x={166} y={28} s={10} w={700} c="ink" a="middle">防衛 1%</T>
+    </>
+  ),
+  // 毎月の源泉徴収と、12月の精算で戻る分
+  'nenkin-gensen': (
+    <>
+      {[2, 4, 6, 8, 10, 12].map((m, i) => (
+        <g key={m}>
+          <rect x={34 + i * 46} y="40" width="30" height="66" rx="4" {...TINT} />
+          {m === 12 ? (
+            <rect x={34 + i * 46} y="40" width="30" height="22" rx="4" {...MARK} />
+          ) : (
+            <rect x={34 + i * 46} y="40" width="30" height="18" rx="4" {...MID} />
+          )}
+          <T x={49 + i * 46} y={124} s={11} c="muted" a="middle">{`${m}月`}</T>
+        </g>
+      ))}
+      <T x={264} y={32} s={11} w={700} c="mark" a="middle">戻る</T>
+      <T x={24} y={30} s={10} c="muted">年金から引かれる所得税</T>
+    </>
+  ),
+  // 申告の方法ごとの控除の上限（令和9年分から）
+  'aoiro-shinkoku-kojo': (
+    <>
+      <rect x="44" y="102" width="64" height="14" rx="4" {...TINT} />
+      <rect x="140" y="40" width="64" height="76" rx="4" {...MID} />
+      <rect x="236" y="28" width="64" height="88" rx="4" {...INK} />
+      <T x={76} y={94} s={12} w={700} c="mark" a="middle">10万</T>
+      <T x={172} y={58} s={12} w={700} c="bg" a="middle">65万</T>
+      <T x={268} y={46} s={12} w={700} c="bg" a="middle">75万</T>
+      {['書面', 'e-Tax', '優良な電子帳簿'].map((s, i) => (
+        <T key={s} x={76 + i * 96} y={132} s={10} c="muted" a="middle">{s}</T>
+      ))}
+    </>
+  ),
+  // 3つの答えのどれか（住民税がかからない・所得割だけかからない・かかる）
+  'juminzei-hikazei': (
+    <>
+      <rect x="24" y="24" width="292" height="28" rx="14" {...INK} />
+      <T x={170} y={43} s={12} w={700} c="bg" a="middle">住民税がかかりません</T>
+      <rect x="24" y="60" width="292" height="24" rx="12" {...TINT} />
+      <T x={170} y={77} s={11} c="muted" a="middle">所得割だけかからない</T>
+      <rect x="24" y="92" width="292" height="24" rx="12" {...TINT} />
+      <T x={170} y={109} s={11} c="muted" a="middle">かかる</T>
+      <T x={24} y={134} s={10} c="muted">単身・給与だけなら119万円まで（令和9年度）</T>
+    </>
+  ),
+  // 法定相続人ごとの納付額
+  'sozokuzei-keisan': (
+    <>
+      <rect x="140" y="18" width="60" height="26" rx="6" {...INK} />
+      <T x={170} y={36} s={11} w={700} c="bg" a="middle">相続税</T>
+      <path d="M170 44 V58 M60 58 H280 M60 58 V70 M170 58 V70 M280 58 V70" {...LINE} strokeWidth={2} />
+      {[
+        [60, '配偶者', true],
+        [170, '子', false],
+        [280, '子', false],
+      ].map(([x, s, hot]) => (
+        <g key={x as number}>
+          <rect x={(x as number) - 46} y="72" width="92" height="52" rx="8" {...(hot ? TINT : TINT)} stroke={hot ? undefined : undefined} />
+          <T x={x as number} y={92} s={11} c="muted" a="middle">{s}</T>
+          <T x={x as number} y={114} s={13} w={900} c={hot ? 'mark' : 'ink'} a="middle">{hot ? '軽減' : '［◯円］'}</T>
+        </g>
+      ))}
+    </>
+  ),
+  // 3つの答えと、住民税の申告
+  'kakutei-shinkoku-hantei': (
+    <>
+      {[
+        ['必要', false],
+        ['不要', false],
+        ['還付申告で戻る', true],
+      ].map(([s, on], i) => (
+        <g key={s as string}>
+          <rect x={24 + i * 98} y="30" width="90" height="40" rx="10" {...(on ? INK : TINT)} />
+          <T x={69 + i * 98} y={55} s={s === '還付申告で戻る' ? 11 : 13} w={700} c={on ? 'bg' : 'muted'} a="middle">{s}</T>
+        </g>
+      ))}
+      <T x={24} y={100} s={12}>住民税の申告 ［要・不要］</T>
+      <T x={24} y={126} s={11} c="muted">所得税と住民税を分けて答える</T>
+    </>
+  ),
+  // 給与所得控除＋公的年金等控除が280万円を超えると、年金の控除が削られる
+  'kyuyo-nenkin-kojo': (
+    <>
+      <rect x="24" y="52" width="170" height="30" rx="5" {...MID} />
+      <rect x="196" y="52" width="70" height="30" rx="5" {...INK} />
+      <rect x="268" y="52" width="48" height="30" rx="5" {...MARK} />
+      <path d="M267 32 V100" stroke="currentColor" strokeWidth={2.5} strokeDasharray="5 4" />
+      <T x={267} y={26} s={12} w={700} c="ink" a="middle">280万円</T>
+      <T x={109} y={100} s={10} c="muted" a="middle">給与所得控除</T>
+      <T x={231} y={100} s={10} c="muted" a="middle">年金の控除</T>
+      <T x={292} y={118} s={11} w={700} c="mark" a="middle">削られる</T>
+      <T x={24} y={130} s={11} c="muted">2027年分から</T>
+    </>
+  ),
+  // 残高が減っていく線と、毎月の返済額
+  'loan-hensai': (
+    <>
+      <path d="M24 116 H200 M24 116 V24" stroke="var(--muted)" strokeWidth={1.5} />
+      <path d="M30 30 C80 40 140 70 196 112 L196 116 L30 116 Z" {...TINT} />
+      <path d="M30 30 C80 40 140 70 196 112" {...LINE} />
+      <T x={110} y={134} s={10} c="muted" a="middle">年末の残高</T>
+      <T x={216} y={46} s={11} c="muted">毎月</T>
+      <T x={216} y={70} s={16} w={900} c="ink">［◯円］</T>
+      <T x={216} y={98} s={11} c="muted">総返済額</T>
+      <T x={216} y={120} s={13} w={700} c="ink">［◯円］</T>
+    </>
+  ),
   // ---- 生活・健康 ----
   'bosai-bichiku-keisan': (
     <>
@@ -621,6 +775,35 @@ const PREVIEW: Record<string, ReactNode> = {
     </>
   ),
 
+  // 発症日を0日目に、行ける最も早い日
+  'shusseki-teishi': (
+    <>
+      {Array.from({ length: 8 }, (_, i) => (
+        <g key={i}>
+          <rect x={24 + i * 37} y="40" width="32" height="40" rx="5" {...(i === 7 ? INK : i === 0 ? MID : TINT)} />
+          <T x={40 + i * 37} y={65} s={12} w={700} c={i === 7 ? 'bg' : 'ink'} a="middle">{i}</T>
+        </g>
+      ))}
+      <T x={40} y={32} s={10} c="muted" a="middle">発症</T>
+      <T x={188} y={32} s={10} w={700} c="mark" a="middle">解熱</T>
+      <path d="M188 82 v8" style={{ stroke: 'var(--cat-mark)' }} strokeWidth={2.5} />
+      <T x={299} y={98} s={11} w={700} c="ink" a="middle">行ける日</T>
+      <T x={24} y={128} s={11} c="muted">発症後5日・解熱後2日（幼児3日）</T>
+    </>
+  ),
+  // カード本体と電子証明書の、2つの期限
+  'mynumber-kigen': (
+    <>
+      <rect x="24" y="26" width="128" height="88" rx="10" {...TINT} stroke="currentColor" strokeWidth={2} />
+      <rect x="36" y="40" width="34" height="44" rx="4" {...MID} />
+      <path d="M82 46 h56 M82 60 h44 M82 74 h50" {...LINE} strokeWidth={2.5} strokeOpacity={0.5} />
+      <rect x="36" y="94" width="20" height="12" rx="2" {...INK} />
+      <T x={170} y={46} s={11} c="muted">カード本体</T>
+      <T x={170} y={66} s={13} w={700} c="ink">［年月日］</T>
+      <T x={170} y={96} s={11} c="muted">電子証明書</T>
+      <T x={170} y={116} s={13} w={700} c="mark">［年月日］</T>
+    </>
+  ),
   // ---- 計算・変換 ----
   'waribiki-percent': (
     <>
@@ -770,6 +953,50 @@ const PREVIEW: Record<string, ReactNode> = {
       <rect x="206" y="44" width="90" height="62" rx="5" {...TINT} stroke="currentColor" strokeWidth={2} strokeDasharray="5 4" />
       <T x={251} y={80} s={12} w={700} c="ink" a="middle">［幅×高さ］</T>
       <T x={24} y={140} s={10} c="muted">縦横比とリサイズ後のサイズ</T>
+    </>
+  ),
+  // 3歳・5歳・7歳の年（数え年と満年齢）
+  shichigosan: (
+    <>
+      {['3歳', '5歳', '7歳'].map((s, i) => (
+        <g key={s}>
+          <rect x={30 + i * 98} y="26" width="86" height="76" rx="10" {...(i === 0 ? INK : TINT)} />
+          <T x={73 + i * 98} y={56} s={16} w={900} c={i === 0 ? 'bg' : 'ink'} a="middle">{s}</T>
+          <T x={73 + i * 98} y={84} s={11} c={i === 0 ? 'bg' : 'muted'} a="middle">［◯］年</T>
+        </g>
+      ))}
+      <T x={24} y={128} s={11} c="muted">数え年・満年齢の両方で ・ 11月15日の曜日</T>
+    </>
+  ),
+  // 前厄・本厄・後厄の3年と、長寿祝い
+  yakudoshi: (
+    <>
+      {['前厄', '本厄', '後厄'].map((s, i) => (
+        <g key={s}>
+          <rect x={30 + i * 70} y="30" width="62" height="54" rx="8" {...(i === 1 ? MARK : TINT)} />
+          <T x={61 + i * 70} y={54} s={13} w={900} c={i === 1 ? 'bg' : 'ink'} a="middle">{s}</T>
+          <T x={61 + i * 70} y={74} s={10} c={i === 1 ? 'bg' : 'muted'} a="middle">［◯］年</T>
+        </g>
+      ))}
+      {['還暦', '古希', '喜寿', '米寿'].map((s, i) => (
+        <g key={s}>
+          <rect x={254} y={22 + i * 28} width="62" height="22" rx="11" {...(i === 0 ? INK : TINT)} />
+          <T x={285} y={37 + i * 28} s={11} w={700} c={i === 0 ? 'bg' : 'ink'} a="middle">{s}</T>
+        </g>
+      ))}
+      <T x={24} y={124} s={11} c="muted">数え年で一生分</T>
+    </>
+  ),
+  // 土日・祝日・休暇と有給1日をつないで9連休（2026〜27年の年末年始）
+  'renkyu-keisan': (
+    <>
+      {Array.from({ length: 9 }, (_, i) => (
+        <rect key={i} x={26 + i * 32} y="56" width="28" height="34" rx="5" {...(i === 1 ? MARK : i === 0 || i === 8 ? MID : INK)} />
+      ))}
+      <path d="M26 46 V40 H310 V46" {...LINE} strokeWidth={2.5} />
+      <T x={168} y={32} s={14} w={900} c="ink" a="middle">9連休</T>
+      <T x={56} y={108} s={11} w={700} c="mark" a="middle">有給</T>
+      <T x={24} y={130} s={11} c="muted">2026〜27年の年末年始は有給1日で</T>
     </>
   ),
 };

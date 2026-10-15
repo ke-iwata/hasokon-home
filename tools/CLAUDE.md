@@ -262,16 +262,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール72本（`aoiro-shinkoku-kojo`・`boei-tokubetsu-shotokuzei`・`kosei-nenkin-jogen`・`mynumber-kigen`・`kodomo-nisa`・`kyuyo-nenkin-kojo`・`nenkin-gensen`・`seimei-hokenryo-kojo`・`loan-hensai`・`nenkin-shien-kyufukin`・`renkyu-keisan`・`juminzei-hikazei`・`shusseki-teishi`・`shichigosan`・`yakudoshi`・`shukuhakuzei`・`kakutei-shinkoku-hantei`・`sozokuzei-keisan` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの51本は `public`。
-  防衛特別所得税の公開期限は2026年11月・[仕様](../docs/features/boei-tokubetsu-shotokuzei.md)の「公開条件」（運営者の確認後）、
-  `kyuyo-nenkin-kojo`（給与と年金の控除 280万円上限）は運営者の確認後 2027-02-15 までに、
-  `nenkin-gensen`（年金の源泉徴収税額）は運営者の確認後 2026-12-01 までに、
-  `seimei-hokenryo-kojo`（生命保険料控除）は運営者の確認後 2026-10-31 までに、
-  `loan-hensai`（ローン返済シミュレーション。期日なし）は運営者がテスト環境で[仕様](../docs/features/loan-hensai-simulation.md)の「テスト」の8ケースを確かめたら、
-  `renkyu-keisan`（連休計算機）と `shusseki-teishi`（出席停止期間）は運営者の確認後 2026-11-30 までに、
-  `aoiro-shinkoku-kojo`（青色申告特別控除 判定）は運営者がテスト環境で[仕様](../docs/features/aoiro-shinkoku-tokubetsu-kojo-r9.md)の「テスト」の11ケースを確かめたら 2026-12-01 までに、
+- **ツール72本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの66本は `public`。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`mynumber-kigen` と `juminzei-hikazei` は 2026-12-15 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`kakutei-shinkoku-hantei` は運営者が仕様書の11ケースを確認したら 2026-12-25 までに、`sozokuzei-keisan`（相続税 計算機）は運営者がテスト環境で[仕様](../docs/features/sozokuzei-keisan.md)の検算ケースを確かめたら 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
@@ -279,7 +272,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   （2026-09-19に、公開前だった6本 — `iryohi-kojo`・`taishokukin-tedori`・`shussan-teate`・
   `shohizei-keisan`・`zangyodai-keisan`・`ikuji-kyugyo-kyufu` — をまとめて公開した。
   2026-10-04に、公開条件のそろった8本 — `kokunen-ikuji-menjo`・`ikuji-jitan-kyufu`・`zoyozei-keisan`・
-  `jutaku-shutoku-shikin`・`sozoku-toki-kigen`・`jusho-henko-toki`・`shoyo-tedori`・`tsukin-teate-hikazei` — を公開した）
+  `jutaku-shutoku-shikin`・`sozoku-toki-kigen`・`jusho-henko-toki`・`shoyo-tedori`・`tsukin-teate-hikazei` — を公開した。
+  2026-10-15に、運営者の確認だけが残っていた15本をまとめて公開した。`docs/DECISIONS.md`）
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、
