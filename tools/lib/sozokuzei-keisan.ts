@@ -446,6 +446,12 @@ export type Verdict =
   | 'below-basic'
   /** 総額は出るが、配偶者の税額軽減で全員の納付税額が 0 */
   | 'zero-by-spouse-relief'
+  /**
+   * 課税価格の合計は基礎控除を超えるが、未成年者控除・障害者控除・贈与税額控除で全員の納付税額が 0
+   * （配偶者の税額軽減は使われていない）。相続税法 27 条 1 項は 19 条の 2 だけを除いて
+   * 19 条・19 条の 3・19 条の 4 を含むので、この場合は申告義務が無い
+   */
+  | 'zero-by-credits'
   | 'tax';
 
 export interface InheritanceInput {
@@ -567,24 +573,29 @@ export function perHeirTax({ people, inputs, inheritanceDate }: InheritanceInput
   const verdict: Verdict =
     taxableTotal <= basic
       ? 'below-basic'
-      : payableTotal === 0 && acquirers.some((a) => a.spouseRelief > 0)
-        ? 'zero-by-spouse-relief'
+      : payableTotal === 0
+        ? // 配偶者の税額軽減は申告が要件なので、使っている人がいればそちらを優先する
+          acquirers.some((a) => a.spouseRelief > 0)
+          ? 'zero-by-spouse-relief'
+          : 'zero-by-credits'
         : 'tax';
 
   return { heirs, basic, taxableTotal, total, acquirers, payableTotal, verdict };
 }
 
 // ─────────────────────────────────────────────
-// 画面の文言（結果の 3 通り。レビュー #390 の必須 2）
+// 画面の文言（結果の 4 通り。レビュー #390 の必須 2・docs/features/kokai-tool-seikaku-2026-10-16.md の B）
 // ─────────────────────────────────────────────
 
 export const VERDICT_MESSAGES: Record<Verdict, string> = {
   'below-basic': '相続税はかかりません。',
   'zero-by-spouse-relief': '納める相続税は0円ですが、配偶者の税額軽減を受けるには申告が必要です。',
+  'zero-by-credits':
+    '納める相続税は0円です（未成年者控除・障害者控除などで差し引ききれたため）。この場合、申告は要りません。',
   tax: '相続税がかかります。',
 };
 
-/** 課税価格の合計が基礎控除以下のときに**必ず**添える 1 行（ツールからは特例を使ったかが分からない） */
+/** 課税価格の合計が基礎控除以下のとき・`zero-by-credits` のときに**必ず**添える 1 行（ツールからは特例を使ったかが分からない） */
 export const SMALL_LAND_NOTE = '小規模宅地等の特例を使ってこの額になった場合は、申告が必要です。';
 
 /** 結果のすぐ下に置く免責（省略しない。税理士法 52 条の線） */

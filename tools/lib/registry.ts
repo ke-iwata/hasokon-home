@@ -186,7 +186,7 @@ export const tools: ToolDef[] = [
       '2027年分から書面申告の青色申告特別控除は上限10万円に。e-Taxで65万円、優良な電子帳簿かデジタルシームレス保存で75万円、簡易簿記で前々年の収入1,000万円超は0円。帳簿と申告の方法から控除額・令和8年分との差・税額の目安を判定します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-14',
+    updatedAt: '2026-10-16',
   },
   {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
@@ -515,7 +515,7 @@ export const tools: ToolDef[] = [
       '遺産額と相続人の構成から、基礎控除（3,000万円＋600万円×法定相続人）・相続税の総額・1人ずつの納付額を計算。養子の数の上限、放棄した人、死亡保険金の非課税枠、配偶者の税額軽減、2割加算、未成年者控除まで。加算する生前贈与の額も入れられます（判定は贈与税の計算機）。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-15',
+    updatedAt: '2026-10-16',
   },
   {
     // 仕様: docs/features/jutaku-shutoku-shikin-hikazei.md

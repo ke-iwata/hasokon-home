@@ -31,14 +31,31 @@
  *
  * ■ 税額の目安
  * 所得税は令和8年分・令和9年分それぞれの課税所得で速算表を通しで計算し（限界税率×差額で済ませない）、
- * 復興特別所得税を含めて ×1.021。住民税は所得割10%。給与所得などほかの所得は課税所得に足す
- * （副業の人は、給与の分で税率の帯が上がる）。「ほかの所得控除の合計」は利用者の入力のまま。
+ * 復興特別所得税を含めて ×1.021。給与所得などほかの所得は課税所得に足す
+ * （副業の人は、給与の分で税率の帯が上がる）。
+ * 基礎控除は合計所得金額（控除前の所得 − 青色申告特別控除 ＋ ほかの所得）から自動で引き、
+ * **所得税は所得税の基礎控除・住民税は住民税の基礎控除（43万円）で別に**計算する。
+ * 令和8年分の控除と令和9年分の控除で合計所得が違うので、基礎控除は両側で取り直す。
+ * 「基礎控除を除く所得控除の合計」は利用者の入力のまま、所得税・住民税に同じ額で引く
+ * （生命保険料控除など住民税で額が違う控除は概算）。
+ * 住民税所得割は 課税所得 × 10% − 調整控除（人的控除差は基礎控除分の5万円だけ）。
+ * 総所得金額等が所得割の非課税限度額（扶養を聞かないので単身の線）以下の側は0円
+ * （地方税法 314条の2 第2項・314条の6・附則3条の3 第4項）。
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10-16.md の A
  *
  * 【データ更新箇所】控除額が改正されたら DEDUCTION_R9 / DEDUCTION_R8 と PRIOR_REVENUE_LIMIT。
  * 所得税の速算表は lib/furusato-nozei.ts の `incomeTaxAmount()`（ここには持たない）。
  */
 
-import { RECONSTRUCTION_RATE, RESIDENT_RATE, incomeTaxAmount } from '@/lib/furusato-nozei';
+import {
+  RECONSTRUCTION_RATE,
+  RESIDENT_RATE,
+  adjustmentDeduction,
+  basicDeductionIncomeTax,
+  basicDeductionResidentTax,
+  incomeTaxAmount,
+} from '@/lib/furusato-nozei';
+import { limits } from '@/lib/juminzei-hikazei';
 
 /** データ全体の最終確認日 'YYYY-MM-DD' */
 export const DATA_CHECKED_AT = '2026-10-14';
@@ -106,7 +123,7 @@ export interface AoiroInput {
   incomeBeforeDeduction?: number;
   /** 任意：事業・不動産以外の所得（給与所得など。収入ではなく所得。円）。課税所得に足す */
   otherIncome?: number;
-  /** 任意：ほかの所得控除の合計（基礎控除・社会保険料控除など。円） */
+  /** 任意：基礎控除を除く所得控除の合計（社会保険料控除など。円）。基礎控除は合計所得から自動で引く */
   otherDeductions?: number;
 }
 
@@ -183,17 +200,30 @@ export function capByIncome(amount: number, income: number | undefined): number 
 const floor1000 = (v: number) => Math.max(0, Math.floor(v / 1000) * 1000);
 
 export interface TaxSide {
-  /** 課税所得（1,000円未満切捨て） */
+  /** 合計所得金額（控除前の所得 − 青色申告特別控除 ＋ ほかの所得） */
+  totalIncome: number;
+  /** 所得税の課税所得（1,000円未満切捨て） */
   taxableIncome: number;
+  /** 住民税の課税所得（1,000円未満切捨て） */
+  residentTaxable: number;
   /** 所得税（復興特別所得税を含む） */
   incomeTax: number;
-  /** 住民税所得割（10%） */
+  /** 住民税所得割（10% − 調整控除。所得割の非課税に当たれば0） */
   residentTax: number;
+  /** 所得割の非課税（総所得金額等が単身の限度額以下）に当たるか */
+  residentExempt: boolean;
 }
+
+/** 住民税所得割の非課税限度額（総所得金額等。扶養なしの単身の線。lib/juminzei-hikazei.ts の表から） */
+export const RESIDENT_EXEMPT_LIMIT = limits({ dependents: 0, kyuchi: 1 }).shotokuwari;
+
+/** 調整控除の人的控除差（基礎控除の差の5万円だけ。扶養などは聞かない） */
+const HUMAN_DIFF_BASIC = 50_000;
 
 /**
  * 控除額 `deduction` のときの税額の目安。
- * `income` は青色申告特別控除を引く前の事業・不動産の所得、`otherIncome` は給与所得などほかの所得
+ * `income` は青色申告特別控除を引く前の事業・不動産の所得、`otherIncome` は給与所得などほかの所得、
+ * `otherDeductions` は基礎控除を除く所得控除の合計（基礎控除はここで所得税・住民税別に引く）
  */
 export function taxFor(
   income: number,
@@ -201,14 +231,37 @@ export function taxFor(
   deduction: number,
   otherIncome = 0,
 ): TaxSide {
-  const taxableIncome = floor1000(
-    income + Math.max(0, otherIncome) - deduction - Math.max(0, otherDeductions),
-  );
+  const totalIncome = Math.max(0, income + Math.max(0, otherIncome) - deduction);
+  const others = Math.max(0, otherDeductions);
+  const taxableIncome = floor1000(totalIncome - basicDeductionIncomeTax(totalIncome) - others);
+  const residentTaxable = floor1000(totalIncome - basicDeductionResidentTax(totalIncome) - others);
+  const residentExempt = totalIncome <= RESIDENT_EXEMPT_LIMIT;
+  const residentTax = residentExempt
+    ? 0
+    : Math.max(
+        0,
+        Math.floor(residentTaxable * RESIDENT_RATE) -
+          adjustmentDeduction(residentTaxable, HUMAN_DIFF_BASIC, totalIncome),
+      );
   return {
+    totalIncome,
     taxableIncome,
+    residentTaxable,
     incomeTax: Math.floor(incomeTaxAmount(taxableIncome) * RECONSTRUCTION_RATE),
-    residentTax: Math.floor(taxableIncome * RESIDENT_RATE),
+    residentTax,
+    residentExempt,
   };
+}
+
+/**
+ * 所得税の課税所得が `taxable` になる控除前の所得（ほかの所得・ほかの所得控除は0）。
+ * 本文の例（「課税所得が◯万円の人」）を lib で作るため。基礎控除は合計所得で段が変わるので、段ごとに当てて探す
+ */
+export function incomeForTaxable(taxable: number, deduction: number): number {
+  for (const basic of [1_040_000, 670_000, 620_000, 480_000, 320_000, 160_000, 0]) {
+    if (basicDeductionIncomeTax(taxable + basic) === basic) return taxable + basic + deduction;
+  }
+  return taxable + deduction;
 }
 
 export interface TaxDiff {

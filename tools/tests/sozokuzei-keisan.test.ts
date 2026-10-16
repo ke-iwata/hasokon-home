@@ -304,6 +304,70 @@ describe('検算 7：配偶者が法定相続分と 1.6 億円を超えて取得
   });
 });
 
+describe('納付税額0円の見出し（docs/features/kokai-tool-seikaku-2026-10-16.md の B・相続税法 27 条 1 項）', () => {
+  it('子1人（10歳）・3,700万円：未成年者控除で0円なら「かかります」ではなく申告不要の文面', () => {
+    const kid = P('child');
+    const r = perHeirTax({
+      people: [kid],
+      inputs: [{ person: kid, acquired: 37_000_000, birth: { year: 2016, month: 5, day: 1 } }],
+      inheritanceDate: { year: 2026, month: 5, day: 1 },
+    })!;
+    // 基礎控除 3,600 万、課税遺産総額 100 万 → 10 万。未成年者控除 8 年 × 10 万 ＝ 80 万のうち 10 万を引く
+    expect(r.taxableTotal).toBeGreaterThan(r.basic);
+    expect(r.total.total).toBe(100_000);
+    expect(r.acquirers[0].minorCredit).toBe(100_000);
+    expect(r.acquirers[0].minorUnused).toBe(700_000);
+    expect(r.payableTotal).toBe(0);
+    expect(r.verdict).toBe('zero-by-credits');
+    expect(VERDICT_MESSAGES['zero-by-credits']).toContain('申告は要りません');
+    expect(VERDICT_MESSAGES['zero-by-credits']).not.toContain('かかります');
+  });
+
+  it('子1人（36歳・一般障害者）・3,700万円：障害者控除で0円でも同じ', () => {
+    const kid = P('child');
+    const r = perHeirTax({
+      people: [kid],
+      inputs: [
+        { person: kid, acquired: 37_000_000, birth: { year: 1990, month: 5, day: 1 }, disability: 'general' },
+      ],
+      inheritanceDate: { year: 2026, month: 5, day: 1 },
+    })!;
+    expect(r.acquirers[0].disabledCredit).toBe(100_000);
+    expect(r.payableTotal).toBe(0);
+    expect(r.verdict).toBe('zero-by-credits');
+  });
+
+  it('配偶者の税額軽減と未成年者控除の両方で0円なら、申告が要る「zero-by-spouse-relief」を優先する', () => {
+    const spouse = P('spouse');
+    const kid = P('child');
+    const people = [spouse, kid];
+    const r = perHeirTax({
+      people,
+      inputs: byLegalShare(people, 44_000_000, { [kid.id]: { birth: { year: 2026, month: 1, day: 1 } } }),
+      inheritanceDate: DEATH,
+    })!;
+    const [s, k] = r.acquirers;
+    expect(s.spouseRelief).toBeGreaterThan(0);
+    expect(k.minorCredit).toBeGreaterThan(0);
+    expect(r.payableTotal).toBe(0);
+    expect(r.verdict).toBe('zero-by-spouse-relief');
+  });
+
+  it('一部の人だけが0円で、ほかの人に納付税額があれば従来どおり「tax」', () => {
+    const kid = P('child');
+    const other = P('child');
+    const people = [kid, other];
+    const r = perHeirTax({
+      people,
+      inputs: byLegalShare(people, 60_000_000, { [kid.id]: { birth: { year: 2026, month: 1, day: 1 } } }),
+      inheritanceDate: DEATH,
+    })!;
+    expect(r.acquirers.find((a) => a.person.id === kid.id)!.payable).toBe(0);
+    expect(r.payableTotal).toBeGreaterThan(0);
+    expect(r.verdict).toBe('tax');
+  });
+});
+
 describe('死亡保険金の非課税枠（No.4114）', () => {
   it('相続人 2 人が 600 万円・400 万円を受け取り、枠 1,500 万円（相続人 3 人）なら全額非課税', () => {
     const m = exemptAmount(
