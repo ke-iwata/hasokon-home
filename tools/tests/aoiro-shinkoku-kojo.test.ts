@@ -10,8 +10,11 @@ import {
   asksFilingR8,
   capByIncome,
   isOverPriorRevenueLimit,
+  RESIDENT_EXEMPT_LIMIT,
+  incomeForTaxable,
   judge,
   taxDiff,
+  taxFor,
   tierR8,
   tierR9,
   type AoiroInput,
@@ -30,15 +33,15 @@ const base: AoiroInput = {
 
 /**
  * 仕様書の「テスト」の 11 ケース（docs/features/aoiro-shinkoku-tokubetsu-kojo-r9.md）。
- * 課税所得は令和9年分（令和9年分の控除を引いた後）で書く。ほかの所得控除は0とし、
- * 控除前の所得 ＝ 令和9年分の課税所得 ＋ 令和9年分の控除。
+ * 課税所得は令和9年分（令和9年分の控除を引いた後）の所得税の課税所得で書く。ほかの所得控除は0とし、
+ * 控除前の所得 ＝ 令和9年分の課税所得 ＋ 所得税の基礎控除 ＋ 令和9年分の控除（`incomeForTaxable()`）。
  */
 describe('仕様書の 11 ケース', () => {
   it('#1 事業・複式簿記・書面・前々年600万円：55万円 → 10万円、税額 +90,945円', () => {
     const r = judge({
       ...base,
       priorRevenueOver: isOverPriorRevenueLimit(6_000_000),
-      incomeBeforeDeduction: 3_000_000 + 100_000,
+      incomeBeforeDeduction: incomeForTaxable(3_000_000, 100_000),
       otherDeductions: 0,
     });
     expect(r.r8).toBe(550_000);
@@ -57,12 +60,13 @@ describe('仕様書の 11 ケース', () => {
     expect(etax.change).toBe(100_000);
 
     // 「1つ上の区分に上がるには」：書面のままの #1 から e-Tax にした分
-    const r = judge({ ...base, incomeBeforeDeduction: 3_100_000, otherDeductions: 0 });
+    const income = incomeForTaxable(3_000_000, 100_000);
+    const r = judge({ ...base, incomeBeforeDeduction: income, otherDeductions: 0 });
     const up = r.upgrades.find((u) => u.action === 'etax');
     expect(up?.amount).toBe(650_000);
     expect(up?.gain).toBe(550_000);
     expect(up?.taxSaving).toBe(111_155);
-    const d = taxDiff(3_100_000, 0, 100_000, 650_000);
+    const d = taxDiff(income, 0, 100_000, 650_000);
     expect(d.before.taxableIncome).toBe(3_000_000);
     expect(d.after.taxableIncome).toBe(2_450_000);
   });
@@ -73,7 +77,7 @@ describe('仕様書の 11 ケース', () => {
       filingR9: 'etax',
       eBook: 'yuryo',
       filingR8: 'yuryo',
-      incomeBeforeDeduction: 6_000_000 + 750_000,
+      incomeBeforeDeduction: incomeForTaxable(6_000_000, 750_000),
       otherDeductions: 0,
     });
     expect(r.r8).toBe(650_000);
@@ -90,14 +94,15 @@ describe('仕様書の 11 ケース', () => {
       ...base,
       bookkeeping: 'simple',
       priorRevenueOver: isOverPriorRevenueLimit(12_000_000),
-      incomeBeforeDeduction: 6_000_000,
+      // 控除の前後で合計所得が655万円の段（基礎控除67万円→62万円）をまたがない所得にする
+      incomeBeforeDeduction: incomeForTaxable(6_380_000, 0),
       otherDeductions: 0,
     });
     expect(r.r8).toBe(100_000);
     expect(r.r9).toBe(0);
     expect(r.reason).toBe('simpleOver');
-    expect(r.tax?.after.taxableIncome).toBe(6_000_000);
-    expect(r.tax?.before.taxableIncome).toBe(5_900_000);
+    expect(r.tax?.after.taxableIncome).toBe(6_380_000);
+    expect(r.tax?.before.taxableIncome).toBe(6_280_000);
     expect(r.tax?.total).toBe(30_420);
   });
 
@@ -155,7 +160,11 @@ describe('仕様書の 11 ケース', () => {
   });
 
   it('#9 330万円の帯の境をまたぐと、限界税率×差額（90,945円）ではなく +106,260円', () => {
-    const r = judge({ ...base, incomeBeforeDeduction: 3_550_000, otherDeductions: 0 });
+    const r = judge({
+      ...base,
+      incomeBeforeDeduction: incomeForTaxable(3_450_000, 100_000),
+      otherDeductions: 0,
+    });
     expect(r.r8).toBe(550_000);
     expect(r.r9).toBe(100_000);
     expect(r.tax?.before.taxableIncome).toBe(3_000_000);
@@ -319,12 +328,13 @@ describe('控除の上限と税額', () => {
   });
 
   it('給与所得などほかの所得は課税所得に足す（副業で税率の帯が上がる）', () => {
-    // 給与所得500万円＋事業所得300万円・所得控除100万円・複式簿記の書面申告（PR #387 のレビュー）
+    // 給与所得500万円＋事業所得300万円・所得控除100万円（基礎控除62万円＋ほか38万円）・
+    // 複式簿記の書面申告（PR #387 のレビュー）
     const r = judge({
       ...base,
       incomeBeforeDeduction: 3_000_000,
       otherIncome: 5_000_000,
-      otherDeductions: 1_000_000,
+      otherDeductions: 380_000,
     });
     expect(r.tax?.before.taxableIncome).toBe(6_450_000);
     expect(r.tax?.after.taxableIncome).toBe(6_900_000);
@@ -349,6 +359,77 @@ describe('控除の上限と税額', () => {
 
   it('所得を入れないときは税額を出さない', () => {
     expect(judge(base).tax).toBeUndefined();
+  });
+});
+
+describe('住民税は住民税の基礎控除で計算する（docs/features/kokai-tool-seikaku-2026-10-16.md の A）', () => {
+  /** 事業所得・複式簿記・書面申告、令和8年分 55万円 → 令和9年分 10万円、基礎控除を除く控除 0円 */
+  const paper = (income: number) => judge({ ...base, incomeBeforeDeduction: income, otherDeductions: 0 });
+
+  it('控除前の所得100万円：所得税は0円のまま、住民税は非課税 → 44,500円（「変わりません」にしない）', () => {
+    const r = paper(1_000_000);
+    expect(r.tax?.incomeTax).toBe(0);
+    expect(r.tax?.before.residentExempt).toBe(true);
+    expect(r.tax?.before.residentTax).toBe(0);
+    expect(r.tax?.after.residentTaxable).toBe(470_000);
+    expect(r.tax?.after.residentTax).toBe(44_500);
+    expect(r.tax?.residentTax).toBe(44_500);
+    expect(r.tax?.total).toBe(44_500);
+  });
+
+  it('控除前の所得150万円：住民税 49,500円 → 94,500円（+45,000円）、所得税 +18,378円', () => {
+    const r = paper(1_500_000);
+    expect(r.tax?.before.residentTax).toBe(49_500);
+    expect(r.tax?.after.residentTax).toBe(94_500);
+    expect(r.tax?.residentTax).toBe(45_000);
+    expect(r.tax?.before.incomeTax).toBe(0);
+    expect(r.tax?.incomeTax).toBe(18_378);
+  });
+
+  it('控除前の所得300万円：住民税 199,500円 → 244,500円（+45,000円）、所得税 +22,972円', () => {
+    const r = paper(3_000_000);
+    expect(r.tax?.before.residentTax).toBe(199_500);
+    expect(r.tax?.after.residentTax).toBe(244_500);
+    expect(r.tax?.residentTax).toBe(45_000);
+    expect(r.tax?.incomeTax).toBe(22_972);
+  });
+
+  it('総所得金額等が所得割の非課税限度額（単身45万円）以下の側は0円、1円でも超えれば課税', () => {
+    expect(RESIDENT_EXEMPT_LIMIT).toBe(450_000);
+    const at = taxFor(1_000_000, 0, 550_000);
+    expect(at.totalIncome).toBe(450_000);
+    expect(at.residentExempt).toBe(true);
+    expect(at.residentTax).toBe(0);
+    const over = taxFor(1_001_000, 0, 550_000);
+    expect(over.residentExempt).toBe(false);
+    expect(over.residentTaxable).toBe(21_000);
+    expect(over.residentTax).toBe(2_100 - 1_050); // 調整控除は課税所得の5%（5万円が上限）
+  });
+
+  it('所得税と住民税の基礎控除は控除の前後の合計所得で取り直す（489万円の段をまたぐ）', () => {
+    // 令和8年分：合計所得 495万円 → 所得税の基礎控除67万円、令和9年分：540万円 → 67万円
+    // 令和8年分に e-Tax 65万円なら 485万円 → 104万円
+    const etax = taxFor(5_500_000, 0, 650_000);
+    expect(etax.totalIncome).toBe(4_850_000);
+    expect(etax.taxableIncome).toBe(4_850_000 - 1_040_000);
+    expect(etax.residentTaxable).toBe(4_850_000 - 430_000);
+    const paperSide = taxFor(5_500_000, 0, 550_000);
+    expect(paperSide.taxableIncome).toBe(4_950_000 - 670_000);
+    expect(paperSide.residentTaxable).toBe(4_950_000 - 430_000);
+  });
+
+  it('基礎控除を除く所得控除は所得税・住民税の両方から引く', () => {
+    const t = taxFor(3_000_000, 500_000, 100_000);
+    expect(t.taxableIncome).toBe(2_900_000 - 1_040_000 - 500_000);
+    expect(t.residentTaxable).toBe(2_900_000 - 430_000 - 500_000);
+  });
+
+  it('本文の例の所得は、所得税の課税所得がちょうどその額になる', () => {
+    for (const taxable of [2_600_000, 5_000_000, 6_000_000, 6_380_000]) {
+      for (const deduction of [0, 100_000, 650_000, 750_000]) {
+        expect(taxFor(incomeForTaxable(taxable, deduction), 0, deduction).taxableIncome).toBe(taxable);
+      }
+    }
   });
 });
 

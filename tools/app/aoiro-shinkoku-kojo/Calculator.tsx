@@ -5,6 +5,7 @@ import {
   FIRST_RESIDENT_FISCAL_YEAR,
   FIRST_TAX_YEAR,
   FORM_PAGE,
+  RESIDENT_EXEMPT_LIMIT,
   asksEBook,
   asksFilingR8,
   judge,
@@ -264,9 +265,9 @@ export default function Calculator() {
               />
             </label>
             <label>
-              ほかの所得控除の合計（円）
+              基礎控除を除く所得控除の合計（円）
               <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
-                基礎控除・社会保険料控除・小規模企業共済等掛金控除などの合計
+                社会保険料控除・小規模企業共済等掛金控除などの合計。基礎控除は所得から自動で引きます（所得税と住民税で額が違うため）
               </span>
               <input
                 type="number"
@@ -319,9 +320,14 @@ export default function Calculator() {
             </thead>
             <tbody>
               <tr>
-                <td style={{ textAlign: 'left' }}>課税所得</td>
+                <td style={{ textAlign: 'left' }}>所得税の課税所得</td>
                 <td>{yen(r.tax.before.taxableIncome)}</td>
                 <td>{yen(r.tax.after.taxableIncome)}</td>
+              </tr>
+              <tr>
+                <td style={{ textAlign: 'left' }}>住民税の課税所得</td>
+                <td>{yen(r.tax.before.residentTaxable)}</td>
+                <td>{yen(r.tax.after.residentTaxable)}</td>
               </tr>
               <tr>
                 <td style={{ textAlign: 'left' }}>所得税（復興特別所得税を含む）</td>
@@ -329,9 +335,9 @@ export default function Calculator() {
                 <td>{yen(r.tax.after.incomeTax)}</td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}>住民税所得割（10%）</td>
-                <td>{yen(r.tax.before.residentTax)}</td>
-                <td>{yen(r.tax.after.residentTax)}</td>
+                <td style={{ textAlign: 'left' }}>住民税所得割（10% − 調整控除）</td>
+                <td>{r.tax.before.residentExempt ? '0円（非課税）' : yen(r.tax.before.residentTax)}</td>
+                <td>{r.tax.after.residentExempt ? '0円（非課税）' : yen(r.tax.after.residentTax)}</td>
               </tr>
             </tbody>
           </table>
@@ -348,6 +354,9 @@ export default function Calculator() {
           </p>
           <p className="hint">
             所得税は両方の課税所得で速算表を通しで計算しています（控除の差で税率の帯をまたぐと、差額×税率より大きく変わります）。
+            基礎控除は所得税・住民税それぞれの額（住民税は43万円）を、控除の前後の合計所得で取り直しています。
+            住民税は、所得が単身の非課税の線（総所得金額等{man(RESIDENT_EXEMPT_LIMIT)}）以下なら所得割0円としています（扶養のある方は線が上がります）。
+            生命保険料控除など住民税で額が違う控除は、同じ額で入れた概算です。
           </p>
         </>
       )}

@@ -458,7 +458,7 @@ function Result({
         <p className="hint" style={{ margin: '6px 0 0' }}>
           課税価格の合計 {yen(r.taxableTotal)} ／ 基礎控除 {yen(r.basic)}
         </p>
-        {r.verdict === 'below-basic' && (
+        {(r.verdict === 'below-basic' || r.verdict === 'zero-by-credits') && (
           <p className="hint" style={{ margin: '6px 0 0' }}>
             {SMALL_LAND_NOTE}
           </p>

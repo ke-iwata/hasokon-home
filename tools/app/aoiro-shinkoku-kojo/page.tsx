@@ -6,7 +6,14 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
-import { DEDUCTION_R8, DEDUCTION_R9, FORM_PAGE, SOURCES, taxDiff } from '@/lib/aoiro-shinkoku-kojo';
+import {
+  DEDUCTION_R8,
+  DEDUCTION_R9,
+  FORM_PAGE,
+  SOURCES,
+  incomeForTaxable,
+  taxDiff,
+} from '@/lib/aoiro-shinkoku-kojo';
 import Calculator from './Calculator';
 
 const title =
@@ -29,7 +36,12 @@ const yen = (v: number) => `${v.toLocaleString('ja-JP')}円`;
  * 令和9年分の課税所得が260万円（10%の帯）・500万円（20%の帯）で、令和8年分も同じ帯に収まる人
  */
 const paperLoss = (taxableR9: number) =>
-  taxDiff(taxableR9 + DEDUCTION_R9.basic, 0, DEDUCTION_R8.paper, DEDUCTION_R9.basic).total;
+  taxDiff(
+    incomeForTaxable(taxableR9, DEDUCTION_R9.basic),
+    0,
+    DEDUCTION_R8.paper,
+    DEDUCTION_R9.basic,
+  ).total;
 const PAPER_LOSS_10 = paperLoss(2_600_000);
 const PAPER_LOSS_20 = paperLoss(5_000_000);
 
