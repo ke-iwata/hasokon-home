@@ -10,6 +10,7 @@ import {
   GridFourIcon,
   GridNineIcon,
   KeyboardIcon,
+  LayoutIcon,
   NumberCircleNineIcon,
   NumpadIcon,
   RacquetIcon,
@@ -1171,6 +1172,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   NumberCircleNine: NumberCircleNineIcon,
   // ヒット＆ブロー。色のピン（市販のボードゲームの見た目）は使わず、テンキーで表す（盤面の絵は `public` にするPRで描く）
   Numpad: NumpadIcon,
+  // 四角わけパズル。他社のパッチ柄・誌面はなぞらず、長方形に区切った枠で表す（盤面の絵は `public` にするPRで描く）
+  RectSplit: LayoutIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

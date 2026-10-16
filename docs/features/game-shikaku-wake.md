@@ -1,5 +1,14 @@
 # 新ゲーム「四角わけパズル」— 数字が散らばった盤を、長方形（正方形を含む）に切り分ける純ロジックパズル。どの四角も数字を 1 つだけ含み、その数字が四角のマス数。2 つのマスをタップする（またはなぞる）だけで四角が引ける。日替わりの 1 問と 3 段階（5×5・7×7・9×9）。答えは必ず 1 通り（生成器で確かめてから出す）
 
+**状態**：実装済み・`stage: 'wip'`（2026-10-16 実装。セッション `session_015VTdVH3JDKXbAyfU9dqTM6`）。
+**名称と slug（`shikaku-wake`）は運営者の J-PlatPat 確認待ちで、`wip` のまま止めてある**（ヒット＆ブロー・数字けしと同じ扱い）。
+確認が済んだら `preview` へ（生成器の一意解テストと推論だけで解けるテストはそろっている）。
+**仕様からの差分**：別解潰しで一意にならないときは、四角の併合・分割ではなく区切りから作り直す（1 盤 1ms 未満で済むため）・
+難易度の点数の範囲は かんたん 7〜12・ふつう／今日の1問 16〜28・むずかしい 34 以上（実測）。
+経緯は [games/docs/DECISIONS.md](../../games/docs/DECISIONS.md) の 2026-10-16。
+
+<details><summary>起票時の状態メモ</summary>
+
 **状態**：提案（2026-10-16 起票）。
 **優先度：中。** ゲームは `wip` 12 本・`preview` 4 本が公開待ちで並んでいる（`games/lib/registry.ts`、2026-10-16 時点）。
 **本提案はその列の後ろに並ぶ 1 本**で、公開待ちの列を追い越さない。日替わり基盤（`games/lib/daily.ts`）・記録（`games/lib/records.ts` の `lastClearedOn` / `streak`）・
@@ -16,6 +25,8 @@
 テスト環境で運営者が **390×844・320×568・820×1180（iPad 縦）** で「**タップだけで**今日の 1 問を解ける」「なぞっても引ける」「途中で再読み込みしても盤が戻る」ことを確認したら `public`。
 `public` にする PR で `home/index.html` のカード・`home/404.html` の一覧・`app/GamePreview.tsx` の絵・`app/GameIcon.tsx` の `BOARD` の絵を足し、
 `node scripts/sync-home-card-art.mjs` で写す（`home/llms.txt` に足す行は無い）。
+</details>
+
 **対象**：`games/`（`hasokon.com/games/shikaku-wake/` を想定）
 **起票**：2026-10-16
 **関連**：[game-hoshioki-puzzle.md](./game-hoshioki-puzzle.md)（日替わり基盤の持ち主・「一意解でなければ別解を潰す」生成・推論段数による難易度）・

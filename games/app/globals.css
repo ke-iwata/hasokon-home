@@ -74,6 +74,14 @@
   --hp-r6: #f1f7ea;
   --hp-r7: #efeff7;
   --hp-r8: #f7f4ea;
+  /* 四角わけパズルの四角の塗り。6色を隣どうしで重ならないよう回す（lib/shikaku-wake.ts の assignColors）。
+     **色は補助で、区別の本体は太い枠線**。数字（--text）が読めるよう淡く寄せてある */
+  --sw-r0: #dbe7f5;
+  --sw-r1: #eadff2;
+  --sw-r2: #d9efe0;
+  --sw-r3: #f4e6cf;
+  --sw-r4: #d5edf2;
+  --sw-r5: #f5dcdc;
   /* カードの絵の地色。ゲームは1分類なので1色。home のトップでも同じ色で並ぶので、
      「この色のタイルはゲーム」と覚えてもらえる。仕様は docs/features/card-illustrations.md */
   --cat-play: #be123c;
@@ -115,6 +123,12 @@
     --hp-r6: #2a3324;
     --hp-r7: #2a2a38;
     --hp-r8: #343024;
+    --sw-r0: #2c3a4d;
+    --sw-r1: #3b2f47;
+    --sw-r2: #2a4334;
+    --sw-r3: #47402c;
+    --sw-r4: #24434b;
+    --sw-r5: #4a2f2f;
 
     --cell-closed: #3f3a36;
     --cell-closed-hi: #524b46;
@@ -468,6 +482,7 @@ ol {
 .ms-board,
 .hp-board,
 .hn-board,
+.sw-board,
 .ts-board,
 .yn-board,
 .sk-stage {
@@ -944,6 +959,229 @@ ol {
 .hn-share-note {
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* ---- 四角わけパズル ----
+   盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。`--chrome` / `--board-max` は入れ物（`.sw-game`）に置き、
+   生成中の幕（`.sw-loading`）と盤が同じ値を継承するようにする。
+
+   重ね方は 3 段：塗り（`.sw-fill`）→ マスと数字（div。読み上げ用の gridcell）→ 枠線と予定の四角（`.sw-overlay`）。
+   マス（div）はクリックを受けない（盤が座標からマスを決める）。
+   **なぞる操作とスクロールを取り合わない**ように、盤の上だけ `touch-action: none` */
+.sw-game {
+  --chrome: 470px;
+  --board-max: 460px;
+}
+
+.sw-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--sw-cols, 7), 1fr);
+  /* 行も明示する（数字の無い行が中身の高さまで潰れて、マスが正方形でなくなる） */
+  grid-template-rows: repeat(var(--sw-cols, 7), 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  border: 3px solid var(--text);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.sw-board:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* role="row" の入れ物は格子に参加させない（マスが直接 grid の子として並ぶ） */
+.sw-row {
+  display: contents;
+}
+
+.sw-fill,
+.sw-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.sw-fill {
+  z-index: 0;
+}
+
+.sw-overlay {
+  z-index: 2;
+}
+
+.sw-r0 { fill: var(--sw-r0); }
+.sw-r1 { fill: var(--sw-r1); }
+.sw-r2 { fill: var(--sw-r2); }
+.sw-r3 { fill: var(--sw-r3); }
+.sw-r4 { fill: var(--sw-r4); }
+.sw-r5 { fill: var(--sw-r5); }
+
+.sw-cell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* マスの目は点線で薄く。四角の境界（太線）と見分ける */
+  border: 1px dashed var(--border);
+  min-width: 0;
+  min-height: 0;
+  pointer-events: none;
+}
+
+/* キーボードのカーソル。盤にフォーカスがあるときだけ出す */
+.sw-board:focus-visible .sw-cell.cursor {
+  box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+/* 置いた角。色だけに頼らず、太い二重の枠で示す */
+.sw-cell.corner {
+  box-shadow: inset 0 0 0 3px var(--accent), inset 0 0 0 6px var(--surface);
+}
+
+.sw-num {
+  font-size: clamp(0.85rem, 4.6vw, 1.35rem);
+  font-weight: 500;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* 決まりを満たした四角の数字は太字＋下線（色を見なくても分かる） */
+.sw-num.ok {
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sw-edge {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 0.1;
+}
+
+.sw-board.done .sw-edge {
+  stroke: var(--ok);
+}
+
+/* 決まり違反（「チェック」のあとだけ）。赤の破線＋左上の × */
+.sw-edge.bad {
+  stroke: var(--danger);
+  stroke-dasharray: 0.22 0.14;
+}
+
+.sw-bad-mark {
+  fill: var(--danger);
+  font-size: 0.38px;
+  font-weight: 700;
+}
+
+/* 引かれる予定の四角（角を置いたあと・押している間） */
+.sw-preview {
+  fill: color-mix(in srgb, var(--accent) 18%, transparent);
+  stroke: var(--accent);
+  stroke-width: 0.06;
+  stroke-dasharray: 0.16 0.1;
+}
+
+/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない）。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること** */
+.sw-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.sw-actions {
+  margin-top: 12px;
+  justify-content: center;
+}
+
+/* 押す先は44pxを割らない（画面の約束4） */
+.sw-actions .btn {
+  min-height: 44px;
+}
+
+/* 読み上げと案内の1行。**空でも枠は置く**（高さを確保して盤を動かさない） */
+.sw-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sw-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+
+.sw-share-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 遊び方の図（page.tsx の例題） */
+.sw-example-wrap {
+  margin: 16px auto;
+  max-width: 260px;
+  text-align: center;
+}
+
+.sw-example {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.sw-example-grid line {
+  stroke: var(--border);
+  stroke-width: 0.03;
+}
+
+.sw-example-num {
+  fill: var(--text);
+  font-size: 0.5px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.sw-example-wrap figcaption {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sw-board.done .sw-edge {
+    transition: stroke 0.4s ease;
+  }
 }
 
 /* ---- 間違い探し ----
@@ -7034,5 +7272,34 @@ button.hf-card {
 
   .ts-hand-d-short {
     display: inline;
+  }
+
+  /* 四角わけパズル。星置きと同じ理由で、狭い画面では高さから盤を縮めすぎない
+     （9×9 で 1 マス 29px 前後。2 点タップで押し間違いを吸収する） */
+  .sw-game {
+    --chrome: 300px;
+    --board-max: 380px;
+  }
+
+  .sw-note {
+    font-size: 0.75rem;
+  }
+
+  /* もどす・最初から・チェック・やめるの 4 つを 320px でも 1 行に（折り返すと盤の下が 1 段ぶん伸びる。
+     左右 8px だと 4 つで 272px になり、使える幅 266px を超えた。実測） */
+  .sw-actions {
+    gap: 6px;
+  }
+
+  .sw-actions .btn {
+    padding-inline: 6px;
+    font-size: 0.8rem;
+  }
+
+  /* 今日の1問・かんたん・ふつう・むずかしいを 320px でも切らさない（はみ出すと端の文字が欠ける。実測） */
+  .sw-game .seg button {
+    padding-inline: 5px;
+    font-size: 0.75rem;
+    white-space: nowrap;
   }
 }
