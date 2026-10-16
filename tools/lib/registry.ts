@@ -189,6 +189,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-16',
   },
   {
+    // 仕様: docs/features/genka-shokyaku-keisan.md
+    slug: 'genka-shokyaku',
+    // 買った物（パソコンがいちばん多い）を経費にする計算なので Laptop
+    icon: 'Laptop',
+    name: '減価償却 計算機（40万円未満の特例・一括償却）',
+    description:
+      '買った物の値段・買った日・青色か白色かから、全額経費・一括償却（3年）・少額減価償却資産の特例（2026年4月1日以後の取得は40万円未満、3月までは30万円未満）・通常の減価償却のどれが使えるかと、今年の経費・年ごとの償却表を出します。中古の耐用年数・事業割合・定率法にも対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-16',
+  },
+  {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
     slug: 'kyuyo-nenkin-kojo',
     // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
