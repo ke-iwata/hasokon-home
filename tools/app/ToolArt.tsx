@@ -587,6 +587,27 @@ const ART: Record<string, ReactNode> = {
       <rect x="44" y="22" width="6" height="8" {...CUT} />
     </>
   ),
+  // 年ごとに減っていく帳簿の価額
+  'genka-shokyaku': (
+    <>
+      <rect x="6" y="10" width="11" height="44" rx="2.5" {...SOLID} />
+      <rect x="20" y="21" width="11" height="33" rx="2.5" {...F} />
+      <rect x="20" y="21" width="11" height="33" rx="2.5" {...S} />
+      <rect x="34" y="32" width="11" height="22" rx="2.5" {...F} />
+      <rect x="34" y="32" width="11" height="22" rx="2.5" {...S} />
+      <rect x="48" y="43" width="11" height="11" rx="2.5" {...F} />
+      <rect x="48" y="43" width="11" height="11" rx="2.5" {...S} />
+      <path d="M4 58 H60" {...S} />
+    </>
+  ),
+  // 制限速度の標識
+  'sokudo-ihan-hansokukin': (
+    <>
+      <circle cx="32" cy="32" r="25" {...F} />
+      <circle cx="32" cy="32" r="25" {...S} strokeWidth={7} />
+      <text x="32" y="40.5" fontSize="23" fontFamily="system-ui, sans-serif" fontWeight={800} textAnchor="middle" fill="currentColor">30</text>
+    </>
+  ),
   // ---- 生活・健康 ----
   // 水と缶詰
   'bosai-bichiku-keisan': (

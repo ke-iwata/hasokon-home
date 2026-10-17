@@ -227,8 +227,8 @@ export const games: GameDef[] = [
     icon: 'RectSplit',
     name: '四角わけパズル',
     description: '数字の数だけのマスを長方形で囲んで、盤を切り分けるパズル。5×5〜9×9の3段階と、毎日変わる今日の1問。',
-    keywords: ['長方形', '四角で区切る', '今日の1問', '答えは必ず1通り', '連続日数'],
-    stage: 'wip',
+    keywords: ['長方形に区切る', '今日の1問', '答えは必ず1通り', '連続日数'],
+    stage: 'public',
     updatedAt: '2026-10-16',
   },
   {
@@ -245,7 +245,7 @@ export const games: GameDef[] = [
     name: '橋かけパズル',
     description: '数字の本数だけ橋を架けて、全部の島を1つにつなぐパズル。3段階と毎日変わる今日の1問。',
     keywords: ['橋', '島をつなぐ', '今日の1問', '答えは必ず1通り', '連続日数'],
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-10-17',
   },
   {
@@ -544,7 +544,7 @@ export const games: GameDef[] = [
     description:
       '相手が隠した重複なしの数を「ヒット」「ブロー」のヒントで当てる数あて推理ゲーム。今日の1問は全員同じ数。CPUと交互に当て合う対戦は3段階。テンキーのタップだけで遊べます。',
     keywords: ['数あて', 'ヒット', 'ブロー', '今日の1問', 'CPUと対戦', '推理ゲーム'],
-    stage: 'wip',
+    stage: 'public',
     updatedAt: '2026-10-15',
   },
   {

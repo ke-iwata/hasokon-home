@@ -701,6 +701,44 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={216} y={120} s={13} w={700} c="ink">［◯円］</T>
     </>
   ),
+  // 取得価額の区分（40万円未満の特例は令和8年4月から）と、年ごとの償却額
+  'genka-shokyaku': (
+    <>
+      {[
+        ['10万円未満', '全額その年に', false],
+        ['20万円未満', '3年で均等に', false],
+        ['40万円未満', '特例で全額', true],
+      ].map(([a, b, hot], i) => (
+        <g key={a as string}>
+          <rect x="24" y={20 + i * 38} width="132" height="32" rx="8" {...(hot ? INK : TINT)} />
+          <T x={34} y={34 + i * 38} s={11} w={700} c={hot ? 'bg' : 'ink'}>{a}</T>
+          <T x={34} y={47 + i * 38} s={10} c={hot ? 'bg' : 'muted'}>{b}</T>
+        </g>
+      ))}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <g key={i}>
+          <rect x={180 + i * 27} y="56" width="20" height="56" rx="3" {...(i === 0 ? MID : TINT)} />
+          <T x={190 + i * 27} y={126} s={10} c="muted" a="middle">{`${i + 1}年`}</T>
+        </g>
+      ))}
+      <T x={180} y={40} s={11} c="muted">年ごとの償却額</T>
+    </>
+  ),
+  // 制限速度の標識と、超過・反則金・点数（生活道路は 2026-09-01 から30km/h）
+  'sokudo-ihan-hansokukin': (
+    <>
+      <circle cx="80" cy="75" r="50" {...PANEL} style={{ fill: 'var(--surface)', stroke: 'var(--cat-mark)' }} strokeWidth={10} />
+      <T x={80} y={91} s={44} w={900} c="ink" a="middle">30</T>
+      <T x={156} y={40} s={11} c="muted">超過</T>
+      <T x={316} y={40} s={14} w={900} c="ink" a="end">［◯］km/h</T>
+      <path d="M156 52 H316" stroke="currentColor" strokeOpacity={0.2} strokeWidth={1} />
+      <T x={156} y={78} s={11} c="muted">反則金</T>
+      <T x={316} y={78} s={14} w={900} c="ink" a="end">［◯円］</T>
+      <path d="M156 90 H316" stroke="currentColor" strokeOpacity={0.2} strokeWidth={1} />
+      <T x={156} y={116} s={11} c="muted">点数</T>
+      <T x={316} y={116} s={14} w={900} c="ink" a="end">［◯点］</T>
+    </>
+  ),
   // ---- 生活・健康 ----
   'bosai-bichiku-keisan': (
     <>
