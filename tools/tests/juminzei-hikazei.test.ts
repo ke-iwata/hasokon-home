@@ -50,6 +50,21 @@ describe('給与所得（別表第五の端数つき）', () => {
     expect(kyuyoShotoku(2_204_000, 'R9')).toBe(1_462_800);
   });
 
+  it('令和9年度（令和8年分）の219.1万〜220万円は特例の固定額（年末調整と同じ表）', () => {
+    expect(kyuyoShotoku(2_190_999, 'R9')).toBe(1_450_999);
+    expect(kyuyoShotoku(2_195_000, 'R9')).toBe(1_453_000);
+    expect(kyuyoShotoku(2_199_999, 'R9')).toBe(1_456_000);
+  });
+
+  it('年末調整の給与所得の関数と一致する（4,000円の切り捨てを2か所で持たない）', async () => {
+    const { salaryIncomeByTable } = await import('@/lib/furusato-nozei');
+    const { salaryIncomeByTableR7 } = await import('@/lib/nenmatsu-chosei');
+    for (const income of [700_000, 1_899_999, 2_195_000, 2_203_999, 4_001_999, 6_599_999]) {
+      expect(kyuyoShotoku(income, 'R9')).toBe(salaryIncomeByTable(income));
+      expect(kyuyoShotoku(income, 'R8')).toBe(salaryIncomeByTableR7(income));
+    }
+  });
+
   it('4,000円の倍数では lib/furusato-nozei.ts の令和8年分の給与所得と一致する（同じ表を二重に持たない）', () => {
     for (const income of [500_000, 1_000_000, 2_400_000, 3_000_000, 5_000_000, 7_000_000]) {
       expect(kyuyoShotoku(income, 'R9')).toBe(salaryIncome(income));

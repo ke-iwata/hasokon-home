@@ -170,6 +170,53 @@ export function salaryIncome(income: number): number {
   return Math.max(0, Math.floor(income - salaryDeduction(income)));
 }
 
+/** 別表第五（年末調整等のための給与所得控除後の給与等の金額の表）の刻みと、表が終わる給与収入 */
+const TABLE5_UNIT = 4_000;
+const TABLE5_UPPER = 6_600_000;
+
+/**
+ * 別表第五で給与所得を出す（年分ごとの給与所得控除を渡す）。
+ * 表は「最低保障額 + 1,000円」未満を0とする（令和8年分なら74.1万円未満。1円〜999円の給与所得は無い）。
+ * 給与収入 tableFrom 以上 660万円未満は、収入を4,000円刻みで切り捨てた額に控除の式を当てる
+ * （所得税法28条4項）。それ以外は式のまま。
+ */
+export function salaryIncomeByTableWith(
+  income: number,
+  deduction: (income: number) => number,
+  tableFrom: number,
+): number {
+  const i = Math.floor(Math.max(0, income));
+  if (i < deduction(i) + 1_000) return 0;
+  const base =
+    i >= tableFrom && i < TABLE5_UPPER ? Math.floor(i / TABLE5_UNIT) * TABLE5_UNIT : i;
+  return Math.max(0, Math.floor(base - deduction(base)));
+}
+
+/**
+ * 【データ更新箇所】令和8・9年分の給与所得の特例（219.1万〜220万円の帯は固定額）。
+ * 国税庁「令和8年度税制改正による所得税の源泉徴収事務への主な改正点」1頁 ⑵ハ
+ * https://www.nta.go.jp/publication/pamph/gensen/2026kaisei.pdf
+ */
+const SALARY_INCOME_SPECIAL_R8: { from: number; until: number; amount: number }[] = [
+  { from: 2_191_000, until: 2_193_000, amount: 1_451_000 },
+  { from: 2_193_000, until: 2_196_000, amount: 1_453_000 },
+  { from: 2_196_000, until: 2_200_000, amount: 1_456_000 },
+];
+
+/**
+ * 給与所得を国税庁の「年末調整等のための給与所得控除後の給与等の金額の表」で出す（令和8・9年分）。
+ * 年末調整・住民税非課税の判定が使う。
+ *
+ * salaryIncome()（式）は変えない。lib/kyuyo-nenkin-kojo.ts が控除額の定義として式を使い、
+ * ふるさと納税などの「目安」も式のままにしている（docs/features/kokai-tool-seikaku-2026-10-17.md）
+ */
+export function salaryIncomeByTable(income: number): number {
+  const i = Math.floor(Math.max(0, income));
+  const special = SALARY_INCOME_SPECIAL_R8.find((r) => i >= r.from && i < r.until);
+  if (special) return special.amount;
+  return salaryIncomeByTableWith(i, salaryDeduction, 2_200_000);
+}
+
 /**
  * 所得税の基礎控除（令和8年分）。
  * 本則62万円に、合計所得金額に応じた特例加算（令和8・9年分の時限措置）が乗る。
