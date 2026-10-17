@@ -6,6 +6,7 @@ import {
   autoMove,
   deal,
   hasAnyMove,
+  canPickUp,
   isWon,
   move,
   newSeed,
@@ -13,7 +14,9 @@ import {
   type Source,
 } from '@/lib/freecell';
 import { trackToolUse } from '@/lib/analytics';
-import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { CardView, DragGhost, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { useCardDrag } from '@/app/_cards/useCardDrag';
+import { firstMoveAction, type DropTarget, type FirstMoveVia } from '@/lib/card-drag';
 import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
 import { formatTime, type Improved } from '@/lib/records';
 
@@ -26,6 +29,17 @@ type Selection =
   | { kind: 'free'; index: number }
   | { kind: 'tableau'; col: number; idx: number }
   | null;
+
+/** 落とし先（列8・フリーセル4・ホームセル） */
+const DROP_TARGETS: DropTarget[] = [
+  ...Array.from({ length: 8 }, (_, col): DropTarget => ({ kind: 'tableau', col })),
+  ...Array.from({ length: 4 }, (_, index): DropTarget => ({ kind: 'free', index })),
+  { kind: 'foundation' },
+];
+
+function sourceKey(src: Source): string {
+  return src.kind === 'free' ? `free:${src.index}` : `tableau:${src.col}:${src.cardIndex}`;
+}
 
 /** 選択を、ロジック側の移動元の形に直す */
 function toSource(sel: NonNullable<Selection>): Source {
@@ -46,11 +60,30 @@ export default function Game() {
   const timer = useStopwatch();
   // この配りをプレイ数に数えたか（1手目で数える）
   const counted = useRef(false);
+  // 置けない所へ落としたことを、この配りで送ったか（1ゲーム最大1回）
+  const missed = useRef(false);
   const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(deal());
   }, []);
+
+  // つかんで運ぶ（docs/features/card-games-drag-drop.md）。置けるかは move() が決める
+  const drag = useCardDrag<Source>({
+    targets: DROP_TARGETS,
+    canGrab: (src) => (state ? canPickUp(state, src) : false),
+    canDrop: (src, t) => (state ? move(state, src, t) !== null : false),
+    drop: (src, t) => (state ? apply(move(state, src, t), 'drag') : false),
+    isHome: (src, t) =>
+      src.kind === 'free' ? t.kind === 'free' && t.index === src.index : t.kind === 'tableau' && t.col === src.col,
+    keyOf: sourceKey,
+    onGrab: () => setSel(null),
+    onMiss: () => {
+      if (missed.current) return;
+      missed.current = true;
+      trackToolUse('freecell', 'drag-miss');
+    },
+  });
 
   const won = state ? isWon(state) : false;
   const moves = state?.moves ?? 0;
@@ -70,18 +103,19 @@ export default function Game() {
   const stuck = !won && !hasAnyMove(state);
 
   /** 状態を更新しつつ履歴を残す。null（無効な操作）なら false */
-  const apply = (next: FreecellState | null): boolean => {
-    if (!next) return false;
+  function apply(next: FreecellState | null, via: FirstMoveVia = 'tap'): boolean {
+    if (!next || !state) return false;
     history.current = [...history.current, state];
     if (!counted.current) {
       counted.current = true;
       records.start();
+      trackToolUse('freecell', firstMoveAction(via));
     }
     timer.begin();
     setState(next);
     setSel(null);
     return true;
-  };
+  }
 
   const undo = () => {
     const prev = history.current.pop();
@@ -95,6 +129,7 @@ export default function Game() {
     history.current = [];
     notified.current = false;
     counted.current = false;
+    missed.current = false;
     setState(deal(seed));
     setSel(null);
     setResult(null);
@@ -154,8 +189,31 @@ export default function Game() {
   const isSelected = (col: number, idx: number) =>
     sel?.kind === 'tableau' && sel.col === col && idx >= sel.idx;
 
+  // 運んでいる並び（元の位置は半透明で残す）
+  const held = drag.drag?.src ?? null;
+  const isHeld = (src: Source) =>
+    held !== null &&
+    (held.kind === 'free'
+      ? src.kind === 'free' && src.index === held.index
+      : src.kind === 'tableau' && src.col === held.col && src.cardIndex >= held.cardIndex);
+  const heldCards = !held
+    ? []
+    : held.kind === 'free'
+      ? [state.free[held.index]].filter((c) => c !== null)
+      : state.tableau[held.col].slice(held.cardIndex);
+  /** 札の状態のクラス（つかめる・運んでいる元・揺れ） */
+  const cardClass = (src: Source) =>
+    [
+      canPickUp(state, src) ? 'grabbable' : '',
+      isHeld(src) ? 'drag-origin' : '',
+      drag.isShaking(src) ? 'shake' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  const dropClass = (t: DropTarget) => (drag.isDropOk(t) ? 'drop-ok' : '');
+
   return (
-    <div className="card cardgame">
+    <div className="card cardgame" {...drag.boardProps}>
       <div className="status-bar">
         <span>
           手数: {state.moves}
@@ -198,7 +256,7 @@ export default function Game() {
         ) : sel ? (
           '置きたい場所（列・フリーセル・ホームセル）をタップ。同じ札をもう一度タップで自動移動。'
         ) : (
-          '動かしたい札をタップして選択します。'
+          '動かしたい札をドラッグするか、タップして選択します。'
         )}
       </p>
 
@@ -206,12 +264,14 @@ export default function Game() {
       <div className="top-row">
         <div className="piles" style={{ flex: 1 }} aria-label="フリーセル">
           {state.free.map((c, i) => (
-            <div key={i} style={{ width: '25%' }}>
+            <div key={i} style={{ width: '25%' }} data-drop={`free:${i}`} className={dropClass({ kind: 'free', index: i })}>
               {c ? (
                 <CardView
                   card={c}
                   selected={sel?.kind === 'free' && sel.index === i}
                   onClick={() => onFree(i)}
+                  className={cardClass({ kind: 'free', index: i })}
+                  pointer={drag.bind({ kind: 'free', index: i })}
                 />
               ) : (
                 <EmptySlot onClick={() => onFree(i)} />
@@ -224,7 +284,7 @@ export default function Game() {
             const pile = state.foundations[suit];
             const top = pile[pile.length - 1];
             return (
-              <div key={suit} style={{ width: '25%' }}>
+              <div key={suit} style={{ width: '25%' }} data-drop="foundation" className={dropClass({ kind: 'foundation' })}>
                 {top ? (
                   <CardView card={top} onClick={onFoundation} />
                 ) : (
@@ -239,7 +299,11 @@ export default function Game() {
       {/* 場札8列。タップで選択 → タップで行き先指定 */}
       <div className="tableau cols8">
         {state.tableau.map((pile, col) => (
-          <div key={col} className="pile">
+          <div
+            key={col}
+            className={`pile${drag.isDropOk({ kind: 'tableau', col }) ? ' drop-ok' : ''}`}
+            data-drop={`tableau:${col}`}
+          >
             {pile.length === 0 && <EmptySlot onClick={() => onTableau(col, -1)} />}
             {pile.map((c, i) => (
               <CardView
@@ -248,11 +312,23 @@ export default function Game() {
                 selected={isSelected(col, i)}
                 style={stackMargin(i, pile[i - 1]?.faceUp)}
                 onClick={() => onTableau(col, i)}
+                className={cardClass({ kind: 'tableau', col, cardIndex: i })}
+                pointer={drag.bind({ kind: 'tableau', col, cardIndex: i })}
               />
             ))}
           </div>
         ))}
       </div>
+
+      {drag.drag && (
+        <DragGhost
+          cards={heldCards}
+          left={drag.drag.left}
+          top={drag.drag.top}
+          width={drag.drag.width}
+          ghostRef={drag.ghostRef}
+        />
+      )}
 
       <div className="status-bar" style={{ marginTop: 10 }}>
         <span>配り番号: No.{state.seed}</span>
