@@ -248,6 +248,12 @@ function BackSvg() {
   );
 }
 
+/** ドラッグの入力（`useCardDrag` の `bind()` が返す形）。ソリティア3本だけが渡す */
+export type CardPointerHandlers = Pick<
+  React.DOMAttributes<HTMLElement>,
+  'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel'
+>;
+
 export function CardView({
   card,
   selected = false,
@@ -255,6 +261,7 @@ export function CardView({
   style,
   className = '',
   labelSuffix = '',
+  pointer,
 }: {
   card: Card;
   selected?: boolean;
@@ -264,6 +271,8 @@ export function CardView({
   className?: string;
   /** 読み上げに足す補足（ピラミッドの「いまは取れません」など） */
   labelSuffix?: string;
+  /** つかんで運ぶ操作（docs/features/card-games-drag-drop.md）。タップの `onClick` はそのまま残る */
+  pointer?: CardPointerHandlers;
 }) {
   const extra = className ? ` ${className}` : '';
   if (!card.faceUp) {
@@ -285,10 +294,41 @@ export function CardView({
       className={`playing-card${selected ? ' selected' : ''}${extra}`}
       onClick={onClick}
       style={style}
+      {...pointer}
       aria-label={`${SUIT_SYMBOL[card.suit]}${RANK_LABEL[card.rank]}${labelSuffix}`}
     >
       <FaceSvg card={card} />
     </button>
+  );
+}
+
+/**
+ * 運んでいる並びの写し（docs/features/card-games-drag-drop.md）。
+ * つかんだ札の位置・幅に `position: fixed` で重ね、`useCardDrag` が外側の要素1つに
+ * `transform` をかけて追従させる。`pointer-events: none` なので、落とし先の判定
+ * （`elementFromPoint`）は写しの下の盤を拾う
+ */
+export function DragGhost({
+  cards,
+  left,
+  top,
+  width,
+  ghostRef,
+}: {
+  cards: Card[];
+  left: number;
+  top: number;
+  width: number;
+  ghostRef: React.Ref<HTMLDivElement>;
+}) {
+  return (
+    <div className="drag-ghost" ref={ghostRef} style={{ left, top, width }} aria-hidden="true">
+      {cards.map((c, i) => (
+        <div key={c.id} className="playing-card" style={stackMargin(i, cards[i - 1]?.faceUp)}>
+          <FaceSvg card={c} />
+        </div>
+      ))}
+    </div>
   );
 }
 

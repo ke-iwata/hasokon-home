@@ -15,7 +15,9 @@ import {
   type KlondikeState,
 } from '@/lib/klondike';
 import { trackToolUse } from '@/lib/analytics';
-import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { CardView, DragGhost, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { useCardDrag } from '@/app/_cards/useCardDrag';
+import { firstMoveAction, type DropTarget, type FirstMoveVia } from '@/lib/card-drag';
 import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
 import { formatTime, type Improved } from '@/lib/records';
 
@@ -29,6 +31,37 @@ type Selection =
   | { kind: 'tableau'; col: number; idx: number }
   | null;
 
+/** つかむ元（めくり札の一番上・場札の並び） */
+type DragSource = { kind: 'waste' } | { kind: 'tableau'; col: number; cardIndex: number };
+
+/** 落とし先（列7・組札） */
+const DROP_TARGETS: DropTarget[] = [
+  ...Array.from({ length: 7 }, (_, col): DropTarget => ({ kind: 'tableau', col })),
+  { kind: 'foundation' },
+];
+
+function canGrab(s: KlondikeState, src: DragSource): boolean {
+  if (src.kind === 'waste') return s.waste.length > 0;
+  return s.tableau[src.col][src.cardIndex]?.faceUp ?? false;
+}
+
+/** ドラッグで置いたときの盤。既存のタップと同じ関数を呼ぶだけ（ルールは lib/klondike.ts） */
+function dropMove(s: KlondikeState, src: DragSource, t: DropTarget): KlondikeState | null {
+  if (t.kind === 'tableau') {
+    return src.kind === 'waste' ? wasteToTableau(s, t.col) : tableauToTableau(s, src, t.col);
+  }
+  if (t.kind === 'foundation') {
+    if (src.kind === 'waste') return wasteToFoundation(s);
+    // 組札へは1枚ずつ（列のいちばん下の札だけ）
+    return src.cardIndex === s.tableau[src.col].length - 1 ? tableauToFoundation(s, src.col) : null;
+  }
+  return null;
+}
+
+function sourceKey(src: DragSource): string {
+  return src.kind === 'waste' ? 'waste' : `tableau:${src.col}:${src.cardIndex}`;
+}
+
 export default function Game() {
   const [state, setState] = useState<KlondikeState | null>(null);
   const [sel, setSel] = useState<Selection>(null);
@@ -41,11 +74,29 @@ export default function Game() {
   const timer = useStopwatch();
   // この配りをプレイ数に数えたか（1手目で数える）
   const counted = useRef(false);
+  // 置けない所へ落としたことを、この配りで送ったか（1ゲーム最大1回）
+  const missed = useRef(false);
   const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(deal());
   }, []);
+
+  // つかんで運ぶ（docs/features/card-games-drag-drop.md）
+  const drag = useCardDrag<DragSource>({
+    targets: DROP_TARGETS,
+    canGrab: (src) => (state ? canGrab(state, src) : false),
+    canDrop: (src, t) => (state ? dropMove(state, src, t) !== null : false),
+    drop: (src, t) => (state ? apply(dropMove(state, src, t), 'drag') : false),
+    isHome: (src, t) => src.kind === 'tableau' && t.kind === 'tableau' && t.col === src.col,
+    keyOf: sourceKey,
+    onGrab: () => setSel(null),
+    onMiss: () => {
+      if (missed.current) return;
+      missed.current = true;
+      trackToolUse('solitaire', 'drag-miss');
+    },
+  });
 
   const won = state ? isWon(state) : false;
   const moveCount = state?.moves ?? 0;
@@ -63,18 +114,19 @@ export default function Game() {
   if (!state) return <div className="card">配っています…</div>;
 
   /** 状態を更新しつつ履歴を残す。null（無効な操作）なら false */
-  const apply = (next: KlondikeState | null): boolean => {
-    if (!next) return false;
+  function apply(next: KlondikeState | null, via: FirstMoveVia = 'tap'): boolean {
+    if (!next || !state) return false;
     history.current = [...history.current.slice(-29), state];
     if (!counted.current) {
       counted.current = true;
       records.start();
+      trackToolUse('solitaire', firstMoveAction(via));
     }
     timer.begin();
     setState(next);
     setSel(null);
     return true;
-  };
+  }
 
   const undo = () => {
     const prev = history.current.pop();
@@ -88,6 +140,7 @@ export default function Game() {
     history.current = [];
     notified.current = false;
     counted.current = false;
+    missed.current = false;
     setState(deal());
     setSel(null);
     setResult(null);
@@ -145,8 +198,31 @@ export default function Game() {
   const isSelected = (col: number, idx: number) =>
     sel?.kind === 'tableau' && sel.col === col && idx >= sel.idx;
 
+  // 運んでいる並び（元の位置は半透明で残す）
+  const held = drag.drag?.src ?? null;
+  const isHeld = (src: DragSource) =>
+    held !== null &&
+    (held.kind === 'waste'
+      ? src.kind === 'waste'
+      : src.kind === 'tableau' && src.col === held.col && src.cardIndex >= held.cardIndex);
+  const heldCards = !held
+    ? []
+    : held.kind === 'waste'
+      ? state.waste.slice(-1)
+      : state.tableau[held.col].slice(held.cardIndex);
+  /** 札の状態のクラス（つかめる・運んでいる元・揺れ） */
+  const cardClass = (src: DragSource) =>
+    [
+      canGrab(state, src) ? 'grabbable' : '',
+      isHeld(src) ? 'drag-origin' : '',
+      drag.isShaking(src) ? 'shake' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  const dropClass = (t: DropTarget) => (drag.isDropOk(t) ? 'drop-ok' : '');
+
   return (
-    <div className="card cardgame">
+    <div className="card cardgame" {...drag.boardProps}>
       <div className="status-bar">
         <span>
           手数: {state.moves}
@@ -185,7 +261,7 @@ export default function Game() {
         ) : sel ? (
           '置きたい場所（列・組札）をタップ。同じ札をもう一度タップで自動移動。'
         ) : (
-          '動かしたい札をタップして選択します。'
+          '動かしたい札をドラッグするか、タップして選択します。'
         )}
       </p>
 
@@ -201,7 +277,13 @@ export default function Game() {
           </div>
           <div style={{ width: '50%' }}>
             {wasteTop ? (
-              <CardView card={wasteTop} selected={sel?.kind === 'waste'} onClick={onWaste} />
+              <CardView
+                card={wasteTop}
+                selected={sel?.kind === 'waste'}
+                onClick={onWaste}
+                className={cardClass({ kind: 'waste' })}
+                pointer={drag.bind({ kind: 'waste' })}
+              />
             ) : (
               <EmptySlot />
             )}
@@ -212,7 +294,7 @@ export default function Game() {
             const pile = state.foundations[suit];
             const top = pile[pile.length - 1];
             return (
-              <div key={suit} style={{ width: '25%' }}>
+              <div key={suit} style={{ width: '25%' }} data-drop="foundation" className={dropClass({ kind: 'foundation' })}>
                 {top ? (
                   <CardView card={top} onClick={onFoundation} />
                 ) : (
@@ -227,7 +309,11 @@ export default function Game() {
       {/* 場札7列。タップで選択 → タップで行き先指定 */}
       <div className="tableau cols7">
         {state.tableau.map((pile, col) => (
-          <div key={col} className="pile">
+          <div
+            key={col}
+            className={`pile${drag.isDropOk({ kind: 'tableau', col }) ? ' drop-ok' : ''}`}
+            data-drop={`tableau:${col}`}
+          >
             {pile.length === 0 && <EmptySlot onClick={() => onTableau(col, -1)} />}
             {pile.map((c, i) => (
               <CardView
@@ -236,11 +322,23 @@ export default function Game() {
                 selected={isSelected(col, i)}
                 style={stackMargin(i, pile[i - 1]?.faceUp)}
                 onClick={() => onTableau(col, i)}
+                className={c.faceUp ? cardClass({ kind: 'tableau', col, cardIndex: i }) : ''}
+                pointer={c.faceUp ? drag.bind({ kind: 'tableau', col, cardIndex: i }) : undefined}
               />
             ))}
           </div>
         ))}
       </div>
+
+      {drag.drag && (
+        <DragGhost
+          cards={heldCards}
+          left={drag.drag.left}
+          top={drag.drag.top}
+          width={drag.drag.width}
+          ghostRef={drag.ghostRef}
+        />
+      )}
     </div>
   );
 }
