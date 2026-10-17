@@ -692,6 +692,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-16',
   },
   {
+    // 仕様: docs/features/sokudo-ihan-hansokukin.md
+    slug: 'sokudo-ihan-hansokukin',
+    icon: 'Car',
+    name: '速度違反の反則金・点数 早見表（生活道路30km/h対応）',
+    description:
+      '2026年9月1日から中央線の無い一般道路の法定速度は30km/h。道路の種類と出した速度を入れると、制限速度・何km/h超過か・反則金（または赤切符）・違反点数がわかります。普通車・大型車・二輪・原付に対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-17',
+  },
+  {
     slug: 'bosai-bichiku-keisan',
     icon: 'Package',
     name: '防災備蓄 計算ツール',
