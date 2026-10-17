@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  EXPRESSWAY_CLASSES,
   FINE_BANDS,
   ROADS,
   VEHICLES,
@@ -74,6 +75,15 @@ describe('speedLimit（制限速度）', () => {
   it('⑤ 大型貨物・特定中型貨物は 2024-04-01 から 90km/h（前日までは 80km/h）', () => {
     expect(speedLimit('expressway', 'large', 'heavy-cargo', '2024-03-31')).toBe(80);
     expect(speedLimit('expressway', 'large', 'heavy-cargo', '2024-04-01')).toBe(90);
+  });
+
+  it('⑤ 大型特殊自動車は 80km/h の区分（施行令 27 条 1 項 3 号）。ラベルに大型特殊が入っている', () => {
+    const tow = EXPRESSWAY_CLASSES.find((c) => c.id === 'tow')!;
+    expect(tow.label).toContain('大型特殊');
+    expect(tow.largeOnly).toBe(false);
+    expect(speedLimit('expressway', 'large', 'tow', '2026-10-17')).toBe(80);
+    const r = judge({ ...base, road: 'expressway', vehicle: 'large', expresswayClass: 'tow', speedKmh: 115 });
+    expect(r.kind === 'ok' && r.violation).toEqual({ excess: 35, yen: 40_000, points: 3 });
   });
 
   it('⑤ 区分が未選択なら決まらない', () => {
@@ -316,6 +326,10 @@ describe('なぜその速度か', () => {
     expect(ok({ date: '2026-08-31' }).reason).toContain('60km/h');
   });
 
+  it('原付・小型特殊の理由に、小型特殊は自動車である旨の注がある', () => {
+    expect(ok({ vehicle: 'moped', road: 'center-line' }).reason).toContain('小型特殊自動車');
+  });
+
   it('すべての道路の種類で理由が出る', () => {
     for (const r of ROADS) {
       const input: Partial<JudgeInput> = r.id === 'sign' ? { road: r.id, signKmh: 40 } : { road: r.id };
@@ -344,6 +358,13 @@ describe('早見表（生活道路・普通車）', () => {
       expect(row.now).toEqual(r.violation);
       expect(row.before).toEqual(r.compare?.violation ?? null);
     }
+  });
+
+  it('引下げ前が幅の中で変わる行は、速い側の結果も持つ（60〜79km/h → 違反なし〜19km/h超過）', () => {
+    const row = rows.find((r) => r.from === 60)!;
+    expect(row.before).toBeNull();
+    expect(row.beforeAtTop).toEqual({ excess: 19, yen: 12_000, points: 1 });
+    for (const r of rows.filter((x) => x.from !== 60)) expect(r.beforeAtTop).toBeUndefined();
   });
 
   it('60km/h 以上は赤切符', () => {

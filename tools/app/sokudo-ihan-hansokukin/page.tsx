@@ -174,13 +174,16 @@ export default function Page() {
               <td>
                 {row.now.yen === null ? '赤切符' : formatYen(row.now.yen)}・{row.now.points}点
               </td>
-              <td>{violationCell(row.before)}</td>
+              <td>
+                {violationCell(row.before)}
+                {row.beforeAtTop !== undefined && `〜${violationCell(row.beforeAtTop)}`}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       <p className="hint">
-        幅のいちばん遅い速度で引下げ前を出しています（例：80km/h以上の行は80km/hのとき）。
+        引下げ前の列は、幅の中で変わるときは遅い速度〜速い速度の順に出しています（80km/h以上の行は80km/hのとき）。
       </p>
 
       <h2>速度超過の反則金（車の種類別）</h2>
@@ -264,7 +267,7 @@ export default function Page() {
       <h2>高速道路の法定速度は車で違う</h2>
       <p>
         高速自動車国道の本線で標識が無いときの法定速度は、乗用車など100km/h、大型貨物・特定中型貨物90km/h（2024年4月1日から。それまでは80km/h）、
-        三輪の自動車・ほかの車をけん引している自動車80km/hです（道路交通法施行令27条）。原付・小型特殊自動車は高速道路・自動車専用道路を通行できません。
+        三輪の自動車・大型特殊自動車・ほかの車をけん引している自動車80km/hです（道路交通法施行令27条）。原付・小型特殊自動車は高速道路・自動車専用道路を通行できません。
       </p>
 
       <div className="note">

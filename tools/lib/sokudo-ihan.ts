@@ -52,7 +52,7 @@ export type ExpresswayClass =
   | 'standard'
   /** 大型貨物・特定中型貨物（90km/h。2024-03-31 までは 80km/h） */
   | 'heavy-cargo'
-  /** 三輪・けん引している（80km/h） */
+  /** 三輪・大型特殊・けん引している（80km/h。施行令 27 条 1 項 3 号「前二号に掲げる自動車以外」） */
   | 'tow';
 
 /** 反則区分。30〜39km/h 超過で一般道路と高速道路（高速自動車国道等）の扱いが分かれる */
@@ -128,7 +128,7 @@ export const EXPRESSWAY_CLASSES: ExpresswayClassDef[] = [
     label: '大型貨物・特定中型貨物（90km/h）',
     largeOnly: true,
   },
-  { id: 'tow', label: '三輪・ほかの車をけん引している（80km/h）', largeOnly: false },
+  { id: 'tow', label: '三輪・大型特殊・ほかの車をけん引している（80km/h）', largeOnly: false },
 ];
 
 export function roadById(id: RoadId): RoadDef {
@@ -341,7 +341,9 @@ function reasonFor(input: JudgeInput, limit: number): string {
     }
     return `標識・標示で指定された${limit}km/hです。`;
   }
-  if (vehicle === 'moped') return '原付（一般原動機付自転車）の法定速度は、道路の種類にかかわらず30km/hです。';
+  if (vehicle === 'moped') {
+    return '原付（一般原動機付自転車）の法定速度は、道路の種類にかかわらず30km/hです（小型特殊自動車は自動車なので、中央線のある道などでは60km/hです）。';
+  }
   switch (road) {
     case 'seikatsu':
       return date < SEIKATSU_SWITCH_DATE
@@ -360,7 +362,7 @@ function reasonFor(input: JudgeInput, limit: number): string {
           : '高速自動車国道の大型貨物・特定中型貨物は、2024年4月1日から90km/hです。';
       }
       return input.expresswayClass === 'tow'
-        ? '高速自動車国道で三輪の自動車・ほかの車をけん引している自動車は80km/hです。'
+        ? '高速自動車国道で三輪の自動車・大型特殊自動車・ほかの車をけん引している自動車は80km/hです。'
         : '高速自動車国道の本線は、乗用車など（下記以外）100km/hです。';
   }
 }
@@ -398,6 +400,8 @@ export interface HayamiRow {
   now: Violation;
   /** 引下げ前（60km/h）。違反でなければ null */
   before: Violation | null;
+  /** 幅のいちばん速い速度での引下げ前。幅の中で変わらなければ undefined（最後の行も undefined） */
+  beforeAtTop?: Violation | null;
 }
 
 /**
@@ -412,11 +416,15 @@ export function seikatsuHayami(vehicle: VehicleId = 'ordinary'): HayamiRow[] {
     const from = LIMIT + e;
     const next = edges[i + 1];
     const label = next === undefined ? `${from}km/h以上` : `${from}〜${LIMIT + next - 1}km/h`;
+    const before = violationOf(vehicle, 'general', from, 60);
+    const atTop = next === undefined ? undefined : violationOf(vehicle, 'general', LIMIT + next - 1, 60);
+    const same = atTop === undefined || (atTop?.yen === before?.yen && atTop?.points === before?.points);
     return {
       label,
       from,
       now: violationOf(vehicle, 'general', from, LIMIT)!,
-      before: violationOf(vehicle, 'general', from, 60),
+      before,
+      beforeAtTop: same ? undefined : atTop,
     };
   });
 }
