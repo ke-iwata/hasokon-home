@@ -16,6 +16,7 @@ import {
   incomeTaxRate,
   salaryDeduction,
   salaryIncome,
+  salaryIncomeByTable,
   type FurusatoInput,
 } from '@/lib/furusato-nozei';
 
@@ -549,5 +550,34 @@ describe('控除上限額の早見表', () => {
     expect(calcFurusato(hayamihyoInput(5_000_000, HAYAMIHYO_FAMILIES[0])).incomeTax.rate).toBe(
       0.05,
     );
+  });
+});
+
+describe('salaryIncomeByTable（別表第五と令和8・9年分の特例。docs/features/kokai-tool-seikaku-2026-10-17.md）', () => {
+  it.each([
+    [740_999, 0],
+    [741_000, 1_000],
+    [2_190_999, 1_450_999],
+    // 219.1万〜220万円は国税庁「令和8年度税制改正による源泉徴収事務への主な改正点」⑵ハの固定額
+    [2_191_000, 1_451_000],
+    [2_192_999, 1_451_000],
+    [2_193_000, 1_453_000],
+    [2_195_999, 1_453_000],
+    [2_196_000, 1_456_000],
+    [2_199_999, 1_456_000],
+    // 220万円以上660万円未満は4,000円刻みで切り捨ててから控除を当てる
+    [2_200_000, 1_460_000],
+    [2_203_999, 1_460_000],
+    [4_001_999, 2_760_000],
+    [6_599_999, 4_836_800],
+    // 660万円以上は式どおり
+    [6_600_000, 4_840_000],
+  ])('給与収入 %i → 給与所得 %i', (income, expected) => {
+    expect(salaryIncomeByTable(income)).toBe(expected);
+  });
+
+  it('salaryIncome()（式）は変えていない', () => {
+    expect(salaryIncome(2_199_000)).toBe(1_459_000);
+    expect(salaryIncome(4_001_999)).toBe(2_761_599);
   });
 });

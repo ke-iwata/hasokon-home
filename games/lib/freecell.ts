@@ -106,6 +106,17 @@ export function maxMovable(s: FreecellState, toCol?: number): number {
   return (freeCells + 1) * 2 ** emptyCols;
 }
 
+/**
+ * その札（場札なら並び全部）を、いまつかんで運べるか（docs/features/card-games-drag-drop.md）。
+ * 色違いの降順に連続していて、空き列へ運ばない場合の最大枚数（`maxMovable`）以内なら運べる。
+ * 実際に置けるかは行き先しだいなので、置くときは `move()` がもう一度判定する
+ */
+export function canPickUp(s: FreecellState, from: Source): boolean {
+  if (from.kind === 'free') return s.free[from.index] != null;
+  const pile = s.tableau[from.col];
+  return !!pile && isMovableRun(pile, from.cardIndex) && pile.length - from.cardIndex <= maxMovable(s);
+}
+
 /** 移動元の札（場札なら並び全部）。動かせない指定なら null */
 function pickUp(s: FreecellState, from: Source): Card[] | null {
   if (from.kind === 'free') {

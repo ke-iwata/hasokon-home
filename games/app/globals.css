@@ -3071,6 +3071,48 @@ ol {
   right: 0;
 }
 
+/* ---- つかんで運ぶ（ソリティア3本。docs/features/card-games-drag-drop.md） ---- */
+
+/* 絵札の画像をブラウザ標準のドラッグで持ち出させない（pointer の操作が pointercancel で切れる） */
+.cardgame .playing-card {
+  -webkit-user-drag: none;
+}
+
+.cardgame .playing-card svg image {
+  pointer-events: none;
+}
+
+/* 動かせる札。指で運べるよう、札の上だけスクロールを止める（盤の余白・札の無い所ではスクロールできる） */
+.cardgame .playing-card.grabbable {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* 運んでいる最中の元の位置。半透明で残す */
+.cardgame .playing-card.drag-origin {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+/* 運んでいる並びの写し。位置・幅は Game.tsx が渡し、追従は useCardDrag が transform で動かす */
+.drag-ghost {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  cursor: grabbing;
+}
+
+.drag-ghost .playing-card {
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* 運んでいる間、置ける落とし先だけ緑の枠 */
+.cardgame .drop-ok {
+  outline: 2px solid rgba(74, 222, 128, 0.9);
+  outline-offset: 1px;
+  border-radius: 6px;
+}
+
 /* ---- ピラミッドソリティア（docs/features/game-pyramid-solitaire.md） ---- */
 
 /* ピラミッドは**絶対配置で組む**。段ごとに半マスずれるのでグリッドでは表せない。

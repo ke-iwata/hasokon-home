@@ -13,12 +13,24 @@ import {
   type SpiderState,
 } from '@/lib/spider';
 import { trackToolUse } from '@/lib/analytics';
-import { CardView, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { CardView, DragGhost, EmptySlot, stackMargin } from '@/app/_cards/CardView';
+import { useCardDrag } from '@/app/_cards/useCardDrag';
+import { firstMoveAction, type DropTarget, type FirstMoveVia } from '@/lib/card-drag';
 import { BestBadge, RecordStrip, useRecords, useStopwatch } from '@/app/_records/Records';
 import { formatTime, type Improved } from '@/lib/records';
 
 /** 選択中の並び（col の idx 以降）。2タップ目で行き先を指定する */
 type Selection = { col: number; idx: number } | null;
+
+/** つかむ元（col の cardIndex 以降の並び） */
+type DragSource = { col: number; cardIndex: number };
+
+/** 落とし先（列10）。スパイダーは場札どうしの移動しかない */
+const DROP_TARGETS: DropTarget[] = Array.from({ length: 10 }, (_, col): DropTarget => ({ kind: 'tableau', col }));
+
+function dropMove(s: SpiderState, src: DragSource, t: DropTarget): SpiderState | null {
+  return t.kind === 'tableau' ? moveSpider(s, src.col, src.cardIndex, t.col) : null;
+}
 
 export default function Game() {
   const [level, setLevel] = useState<SpiderLevel>('one');
@@ -33,11 +45,32 @@ export default function Game() {
   const timer = useStopwatch();
   // この配りをプレイ数に数えたか（1手目で数える）
   const counted = useRef(false);
+  // 置けない所へ落としたことを、この配りで送ったか（1ゲーム最大1回）
+  const missed = useRef(false);
   const [result, setResult] = useState<{ timeMs: number; improved: Improved } | null>(null);
 
   useEffect(() => {
     setState(dealSpider('one'));
   }, []);
+
+  // つかんで運ぶ（docs/features/card-games-drag-drop.md）
+  const drag = useCardDrag<DragSource>({
+    targets: DROP_TARGETS,
+    canGrab: (src) => (state ? isMovableRun(state.tableau[src.col], src.cardIndex) : false),
+    canDrop: (src, t) => (state ? dropMove(state, src, t) !== null : false),
+    drop: (src, t) => (state ? apply(dropMove(state, src, t), 'drag') : false),
+    isHome: (src, t) => t.kind === 'tableau' && t.col === src.col,
+    keyOf: (src) => `${src.col}:${src.cardIndex}`,
+    onGrab: () => {
+      setSel(null);
+      setMessage('');
+    },
+    onMiss: () => {
+      if (missed.current) return;
+      missed.current = true;
+      trackToolUse('spider', 'drag-miss');
+    },
+  });
 
   const won = state ? isSpiderWon(state) : false;
   const playedLevel = state?.level ?? 'one';
@@ -58,19 +91,20 @@ export default function Game() {
 
   if (!state) return <div className="card">配っています…</div>;
 
-  const apply = (next: SpiderState | null): boolean => {
-    if (!next) return false;
+  function apply(next: SpiderState | null, via: FirstMoveVia = 'tap'): boolean {
+    if (!next || !state) return false;
     setMessage('');
     history.current = [...history.current.slice(-29), state];
     if (!counted.current) {
       counted.current = true;
       records.start(state.level);
+      trackToolUse('spider', firstMoveAction(via));
     }
     timer.begin();
     setState(next);
     setSel(null);
     return true;
-  };
+  }
 
   const undo = () => {
     const prev = history.current.pop();
@@ -85,6 +119,7 @@ export default function Game() {
     history.current = [];
     notified.current = false;
     counted.current = false;
+    missed.current = false;
     setMessage('');
     setState(dealSpider(l));
     setSel(null);
@@ -129,8 +164,21 @@ export default function Game() {
   const dealsLeft = Math.floor(state.stock.length / 10);
   const isSelected = (col: number, idx: number) => sel !== null && sel.col === col && idx >= sel.idx;
 
+  // 運んでいる並び（元の位置は半透明で残す）
+  const held = drag.drag?.src ?? null;
+  const heldCards = held ? state.tableau[held.col].slice(held.cardIndex) : [];
+  /** 札の状態のクラス（つかめる・運んでいる元・揺れ） */
+  const cardClass = (col: number, i: number) =>
+    [
+      isMovableRun(state.tableau[col], i) ? 'grabbable' : '',
+      held && held.col === col && i >= held.cardIndex ? 'drag-origin' : '',
+      drag.isShaking({ col, cardIndex: i }) ? 'shake' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
   return (
-    <div className="card cardgame">
+    <div className="card cardgame" {...drag.boardProps}>
       <div className="btn-row">
         <div className="seg" role="group" aria-label="難易度">
           {(Object.keys(SPIDER_LEVELS) as SpiderLevel[]).map((l) => (
@@ -204,14 +252,18 @@ export default function Game() {
         ) : sel ? (
           '置きたい列をタップ。同じ札をもう一度タップで自動移動。'
         ) : (
-          '動かしたい札をタップして選択します。'
+          '動かしたい札をドラッグするか、タップして選択します。'
         )}
       </p>
 
       {/* 場札10列 */}
       <div className="tableau cols10">
         {state.tableau.map((pile, col) => (
-          <div key={col} className="pile">
+          <div
+            key={col}
+            className={`pile${drag.isDropOk({ kind: 'tableau', col }) ? ' drop-ok' : ''}`}
+            data-drop={`tableau:${col}`}
+          >
             {pile.length === 0 && <EmptySlot onClick={() => onTableau(col, -1)} />}
             {pile.map((c, i) => (
               <CardView
@@ -220,11 +272,23 @@ export default function Game() {
                 selected={isSelected(col, i)}
                 style={stackMargin(i, pile[i - 1]?.faceUp)}
                 onClick={() => onTableau(col, i)}
+                className={c.faceUp ? cardClass(col, i) : ''}
+                pointer={c.faceUp ? drag.bind({ col, cardIndex: i }) : undefined}
               />
             ))}
           </div>
         ))}
       </div>
+
+      {drag.drag && (
+        <DragGhost
+          cards={heldCards}
+          left={drag.drag.left}
+          top={drag.drag.top}
+          width={drag.drag.width}
+          ghostRef={drag.ghostRef}
+        />
+      )}
 
       <p style={{ fontSize: '0.8rem', color: 'var(--muted)', textAlign: 'center', marginTop: 12 }}>
         KからAまで同じスートで揃うと自動で回収されます。

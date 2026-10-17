@@ -100,6 +100,8 @@ import {
   estimateSocialInsurance,
   incomeTaxAmount,
   salaryDeduction,
+  salaryIncomeByTable,
+  salaryIncomeByTableWith,
   type HousingLoanResult,
   type HousingLoanTier,
 } from '@/lib/furusato-nozei';
@@ -179,8 +181,13 @@ const SPECIAL_RELATIVE_TABLE: { upTo: number; amount: number }[] = [
 export interface YearRules {
   /** 表示用の年分（'令和8年分'） */
   label: string;
-  /** 給与所得控除 */
+  /** 給与所得控除（式。別表第五の刻みの下端に当てる） */
   salaryDeduction: (income: number) => number;
+  /**
+   * 給与所得（給与収入 → 給与所得控除後の金額）。
+   * 国税庁の「年末調整等のための給与所得控除後の給与等の金額の表」（所得税法 別表第五）による
+   */
+  salaryIncome: (income: number) => number;
   /** 基礎控除（所得税） */
   basicDeduction: (totalIncome: number) => number;
   /** 配偶者控除の対象になる配偶者の合計所得金額の上限 */
@@ -206,6 +213,15 @@ export function salaryDeductionR7(income: number): number {
 }
 
 /**
+ * 令和7年分の給与所得（別表第五）。190万円以上660万円未満は4,000円刻みで切り捨ててから控除を当てる。
+ * 令和7年分の表には令和8・9年分の219.1万〜220万円のような特例の段は無い
+ * （190万円が4,000円の倍数で、最低保障65万円の帯と式がそのままつながる）
+ */
+export function salaryIncomeByTableR7(income: number): number {
+  return salaryIncomeByTableWith(income, salaryDeductionR7, 1_900_000);
+}
+
+/**
  * 令和7年分の所得税の基礎控除。
  * 本則58万円に、合計所得金額に応じた特例加算（令和7年・8年分の時限措置）が乗る形だった。
  */
@@ -225,6 +241,7 @@ export function basicDeductionIncomeTaxR7(totalIncome: number): number {
 export const RULES_R8: YearRules = {
   label: '令和8年分',
   salaryDeduction,
+  salaryIncome: salaryIncomeByTable,
   basicDeduction: basicDeductionIncomeTax,
   // 給与収入136万円（= 給与所得控除74万 + 62万）まで配偶者控除の対象
   spouseLimit: 620_000,
@@ -243,6 +260,7 @@ export const RULES_R8: YearRules = {
 export const RULES_R7: YearRules = {
   label: '令和7年分',
   salaryDeduction: salaryDeductionR7,
+  salaryIncome: salaryIncomeByTableR7,
   basicDeduction: basicDeductionIncomeTaxR7,
   // 給与収入123万円（= 給与所得控除65万 + 58万）まで配偶者控除の対象だった
   spouseLimit: 580_000,
@@ -362,10 +380,9 @@ function spouseTier(totalIncome: number): 0 | 1 | 2 | null {
   return 2;
 }
 
-/** 給与収入から給与所得（＝給与のみの人の合計所得金額）を求める */
+/** 給与収入から給与所得（＝給与のみの人の合計所得金額）を求める。別表第五による */
 function incomeToTotal(income: number, rules: YearRules): number {
-  const i = Math.max(0, income);
-  return Math.max(0, Math.floor(i - rules.salaryDeduction(i)));
+  return rules.salaryIncome(Math.max(0, income));
 }
 
 /**
@@ -434,8 +451,9 @@ export function calcYearTax(
   const skip = options.skipYearEndDeductions === true;
   const extraDeduction = Math.max(0, options.extraDeduction ?? 0);
   const income = Math.max(0, input.income);
-  const deduction = rules.salaryDeduction(income);
   const totalIncome = incomeToTotal(income, rules);
+  // 表示する給与所得控除は表の結果から逆に出す（表の給与所得と矛盾させない）
+  const deduction = Math.max(0, Math.floor(income) - totalIncome);
 
   const basic = rules.basicDeduction(totalIncome);
   const spouse = spouseDeductionFor({

@@ -134,7 +134,7 @@ export const tools: ToolDef[] = [
       '年末調整でいくら戻るかを計算。給与明細の源泉徴収税額を入れるだけで差額が出ます。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなったかも表示します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-27',
+    updatedAt: '2026-10-17',
   },
   {
     // 仕様: docs/features/seimei-hokenryo-kojo.md
@@ -336,7 +336,7 @@ export const tools: ToolDef[] = [
       '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-06',
+    updatedAt: '2026-10-17',
   },
   {
     slug: 'jutaku-loan-kojo',
@@ -679,7 +679,7 @@ export const tools: ToolDef[] = [
       '片道の通勤距離と支給額から、通勤手当のうち非課税になる額と課税される額を計算。2026年4月改正の65km以上の新区分と、勤務先・駅周辺の駐車場代（月5,000円まで）の加算に対応。定期代との併用・150,000円の上限も。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-27',
+    updatedAt: '2026-10-17',
   },
   {
     slug: 'jitensha-hansokukin',

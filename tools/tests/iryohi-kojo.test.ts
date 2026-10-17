@@ -14,7 +14,7 @@ import {
   type IryohiInput,
 } from '@/lib/iryohi-kojo';
 import { readFileSync } from 'node:fs';
-import { salaryIncome } from '@/lib/furusato-nozei';
+import { salaryIncomeByTable } from '@/lib/furusato-nozei';
 import { RULES_R8, calcYearTax } from '@/lib/nenmatsu-chosei';
 
 /**
@@ -79,25 +79,26 @@ describe('medicalThreshold（足切り額）', () => {
  * このテストが落ちる（給与収入297万円の課税所得は50万円台）。
  */
 describe('足切りの分母は総所得金額等（課税所得ではない）', () => {
-  const boundaryBelow = 2_971_428;
-  const boundaryAbove = 2_971_429;
+  // 給与所得は年末調整と同じ別表第五（4,000円刻み）で出るので、境目は4,000円の倍数になる
+  const boundaryBelow = 2_971_999;
+  const boundaryAbove = 2_972_000;
 
   it('境界の給与収入が総所得金額等200万円の前後になっている（前提の確認）', () => {
-    expect(salaryIncome(boundaryBelow)).toBe(1_999_999);
-    expect(salaryIncome(boundaryAbove)).toBe(2_000_000);
+    expect(salaryIncomeByTable(boundaryBelow)).toBe(1_997_600); // 2,968,000 で計算
+    expect(salaryIncomeByTable(boundaryAbove)).toBe(2_000_400);
   });
 
-  it('総所得金額等200万円未満（給与収入2,971,428円）は 総所得×5% を使う', () => {
+  it('総所得金額等200万円未満（給与収入2,971,999円）は 総所得×5% を使う', () => {
     const r = calcIryohiKojo(input({ income: boundaryBelow, medicalExpenses: 150_000 }));
-    expect(r.totalIncome).toBe(1_999_999);
+    expect(r.totalIncome).toBe(1_997_600);
     expect(r.medical.thresholdBasis).toBe('rate');
-    expect(r.medical.threshold).toBe(99_999);
-    expect(r.medical.deduction).toBe(150_000 - 99_999);
+    expect(r.medical.threshold).toBe(99_880);
+    expect(r.medical.deduction).toBe(150_000 - 99_880);
   });
 
-  it('総所得金額等200万円ちょうど（給与収入2,971,429円）から10万円になる', () => {
+  it('総所得金額等200万円以上（給与収入2,972,000円）から10万円になる', () => {
     const r = calcIryohiKojo(input({ income: boundaryAbove, medicalExpenses: 150_000 }));
-    expect(r.totalIncome).toBe(2_000_000);
+    expect(r.totalIncome).toBe(2_000_400);
     expect(r.medical.thresholdBasis).toBe('fixed');
     expect(r.medical.threshold).toBe(MEDICAL_THRESHOLD_FIXED);
     expect(r.medical.deduction).toBe(50_000);
