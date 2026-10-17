@@ -541,6 +541,85 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={316} y={134} s={11} c="muted" a="end">あと［◯］回振れる</T>
     </>
   ),
+  // 切り分けた四角と、いま引いている四角（数字はその四角のマス数）
+  'shikaku-wake': (
+    <>
+      {[
+        [0, 0, 2, 2, MID],
+        [0, 2, 1, 3, TINT],
+        [1, 2, 2, 3, MID],
+        [2, 0, 3, 1, TINT],
+      ].map(([r, c, h, w, tone], i) => (
+        <rect key={i} x={52 + (c as number) * 24 + 2} y={14 + (r as number) * 24 + 2} width={(w as number) * 24 - 4} height={(h as number) * 24 - 4} rx="4" {...(tone as object)} />
+      ))}
+      <rect x={52 + 2 * 24 + 2} y={14 + 3 * 24 + 2} width={3 * 24 - 4} height={2 * 24 - 4} rx="4" fill="none" style={{ stroke: 'var(--cat-mark)' }} strokeWidth={3} strokeDasharray="6 4" />
+      <Grid x={52} y={14} cols={5} rows={5} size={24} opacity={0.3} />
+      {[
+        [0, 1, 4],
+        [0, 3, 3],
+        [2, 4, 6],
+        [3, 0, 3],
+        [2, 1, 3],
+        [4, 3, 6],
+      ].map(([r, c, n]) => (
+        <T key={`${r}-${c}`} x={52 + c * 24 + 12} y={14 + r * 24 + 17} s={13} w={800} c={r === 4 ? 'mark' : 'ink'} a="middle">{n}</T>
+      ))}
+      <T x={204} y={66} s={13} w={700} c="ink">数字のマス数の</T>
+      <T x={204} y={86} s={13} w={700} c="ink">四角に切り分ける</T>
+      <T x={204} y={112} s={11} c="muted">今日の1問 ・ 3段階</T>
+    </>
+  ),
+  // 島どうしを数字の本数の橋でつなぐ（いま架けた橋を目立たせる）
+  'hashi-kake': (
+    <>
+      <path d="M70 30 H160 M70 38 H160" fill="none" stroke="currentColor" strokeWidth={3} />
+      <path d="M170 34 H280 M170 34 V112 M280 34 V112 M60 112 H170" {...LINE} />
+      <path d="M170 112 H280" fill="none" style={{ stroke: 'var(--cat-mark)' }} strokeWidth={4} strokeLinecap="round" />
+      {[
+        [60, 34, 2],
+        [170, 34, 4],
+        [280, 34, 2],
+        [60, 112, 1],
+        [170, 112, 3],
+        [280, 112, 2],
+      ].map(([x, y, n]) => (
+        <g key={`${x}-${y}`}>
+          <circle cx={x} cy={y} r="15" {...PANEL} style={{ fill: 'var(--surface)', stroke: 'currentColor' }} strokeWidth={2.5} />
+          <T x={x} y={y + 5} s={14} w={800} c="ink" a="middle">{n}</T>
+        </g>
+      ))}
+    </>
+  ),
+  // 予想の数と、ヒット・ブローの答え。右はテンキー
+  'hit-blow': (
+    <>
+      {[
+        ['1', '2', '3', '4', '［◯］H ［◯］B'],
+        ['5', '6', '7', '8', '［◯］H ［◯］B'],
+      ].map((row, i) => (
+        <g key={i}>
+          {row.slice(0, 4).map((d, j) => (
+            <g key={j}>
+              <rect x={24 + j * 26} y={20 + i * 34} width="22" height="26" rx="5" {...TINT} />
+              <T x={35 + j * 26} y={38 + i * 34} s={13} w={800} c="ink" a="middle">{d}</T>
+            </g>
+          ))}
+          <T x={130} y={38 + i * 34} s={11} c="muted">{row[4]}</T>
+        </g>
+      ))}
+      {[0, 1, 2, 3].map((j) => (
+        <rect key={j} x={24 + j * 26} y="92" width="22" height="26" rx="5" fill="none" style={{ stroke: j === 0 ? 'var(--cat-mark)' : 'currentColor' }} strokeWidth={j === 0 ? 2.5 : 1.5} strokeDasharray={j === 0 ? undefined : '3 3'} />
+      ))}
+      {Array.from({ length: 9 }, (_, i) => (
+        <g key={i}>
+          <rect x={226 + (i % 3) * 30} y={18 + Math.floor(i / 3) * 30} width="26" height="26" rx="5" {...(i === 4 ? INK : TINT)} />
+          <T x={239 + (i % 3) * 30} y={36 + Math.floor(i / 3) * 30} s={12} w={700} c={i === 4 ? 'bg' : 'ink'} a="middle">{i + 1}</T>
+        </g>
+      ))}
+      <rect x="226" y="108" width="86" height="26" rx="5" {...TINT} />
+      <T x={269} y={126} s={12} w={700} c="ink" a="middle">0</T>
+    </>
+  ),
 };
 
 export const GAME_PREVIEW_SLUGS: readonly string[] = Object.keys(PREVIEW);

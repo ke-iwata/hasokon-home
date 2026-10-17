@@ -1122,6 +1122,50 @@ const BOARD: Record<string, ReactNode> = {
       <FivePips x={15} y={35} s={23} />
     </>
   ),
+  // 四角わけパズル：長方形に切り分けた盤と、数字の入った1つ
+  RectSplit: (
+    <>
+      <rect x="7" y="7" width="50" height="50" rx="4" {...F} />
+      <rect x="8.5" y="8.5" width="22" height="22" rx="3" {...SOLID} />
+      <text x="19.5" y="25.5" fontSize="15" {...DIGIT} {...CUT}>4</text>
+      <rect x="7" y="7" width="50" height="50" rx="4" {...S} />
+      <path d="M32 7 V57 M7 32 H32 M32 24 H57 M20 32 V57" {...S} />
+    </>
+  ),
+  // 橋かけパズル：数字の島と、二重・一重の橋
+  Bridges: (
+    <>
+      <path d="M14 11.5 H50 M14 16.5 H50" {...S} strokeWidth={2.6} />
+      <path d="M14 14 V50 M50 14 V50" {...S} strokeWidth={2.6} />
+      {[
+        [14, 14, true],
+        [50, 14, false],
+        [14, 50, false],
+        [50, 50, false],
+      ].map(([x, y, solid]) => (
+        <g key={`${x}-${y}`}>
+          <circle cx={x as number} cy={y as number} r="9" {...CUT} />
+          <circle cx={x as number} cy={y as number} r="9" {...(solid ? SOLID : F)} />
+          <circle cx={x as number} cy={y as number} r="9" {...S} strokeWidth={2.6} />
+        </g>
+      ))}
+    </>
+  ),
+  // ヒット＆ブロー：予想を並べる4つの枠とテンキー
+  Numpad: (
+    <>
+      <rect x="6" y="5" width="52" height="16" rx="4" {...SOLID} />
+      {[0, 1, 2, 3].map((i) => (
+        <rect key={i} x={10.5 + i * 11.5} y="9" width="8" height="8" rx="1.5" {...CUT} />
+      ))}
+      {Array.from({ length: 9 }, (_, i) => (
+        <g key={i}>
+          <rect x={9 + (i % 3) * 16} y={26 + Math.floor(i / 3) * 12.5} width="14" height="10" rx="2.5" {...F} />
+          <rect x={9 + (i % 3) * 16} y={26 + Math.floor(i / 3) * 12.5} width="14" height="10" rx="2.5" {...S} strokeWidth={2} />
+        </g>
+      ))}
+    </>
+  ),
 };
 
 /** 盤面の絵がある icon 名（tests/game-art.test.ts が、公開中のゲームがすべて含まれるかを見る） */
