@@ -238,6 +238,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 相続登記・相続の期限の改正時（登録免許税の免税措置の延長も） | `lib/sozoku-toki-kigen.ts` の冒頭の定数（`GIMUKA_START`・`KEIKA_SOCHI_DEADLINE`・期間4つ・`MENZEI_DEADLINE`）と `DATA_CHECKED_AT`。法務省「相続登記の申請義務化に関するQ&A」と e-Gov の条文を正とする。**免税措置（租特法84条の2の3）は現行 2027-03-31 まで**なので、毎年12月の税制改正大綱で延長を確かめる。税の期限の繰り下げは `nissu-keisan` の `HOLIDAYS` に乗っているので、祝日を足せば自動で追随する |
 | 住所・氏名変更登記の期限の改正時 | `lib/jusho-henko-toki.ts` の冒頭の定数（`JUSHO_GIMUKA_START`・`JUSHO_KEIKA_SOCHI_DEADLINE`・`JUSHO_TOKI_MONTHS`・`JUSHO_KARYO_MAX_YEN`・`TOROKU_MENKYO_PER_PROPERTY`）と `JUSHO_DATA_CHECKED_AT`。法務省「住所等変更登記の義務化に関するQ&A」と e-Gov を正とする。応当日の計算は `sozoku-toki-kigen` の関数を使っているので、ここには持たない |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
+| 速度違反の反則金・点数・法定速度の改正時 | `lib/sokudo-ihan.ts` の `FINE_BANDS`（施行令 別表第六）・`pointsFor()`（別表第二）・`speedLimit()`（施行令11条・27条）と `DATA_CHECKED_AT`。e-Gov 法令API で道路交通法施行令（`335CO0000000270`）を引いて写す（警視庁の表は写しなので、食い違ったら施行令を正とする）。**標識の速度は原付には30km/hを超えて及ばない**（標識令 別表第一「最高速度」）ので、`speedLimit()` の `Math.min` を外さないこと |
 | 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 通勤手当の非課税限度額の改正時 | `lib/tsukin-teate.ts` の `DISTANCE_BANDS`・`PARKING_CAP`・`TOTAL_CAP`（国税庁「通勤手当の非課税限度額の改正について」とQ&Aを正とする）。確かめただけでも `DATA_CHECKED_AT` を進める。改正前の表（`DISTANCE_BANDS_BEFORE_2026_04`）は令和8年1〜3月分の確認用で、令和9年分の年末調整が済んだら外してよい |
 | 青色申告特別控除の改正時 | `lib/aoiro-shinkoku-kojo.ts` の `DEDUCTION_R9` / `DEDUCTION_R8` / `PRIOR_REVENUE_LIMIT` と `DATA_CHECKED_AT`。e-Gov 法令API で租税特別措置法（`332AC0000000026`）の25条の2を引く。**0円の区分（2項）は「4項に規定する場合（正規の簿記）に該当しない」人だけ**で、複式簿記の書面・期限後申告は前々年1,000万円超でも10万円。届出書の名称は令和9年3月頃に「65万」→「75万」に変わる予定なので、本文に直書きせず `FORM_PAGE` のリンクにしてある |
@@ -262,7 +263,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール73本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`genka-shokyaku` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの66本は `public`。
+- **ツール74本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`genka-shokyaku`・`sokudo-ihan-hansokukin` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの66本は `public`。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
   `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
