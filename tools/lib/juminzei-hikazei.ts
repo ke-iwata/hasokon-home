@@ -60,13 +60,13 @@
  * 未成年＝2009年1月3日以降の生まれ。
  *
  * 【データ更新箇所】
- * - 年度を足すときは NENDO_RULES に1行。給与所得控除・所得税の基礎控除の関数を差し替える
+ * - 年度を足すときは NENDO_RULES に1行。給与所得（別表第五）・所得税の基礎控除の関数を差し替える
  * - 非課税限度額（35万円・21万円・32万円・10万円・135万円）が改正されたら LIMIT_* を直す
  * - 公的年金等控除の表は lib/nenkin-kojo.ts（ここには持たない）
  */
 
-import { basicDeductionIncomeTax, salaryDeduction } from '@/lib/furusato-nozei';
-import { basicDeductionIncomeTaxR7, salaryDeductionR7 } from '@/lib/nenmatsu-chosei';
+import { basicDeductionIncomeTax, salaryIncomeByTable } from '@/lib/furusato-nozei';
+import { basicDeductionIncomeTaxR7, salaryIncomeByTableR7 } from '@/lib/nenmatsu-chosei';
 import { pensionIncome, publicPensionDeduction } from '@/lib/nenkin-kojo';
 import { ageAt, type DateParts } from '@/lib/nenrei';
 
@@ -99,10 +99,6 @@ export const MAX_DEPENDENTS = 6;
  */
 export const MAX_INCOME = 10_000_000;
 
-/** 別表第五の切り捨て単位（給与収入660万円未満） */
-const TABLE5_UNIT = 4_000;
-const TABLE5_UPPER = 6_600_000;
-
 export type Nendo = 'R8' | 'R9';
 
 export interface NendoRule {
@@ -114,12 +110,10 @@ export interface NendoRule {
   incomeYear: number;
   /** 所得の年の所得税の表示名 例: 「令和8年分」 */
   incomeYearLabel: string;
-  /** 給与所得控除（所得の年の表） */
-  salaryDeduction: (income: number) => number;
+  /** 給与所得（所得の年の別表第五。給与収入 → 給与所得控除後の金額） */
+  salaryIncome: (income: number) => number;
   /** 給与所得控除の最低保障額 */
   salaryMin: number;
-  /** 最低保障額が終わる給与収入（ここから別表第五の4,000円の切り捨てが効く） */
-  salaryMinUntil: number;
   /** 所得の年の所得税の基礎控除（「所得税はかからないのに住民税はかかる帯」の説明用） */
   basicDeductionIncomeTax: (totalIncome: number) => number;
   /** 同一生計配偶者・扶養親族の所得要件（合計所得金額）と、給与だけの場合の年収 */
@@ -134,9 +128,8 @@ export const NENDO_RULES: Record<Nendo, NendoRule> = {
     fiscalYear: 2026,
     incomeYear: 2025,
     incomeYearLabel: '令和7年分',
-    salaryDeduction: salaryDeductionR7,
+    salaryIncome: salaryIncomeByTableR7,
     salaryMin: 650_000,
-    salaryMinUntil: 1_900_000,
     basicDeductionIncomeTax: basicDeductionIncomeTaxR7,
     dependentIncomeMax: 580_000,
     dependentSalaryMax: 1_230_000,
@@ -147,9 +140,9 @@ export const NENDO_RULES: Record<Nendo, NendoRule> = {
     incomeYear: 2026,
     incomeYearLabel: '令和8年分',
     // 令和9・10年度は最低保障 74万円（本則69万円 + 特例5万円）
-    salaryDeduction,
+    // 219.1万〜220万円の特例（令和8・9年分）も salaryIncomeByTable が持つ
+    salaryIncome: salaryIncomeByTable,
     salaryMin: 740_000,
-    salaryMinUntil: 2_200_000,
     basicDeductionIncomeTax,
     // 令和9・10年度は58万円 → 62万円（給与収入136万円以下）
     dependentIncomeMax: 620_000,
@@ -167,14 +160,12 @@ const clampIncome = (v: number) =>
 
 /**
  * 給与所得（給与収入 − 給与所得控除）。660万円未満は別表第五の4,000円単位の切り捨てを入れる。
+ * 表は年末調整と共通（lib/furusato-nozei.ts の salaryIncomeByTable・lib/nenmatsu-chosei.ts の R7 版）。
  */
 export function kyuyoShotoku(income: number, nendo: Nendo): number {
-  const rule = NENDO_RULES[nendo];
   const i = clampIncome(income);
   if (i <= 0) return 0;
-  const base =
-    i >= rule.salaryMinUntil && i < TABLE5_UPPER ? Math.floor(i / TABLE5_UNIT) * TABLE5_UNIT : i;
-  return Math.max(0, Math.floor(base - rule.salaryDeduction(base)));
+  return NENDO_RULES[nendo].salaryIncome(i);
 }
 
 /**

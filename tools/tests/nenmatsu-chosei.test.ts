@@ -7,6 +7,7 @@ import {
   calcYearTax,
   estimateWithheld,
   salaryDeductionR7,
+  salaryIncomeByTableR7,
   spouseDeductionFor,
   specialRelativeDeductionFor,
   type NenmatsuInput,
@@ -63,6 +64,53 @@ describe('salaryDeductionR7（比較用・令和7年分の給与所得控除）'
   it('360万円超の区分は令和8年分と同じ式', () => {
     expect(salaryDeductionR7(5_000_000)).toBe(1_440_000);
     expect(salaryDeductionR7(9_000_000)).toBe(1_950_000);
+  });
+});
+
+describe('給与所得は別表第五（年末調整等のための給与所得控除後の給与等の金額の表）で出す', () => {
+  it('給与収入2,199,000円は令和8年分の特例で給与所得1,456,000円', () => {
+    // 1,456,000 − 基礎控除1,040,000 = 416,000 × 5% = 20,800 × 102.1% = 21,236.8 → 21,200
+    // （式で出すと給与所得1,459,000円・年税額21,300円になっていた）
+    const y = calcYearTax(base({ income: 2_199_000 }), RULES_R8, 0);
+    expect(y.totalIncome).toBe(1_456_000);
+    expect(y.salaryDeduction).toBe(743_000);
+    expect(y.taxableIncome).toBe(416_000);
+    expect(y.yearTax).toBe(21_200);
+  });
+
+  it('給与収入4,001,999円は4,000,000円で計算して給与所得2,760,000円', () => {
+    // 2,760,000 − 1,040,000 = 1,720,000 × 5% = 86,000 × 102.1% = 87,806 → 87,800
+    const y = calcYearTax(base({ income: 4_001_999 }), RULES_R8, 0);
+    expect(y.totalIncome).toBe(2_760_000);
+    // 画面の「給与所得控除」は 収入 − 表の給与所得 で、表の結果と矛盾しない
+    expect(y.salaryDeduction).toBe(4_001_999 - 2_760_000);
+    expect(y.taxableIncome).toBe(1_720_000);
+    expect(y.yearTax).toBe(87_800);
+  });
+
+  it('配偶者の給与所得も表で出す（219.1万〜220万円の帯）', () => {
+    const r = calcYearTax(
+      base({ spouse: 'general', spouseIncome: 2_199_000 }),
+      RULES_R8,
+      734_500,
+    );
+    const formula = calcYearTax(
+      base({ spouse: 'general', spouseIncome: 2_190_999 }),
+      RULES_R8,
+      734_500,
+    );
+    // 給与所得1,456,000円 > 1,450,999円。配偶者特別控除は所得が多いほど減るか同じ
+    expect(r.spouseDeduction).toBeLessThanOrEqual(formula.spouseDeduction);
+  });
+
+  it('令和7年分は190万円から4,000円刻み（特例の段は無い）', () => {
+    expect(salaryIncomeByTableR7(650_999)).toBe(0);
+    expect(salaryIncomeByTableR7(651_000)).toBe(1_000);
+    expect(salaryIncomeByTableR7(1_899_999)).toBe(1_249_999);
+    expect(salaryIncomeByTableR7(1_900_000)).toBe(1_250_000);
+    expect(salaryIncomeByTableR7(1_903_999)).toBe(1_250_000);
+    expect(salaryIncomeByTableR7(1_904_000)).toBe(1_252_800);
+    expect(RULES_R7.salaryIncome(4_001_999)).toBe(2_760_000);
   });
 });
 
