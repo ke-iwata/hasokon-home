@@ -232,6 +232,23 @@ export const games: GameDef[] = [
     updatedAt: '2026-10-16',
   },
   {
+    // 島どうしを数字の本数の橋でつなぐロジックパズル（docs/features/game-hashi-kake.md）。
+    // ルールは古典のペンシルパズルで、ルール（アイデア）に権利は及ばない。問題はすべて自前の生成器で作る。
+    // **使わない名前**：「橋をかけろ」（ニコリの作品名）・「Hashiwokakero」・各アプリの商品名（「Hashi: Island Bridges」など）。
+    // 名称・slug・title・description・keywords・本文のどこにも書かない。
+    // **J-PlatPat の確認（第9類・第28類・第41類で「橋かけパズル」「橋かけ」「はしかけ」）は
+    // 運営者のタスク**で、済むまで `wip`（slug は公開後に動かせないので、`wip` のうちに確定させる）。
+    // 登録があれば name を「島をつなぐパズル」、slug を `shima-tsunagi` にする。
+    // 四角わけパズルと同じ日替わり基盤（lib/daily.ts）を使うので、その隣に置く
+    slug: 'hashi-kake',
+    icon: 'Bridges',
+    name: '橋かけパズル',
+    description: '数字の本数だけ橋を架けて、全部の島を1つにつなぐパズル。3段階と毎日変わる今日の1問。',
+    keywords: ['橋', '島をつなぐ', '今日の1問', '答えは必ず1通り', '連続日数'],
+    stage: 'wip',
+    updatedAt: '2026-10-17',
+  },
+  {
     // 6 つの数と四則演算で目標の数をつくる計算パズル（docs/features/game-target-keisan.md）。
     // ルールは英国のクイズ番組の数字ラウンド（1982年〜）以来のジェネリックなもので権利者はいない。
     // **番組名・他社のゲーム名は表示名・slug・keywords・本文に使わない**（仕様書の「名称と権利」）。

@@ -7,6 +7,7 @@ import {
   ClubIcon,
   CrownIcon,
   DiceFiveIcon,
+  GraphIcon,
   GridFourIcon,
   GridNineIcon,
   KeyboardIcon,
@@ -1174,6 +1175,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Numpad: NumpadIcon,
   // 四角わけパズル。他社のパッチ柄・誌面はなぞらず、長方形に区切った枠で表す（盤面の絵は `public` にするPRで描く）
   RectSplit: LayoutIcon,
+  // 橋かけパズル。他社の誌面・アプリの絵柄はなぞらず、点と線でつないだ図で表す（盤面の絵は `public` にするPRで描く）
+  Bridges: GraphIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
