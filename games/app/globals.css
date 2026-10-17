@@ -483,6 +483,7 @@ ol {
 .hp-board,
 .hn-board,
 .sw-board,
+.hk-board,
 .ts-board,
 .yn-board,
 .sk-stage {
@@ -1181,6 +1182,225 @@ ol {
 @media (prefers-reduced-motion: no-preference) {
   .sw-board.done .sw-edge {
     transition: stroke 0.4s ease;
+  }
+}
+
+/* ---- 橋かけパズル ----
+   盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
+   （ここで max-width を書き直さないこと）。`--chrome` / `--board-max` は入れ物（`.hk-game`）に置き、
+   生成中の幕（`.hk-loading`）と盤が同じ値を継承するようにする。
+
+   描画は SVG 1 枚（viewBox はマス単位）。押した場所は盤が座標から決める（lib の hitTest）ので、
+   帯のボタン（`.hk-band`）はキーボードと読み上げのためだけに置き、ポインターは受けない。
+   **なぞる操作とスクロールを取り合わない**ように、盤の上だけ `touch-action: none` */
+.hk-game {
+  --chrome: 450px;
+  --board-max: 480px;
+}
+
+.hk-board {
+  position: relative;
+  aspect-ratio: 1;
+  width: 100%;
+  border: 3px solid var(--text);
+  border-radius: 6px;
+  background: var(--surface);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.hk-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hk-dot {
+  fill: var(--border);
+}
+
+/* 選んだ島から架けられる帯（どこに架けられるかを見せる） */
+.hk-cand {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+/* 橋は線の数で本数を見せる（色に頼らない） */
+.hk-bridge line {
+  stroke: var(--text);
+  stroke-width: 0.09;
+  stroke-linecap: round;
+}
+
+.hk-board.done .hk-bridge line {
+  stroke: var(--ok);
+}
+
+/* 交差（「チェック」のあとだけ）。赤の破線 */
+.hk-bridge.bad line {
+  stroke: var(--danger);
+  stroke-dasharray: 0.2 0.12;
+}
+
+.hk-island circle {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 0.07;
+}
+
+.hk-island text {
+  fill: var(--text);
+  font-size: 0.5px;
+  font-weight: 500;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* 数字どおりの本数になった島は塗りを薄く、数字を太字に（色を見なくても分かる） */
+.hk-island.ok circle {
+  fill: color-mix(in srgb, var(--ok) 18%, var(--surface));
+}
+
+.hk-island.ok text {
+  font-weight: 800;
+}
+
+/* 選んだ島。色だけに頼らず、太い二重の輪で示す */
+.hk-island.selected circle {
+  stroke: var(--accent);
+  stroke-width: 0.12;
+}
+
+/* 数字を超えた島（「チェック」のあとだけ）。赤の破線＋右上の × */
+.hk-island.bad circle {
+  stroke: var(--danger);
+  stroke-dasharray: 0.16 0.1;
+}
+
+.hk-island text.hk-bad-mark {
+  fill: var(--danger);
+  font-size: 0.36px;
+  font-weight: 700;
+}
+
+/* 帯のボタン。見た目は持たず、フォーカスの輪だけ出す */
+.hk-band {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+.hk-band:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+/* 島の読み上げ。画面には出さない */
+.hk-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  list-style: none;
+}
+
+/* 生成のあいだ、盤があった場所を空けておく（盤が現れた瞬間に下がずれない）。
+   **式は「盤を画面の高さに合わせる」節の共通指定と1文字違わず同じにすること** */
+.hk-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+  margin-inline: auto;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.hk-actions {
+  margin-top: 12px;
+  justify-content: center;
+}
+
+/* 押す先は44pxを割らない（画面の約束4） */
+.hk-actions .btn {
+  min-height: 44px;
+}
+
+/* 読み上げと案内の1行。**空でも枠は置く**（高さを確保して盤を動かさない） */
+.hk-note {
+  height: 1.5rem;
+  line-height: 1.5rem;
+  margin: 6px 0 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.hk-share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+
+.hk-share-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 遊び方の図（page.tsx の例題） */
+.hk-example-wrap {
+  margin: 16px auto;
+  max-width: 260px;
+  text-align: center;
+}
+
+.hk-example {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.hk-example-wrap figcaption {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* 架けられなかったときの交差相手の点滅（動きを減らす設定では止める） */
+  .hk-bridge.flash line {
+    animation: hk-flash 0.3s ease-in-out 2;
+  }
+
+  .hk-board.done .hk-bridge line {
+    transition: stroke 0.4s ease;
+  }
+}
+
+@keyframes hk-flash {
+  50% {
+    stroke: var(--danger);
+    stroke-width: 0.16;
   }
 }
 
@@ -7340,6 +7560,26 @@ button.hf-card {
 
   /* 今日の1問・かんたん・ふつう・むずかしいを 320px でも切らさない（はみ出すと端の文字が欠ける。実測） */
   .sw-game .seg button {
+    padding-inline: 5px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
+
+/* 橋かけパズル：狭い画面では高さから盤を縮めすぎない（11×11 で 1 マス 27px 前後。
+   帯の当たり判定は重ならないので押し損じても別の帯は切り替わらない。島の 2 回タップでも架けられる） */
+@media (max-width: 600px) {
+  .hk-game {
+    --chrome: 300px;
+    --board-max: 420px;
+  }
+
+  .hk-note {
+    font-size: 0.75rem;
+  }
+
+  /* 今日の1問・かんたん・ふつう・むずかしいを 320px でも切らさない（四角わけと同じ） */
+  .hk-game .seg button {
     padding-inline: 5px;
     font-size: 0.75rem;
     white-space: nowrap;
