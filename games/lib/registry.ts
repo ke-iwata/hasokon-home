@@ -395,6 +395,20 @@ export const games: GameDef[] = [
     updatedAt: '2026-09-27',
   },
   {
+    // 「ダウト」はトランプ遊びの一般名で、特定の会社の作品名ではない。英語圏の同種の遊び
+    // （"I Doubt It" ほか）の名称は使わない（docs/features/game-doubt.md の「名称と権利」）。
+    // 札の絵柄は自前の CardView.tsx。`public` への昇格は運営者の判断で、絵（GameIcon の BOARD・
+    // GamePreview）は `public` にする PR で描く
+    slug: 'doubt',
+    icon: 'Doubt',
+    name: 'ダウト',
+    description:
+      'A・2・3…Kの順に札を伏せて出し、ウソだと思ったら「ダウト！」。CPU 3人と4人で遊ぶ、読み合いのトランプ。CPUは3段階。',
+    keywords: ['ダウト', 'トランプ', 'CPU対戦', 'ウソ', '読み合い'],
+    stage: 'preview',
+    updatedAt: '2026-10-18',
+  },
+  {
     // ハーツのルールは公有で、「ハーツ」は英語の一般名 hearts の片仮名
     // （docs/features/game-hearts.md の「名称と権利」）。Microsoft の「Hearts」の画面・札の絵柄・
     // キャラクター名は真似ず、CPU の呼び名は大富豪の SEAT_NAMES に揃えている。

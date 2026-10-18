@@ -262,6 +262,7 @@ export function CardView({
   className = '',
   labelSuffix = '',
   pointer,
+  pressed,
 }: {
   card: Card;
   selected?: boolean;
@@ -273,6 +274,8 @@ export function CardView({
   labelSuffix?: string;
   /** つかんで運ぶ操作（docs/features/card-games-drag-drop.md）。タップの `onClick` はそのまま残る */
   pointer?: CardPointerHandlers;
+  /** 選ぶ・選ばないを切り替える札（ダウトの手札）だけが渡す。`aria-pressed` になる */
+  pressed?: boolean;
 }) {
   const extra = className ? ` ${className}` : '';
   if (!card.faceUp) {
@@ -295,6 +298,7 @@ export function CardView({
       onClick={onClick}
       style={style}
       {...pointer}
+      aria-pressed={pressed}
       aria-label={`${SUIT_SYMBOL[card.suit]}${RANK_LABEL[card.rank]}${labelSuffix}`}
     >
       <FaceSvg card={card} />
