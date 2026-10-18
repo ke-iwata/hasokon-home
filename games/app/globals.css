@@ -6236,6 +6236,274 @@ button.hf-card {
   line-height: 1.35;
 }
 
+/* ---- ダウト（docs/features/game-doubt.md） ----
+   席・札・実況は大富豪の器（.df-seats / .df-slot / .df-msg）を借りて、ダウトにしか無い枠
+   （場の「次は 7」・直前の結果・選んだ札・手札の 3 通りの並べ方・ダウトの受付）だけを足す。
+   出たり消えたりする行はすべて height で固定する（games/CLAUDE.md 1） */
+
+.dt-game {
+  --dt-slot: clamp(38px, 9.5vw, 54px);
+}
+
+/* 席の「直前 7 が 2 枚」「1位で上がり」。1 行で固定 */
+.dt-seat-decl {
+  display: block;
+  line-height: 1.35;
+  height: 1.35em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* 直前の 1 手の結果。360px で「CPU 1 が先にダウト！ ウソでした！ CPU 2 が 12 枚を引き取ります」が
+   折り返すので 2 行ぶんで固定する。空でも枠は置く */
+.dt-last {
+  line-height: 1.4;
+  height: 2.8em;
+  margin: 0 0 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 場。「次は 7」と、出た札（伏せ札・表にした札）が入れ替わっても高さは同じ */
+.dt-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: calc(var(--dt-slot) * 1.4 + 3.4em);
+  padding: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.dt-field-who {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+.dt-next {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: calc(var(--dt-slot) * 1.4);
+  color: var(--accent-strong);
+}
+
+.dt-field-cards {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  height: calc(var(--dt-slot) * 1.4);
+  align-items: center;
+}
+
+/* 伏せて出た札。トランプの裏面は .df-back と同じ紺 */
+.dt-back {
+  width: calc(var(--dt-slot) * 0.8);
+  height: calc(var(--dt-slot) * 1.12);
+  border-radius: 4px;
+  border: 1px solid #f5f5f4;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.25) 0 2px, transparent 2px 4px),
+    #1d4ed8;
+}
+
+.dt-reveal {
+  width: var(--dt-slot);
+}
+
+.dt-pile {
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: var(--muted);
+}
+
+/* 自分の枚数の 1 行 */
+.dt-me {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  justify-content: center;
+  line-height: 1.5;
+  height: 1.5em;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+
+.dt-me-turn {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.dt-me-decl {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* 選んだ札。手札の札をもう 1 度描かず（1 枚の札は画面の 1 か所だけ）、数の文字で並べる。
+   文字は押して戻す先なので 44px を割らない（games/CLAUDE.md 4）。帯は 44px で固定 */
+.dt-picked {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+.dt-picked-label {
+  color: var(--muted);
+}
+
+.dt-picked-card,
+.dt-picked-undo {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dt-picked-undo {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+
+/* 手札。並べ方（1 列・2 段・数のチップ）が変わっても、帯の高さは 2 段ぶん＋持ち上げで固定。
+   数のチップ 1 段（326px）は 360px の帯（326px）にちょうど収まる */
+.dt-hand {
+  height: calc(2 * var(--dt-slot) * 1.4 + 4px + 12px);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.dt-hand.dt-hand-result {
+  padding-top: 0;
+}
+
+/* 札は重ねて並べる。重なり（負の margin-left）は Game.tsx が幅から計算して渡す */
+.dt-row {
+  display: flex;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.dt-slot {
+  position: relative;
+}
+
+/* 数のチップ。7 個 × 44px ＋ 横の隙間 3px × 6 ＝ 326px（600px 以下の帯の幅。360px でカードの枠の内に収まる） */
+.dt-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.dt-chip-row {
+  display: flex;
+  gap: 3px;
+}
+
+.dt-chip {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.1;
+  cursor: pointer;
+}
+
+.dt-chip:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dt-chip.now {
+  border-color: var(--accent);
+}
+
+.dt-chip.on {
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.dt-chip-rank {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.dt-chip-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.dt-result {
+  margin: 0;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* 「出す」と「ダウト！」「通す」が入れ替わる行。高さは固定 */
+.dt-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  height: 52px;
+  margin-top: 8px;
+}
+
+.dt-actions .btn {
+  min-height: 44px;
+}
+
+.dt-doubt,
+.dt-let {
+  min-width: 120px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+/* 「ウソが混ざっています」。自分にだけ見える注意。空でも枠は置く */
+.dt-lie {
+  line-height: 1.4;
+  height: 1.4em;
+  margin: 0;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--danger);
+}
+
 /* ---- 矢印ぬき ----
    盤は正方形なので、大きさは「盤を画面の高さに合わせる」節の共通指定に任せる
    （ここで max-width を書き直さないこと）。`--chrome` / `--board-max` は星置きと同じく
@@ -7583,5 +7851,32 @@ button.hf-card {
     padding-inline: 5px;
     font-size: 0.75rem;
     white-space: nowrap;
+  }
+}
+
+/* ダウト：狭い画面では手札の帯だけカードの内側の余白（10px）にはみ出させる。
+   360px で 13 枚を 1 枚 24px 以上で並べるため（lib/doubt.ts の handWidth と同じ見積もり） */
+@media (max-width: 600px) {
+  .dt-hand {
+    margin-inline: -10px;
+  }
+
+  .dt-game .seg button {
+    padding-inline: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
+
+/* 360px 未満は数のチップが 3 段（5・4・4）になるので、帯の高さを 3 段ぶん（44px × 3 ＋ 隙間 6px × 2 ＋ 持ち上げ 12px）にする。
+   局の途中で並べ方が変わっても高さが動かないよう、最初から 3 段ぶんを確保する */
+@media (max-width: 359px) {
+  .dt-hand {
+    height: 156px;
+  }
+
+  /* 「選んだ札」の見出しを出すと、4 枚＋「−」（44px × 5）が 320px のカードに入らない */
+  .dt-picked-label {
+    display: none;
   }
 }

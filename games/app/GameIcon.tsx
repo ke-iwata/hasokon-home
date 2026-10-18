@@ -6,6 +6,7 @@ import {
   CardsIcon,
   ClubIcon,
   CrownIcon,
+  DetectiveIcon,
   DiceFiveIcon,
   GraphIcon,
   GridFourIcon,
@@ -1217,6 +1218,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   NumberCircleNine: NumberCircleNineIcon,
   // ヒット＆ブロー。色のピン（市販のボードゲームの見た目）は使わず、テンキーで表す（盤面の絵は `public` にするPRで描く）
   Numpad: NumpadIcon,
+  // ダウト。ウソを見抜く読み合いを、探偵の横顔で表す（盤面の絵は `public` にするPRで描く）
+  Doubt: DetectiveIcon,
   // 四角わけパズル。他社のパッチ柄・誌面はなぞらず、長方形に区切った枠で表す（盤面の絵は `public` にするPRで描く）
   RectSplit: LayoutIcon,
   // 橋かけパズル。他社の誌面・アプリの絵柄はなぞらず、点と線でつないだ図で表す（盤面の絵は `public` にするPRで描く）
