@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_PAYABLE_DAYS, TAIKI_DAYS, calcShobyoTeate, SHORT_TENURE_CAP } from '@/lib/shobyo-teate';
 import { kenpoDailyAmount } from '@/lib/kenpo-daily-amount';
 import { standardMonthly } from '@/lib/shaho-grades';
+import { addMonths, daysBetween } from '@/lib/date-parts';
 import {
   CAPPED_DAILY_AMOUNT,
   DAILY_ROWS,
@@ -74,6 +75,27 @@ describe('calcShobyoTeate（待期3日間と支給対象日数）', () => {
 describe('calcShobyoTeate（支給期間の上限＝通算1年6ヶ月）', () => {
   it('上限日数は546日（通算1年6ヶ月の短いほう）', () => {
     expect(MAX_PAYABLE_DAYS).toBe(546);
+  });
+
+  it('上限日数は暦の1年6ヶ月のうち最短（546日）で、最長（550日）より4日短い', () => {
+    // 支給開始日から暦で18か月後の応当日の前日まで（＝応当日までの日数）を数える
+    const months18 = (start: { year: number; month: number; day: number }) =>
+      daysBetween(start, addMonths(start, 18));
+    const shortest = months18({ year: 2025, month: 9, day: 1 });
+    const longest = months18({ year: 2027, month: 7, day: 1 });
+    expect(shortest).toBe(546);
+    expect(longest).toBe(550);
+    expect(MAX_PAYABLE_DAYS).toBe(shortest);
+    expect(longest - MAX_PAYABLE_DAYS).toBe(4);
+  });
+
+  it('画面の上限メッセージは「＝546日」と言い切らない', () => {
+    const source = readFileSync(
+      fileURLToPath(new URL('../app/shobyo-teate/Calculator.tsx', import.meta.url)),
+      'utf8',
+    );
+    expect(source).not.toMatch(/＝\{MAX_PAYABLE_DAYS\}日|＝546日/);
+    expect(source).toContain('550日');
   });
 
   it('上限に届かない休業日数は今までどおり（休業30日 → 27日分）', () => {
