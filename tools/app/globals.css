@@ -642,6 +642,45 @@ label {
   white-space: nowrap;
 }
 
+/* 狭い幅で 1 行ずつの縦積みに切り替える表（食事補助の非課税 判定の「2 つの条件」）。
+   画面幅ではなく入れ物の幅で切り替え、横スクロールを出さない。
+   td の data-label が縦積みのときの見出しになる（docs/features/shokuji-hojo-hikazei.md） */
+.stack-wrap {
+  container-type: inline-size;
+}
+
+@container (max-width: 480px) {
+  .stack-table thead {
+    display: none;
+  }
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+  }
+  .stack-table tr {
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 6px 10px;
+  }
+  .stack-table tr:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .stack-table td,
+  .stack-table td:first-child {
+    border: none;
+    padding: 2px 0;
+    text-align: left;
+  }
+  .stack-table td::before {
+    content: attr(data-label) '：';
+    color: var(--muted);
+    font-size: var(--fs-xs);
+  }
+}
+
 @media (max-width: 600px) {
   .hero h1 {
     font-size: 1.5rem;
