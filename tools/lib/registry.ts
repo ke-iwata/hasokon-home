@@ -454,7 +454,7 @@ export const tools: ToolDef[] = [
     description: '病気やケガで休職したときにもらえる傷病手当金の日額・総額を計算。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-26',
+    updatedAt: '2026-10-18',
   },
   {
     slug: 'shussan-yoteibi',

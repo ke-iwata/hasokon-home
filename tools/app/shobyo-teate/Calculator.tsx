@@ -74,8 +74,9 @@ export default function Calculator() {
         )}
         {r.cappedByLimit && (
           <div style={{ fontSize: 'var(--fs-sm)', color: '#b45309' }}>
-            支給期間の上限（通算1年6ヶ月＝{MAX_PAYABLE_DAYS}日）に達しています。入力の
-            {r.requestedDays}日分ではなく、<strong>{MAX_PAYABLE_DAYS}日分</strong>で計算しました。
+            支給期間の上限（通算1年6ヶ月）に達しています。1年6ヶ月は支給開始日によって
+            {MAX_PAYABLE_DAYS}〜550日のため、短いほうの<strong>{MAX_PAYABLE_DAYS}日分</strong>で計算しました（入力は
+            {r.requestedDays}日）。
           </div>
         )}
       </div>
