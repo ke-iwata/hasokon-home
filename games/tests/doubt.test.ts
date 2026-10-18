@@ -451,8 +451,8 @@ describe('手札の表示の切り替え（handLayout）', () => {
     expect(handLayout(26, 360, 13)).toBe('two');
   });
 
-  it('320px では 13 枚でも 24px を切るのでチップ。768px なら 13 枚は 1 列', () => {
-    expect(handLayout(13, 320)).not.toBe('row');
+  it('320px では 13 枚でも 1 列だと 24px を切るので、配りたてから 2 段。768px なら 13 枚は 1 列', () => {
+    expect(handLayout(13, 320)).toBe('two');
     expect(handLayout(13, 768)).toBe('row');
     expect(handLayout(13, 390)).toBe('row');
   });

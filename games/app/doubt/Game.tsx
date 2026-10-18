@@ -101,7 +101,7 @@ function usePrefersReducedMotion(): boolean {
 
 const RANKS: Rank[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
 /** 数のチップ 7 個の 1 段の幅 */
-const CHIP_ROW_PX = 7 * 44 + 6 * 6;
+const CHIP_ROW_PX = 7 * 44 + 6 * 3;
 
 export default function Game() {
   const [level, setLevel] = useState<Level>('normal');
@@ -403,9 +403,9 @@ export default function Game() {
     }
   };
 
-  // 7 個 × 44px ＋ 隙間 6px × 6 ＝ 344px。左右に 8px ずつ残らない幅（360px 未満）では 3 段（5・4・4）にする
+  // 7 個 × 44px ＋ 隙間 3px × 6 ＝ 326px。帯（画面幅 − 34px）に入らない幅（360px 未満）では 3 段（5・4・4）にする
   const chipRows: Rank[][] =
-    screenW < CHIP_ROW_PX + 16 ? [RANKS.slice(0, 5), RANKS.slice(5, 9), RANKS.slice(9)] : [RANKS.slice(0, 7), RANKS.slice(7)];
+    screenW - 34 < CHIP_ROW_PX ? [RANKS.slice(0, 5), RANKS.slice(5, 9), RANKS.slice(9)] : [RANKS.slice(0, 7), RANKS.slice(7)];
 
   const renderChips = () => (
     <div className="dt-chips" role="group" aria-label="数ごとの手札">
