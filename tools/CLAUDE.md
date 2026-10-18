@@ -241,6 +241,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 速度違反の反則金・点数・法定速度の改正時 | `lib/sokudo-ihan.ts` の `FINE_BANDS`（施行令 別表第六）・`pointsFor()`（別表第二）・`speedLimit()`（施行令11条・27条）と `DATA_CHECKED_AT`。e-Gov 法令API で道路交通法施行令（`335CO0000000270`）を引いて写す（警視庁の表は写しなので、食い違ったら施行令を正とする）。**標識の速度は原付には30km/hを超えて及ばない**（標識令 別表第一「最高速度」）ので、`speedLimit()` の `Math.min` を外さないこと |
 | 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 通勤手当の非課税限度額の改正時 | `lib/tsukin-teate.ts` の `DISTANCE_BANDS`・`PARKING_CAP`・`TOTAL_CAP`（国税庁「通勤手当の非課税限度額の改正について」とQ&Aを正とする）。確かめただけでも `DATA_CHECKED_AT` を進める。改正前の表（`DISTANCE_BANDS_BEFORE_2026_04`）は令和8年1〜3月分の確認用で、令和9年分の年末調整が済んだら外してよい |
+| 食事補助の非課税限度額の改正時 | `lib/shokuji-hojo-hikazei.ts` の `LIMIT_FROM_2026_04` / `LIMIT_BEFORE`・夜食代の `YASHOKU_FROM_2026_04` / `YASHOKU_BEFORE` と `DATA_CHECKED_AT`（国税庁 No.2594・No.2594-1・個別通達 840726/01 を正とする）。**税抜きへの換算は税率ごとに合計してから**（行ごとに直さない）。夜食代の換算の税率が一次情報で示されたら、保留の帯（`judgeYashoku()` の `pending`）を狭める |
 | 青色申告特別控除の改正時 | `lib/aoiro-shinkoku-kojo.ts` の `DEDUCTION_R9` / `DEDUCTION_R8` / `PRIOR_REVENUE_LIMIT` と `DATA_CHECKED_AT`。e-Gov 法令API で租税特別措置法（`332AC0000000026`）の25条の2を引く。**0円の区分（2項）は「4項に規定する場合（正規の簿記）に該当しない」人だけ**で、複式簿記の書面・期限後申告は前々年1,000万円超でも10万円。届出書の名称は令和9年3月頃に「65万」→「75万」に変わる予定なので、本文に直書きせず `FORM_PAGE` のリンクにしてある |
 | 高額療養費の改正時 | `lib/kogaku-ryoyohi.ts` の `LIMIT_TABLES` に施行月つきの表を1つ足す（令和9年8月の13区分細分化が次） |
 | 毎年12月（税制改正大綱が出たら） | セルフメディケーション税制の適用期限を `lib/iryohi-kojo.ts` の `SELF_MED_EXPIRES_AT`（区分ごと）/ `SELF_MED_CHECKED_AT` に反映（令和8年法律第12号で、2027-01-01からスイッチOTCは期限なし・それ以外は2031年12月31日まで）。**大綱だけでは「延長されました」と書かない**（大綱は閣議決定。改正法の成立と施行日を確かめてから）。足切り・上限が変わったら `MEDICAL_THRESHOLD_FIXED` / `MEDICAL_CAP` / `SELF_MED_THRESHOLD` / `SELF_MED_CAP` |
@@ -263,7 +264,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール74本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+- **ツール75本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
   `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本

@@ -682,6 +682,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-17',
   },
   {
+    // 仕様: docs/features/shokuji-hojo-hikazei.md
+    slug: 'shokuji-hojo-hikazei',
+    icon: 'ForkKnife',
+    name: '食事補助の非課税 判定',
+    description:
+      '会社の弁当・社員食堂・食事券の1か月分から、所得税が非課税かを判定。本人が半分以上を負担・会社負担が月7,500円（税抜き、令和8年4月から）以下の2条件を確かめ、課税なら給与に足す額とあと何円で非課税かを出します。8%と10%の混在・夜食代650円にも対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-18',
+  },
+  {
     slug: 'jitensha-hansokukin',
     icon: 'Bicycle',
     name: '自転車の反則金（青切符）早見表・チェッカー',
