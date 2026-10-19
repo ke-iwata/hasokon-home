@@ -392,8 +392,9 @@ export default function Game() {
         label: `${LEVEL_LABEL[level]}との戦績`,
         value: `${entry.wins ?? 0}勝 ${entry.losses ?? 0}敗 ${entry.draws ?? 0}分`,
       },
+      // 「最多」（bestScore）は記録には残すが帯には出さない。初戦を終えた瞬間に項目が増えると、
+      // 320px で帯が 2 行に折り返して盤が 50px 下がる（画面の約束 1。#424 のレビュー）
       { label: '勝率', value: winRate(entry) === null ? '—' : `${winRate(entry)}%` },
-      ...(entry.bestScore ? [{ label: '最多', value: `${entry.bestScore}個` }] : []),
     ];
   }, [mode, entry, level, streakNow]);
 
