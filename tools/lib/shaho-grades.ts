@@ -2,8 +2,9 @@
  * 健康保険・厚生年金の標準報酬月額 等級表
  *
  * 一次情報:
- * - 日本年金機構「標準報酬月額の決め方」
- *   https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/20120817.html
+ * - 日本年金機構「標準報酬月額は、いつどのように決まるのですか。」
+ *   https://www.nenkin.go.jp/section/faq/kounen/hyoujunhoushu/20140602-02.html
+ *   （旧「標準報酬月額の決め方」…/hoshu/20120817.html は 2026-10-19 に 404）
  * - 全国健康保険協会「保険料額表」
  *   https://www.kyoukaikenpo.or.jp/g7/cat330/sb3150/
  *

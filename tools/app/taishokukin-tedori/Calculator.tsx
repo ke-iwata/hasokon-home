@@ -419,7 +419,7 @@ export default function Calculator() {
           </tr>
           <tr>
             <td style={rowLabel}>
-              所得税（税率{(r.taxRate * 100).toFixed(0)}%・復興特別所得税2.1%込み）
+              所得税（税率{(r.taxRate * 100).toFixed(0)}%・復興特別所得税・防衛特別所得税の合計2.1%込み）
             </td>
             <td>{yen(r.incomeTax)}</td>
           </tr>

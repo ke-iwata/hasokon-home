@@ -248,7 +248,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
 | 防衛特別所得税・復興特別所得税の税率・課税期間の改正時 | `lib/boei-tokubetsu-shotokuzei.ts` の `SURTAX_PERIODS`（税率は千分率の整数）。区切りの年（`DEFENSE_START_YEAR` / `RECONSTRUCTION_LAST_YEAR_*`）も同じ場所。**合計2.1%が改正前後で同じ**ことは `tests/boei-tokubetsu-shotokuzei.test.ts` が令和9年分 源泉徴収税額表の別表第四と突き合わせて見張っている。控除額は `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあり、ここには持たない |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
-| 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞の扱いも条文で確認し、確認できるまで `rate2027For()` は `'newspaper-unconfirmed'` を返したままにする |
+| 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞は法律案 第2条で対象外（8%のまま）なので `rate2027For()` は `'newspaper-8-bill'` を返す。成立したら条文で同じか確かめる。**「（成立前）」「（法案）」は `pendingNote()` / `billNote()` から作っていて、status を上げれば消える**（直書きは `tests/shohizei.test.ts` が落とす） |
 | 軽減税率Q&Aが改訂されたとき | `lib/shohizei-items.ts` の `ITEMS` の `qa`（設問番号）を国税庁「消費税の軽減税率制度に関するQ&A（個別事例編）」と突き合わせ直し、`QA_REVISION` / `ITEMS_CHECKED_AT` を直す。**改訂で設問番号がずれる**ので番号だけ信じないこと。有料老人ホーム等の金額基準（令和8年6月1日から一食730円以下・1日2,190円まで）も同じQ&Aにある |
 | 毎年2月上旬（家計調査の前年平均が出たら） | `lib/shohizei.ts` の `KAKEI_CHOSA`（`food` / `eatingOut` / `alcohol` と `year` / `table` / `publishedOn`）を総務省「家計調査（家計収支編）」の「家計の概要」表Ⅰ－１－１から写す。**プリセットは `食料 − 外食 − 酒類` で導出している**ので3つとも写すこと |
 | 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
@@ -405,14 +405,15 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   `roundBy`）は `lib/rounding.ts` に分けてある（`shohizei.ts` ↔ `waribiki-percent.ts` の
   循環importを避けるため。トップレベルで早見表を作っているので、輪があるとTDZで落ちる）。
   **既定の丸めはツールごとに違う**（消費税は切り捨て・割引は四捨五入）。同じ関数を共有するからと揃えないこと
-- **2027年4月の飲食料品1%は「閣議決定済み・法案未成立」。** 印を出すかどうかは
+- **2027年4月の飲食料品1%は「法案提出済み・未成立」**（2026-08-05 に基本方針を閣議決定、2026-10-09 に法案を閣議決定・国会提出）。印を出すかどうかは
   `FOOD_RATE_2027.status` の1つの値だけで決まる。**画面の印は検索結果のスニペットに見えない**ので、
   `title` / `description` にも文字列として「（予定）」を入れてある
   （`tests/shohizei.test.ts` が status と文字列の食い違いを落とす）。軽減額は
   `1 − 1.01 / 1.08 ≒ 6.48%` で**「最大で」の目安**（便乗値上げ・値下げの遅れは織り込まない）。
   給付付き税額控除の給付額は制度設計が未公表なので計算しない。
-  **定期購読の新聞が1%になるかは条文で未確認**なので、`rate2027For()` は税率を返さず
-  `'newspaper-unconfirmed'` を返す（報道の見方を表に書かない）
+  **定期購読の新聞は法律案 第2条で1%の対象（別表第一 第一号の飲食料品）に入らない**ので、
+  `rate2027For()` は `'newspaper-8-bill'`（8%のまま）を返す（出典は報道ではなく法律案）。
+  1%の対象範囲は現行の軽減税率の飲食料品と同じ（法律案 第2条第1項）
   （[docs/features/shohizei-keisan-shokuryohin-1percent.md](../docs/features/shohizei-keisan-shokuryohin-1percent.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - **出産手当金の日額は傷病手当金と同一**（健康保険法102条2項が99条2項を準用）。

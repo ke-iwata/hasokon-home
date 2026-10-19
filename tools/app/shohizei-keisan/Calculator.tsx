@@ -14,6 +14,7 @@ import {
   RELIEF_LOOKUP_TABLE,
   ROUNDINGS,
   SOURCE_NTA_QA,
+  billNote,
   compareRates,
   foodRateBadge,
   foodRelief,
@@ -22,6 +23,7 @@ import {
   formatYen,
   isFoodRatePending,
   isFoodRateShown,
+  pendingNote,
   taxBreakdown,
   taxRates,
   type PriceMode,
@@ -285,10 +287,13 @@ export default function Calculator() {
             {SHOW_FOOD_RATE && (
               <p className="hint" style={{ marginTop: 4 }}>
                 2027年4月以降：
-                <strong>{RATE_2027_LABEL[rate2027For(selected, SHOW_FOOD_RATE)!]}</strong>
+                <strong>
+                  {RATE_2027_LABEL[rate2027For(selected, SHOW_FOOD_RATE)!]}
+                  {rate2027For(selected, SHOW_FOOD_RATE) === 'newspaper-8-bill' && billNote()}
+                </strong>
                 {rate2027For(selected, SHOW_FOOD_RATE) === 'food-1percent' && <PendingMark />}
-                {rate2027For(selected, SHOW_FOOD_RATE) === 'newspaper-unconfirmed' &&
-                  '（新聞の扱いは法案の条文で確認できていないため、税率を載せていません）'}
+                {rate2027For(selected, SHOW_FOOD_RATE) === 'newspaper-8-bill' &&
+                  `（1%になるのは飲食料品だけで、定期購読の新聞は含まれません。法律案 第2条${pendingNote()}）`}
               </p>
             )}
             <p className="hint" style={{ marginTop: 4 }}>

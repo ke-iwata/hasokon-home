@@ -12,6 +12,8 @@ import {
   FOOD_RELIEF_RATIO,
   KAKEI_CHOSA,
   KAKEI_TWO_OR_MORE_AT_HOME,
+  SOURCE_BILL,
+  SOURCE_BILL_TEXT,
   SOURCE_KAKEI_CHOSA,
   SOURCE_KANTEI,
   SOURCE_NTA_KEIGEN,
@@ -24,6 +26,7 @@ import {
   formatYen,
   isFoodRatePending,
   isFoodRateShown,
+  pendingNote,
 } from '@/lib/shohizei';
 import { ITEM_COUNT, QA_REVISION } from '@/lib/shohizei-items';
 import Calculator from './Calculator';
@@ -38,6 +41,8 @@ import Calculator from './Calculator';
  */
 const PENDING = isFoodRatePending();
 const SHOW_FOOD_RATE = isFoodRateShown();
+/** 「（成立前）」。成立したら空文字になる（直書きしない。`pendingNote()` 参照） */
+const PENDING_NOTE = pendingNote();
 
 // 日本語の検索結果で表示されるのは全角30字前後（layout.tsx 参照）。
 // 「（予定）」を後ろに置くとスニペットで切れ、まさに仕様書が避けたかった
@@ -47,7 +52,7 @@ const title = PENDING
   : '消費税 計算機・軽減税率チェッカー｜食料品1%の軽減額と税込税抜の計算';
 
 const description = PENDING
-  ? `税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を国税庁Q&Aの${ITEM_COUNT}項目から引ける軽減税率チェッカーつき。2027年4月から飲食料品が1%になる予定（2026年8月5日に閣議決定、法案は臨時国会で審議中）で、1か月の食費からいくら安くなるかも計算します。`
+  ? `税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を国税庁Q&Aの${ITEM_COUNT}項目から引ける軽減税率チェッカーつき。2027年4月から飲食料品が1%になる予定（${formatDate(FOOD_RATE_2027.billSubmittedOn)}に法案を閣議決定・国会提出${PENDING_NOTE}）で、1か月の食費からいくら安くなるかも計算します。`
   : `税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を国税庁Q&Aの${ITEM_COUNT}項目から引ける軽減税率チェッカーと、2027年4月からの食料品1%で1か月の食費からいくら安くなるかの計算つき。`;
 
 export const metadata: Metadata = {
@@ -74,11 +79,11 @@ const faq = [
   },
   {
     q: '外食も1%になりますか？',
-    a: '方針では対象外です。1%になるのは「飲食料品」で、いまの軽減税率（8%）と同じく外食・酒類は含まれないとされています。レストランで食べる場合は10%のまま、同じ店で持ち帰る場合は対象になる見込みです。ただし1%の対象範囲がいまの軽減税率の範囲とずれるかどうかは、法案の条文が出るまで確定しません。',
+    a: `法案では、1%になるのはいまの軽減税率（8%）の対象の飲食料品と同じ範囲です（法律案 第2条）。外食・酒類・ケータリングは含まれません。レストランで食べる場合は10%のまま、同じ店で持ち帰る場合は1%の対象です。${PENDING ? `法案は審議中${PENDING_NOTE}で、内容が変わることがあります。` : ''}`,
   },
   {
     q: '新聞はどうなりますか？',
-    a: `定期購読の新聞はいま8%ですが、2027年4月以降の扱いは法案の条文で確認できていないため、このツールでは税率を載せていません。報道では8%のままとする見方が出ていますが、条文で確かめられるまで書かない方針です。${QA_REVISION}のQ&Aで確認できるのは現行（8%）の要件までです。`,
+    a: `法案で1%になるのは飲食料品（消費税法 別表第一 第一号）だけで、定期購読の新聞（同 第二号）は含まれないため、${PENDING ? `法案${PENDING_NOTE}では` : ''}8%のままです（法律案 第2条）。いまの8%の要件（週2回以上発行・定期購読契約）は${QA_REVISION}の国税庁Q&Aで確認できます。`,
   },
   {
     q: '1%のあいだに買いだめしたほうが得ですか？',
@@ -94,7 +99,7 @@ const faq = [
   },
   {
     q: 'この計算をそのまま信じて大丈夫ですか？',
-    a: `税率と軽減税率の判定は国税庁の公表資料にもとづいていますが、1円未満の端数処理は事業者の任意なのでレシートと一致しないことがあります。また2027年4月からの1%は${PENDING ? '法案が成立していない段階の方針で、内容が変わることがあります' : '法案にもとづくものです'}。軽減税率の個別の判定は、最終的に税務署の判断になります（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
+    a: `税率と軽減税率の判定は国税庁の公表資料にもとづいていますが、1円未満の端数処理は事業者の任意なのでレシートと一致しないことがあります。また2027年4月からの1%は${PENDING ? '法案が成立していない段階のもので、内容が変わることがあります' : '法案にもとづくものです'}。軽減税率の個別の判定は、最終的に税務署の判断になります（データ最終更新日：${formatDate(DATA_CHECKED_AT)}）。`,
   },
 ];
 
@@ -209,7 +214,7 @@ export default function Page() {
 
       {SHOW_FOOD_RATE && (
         <>
-          <h2>2027年4月から食料品は1%に{PENDING && '（成立前です）'}</h2>
+          <h2>2027年4月から食料品は1%に{PENDING_NOTE}</h2>
           <p>
             {formatDate(FOOD_RATE_2027.decidedOn)}
             、政府は給付付き税額控除の導入に関する基本方針を閣議決定し、
@@ -218,15 +223,24 @@ export default function Page() {
               {formatDate(FOOD_RATE_2027.to)}までの2年間、8%から1%に引き下げる
             </strong>
             方針と、関連法案を臨時国会に提出することを定めました。
+            {formatDate(FOOD_RATE_2027.billSubmittedOn)}
+            に法案が閣議決定され、国会に提出されました。1%になるのは、いまの軽減税率（8%）の対象の飲食料品と同じ範囲です（法律案 第2条。外食・酒類・定期購読の新聞は含まれません）。
           </p>
           {PENDING && (
             <p>
-              <strong>
-                これは閣議決定であって、条文ではありません。法案は臨時国会で審議中で、まだ成立していません。
-              </strong>
-              成立の過程で対象の範囲や期間が変わることがあります。このページでは、成立前であることが分かるように1%の箇所に「予定」の印を付けています。
+              <strong>法案はまだ国会で審議中です{PENDING_NOTE}。</strong>
+              成立の過程で対象の範囲や期間が変わることがあります。このページでは、法案が成立していないことが分かるように1%の箇所に「予定」の印を付けています。
             </p>
           )}
+          <p>
+            法案には経過措置があります。
+            <strong>定期的に届ける契約</strong>（宅配の定期便など）で2027年1月1日より前に結んだ契約のうち、4月1日より前に代金を受け取った分や、2027年1月1日より前に条件を示した
+            <strong>通信販売</strong>
+            で4月1日より前に申込みを受けた分などは、4月1日以降に届いても1%にならず8%のままです（法律案 第2条第1項第1号ほか）。
+          </p>
+          <p>
+            また、税率が切り替わる前後の期間（2027年2月1日〜5月31日と、2029年2月1日〜5月31日）は、誤認されないための措置をとれば、店が飲食料品の値札を税込の総額で表示しなくてもよい特例があります（法律案 第6条）。店頭の値札が税込でない期間があるので、レジでの支払額はこの計算機で確かめられます。
+          </p>
           <p>
             1%が実現した場合に下がる幅は、税込価格に対して
             <strong>{formatPercent(FOOD_RELIEF_RATIO)}</strong>（1 − 1.01 ÷ 1.08）が上限の目安です。
@@ -273,6 +287,14 @@ export default function Page() {
         、
         <a href={SOURCE_KANTEI.url} target="_blank" rel="noopener noreferrer">
           {SOURCE_KANTEI.label}
+        </a>
+        、
+        <a href={SOURCE_BILL.url} target="_blank" rel="noopener noreferrer">
+          {SOURCE_BILL.label}
+        </a>
+        、
+        <a href={SOURCE_BILL_TEXT.url} target="_blank" rel="noopener noreferrer">
+          {SOURCE_BILL_TEXT.label}
         </a>
         、
         <a href={SOURCE_KAKEI_CHOSA.url} target="_blank" rel="noopener noreferrer">
