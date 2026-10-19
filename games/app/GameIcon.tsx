@@ -7,6 +7,7 @@ import {
   ClubIcon,
   CrownIcon,
   DetectiveIcon,
+  DotsSixIcon,
   DiceFiveIcon,
   GraphIcon,
   GridFourIcon,
@@ -1224,6 +1225,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   RectSplit: LayoutIcon,
   // 橋かけパズル。他社の誌面・アプリの絵柄はなぞらず、点と線でつないだ図で表す（盤面の絵は `public` にするPRで描く）
   Bridges: GraphIcon,
+  // マンカラ。市販の盤の意匠（木目の舟形・宝石風の石）はまねず、2 列に並んだ穴の点で表す（盤面の絵は `public` にするPRで描く）
+  Mancala: DotsSixIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
