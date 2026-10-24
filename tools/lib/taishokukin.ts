@@ -64,7 +64,8 @@
  * 【データ更新箇所】
  * - 速算表・復興特別所得税・住民税率は lib/furusato-nozei.ts から import している。
  *   税制改正のときはあちらを直す（このファイルには持たない）
- * - 復興特別所得税は2037年分まで。終了したら RECONSTRUCTION_RATE の扱いを見直す
+ * - 復興特別所得税は2047年分まで（2027年分から1.1%）。防衛特別所得税1.0%と合わせて2.1%。
+ *   終了したら RECONSTRUCTION_RATE の扱いを見直す
  * - 重複排除の年数が動いたら LOOKBACK_YEARS_FROM_2026 / LOOKBACK_YEARS_BEFORE_2026
  */
 

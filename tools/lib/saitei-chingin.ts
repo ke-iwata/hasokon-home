@@ -1020,7 +1020,8 @@ export const PREFECTURES: Prefecture[] = [
       effectiveOn: '2026-11-01',
       source: {
         label: '大分労働局「大分県最低賃金改正を「時間額1,096円」で答申」',
-        url: 'https://jsite.mhlw.go.jp/oita-roudoukyoku/content/contents/002798644.pdf',
+        // PDF 直リンク（002798644.pdf）は 2026-10-19 に 404。報道発表の HTML に差し替えた
+        url: 'https://jsite.mhlw.go.jp/oita-roudoukyoku/news_topics/topics/saichin_toushin_r8.html',
         checkedAt: DATA_CHECKED_AT,
       },
     },
