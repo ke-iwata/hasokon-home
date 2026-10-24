@@ -48,7 +48,7 @@
 
 ### 2. `/tools/`（`tools/app/layout.tsx`）
 
-- **title.default**：`無料計算ツール集｜年齢・ふるさと納税・養育費・最低賃金をすぐ計算`（全角 31 字）
+- **title.default**：`無料計算ツール集｜年齢・ふるさと納税・養育費・最低賃金を計算`（全角 30 字。games と同じく 30 字前後に収める。「すぐ計算」だと 32 字で超えるので「すぐ」を落とした）
   - 選び方：直近 28 日の着地の上位から、**時期で古びない**もの。たばこ税・酒税は着地 1・2 位だが「値上げ」は 2029 年で終わる語なので title には入れず、description に回す
 - **description**：`年齢計算・ふるさと納税・養育費・最低賃金・たばこ税と酒税の改正など、暮らしと仕事のお金を計算する無料ツール${publicTools.length}本。すべてブラウザ内で完結し、入力データは送信されません。`
 
@@ -75,6 +75,7 @@ title・description に**名前を書いたゲーム・ツールが `wip`／`pre
 
 - `games/tests/`：`metadata.title.default` に「ナンプレ・ブロック崩し」が無い／名前を挙げた slug がすべて `public`／description の本数が `publicGames.length` と一致
 - `tools/tests/`：同様（名前を挙げた slug がすべて `public`・本数の一致）
+- layout の `description` は**自前の description を持たないページ全部の既定値**になるので、一覧ページの出力（`app/page.tsx` の `metadata` か、ビルド後の `out/index.html` の `<meta name="description">`）で確かめる。layout の値だけを見ても一覧ページに出ている保証にはならない
 - `learn/tests/`：title と description の「全◯章」が `publicChapters.length` と一致（`curriculum.test.ts` の「全◯章」の見張りに足す）。`compliance.test.ts` が通る
 - 既存の `stage.test.ts`・`llms.test.ts`・`scripts/test/home-nav.test.mjs` が通る
 
