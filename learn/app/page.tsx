@@ -5,6 +5,7 @@ import { Disclaimer } from './_chapter/Chapter';
 import { breadcrumbList, breadcrumbTrail, HOME_URL } from '@/lib/jsonld';
 import {
   chaptersOfSubject,
+  publicChapters,
   publicSubjects,
   SITE_NAME,
   SITE_URL,
@@ -12,10 +13,14 @@ import {
   subjectUrl,
 } from '@/lib/curriculum';
 
+/**
+ * title の後ろ半分は分野名を書く（`SITE_NAME` はセクション名の「学ぶ」のまま。パンくずが重なるため）。
+ * 「全◯章」は文字で書かず `publicChapters` から出す（docs/features/ichiran-page-title-refresh.md）。
+ * 分野が2つ以上になったら、ここを subjects から組み立て直す（tests/curriculum.test.ts が落とす）
+ */
 export const metadata: Metadata = {
-  title: `${SITE_NAME}｜hasokon.com`,
-  description:
-    'hasokon.com の学習ページ。いまは投資を体系的に学べる全37章の教科書があります。記述の根拠は各章の末尾に、一次資料へのリンクつきで並べています。',
+  title: `${SITE_NAME}｜投資の教科書（全${publicChapters.length}章）株式・投資信託・NISAの仕組み`,
+  description: `株式・債券・投資信託・NISA・iDeCoの仕組みを、全${publicChapters.length}章で体系的に学べる無料の教科書。記述の根拠は各章の末尾に、一次資料へのリンクつきで並べています。`,
   alternates: { canonical: `${SITE_URL}/` },
 };
 

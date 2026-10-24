@@ -1,6 +1,6 @@
 # 一覧ページ 3 枚（`/tools/`・`/games/`・`/learn/`）の title・description を今の中身に合わせる — `/games/` は 6 本だった 2026-08 の「ナンプレ・ブロック崩しをブラウザで」のまま（いまは 27 本）、`/learn/` は「学ぶ｜hasokon.com」で分野名すら入っていない。数は registry・curriculum から出し、名前を挙げたものが `public` かをテストで見張る
 
-**状態**：提案（2026-10-22 起票。セッション `session_01EUdU4MfuqkFbEnBGiFtGLc`）
+**状態**：実装済み（2026-10-24。本番反映は次の `v*` タグ。実装セッション `session_019txXpapKnLQA9PxV1eMmDm`。名前の配列と組み立ては `games/lib/hub-metadata.ts`・`tools/lib/hub-metadata.ts`）。提案は 2026-10-22 起票（セッション `session_01EUdU4MfuqkFbEnBGiFtGLc`）
 **優先度：中。** 計算・法対応の誤りではないが、検索結果と AI 回答に出る**一覧ページの見出しが中身と食い違っている**。直すのは文字列と小さなテストだけで、工数に対して効きが大きい。
 **着手条件**：なし。**公開条件**：実装 PR のマージで test.hasokon.com に出る。次の `v*` タグで本番。`stage` は動かさない。
 **対象**：`games/app/layout.tsx`（`title.default`・`description`）・`tools/app/layout.tsx`（同）・`learn/app/page.tsx`（`title`・`description`）・
