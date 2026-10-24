@@ -22,9 +22,9 @@ import {
 } from '@/lib/saitei-chingin';
 import Calculator from './Calculator';
 
-const title = '最低賃金 早見表・チェッカー｜2026年10月改定の都道府県別一覧';
+const title = '最低賃金 早見表・チェッカー｜2026年（令和8年度）改定の都道府県別一覧';
 const description =
-  '都道府県を選ぶと、いまの最低賃金と2026年（令和8年度）10月改定後の額・引上げ幅・発効日が分かります。47都道府県の答申額と発効日を表示。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も出せます。';
+  '都道府県を選ぶと、いまの最低賃金と2026年（令和8年度）改定後の額・引上げ幅・発効日（10月1日〜12月2日）が分かります。47都道府県の答申額と発効日を表示。自分の時給が下回っていないかの判定と、時給×労働時間からの月収・年収換算、年収の壁までの余裕も出せます。';
 
 export const metadata: Metadata = {
   title,
@@ -132,8 +132,8 @@ export default function Page() {
           Aランクは埼玉・千葉・東京・神奈川・愛知・大阪の6都府県、Bランクは28道府県、Cランクは13県です。地方が都市部を上回る目安になっています
         </li>
         <li>
-          <strong>目安どおりなら全国加重平均は{NATIONAL_AVERAGE.meyasu}円</strong> — 現在の
-          {NATIONAL_AVERAGE.current}円から55円（+4.9%）の引き上げ。前年度の66円（+6.3%）より伸びは小さくなります
+          <strong>目安どおりなら全国加重平均は{NATIONAL_AVERAGE.meyasu}円</strong> — 改定前（{CURRENT_FY_LABEL}）の
+          {NATIONAL_AVERAGE.current}円から55円（+4.9%）の引き上げ。前年度の66円（+6.3%）より伸びは小さくなりました
         </li>
         <li>
           <strong>
