@@ -6,6 +6,7 @@ import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
 import Analytics from './Analytics';
 import { COPYRIGHT_HOLDER, OGP_IMAGE, SITE_NAME, SITE_URL } from '@/lib/registry';
 import { MANIFEST_SCOPE } from './manifest';
+import { HUB_DESCRIPTION, HUB_TITLE } from '@/lib/hub-metadata';
 
 /**
  * Google Search Console の所有権確認用トークン。
@@ -18,13 +19,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   verification: { google: GOOGLE_SITE_VERIFICATION },
   title: {
-    default: `${SITE_NAME}｜ナンプレ・ブロック崩しをブラウザで`,
+    // 一覧ページ（/games/）の見出し。名前・本数は registry から組み立てる
+    // （docs/features/ichiran-page-title-refresh.md。中身は lib/hub-metadata.ts）
+    default: HUB_TITLE,
     // 検索結果に出るのは全角30字前後。認知がつくまでサイト名の接尾辞は付けない
     // （hasokon-tools と同じ判断）
     template: '%s',
   },
-  description:
-    'インストール不要・登録不要でそのまま遊べる無料ミニゲーム集。ナンプレ・ブロック崩しなどをブラウザだけで。',
+  description: HUB_DESCRIPTION,
   // 「ホーム画面に追加」でスタンドアロン起動させるためのマニフェスト
   // （docs/features/games-pwa-manifest.md。実体は app/manifest.ts）。
   // 【注意】ルート相対のまま書くこと（Next.js は manifest を metadataBase で
