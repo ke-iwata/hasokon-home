@@ -23,7 +23,6 @@ import {
   formatYen,
   isFoodRatePending,
   isFoodRateShown,
-  pendingNote,
   taxBreakdown,
   taxRates,
   type PriceMode,
@@ -293,7 +292,7 @@ export default function Calculator() {
                 </strong>
                 {rate2027For(selected, SHOW_FOOD_RATE) === 'food-1percent' && <PendingMark />}
                 {rate2027For(selected, SHOW_FOOD_RATE) === 'newspaper-8-bill' &&
-                  `（1%になるのは飲食料品だけで、定期購読の新聞は含まれません。法律案 第2条${pendingNote()}）`}
+                  '（1%になるのは飲食料品だけで、定期購読の新聞は含まれません。法律案 第2条）'}
               </p>
             )}
             <p className="hint" style={{ marginTop: 4 }}>
