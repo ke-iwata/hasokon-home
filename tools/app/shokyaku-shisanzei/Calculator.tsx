@@ -136,7 +136,7 @@ export default function Calculator() {
           <select value={nendo} onChange={(e) => setNendo(Number(e.target.value))} style={{ marginTop: 6 }}>
             {nendos.map((n) => (
               <option key={n} value={n}>
-                令和{reiwa(n)}年度（{n}年1月1日時点）
+                令和{reiwa(n)}年度（{n}年1月1日）
               </option>
             ))}
           </select>

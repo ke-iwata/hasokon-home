@@ -401,14 +401,22 @@ export function assess(rows: AssetRow[], nendo: number, ratePermil: number = STA
 export interface KaiseiCompare {
   before: Assessment;
   after: Assessment;
-  /** 令和8年度は課税・令和9年度は免税点未満（改正で「かからない」に変わる） */
+  /**
+   * 改正で「かからない」に変わる：令和8年度は課税、令和9年度は免税点未満で、
+   * しかも令和9年度の課税標準が旧免税点以上（改正がなければ課税だった）。
+   * 評価額が1年分下がっただけで旧免税点も割った人は含めない
+   */
   becomesExempt: boolean;
 }
 
 export function compareKaisei(rows: AssetRow[], ratePermil: number = STANDARD_RATE_PERMIL): KaiseiCompare {
   const before = assess(rows, KAISEI_BEFORE_NENDO, ratePermil);
   const after = assess(rows, KAISEI_AFTER_NENDO, ratePermil);
-  return { before, after, becomesExempt: before.taxable && !after.taxable };
+  return {
+    before,
+    after,
+    becomesExempt: before.taxable && !after.taxable && after.taxBase >= menzeiten(KAISEI_BEFORE_NENDO),
+  };
 }
 
 // ---------------------------------------------------------------- 太陽光

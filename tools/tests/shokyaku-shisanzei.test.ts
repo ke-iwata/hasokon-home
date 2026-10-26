@@ -155,6 +155,16 @@ describe('免税点（地方税法351条・令和8年法律第2号）', () => {
     expect(c.becomesExempt).toBe(true);
     expect(compareKaisei(rowsWithBase(2_000_000, 2027)).becomesExempt).toBe(false);
   });
+
+  it('評価額が下がっただけで旧免税点も割った人は「改正で変わる人」に含めない', () => {
+    // パソコン4年・2025年6月取得・260万円：令和8年度 2,030,600 → 令和9年度 1,141,197
+    const c = compareKaisei([{ cost: 2_600_000, acquired: { year: 2025, month: 6 }, life: 4, treatment: 'normal' }]);
+    expect(c.before.taxBase).toBe(2_030_000);
+    expect(c.before.tax).toBe(28_400);
+    expect(c.after.taxBase).toBe(1_141_000);
+    expect(c.after.taxable).toBe(false);
+    expect(c.becomesExempt).toBe(false);
+  });
 });
 
 describe('少額資産（地方税法施行令49条）', () => {

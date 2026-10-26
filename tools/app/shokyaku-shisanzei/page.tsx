@@ -30,9 +30,13 @@ const TITLE_MENZEITEN = man(menzeiten(TITLE_NENDO));
 const RATE = `${STANDARD_RATE_PERMIL / 10}%`;
 const deadline = filingDeadline(TITLE_NENDO);
 const DEADLINE_SHORT = `${deadline.year}年${deadline.month}月${deadline.day}日`;
-const DEADLINE = `${DEADLINE_SHORT}（${weekdayLabel(deadline)}）`;
 const R_AFTER = `令和${reiwa(KAISEI_AFTER_NENDO)}年度`;
 const R_BEFORE = `令和${reiwa(KAISEI_BEFORE_NENDO)}年度`;
+/** 令和9年度の申告期限（FAQ 用。TITLE_NENDO を上げても改正の年度のまま） */
+const kaiseiDeadline = filingDeadline(KAISEI_AFTER_NENDO);
+const KAISEI_JAN31 = { year: KAISEI_AFTER_NENDO, month: 1, day: 31 };
+const KAISEI_DEADLINE = `${kaiseiDeadline.year}年${kaiseiDeadline.month}月${kaiseiDeadline.day}日（${weekdayLabel(kaiseiDeadline)}）`;
+const KAISEI_DEADLINE_ROLLED = kaiseiDeadline.month !== 1 || kaiseiDeadline.day !== 31;
 
 const title = `償却資産税 計算機【令和${reiwa(TITLE_NENDO)}年度・免税点${TITLE_MENZEITEN}】評価額と税額・申告の要否`;
 const description = `取得価額・取得年月・耐用年数から、1月1日時点の評価額と償却資産税（${RATE}）を計算。${R_AFTER}から免税点が${BEFORE}→${AFTER}に上がる改正の前後を並べ、${man(TOKUREI_LIMIT_AFTER)}未満の特例で経費にした資産の申告、${DEADLINE_SHORT}の期限も確認できます。`;
@@ -57,7 +61,9 @@ const faq = [
   },
   {
     q: `${R_AFTER}の申告期限は1月31日？`,
-    a: `${KAISEI_AFTER_NENDO}年1月31日は日曜日なので、期限は翌日の${DEADLINE}です（地方税法20条の5第2項）。`,
+    a: KAISEI_DEADLINE_ROLLED
+      ? `${KAISEI_AFTER_NENDO}年1月31日は${weekdayLabel(KAISEI_JAN31)}曜日なので、期限は${KAISEI_DEADLINE}です（地方税法383条・20条の5第2項。期限が土日祝日なら翌日に延びます）。`
+      : `期限は${KAISEI_DEADLINE}です（地方税法383条。期限が土日祝日なら翌日に延びます）。`,
   },
   {
     q: `課税標準がちょうど${AFTER}だと非課税？`,
