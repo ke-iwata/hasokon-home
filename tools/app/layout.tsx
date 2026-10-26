@@ -5,6 +5,7 @@ import { ADSENSE_CLIENT, isAdsEnabled } from '@/lib/adsense';
 import { GA_MEASUREMENT_ID, isAnalyticsEnabled } from '@/lib/analytics';
 import Analytics from './Analytics';
 import { COPYRIGHT_HOLDER, OGP_IMAGE, SITE_NAME, SITE_URL } from '@/lib/registry';
+import { HUB_DESCRIPTION, HUB_TITLE } from '@/lib/hub-metadata';
 
 /**
  * Google Search Console の所有権確認用トークン。
@@ -17,14 +18,15 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   verification: { google: GOOGLE_SITE_VERIFICATION },
   title: {
-    default: `${SITE_NAME}｜年収の壁・支援金・電気代などをすぐ計算`,
+    // 一覧ページ（/tools/）の見出し。名前・本数は lib/hub-metadata.ts が組み立てる
+    // （docs/features/ichiran-page-title-refresh.md）
+    default: HUB_TITLE,
     // 接尾辞にサイト名を足さない。日本語の検索結果で表示されるのは全角30字前後で、
     // 「｜無料計算ツール集」の9字はブランド認知がつくまでは keyword に回したほうがよい。
     // 認知が出てきたら `%s｜${SITE_NAME}` に戻す。
     template: '%s',
   },
-  description:
-    '子ども・子育て支援金計算機など、暮らしと仕事に役立つ無料のWebツール集。すべてブラウザ内で完結し、入力データは送信されません。',
+  description: HUB_DESCRIPTION,
   openGraph: {
     type: 'website',
     siteName: SITE_NAME,

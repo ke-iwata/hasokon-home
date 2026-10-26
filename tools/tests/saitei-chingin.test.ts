@@ -1051,3 +1051,43 @@ describe('リードと発効日の FAQ の時制', () => {
     }
   });
 });
+
+/**
+ * 10県は11〜12月に発効するので「10月改定」とは書かない。
+ * 「現在の」は発効が進むと改定前の額を指すことになるので使わない。
+ * 仕様: docs/features/kokai-tool-seikaku-2026-10-20.md の C
+ */
+describe('「10月改定」と「現在の1,121円」の言い方', () => {
+  const page = readFileSync(join(__dirname, '../app/saitei-chingin/page.tsx'), 'utf8');
+  const home = readFileSync(join(__dirname, '../../home/index.html'), 'utf8');
+
+  it('title・description に「10月改定」を含まない', () => {
+    expect(String(metadata.title)).not.toContain('10月改定');
+    expect(String(metadata.description)).not.toContain('10月改定');
+  });
+
+  it('registry の description に「10月改定」を含まない', () => {
+    expect(tools.find((t) => t.slug === 'saitei-chingin')!.description).not.toContain('10月改定');
+  });
+
+  it('ホームのカードの説明に「10月改定」を含まない', () => {
+    const card = home.match(/href="\/tools\/saitei-chingin\/"[\s\S]*?<\/a>/)?.[0] ?? '';
+    expect(card).toMatch(/card-desc/);
+    expect(card).not.toContain('10月改定');
+  });
+
+  it('改定前の全国加重平均を「現在の」と書かない', () => {
+    expect(page).not.toMatch(/現在の\s*\{NATIONAL_AVERAGE\.current\}/);
+    expect(page).toMatch(/改定前（\{CURRENT_FY_LABEL\}）の\s*\{NATIONAL_AVERAGE\.current\}/);
+  });
+
+  it('答申がある年度は、11月以降に発効する県が1件以上ある（「10月改定」と書けない根拠）', () => {
+    const answered = PREFECTURES.filter((p) => p.answered);
+    if (answered.length === 0) return;
+    const late = answered.filter((p) => {
+      const on = p.answered!.effectiveOn ?? p.answered!.plannedEffectiveOn;
+      return on !== undefined && on.slice(5) >= '11-01';
+    });
+    expect(late.length).toBeGreaterThan(0);
+  });
+});

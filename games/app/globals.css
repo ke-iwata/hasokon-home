@@ -7880,3 +7880,301 @@ button.hf-card {
     display: none;
   }
 }
+
+/* ---- マンカラ（docs/features/game-mancala.md） ----
+
+   PC は横長の盤（左に相手のゴール・上段に相手の 6 穴・下段に自分の 6 穴・右に自分のゴール）。
+   600px 以下はゴールを横長の帯にして、相手のゴールを盤の上、自分のゴールを盤の下に移す
+   （横に 8 マス並べると 320px 幅で 1 マス 36px になり、押す先 44px を割るため）。
+   DOM は 1 つで、並びは grid-template-areas だけで切り替える。高さは行ごとに固定（画面の約束 1） */
+
+/* 設定の行。モードで中身が変わっても高さは変えない */
+.mc-options {
+  height: 38px;
+  overflow: hidden;
+  margin: 0 0 8px;
+}
+
+.mc-option-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mc-game .status-bar {
+  flex-wrap: nowrap;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.mc-score {
+  white-space: nowrap;
+}
+
+.mc-status {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mc-score strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-board {
+  display: grid;
+  grid-template-columns: 64px repeat(6, minmax(44px, 1fr)) 64px;
+  grid-template-rows: 64px 64px;
+  grid-template-areas:
+    'cs t0 t1 t2 t3 t4 t5 ms'
+    'cs b0 b1 b2 b3 b4 b5 ms';
+  gap: 6px 0;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2, var(--cell-open));
+}
+
+.mc-pit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+}
+
+.mc-pit:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+.mc-playable {
+  cursor: pointer;
+}
+
+/* 見た目の円。押せる範囲（.mc-pit）の内側に描き、穴と穴の間は円の余白で見せる */
+.mc-hole {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: calc(100% - 6px);
+  max-width: 56px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background-color 0.12s;
+}
+
+.mc-mine .mc-hole {
+  border-color: var(--muted);
+}
+
+.mc-playable .mc-hole {
+  border: 2px solid var(--accent);
+}
+
+.mc-playable:hover .mc-hole,
+.mc-playable:focus-visible .mc-hole {
+  background: var(--accent-soft);
+}
+
+.mc-dots {
+  display: grid;
+  grid-template-columns: repeat(4, 6px);
+  gap: 2px;
+  justify-content: center;
+  height: 14px;
+}
+
+.mc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.mc-count {
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-store {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0 4px;
+  border-radius: 28px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.mc-store-mine {
+  border: 2px solid var(--accent);
+}
+
+.mc-store-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.mc-store-count {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mc-store-turn {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+/* 石が通るマス・横取りのマス（光りは Game.tsx の ref から当てる） */
+.mc-glow .mc-hole,
+.mc-store.mc-glow {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+
+/* マウスを乗せたときの予告：最後の石が止まるマス */
+.mc-target .mc-hole,
+.mc-store.mc-target {
+  outline: 2px dashed var(--accent);
+  outline-offset: 1px;
+}
+
+/* 向きの矢印はスマホだけ（PC の横長の盤は流れが読める） */
+.mc-arrows {
+  display: none;
+}
+
+/* 盤の下の 1 行（予告・「もう 1 回」「横取り」・結果）。**常に 2 行ぶんの高さを取る** */
+.mc-line {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 8px 0 4px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.mc-line-strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.mc-actions {
+  justify-content: center;
+}
+
+.mc-figure {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  margin: 8px auto;
+}
+
+@media (max-width: 600px) {
+  /* 盤だけカードの内側の余白（10px）にはみ出させ、320px 幅で穴 1 つを 47px にする（押す先 44px を守る） */
+  .mc-board {
+    margin-inline: -10px;
+    padding: 6px 0;
+    grid-template-columns: repeat(6, minmax(44px, 1fr));
+    grid-template-rows: 32px 12px 48px 48px 12px 32px;
+    grid-template-areas:
+      'cs cs cs cs cs cs'
+      'ta ta ta ta ta ta'
+      't0 t1 t2 t3 t4 t5'
+      'b0 b1 b2 b3 b4 b5'
+      'ba ba ba ba ba ba'
+      'ms ms ms ms ms ms';
+    gap: 0;
+  }
+
+  .mc-pit {
+    min-height: 48px;
+  }
+
+  .mc-hole {
+    width: calc(100% - 4px);
+    max-width: 44px;
+    gap: 1px;
+  }
+
+  .mc-dots {
+    grid-template-columns: repeat(4, 5px);
+    gap: 1px;
+    height: 11px;
+  }
+
+  .mc-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .mc-count {
+    font-size: 0.8rem;
+  }
+
+  .mc-store {
+    flex-direction: row;
+    gap: 10px;
+    margin: 0 8px;
+    border-radius: 16px;
+  }
+
+  .mc-line {
+    margin: 4px 0 2px;
+  }
+
+  .mc-store-count {
+    font-size: 1.1rem;
+  }
+
+  .mc-arrows {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--muted);
+  }
+
+  .mc-arrows-top {
+    grid-area: ta;
+  }
+
+  .mc-arrows-bottom {
+    grid-area: ba;
+    color: var(--accent);
+  }
+
+  /* 強さ・先手後手・速さの 3 組は 320〜390px で 2 段になる。今日の 1 手番の 1 行と高さをそろえる */
+  .mc-options {
+    height: 72px;
+    align-content: flex-start;
+  }
+
+  .mc-game .seg button {
+    padding-inline: 6px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
