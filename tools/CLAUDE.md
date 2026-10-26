@@ -257,6 +257,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 宿泊税の新設・改正時（2027-02・2027-04 の施行後と、以後は毎年4月に見直す） | `lib/shukuhakuzei.ts` の `AREAS` の `periods` に施行日つきの期間を1つ足し、`DATA_CHECKED_AT` を進める（確認しただけでも進める）。東京 3% の端数処理・上限を条例で確かめたら `TOKYO_2027` の値と `TOKYO_RATE_DETAILS_CONFIRMED`、沖縄の併課を確かめたら `OKINAWA_SPLIT_CONFIRMED` を直し、`tests/shukuhakuzei.test.ts` の `test.todo` を本テストにする |
+| 毎年2月（償却資産税の申告期限の翌日以降） | `lib/shokyaku-shisanzei.ts` の `TITLE_NENDO` を1つ上げ、registry の `shokyaku-shisanzei` の `updatedAt` と `DATA_CHECKED_AT` を直す（期限の翌日以降の CI を `tests/shokyaku-shisanzei.test.ts` が落として知らせる）。免税点（`MENZEITEN`）・標準税率（`STANDARD_RATE_PERMIL`）の改正がないかもこのとき確かめる。[仕様](../docs/features/shokyaku-shisanzei.md) |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
@@ -264,9 +265,9 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール75本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+- **ツール76本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei`・`shokyaku-shisanzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`shokyaku-shisanzei`（償却資産税）は運営者が柏市・東京都・神戸市の例と同じ額が出ることを確かめたら12月中旬に `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
