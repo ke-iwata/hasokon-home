@@ -201,6 +201,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-16',
   },
   {
+    // 仕様: docs/features/shokyaku-shisanzei.md
+    slug: 'shokyaku-shisanzei',
+    // 事業で持っている物（資産）にかかる税なので Package
+    icon: 'Package',
+    name: '償却資産税 計算機（免税点180万円対応）',
+    description:
+      '事業用の資産の取得価額・取得年月・耐用年数から、1月1日時点の評価額・課税標準・税額（1.4%）を計算。令和9年度から免税点が150万円→180万円に上がる改正の前後で「かかる／かからない」を並べ、40万円未満の特例で経費にした資産の申告と申告期限も出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-26',
+  },
+  {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
     slug: 'kyuyo-nenkin-kojo',
     // 控除の合計に天井（280万円）がかかる絵で ArrowLineUp
