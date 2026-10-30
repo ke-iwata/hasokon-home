@@ -484,6 +484,7 @@ ol {
 .hn-board,
 .sw-board,
 .hk-board,
+.pg-board,
 .ts-board,
 .yn-board,
 .sk-stage {
@@ -8175,6 +8176,223 @@ button.hf-card {
   .mc-game .seg button {
     padding-inline: 6px;
     font-size: 0.75rem;
+    white-space: nowrap;
+  }
+}
+
+/* ---- ペグ・ソリティア（docs/features/game-peg-solitaire.md） ----
+
+   盤は正方形（英国式は 7×7 マス、三角は 5 行を 10 列の半マスで組む）なので、PC の大きさは
+   「盤を画面の高さに合わせる」節の共通指定に任せる（ここで max-width を書き直さないこと）。
+   `--chrome` / `--board-max` は入れ物（`.pg-game`）に置く。
+   600px 以下は押す先 44px を守るのを優先し、盤だけカードと main の余白にはみ出させて 308px（7×44px）を取る。
+   押せる範囲（`.pg-hole`）はマスいっぱい、見た目の円（`.pg-pit`）はその内側。
+   **ドラッグとスクロールを取り合わない**ように、盤の上だけ `touch-action: none` */
+.pg-game {
+  --chrome: 430px;
+  --board-max: 440px;
+}
+
+.pg-variants {
+  height: 38px;
+  overflow: hidden;
+  margin: 0 0 8px;
+}
+
+.pg-status {
+  flex-wrap: nowrap;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.pg-status strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-status-note {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.pg-board {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(7, 1fr);
+  aspect-ratio: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+/* 三角 15 穴：5 行×10 列の半マス。穴は 2 列ぶんを使う（位置は Game.tsx が行・列から当てる） */
+.pg-board.pg-tri {
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+}
+
+.pg-hole {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: default;
+}
+
+.pg-movable,
+.pg-target {
+  cursor: pointer;
+}
+
+/* 見た目の穴。押せる範囲の内側に描く */
+.pg-pit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 78%;
+  max-width: 52px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--cell-closed);
+  box-shadow: inset 0 2px 3px var(--cell-closed-lo);
+}
+
+.pg-tri .pg-pit {
+  width: 70%;
+}
+
+.pg-peg {
+  width: 82%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+  pointer-events: none;
+}
+
+/* 印の穴（完全クリアの穴）。駒があってもなくても二重丸で見せる */
+.pg-goal .pg-pit {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* PC：マウスを乗せると跳べる駒の輪郭を出す */
+@media (hover: hover) {
+  .pg-movable:hover .pg-peg {
+    box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 5px var(--accent);
+  }
+}
+
+.pg-selected .pg-peg {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* 跳べる先 */
+.pg-target .pg-pit {
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent);
+}
+
+/* ヒントの行き先・駒 */
+.pg-hint .pg-pit {
+  outline: 2px dashed var(--warn-border);
+  outline-offset: 3px;
+}
+
+/* 跳ぶ演出（光りは Game.tsx の ref から当てる） */
+.pg-taken .pg-peg {
+  opacity: 0.15;
+  transform: scale(0.6);
+}
+
+.pg-leaving .pg-peg {
+  opacity: 0.4;
+}
+
+.pg-landing .pg-pit {
+  background: var(--warn-bg);
+}
+
+/* 盤の下の 1 行（予告・ヒント・結果）。**常に 2 行ぶんの高さを取る** */
+.pg-line {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 8px 0 4px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.pg-line-strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.pg-actions {
+  justify-content: center;
+}
+
+.pg-figure {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  margin: 8px auto;
+}
+
+@media (max-width: 600px) {
+  /* 押す先 44px を守る：盤だけカード（10px）と main（16px）の余白にはみ出させ、内側 308px（7×44px）を取る
+     （枠の 1px×2 を足して 310px）。
+     画面の高さからの上限（共通指定）より押せる大きさを優先する（仕様書の「スマホ」） */
+  .pg-board {
+    width: 310px;
+    max-width: none;
+    margin-inline: calc((100% - 310px) / 2);
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  .pg-variants {
+    margin-bottom: 2px;
+  }
+
+  /* 状態の 1 行の上下を詰めて、320×568 でカードを画面の高さに収める（実測） */
+  .pg-status {
+    margin: 6px 0;
+  }
+
+  /* 今日の 1 問をクリアすると右端が「結果をコピー」に替わる。320px で 2 段に折り返さないよう横だけ詰める */
+  .pg-actions .btn {
+    padding-inline: 12px;
+  }
+
+  .pg-line {
+    margin: 2px 0 0;
+    font-size: 0.85rem;
+  }
+
+  .pg-game .seg button {
+    padding-inline: 8px;
+    font-size: 0.8rem;
     white-space: nowrap;
   }
 }

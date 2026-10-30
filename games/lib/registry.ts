@@ -424,6 +424,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-10-19',
   },
   {
+    // 隣の駒を縦か横に飛び越えて取り、1 本だけ残す一人用パズル（docs/features/game-peg-solitaire.md）。
+    // 17 世紀末のフランス宮廷から続く古典で、ルールに権利は無い。**英語圏の市販品・アプリの名前は
+    // 名称・title・description・keywords・本文のどれにも書かない**（仕様書の着手条件 2）。
+    // **J-PlatPat の確認（第9類・第28類・第41類で「ペグ・ソリティア」「ペグソリティア」）は運営者のタスク**で、
+    // 済むまで `wip`（slug は公開後に動かせない）。登録があれば name を「駒とびパズル」、slug を `koma-tobi` にする
+    slug: 'peg-solitaire',
+    icon: 'PegSolitaire',
+    name: 'ペグ・ソリティア',
+    description:
+      '隣の駒を縦か横に飛び越えて取り、最後に1本だけ残す一人用パズル。毎日かわる今日の1問は必ず解ける局面。英国式33穴（最短18手）と三角15穴も遊べます。',
+    keywords: ['今日の1問', '英国式33穴', '三角15穴', '完全クリア', 'ヒント', '待った'],
+    stage: 'wip',
+    updatedAt: '2026-10-30',
+  },
+  {
     // ハーツのルールは公有で、「ハーツ」は英語の一般名 hearts の片仮名
     // （docs/features/game-hearts.md の「名称と権利」）。Microsoft の「Hearts」の画面・札の絵柄・
     // キャラクター名は真似ず、CPU の呼び名は大富豪の SEAT_NAMES に揃えている。
