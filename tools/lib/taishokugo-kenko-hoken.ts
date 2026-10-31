@@ -721,7 +721,7 @@ export function calc(input: CalcInput): CalcResult {
 
     // ---- 国民年金
     const p = premiumFor(ym);
-    if (p.estimated && age >= 20 && age < 60) marks.push(`国民年金は${reiwaFy(fy)}の額が未公表のため概算`);
+    if (p.estimated && age >= 20 && age < 60) marks.push(`国民年金は${reiwaFy(fy)}の額を直前の年度の額で概算`);
     const pension = age >= 20 && age < 60 ? p.amount : 0;
     const pensionFuyo = input.fuyo.supporter === 'spouse' ? 0 : pension;
 

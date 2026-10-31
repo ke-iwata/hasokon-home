@@ -448,9 +448,7 @@ function Result({
         <table>
           <thead>
             <tr>
-              <th>入り方</th>
-              <th style={cell}>健康保険</th>
-              <th style={cell}>国民年金</th>
+              <th>入り方（内訳）</th>
               <th style={cell}>合計</th>
             </tr>
           </thead>
@@ -460,10 +458,11 @@ function Result({
                 <td>
                   {p === r.best ? <strong>{p.label}</strong> : p.label}
                   {p.switchAt && <span className="hint">（{ymJa(p.switchAt)}に乗り換え）</span>}
+                  <span className="hint" style={{ display: 'block', margin: 0 }}>
+                    健康保険 {yen100(p.health)}・国民年金 {yen100(p.pension)}
+                  </span>
                 </td>
-                <td style={cell}>{yen100(p.health)}</td>
-                <td style={cell}>{yen100(p.pension)}</td>
-                <td style={cell}>{yen100(p.total)}</td>
+                <td style={cell}>{p === r.best ? <strong>{yen100(p.total)}</strong> : yen100(p.total)}</td>
               </tr>
             ))}
           </tbody>
@@ -474,10 +473,10 @@ function Result({
       <MonthTable months={r.months} eligible={eligible} fuyoAvail={fuyoAvail} best={r.best} />
 
       <p className="hint">
-        金額は100円単位に丸めた目安です。国民年金の行は、任意継続・国保の人（20〜59歳）が第1号として払う額です。
+        金額は100円単位に丸めた目安です。「国民年金」「年金」は、任意継続・国保の人（20〜59歳）が第1号として払う額です（どの入り方でも合計に入れています）。
         失業を理由に国民年金の免除（失業による特例免除）を申請できる場合がありますが、承認は審査次第で、免除された期間は年金額が減るため、比較の金額には入れていません。
       </p>
-      {marks.length > 0 && <p className="hint">印：{marks.join('／')}。未公表の年度は直前の年度の料率で計算しています。</p>}
+      {marks.length > 0 && <p className="hint">印：{marks.join('／')}。表に無い年度は直前の年度の料率・額で計算しています。</p>}
     </>
   );
 }
@@ -493,6 +492,8 @@ function MonthTable({
   fuyoAvail: boolean;
   best: PlanResult;
 }) {
+  // 360px で列が切れないよう、左右の余白を詰める
+  const tight: CSSProperties = { ...cell, padding: '8px 6px' };
   // 360px で長くなりすぎないよう、6か月ごとに折りたためる
   const chunks: MonthRow[][] = [];
   for (let i = 0; i < months.length; i += 6) chunks.push(months.slice(i, i + 6));
@@ -504,14 +505,13 @@ function MonthTable({
             {ymJa(rows[0].ym)}〜{ymJa(rows[rows.length - 1].ym)}
           </summary>
           <div style={{ overflowX: 'auto' }}>
-            <table>
+            <table style={{ fontSize: 'var(--fs-sm)' }}>
               <thead>
                 <tr>
                   <th>月</th>
-                  {eligible && <th style={cell}>任意継続</th>}
-                  <th style={cell}>国保</th>
-                  {fuyoAvail && <th style={cell}>扶養</th>}
-                  <th style={cell}>国民年金</th>
+                  {eligible && <th style={tight}>任意継続</th>}
+                  <th style={tight}>国保</th>
+                  {fuyoAvail && <th style={tight}>扶養</th>}
                 </tr>
               </thead>
               <tbody>
@@ -521,22 +521,26 @@ function MonthTable({
                   const b = (c: Choice, text: string) => (pick === c ? <strong>{text}</strong> : text);
                   return (
                     <tr key={m.ym}>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {ymJa(m.ym)}
+                      <td style={{ padding: '8px 6px' }}>
+                        <span style={{ whiteSpace: 'nowrap' }}>{ymJa(m.ym)}</span>
                         {m.involuntary && <span className="hint">（軽減）</span>}
+                        {!m.kouki && (
+                          <span className="hint" style={{ display: 'block', margin: 0 }}>
+                            年金 {yen100(m.pension)}
+                          </span>
+                        )}
                       </td>
                       {m.kouki ? (
-                        <td colSpan={2 + (eligible ? 1 : 0) + (fuyoAvail ? 1 : 0)}>後期高齢者医療に移ります</td>
+                        <td colSpan={1 + (eligible ? 1 : 0) + (fuyoAvail ? 1 : 0)}>後期高齢者医療に移ります</td>
                       ) : (
                         <>
-                          {eligible && <td style={cell}>{b('ninkei', yen100(m.ninkei ?? 0))}</td>}
-                          <td style={cell}>{b('kokuho', yen100(m.kokuho))}</td>
+                          {eligible && <td style={tight}>{b('ninkei', yen100(m.ninkei ?? 0))}</td>}
+                          <td style={tight}>{b('kokuho', yen100(m.kokuho))}</td>
                           {fuyoAvail && (
-                            <td style={cell}>
-                              {m.fuyoOk ? b('fuyo', m.pensionFuyo === m.pension ? '0円' : '0円（年金も0）') : '入れない'}
+                            <td style={tight}>
+                              {m.fuyoOk ? b('fuyo', '0円') : '×'}
                             </td>
                           )}
-                          <td style={cell}>{yen100(m.pension)}</td>
                         </>
                       )}
                     </tr>
@@ -547,7 +551,10 @@ function MonthTable({
           </div>
         </details>
       ))}
-      <p className="hint">太字は、いちばん安い入り方でその月に入るもの。</p>
+      <p className="hint">
+        太字は、いちばん安い入り方でその月に入るもの。扶養の「×」は失業給付を受けていて入れない月。
+        {fuyoAvail && '配偶者の扶養に入る月は、国民年金も第3号で0円です（20〜59歳）。'}
+      </p>
     </>
   );
 }
