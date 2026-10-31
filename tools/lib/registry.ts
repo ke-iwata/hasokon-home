@@ -682,6 +682,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-17',
   },
   {
+    // 仕様: docs/features/taishokugo-kenko-hoken-hikaku.md
+    // 2026-11-30 までに preview、12-15 までに public（仕様書の状態の行）。
+    // public にする PR で home/index.html・home/404.html のカードと ToolPreview / ToolArt の絵を足す
+    slug: 'taishokugo-kenko-hoken',
+    icon: 'Stethoscope',
+    name: '退職後の健康保険 比較（任意継続・国保・扶養）',
+    description:
+      '退職日と前年の所得から、任意継続・国民健康保険・家族の扶養の保険料を退職翌月から24か月の月ごとに比較。令和8年度の子ども・子育て支援金分、任意継続の上限32万円、会社都合の退職で国保が下がる軽減（給与所得30/100）に対応し、2年目の4月に国保へ乗り換えると得になるかまで出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-31',
+  },
+  {
     // 仕様: docs/features/shokuji-hojo-hikazei.md
     slug: 'shokuji-hojo-hikazei',
     icon: 'ForkKnife',
