@@ -167,6 +167,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-13',
   },
   {
+    slug: 'yubin-ryokin',
+    // 封筒の絵で Envelope
+    icon: 'Envelope',
+    name: '郵便料金 計算機',
+    // 年賀状の日付や額は書かない（page.tsx の title・description は RATE_TABLES・NENGA_* から組み立てる）
+    description:
+      '封筒の大きさと重さから定形・定形外（規格内・規格外）を判定し、はがき・封書の郵便料金を計算。速達・書留・特定記録の加算、手持ちの古い切手（84円・63円など）にあと何円足すか、レターパックのほうが安いかも表示。',
+    category: '生活・健康',
+    // 2026-11-15 までに preview、11 月中に public（仕様書の「状態」。年賀状の受付開始 12-20 より前に Bing に拾わせる）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-02',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',
