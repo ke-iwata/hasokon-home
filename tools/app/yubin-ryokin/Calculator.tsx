@@ -328,7 +328,8 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
       )}
 
       <details style={{ marginTop: 14 }}>
-        <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>
+        {/* display: flex にすると ::marker（▶）が消えて開けることが分からなくなるので、高さは padding で取る */}
+        <summary style={{ cursor: 'pointer', padding: '11px 0', lineHeight: 1.5 }}>
           手持ちの切手で払う（古い84円・63円切手など）
         </summary>
         <div style={{ marginTop: 8 }}>
