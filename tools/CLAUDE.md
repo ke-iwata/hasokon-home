@@ -258,6 +258,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 宿泊税の新設・改正時（2027-02・2027-04 の施行後と、以後は毎年4月に見直す） | `lib/shukuhakuzei.ts` の `AREAS` の `periods` に施行日つきの期間を1つ足し、`DATA_CHECKED_AT` を進める（確認しただけでも進める）。東京 3% の端数処理・上限を条例で確かめたら `TOKYO_2027` の値と `TOKYO_RATE_DETAILS_CONFIRMED`、沖縄の併課を確かめたら `OKINAWA_SPLIT_CONFIRMED` を直し、`tests/shukuhakuzei.test.ts` の `test.todo` を本テストにする |
+| 毎年8月末（年賀はがきの発行の報道発表が出たら）・11-01 まで | 郵便料金：`lib/yubin-ryokin.ts` に翌年用の `NENGA_{YYYY}`（販売開始・引受開始・元日に届ける目安・販売終了）を足して `NENGA_SCHEDULES` に並べる。足し忘れたまま 11-01 を迎えると `tests/yubin-ryokin.test.ts` が落ちる（関係のない PR の CI も赤くなる）。料金の値上げの認可が出たら `RATE_TABLES` に `effectiveFrom` つきの表を1つ足し、`tests/post-effective-copy.test.ts` にその日を登録する（[仕様](../docs/features/yubin-ryokin-keisan.md)） |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
@@ -265,7 +266,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール75本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+- **ツール76本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei`・`yubin-ryokin` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+  `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
   `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
