@@ -8,6 +8,16 @@
 
 ---
 
+## 2026-11-03：ダウトを公開
+
+運営者の「ゲームの方もリリースしよう」から。ダウトの公開条件は「運営者がテスト環境で遊んで確かめる」だけで、
+名称は「トランプ遊びの一般名」として仕様書で整理済み（J-PlatPat 待ちの止め札が無い）なので、`stage` を `public` に上げ、
+一覧の大きい絵（`GamePreview.tsx`：4人の卓・伏せた場の山・「次は 7」・「ダウト！」）、小さいタイル（`BOARD` の `Doubt`）、トップのカードを足した。
+
+- 同時にテスト環境にあるマンカラ（`wip`）は、仕様書の着手条件どおり名称・slug の J-PlatPat 確認待ちなので出していない
+
+---
+
 ## 2026-10-19：マンカラ（カラハ）を足した（`stage: 'wip'`）
 
 [docs/features/game-mancala.md](../../docs/features/game-mancala.md) の実装。セッション `session_01NpnvycGoZmawxQRhftpoqb`。
