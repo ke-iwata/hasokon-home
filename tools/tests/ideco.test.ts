@@ -1,11 +1,15 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   CONTRIBUTION_UNIT,
   INNER_CAP_BEFORE,
   JOIN_AGE_LIMIT_AFTER,
   JOIN_AGE_LIMIT_BEFORE,
+  INSURED_UNTIL_AGE,
   LIMITS,
   MIN_CONTRIBUTION,
+  POST_INSURED_FRAME,
   REFORM_EFFECTIVE_FROM,
   SHARED_FRAME_AFTER,
   SHARED_FRAME_BEFORE,
@@ -73,9 +77,15 @@ describe('制度データ（限度額の定数）', () => {
     expect(LIMITS.after.type3).toBe(23_000);
   });
 
-  it('加入可能年齢は65歳未満から70歳未満に延びる', () => {
-    expect(JOIN_AGE_LIMIT_BEFORE).toBe(65);
+  it('加入可能年齢は改正前が第1号・第3号60歳未満・第2号65歳未満、改正後は70歳未満', () => {
+    // 厚労省「iDeCo 加入可能年齢の引き上げイメージ」001714615.pdf の※
+    expect(JOIN_AGE_LIMIT_BEFORE).toEqual({ type1: 60, type2: 65, type3: 60 });
+    expect(INSURED_UNTIL_AGE).toEqual({ type1: 60, type2: 65, type3: 60 });
     expect(JOIN_AGE_LIMIT_AFTER).toBe(70);
+  });
+
+  it('国民年金の被保険者でない60〜69歳の枠は月6.2万円', () => {
+    expect(POST_INSURED_FRAME).toBe(62_000);
   });
 });
 
@@ -430,6 +440,10 @@ describe('加入可能年齢までの累計', () => {
     expect(r.cumulativeAfter.months).toBe(48);
   });
 
+  it('第2号は延びる年数が5年', () => {
+    expect(calcIdeco(salaryInput).extensionYears).toBe(5);
+  });
+
   it('70歳以上はどちらも0ヶ月', () => {
     const r = calcIdeco({ ...salaryInput, age: 72 });
     expect(r.cumulativeBefore.months).toBe(0);
@@ -466,5 +480,117 @@ describe('企業型DCがある会社員の全体像', () => {
     expect(blocked.contributionMonthly).toBe(0);
     expect(blocked.saving.total).toBe(0);
     expect(blocked.cumulativeAfter.contribution).toBe(0);
+  });
+});
+
+/**
+ * 区分ごとの加入可能年齢と、60歳以降の枠（仕様：docs/features/kokai-tool-seikaku-2026-10-25.md の A）。
+ * 改正前は国民年金の資格を失うと加入できない（第1号・第3号 60歳、第2号 65歳）。
+ * 国民年金の被保険者でない60〜69歳は月6.2万円（企業年金等があれば合算）の枠になる。
+ */
+describe('加入可能年齢までの累計（区分ごと）', () => {
+  const base: IdecoInput = { ...salaryInput };
+
+  it('第1号・40歳・月75,000円：改正前 240ヶ月・1,800万円、改正後 360ヶ月・2,544万円', () => {
+    const r = calcIdeco({ ...base, insured: 'type1', contributionMonthly: 75_000 });
+    expect(r.contributionMonthly).toBe(75_000);
+    expect(r.cumulativeBefore.untilAge).toBe(60);
+    expect(r.cumulativeBefore.months).toBe(240);
+    expect(r.cumulativeBefore.contribution).toBe(18_000_000);
+    expect(r.cumulativeAfter.months).toBe(360);
+    expect(r.cumulativeAfter.insuredMonths).toBe(240);
+    expect(r.cumulativeAfter.postInsuredMonths).toBe(120);
+    expect(r.cumulativeAfter.contribution).toBe(25_440_000);
+    expect(r.postInsuredLimitMonthly).toBe(62_000);
+    expect(r.postInsuredContributionMonthly).toBe(62_000);
+    expect(r.extensionYears).toBe(10);
+  });
+
+  it('第1号の60歳以降の節税額は、6.2万円で拠出した場合の年額で数える', () => {
+    const input: IdecoInput = { ...base, insured: 'type1', contributionMonthly: 75_000 };
+    const r = calcIdeco(input);
+    const y75 = calcSaving(input, 75_000 * 12).total;
+    const y62 = calcSaving(input, 62_000 * 12).total;
+    expect(r.cumulativeBefore.saving).toBe(Math.round((y75 / 12) * 240));
+    expect(r.cumulativeAfter.saving).toBe(Math.round((y75 / 12) * 240 + (y62 / 12) * 120));
+  });
+
+  it('第3号・40歳・月23,000円：改正前 240ヶ月・552万円、改正後 360ヶ月・828万円', () => {
+    const r = calcIdeco({ ...base, insured: 'type3', contributionMonthly: 23_000 });
+    expect(r.cumulativeBefore.months).toBe(240);
+    expect(r.cumulativeBefore.contribution).toBe(5_520_000);
+    expect(r.cumulativeAfter.months).toBe(360);
+    expect(r.cumulativeAfter.contribution).toBe(8_280_000);
+    // 60歳以降もいまの月額のまま（増やせる分は積まない）
+    expect(r.postInsuredContributionMonthly).toBe(23_000);
+    expect(r.extensionYears).toBe(10);
+  });
+
+  it('第2号・40歳・企業年金なし・月62,000円：改正前 300ヶ月、改正後 360ヶ月（従来と同じ値）', () => {
+    const r = calcIdeco(base);
+    expect(r.cumulativeBefore.months).toBe(300);
+    expect(r.cumulativeBefore.contribution).toBe(62_000 * 300);
+    expect(r.cumulativeAfter.months).toBe(360);
+    expect(r.cumulativeAfter.insuredMonths).toBe(300);
+    expect(r.cumulativeAfter.postInsuredMonths).toBe(60);
+    expect(r.cumulativeAfter.contribution).toBe(62_000 * 360);
+    expect(r.extensionYears).toBe(5);
+  });
+
+  it('第2号・企業型DCの事業主掛金20,000円・iDeCo 42,000円：65歳以降の枠も42,000円で累計は変わらない', () => {
+    const r = calcIdeco({
+      ...base,
+      pension: 'dc',
+      employerContribution: 20_000,
+      contributionMonthly: 42_000,
+    });
+    expect(r.postInsuredLimitMonthly).toBe(42_000);
+    expect(r.postInsuredContributionMonthly).toBe(42_000);
+    expect(r.cumulativeAfter.contribution).toBe(42_000 * 360);
+    expect(r.cumulativeBefore.contribution).toBe(42_000 * 300);
+  });
+
+  it('第1号・62歳：改正前は0ヶ月、改正後は62,000円の枠で96ヶ月', () => {
+    const r = calcIdeco({ ...base, insured: 'type1', age: 62, contributionMonthly: null });
+    expect(r.cumulativeBefore.months).toBe(0);
+    expect(r.cumulativeBefore.contribution).toBe(0);
+    expect(r.cumulativeBefore.saving).toBe(0);
+    expect(r.cumulativeAfter.months).toBe(96);
+    expect(r.cumulativeAfter.insuredMonths).toBe(0);
+    expect(r.cumulativeAfter.contribution).toBe(62_000 * 96);
+  });
+
+  it('第3号・62歳：改正前は0ヶ月、改正後は月23,000円のまま96ヶ月', () => {
+    const r = calcIdeco({ ...base, insured: 'type3', age: 62, contributionMonthly: null });
+    expect(r.cumulativeBefore.months).toBe(0);
+    expect(r.cumulativeAfter.months).toBe(96);
+    expect(r.cumulativeAfter.contribution).toBe(23_000 * 96);
+  });
+});
+
+describe('画面とFAQの「延びる年数」', () => {
+  const read = (rel: string) =>
+    readFileSync(fileURLToPath(new URL(`../app/ideco/${rel}`, import.meta.url)), 'utf8');
+
+  it('「最大5年」「5年延びる」を固定の字面で書いていない（区分で10年・5年に分かれるため）', () => {
+    for (const f of ['page.tsx', 'Calculator.tsx']) {
+      const src = read(f);
+      expect(src, f).not.toMatch(/最大5年/);
+      expect(src, f).not.toMatch(/5年延び/);
+    }
+  });
+
+  it('本文とFAQは第1号・第3号の10年と第2号の5年を書き分けている', () => {
+    const src = read('page.tsx');
+    expect(src).toMatch(/第1号・第3号で10年/);
+    expect(src).toMatch(/第2号で5年/);
+    expect(src).toMatch(/70歳まで（10年）/);
+    expect(src).toMatch(/70歳まで（5年）/);
+  });
+
+  it('累計の表の見出しは「65歳まで」固定ではなく区分の年齢から組み立てる', () => {
+    const src = read('Calculator.tsx');
+    expect(src).toMatch(/改正前（\{JOIN_AGE_LIMIT_BEFORE\[insured\]\}歳まで）/);
+    expect(src).toMatch(/\{r\.extensionYears\}年延びる/);
   });
 });

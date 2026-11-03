@@ -211,6 +211,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年2〜3月（翌年分の祝日が公示されたら） | `lib/nissu-keisan.ts` の `HOLIDAYS` に翌年分を内閣府CSVから写して足し、`HOLIDAY_LAST_YEAR` と `HOLIDAY_UPDATED_AT` を直す（写し間違いは `tests/nissu-keisan.test.ts` が祝日法からの導出と突き合わせて落とす） |
 | 毎年1〜6月（翌年分の源泉徴収税額表が出たら・遅くとも夏賞与の前） | `lib/shoyo-gensen-table.ts` の算出率の表（甲欄・乙欄）と `TABLE_YEAR_LABEL` を国税庁「令和◯年分 源泉徴収税額表」の「賞与に対する源泉徴収税額の算出率の表」から差し替え、`tests/shoyo-tedori.test.ts` の突き合わせも新しい PDF で書き直す（令和9年分は公開済み。2027年6〜7月の夏賞与の前に差し替える） |
 | 毎年3〜4月 | `lib/kosodate-shienkin.ts` の `FISCAL_YEARS` を確定値に更新（**支援金・働き損の2ツールに効く**。`hatarakizon.ts` は `status: '確定'` の最新年度を自動で拾うので、あちらは触らない） |
+| 毎年3月（協会けんぽ）・毎年1〜4月（特別区の国保） | 退職後の健康保険 比較：`lib/shaho-ryoritsu.ts` の `KYOKAI_HEALTH_RATE_TABLES`（47支部の全額の料率。年度つき）に翌年度の表を1つ足し、`lib/taishokugo-kenko-hoken.ts` の `NINKEI_CAP_BY_FY`（任意継続の上限）と `KOKUHO_TABLES`（特別区の国保の4区分）に翌年度を1行ずつ足して `DATA_CHECKED_AT` を進める。足すまでは直前の年度で代用し、画面に「代用」と出る。支援金率はここに書かない（`FISCAL_YEARS`） |
 | 毎年3月 | 協会けんぽの料率改定を `lib/shaho-ryoritsu.ts` の `HEALTH_RATE` / `KAIGO_RATE` に反映（子ども・子育て支援金率はここに書かない。上の行を参照）。**保険料率の定義は `lib/shaho-ryoritsu.ts` の1か所だけ**で、`lib/hatarakizon.ts` は同名で re-export しているだけ。**働き損・手取り・ふるさと納税・年末調整・iDeCo・医療費控除の6ツールに効く** |
 | 毎年4月 | 雇用保険料率（労働者負担・一般の事業）を `lib/shaho-ryoritsu.ts` の `EMPLOYMENT_RATE` に反映。厚生労働省が毎年出す「令和◯年度の雇用保険料率」のPDF（[令和8年度](https://www.mhlw.go.jp/content/001692566.pdf)）を正とする（令和8年度は 5/1,000。**①労働者負担の欄を見る**。合計の 13.5/1,000 や事業主負担と取り違えないこと）。`tests/hatarakizon.test.ts` が率そのものを固定しているので、直し忘れではなく「直したこと」が差分に出る |
 | 令和10年分以後の控除改正時（手取り計算機） | `lib/tedori-keisan.ts` の `TAX_RULES_R7`（改正前との比較対象）を新しい「改正前の年分」に差し替える。控除額そのものは `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあるので、ここには持たない。基礎控除の特例加算42万円は**令和8・9年分だけの時限措置**なので、令和10年分では比較の主題が変わる |
@@ -257,6 +258,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 宿泊税の新設・改正時（2027-02・2027-04 の施行後と、以後は毎年4月に見直す） | `lib/shukuhakuzei.ts` の `AREAS` の `periods` に施行日つきの期間を1つ足し、`DATA_CHECKED_AT` を進める（確認しただけでも進める）。東京 3% の端数処理・上限を条例で確かめたら `TOKYO_2027` の値と `TOKYO_RATE_DETAILS_CONFIRMED`、沖縄の併課を確かめたら `OKINAWA_SPLIT_CONFIRMED` を直し、`tests/shukuhakuzei.test.ts` の `test.todo` を本テストにする |
+| 毎年8月末（年賀はがきの発行の報道発表が出たら）・11-01 まで | 郵便料金：`lib/yubin-ryokin.ts` に翌年用の `NENGA_{YYYY}`（販売開始・引受開始・元日に届ける目安・販売終了）を足して `NENGA_SCHEDULES` に並べる。足し忘れたまま 11-01 を迎えると `tests/yubin-ryokin.test.ts` が落ちる（関係のない PR の CI も赤くなる）。料金の値上げの認可が出たら `RATE_TABLES` に `effectiveFrom` つきの表を1つ足し、`tests/post-effective-copy.test.ts` にその日を登録する（[仕様](../docs/features/yubin-ryokin-keisan.md)） |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
@@ -264,7 +266,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール75本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+- **ツール76本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`shokuji-hojo-hikazei`・`yubin-ryokin` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの68本は `public`。
+  `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
   `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
