@@ -273,7 +273,7 @@ export const tools: ToolDef[] = [
       '2026年12月の改正でiDeCoの上限は会社員なら月6.2万円へ。ただし「6.2万円 − 事業主掛金」があなたの上限です。勤め先の事業主掛金を入れて、上限と年間の節税額、70歳までの累計を計算します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-07',
+    updatedAt: '2026-11-03',
   },
   {
     slug: 'koko-jugyoryo',
