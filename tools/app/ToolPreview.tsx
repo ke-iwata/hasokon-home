@@ -739,6 +739,36 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={316} y={116} s={14} w={900} c="ink" a="end">［◯点］</T>
     </>
   ),
+  // 退職翌月から24か月の保険料の並び。2年目の4月に国保へ移ると下がる
+  'taishokugo-kenko-hoken': (
+    <>
+      <path d="M24 120 H316" stroke="var(--muted)" strokeWidth={1.5} />
+      <path d="M30 56 H300" {...LINE} />
+      <path d="M30 38 H164 V92 H300" {...LINE} strokeOpacity={0.5} strokeDasharray="7 5" />
+      <circle cx="164" cy="92" r="7" {...MARK} />
+      <T x={170} y={112} s={11} w={700} c="mark">2年目の4月</T>
+      <T x={30} y={30} s={10} c="muted">国保</T>
+      <T x={30} y={72} s={10} c="muted">任意継続</T>
+      <T x={30} y={134} s={10} c="muted">退職の翌月</T>
+      <T x={316} y={134} s={10} c="muted" a="end">24か月目</T>
+      <T x={316} y={48} s={12} w={800} c="ink" a="end">月［◯円］</T>
+    </>
+  ),
+  // 2つの条件と判定（会社負担の上限は令和8年4月から月7,500円）
+  'shokuji-hojo-hikazei': (
+    <>
+      {['本人が半分以上を負担', '会社負担が月7,500円以下'].map((s, i) => (
+        <g key={s}>
+          <circle cx="38" cy={40 + i * 34} r="11" {...INK} />
+          <path d={`M32 ${40 + i * 34} l4 4 l8 -9`} fill="none" style={{ stroke: 'var(--surface)' }} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+          <T x={56} y={45 + i * 34} s={12} w={600}>{s}</T>
+        </g>
+      ))}
+      <rect x="230" y="26" width="86" height="58" rx="12" {...INK} />
+      <T x={273} y={62} s={18} w={900} c="bg" a="middle">非課税</T>
+      <T x={24} y={124} s={11} c="muted">課税なら給与に足す額 ［◯円］</T>
+    </>
+  ),
   // ---- 生活・健康 ----
   'bosai-bichiku-keisan': (
     <>
@@ -840,6 +870,20 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={170} y={66} s={13} w={700} c="ink">［年月日］</T>
       <T x={170} y={96} s={11} c="muted">電子証明書</T>
       <T x={170} y={116} s={13} w={700} c="mark">［年月日］</T>
+    </>
+  ),
+  // 封筒の区分と料金、手持ちの古い切手に足す額
+  'yubin-ryokin': (
+    <>
+      <rect x="28" y="20" width="76" height="112" rx="5" {...TINT} stroke="currentColor" strokeWidth={2} />
+      <rect x="78" y="28" width="18" height="22" rx="2" {...MID} />
+      <path d="M40 76 h40 M40 90 h30 M40 104 h36" {...LINE} strokeWidth={2.5} strokeOpacity={0.5} />
+      <rect x="128" y="22" width="120" height="30" rx="15" {...INK} />
+      <T x={188} y={42} s={13} w={700} c="bg" a="middle">定形郵便物</T>
+      <T x={130} y={80} s={11} c="muted">料金</T>
+      <T x={162} y={82} s={17} w={900} c="ink">［◯円］</T>
+      <T x={130} y={112} s={11} c="muted">古い切手に</T>
+      <T x={194} y={114} s={14} w={800} c="mark">あと［◯円］</T>
     </>
   ),
   // ---- 計算・変換 ----

@@ -608,6 +608,29 @@ const ART: Record<string, ReactNode> = {
       <text x="32" y="40.5" fontSize="23" fontFamily="system-ui, sans-serif" fontWeight={800} textAnchor="middle" fill="currentColor">30</text>
     </>
   ),
+  // 保険証と、乗り換えの矢印
+  'taishokugo-kenko-hoken': (
+    <>
+      <rect x="5" y="9" width="44" height="30" rx="4" {...F} />
+      <rect x="5" y="9" width="44" height="30" rx="4" {...S} />
+      <rect x="13" y="16" width="5" height="14" rx="1" {...SOLID} />
+      <rect x="8.5" y="20.5" width="14" height="5" rx="1" {...SOLID} />
+      <path d="M28 18 h14 M28 26 h10" {...S} strokeOpacity={0.55} />
+      <path d="M22 50 H52 M46 44 L52 50 L46 56" {...S} />
+    </>
+  ),
+  // 仕切りのある弁当箱（おにぎりと、おかずの区画）
+  'shokuji-hojo-hikazei': (
+    <>
+      <rect x="5" y="12" width="54" height="42" rx="6" {...F} />
+      <rect x="5" y="12" width="54" height="42" rx="6" {...S} />
+      <path d="M33 12 V54 M33 33 H59" {...S} />
+      <path d="M19 19 C22 19 30 33 30 38 C30 45 8 45 8 38 C8 33 16 19 19 19 Z" {...SOLID} />
+      <rect x="13" y="37" width="12" height="7" rx="1" {...CUT} />
+      <circle cx="46" cy="22.5" r="4" {...SOLID} />
+      <circle cx="46" cy="44" r="4" {...SOLID} fillOpacity={0.55} />
+    </>
+  ),
   // ---- 生活・健康 ----
   // 水と缶詰
   'bosai-bichiku-keisan': (
@@ -687,6 +710,16 @@ const ART: Record<string, ReactNode> = {
       <circle cx="46" cy="44" r="16" {...CUT} />
       <circle cx="46" cy="44" r="13" {...SOLID} />
       <path d="M46 36 V44 H52" {...CUT_S} />
+    </>
+  ),
+
+  // 切手を貼った封筒
+  'yubin-ryokin': (
+    <>
+      <rect x="5" y="14" width="54" height="38" rx="4" {...F} />
+      <rect x="5" y="14" width="54" height="38" rx="4" {...S} />
+      <rect x="42" y="19" width="12" height="14" rx="1.5" {...SOLID} />
+      <path d="M12 38 h20 M12 45 h14" {...S} strokeOpacity={0.55} />
     </>
   ),
 
