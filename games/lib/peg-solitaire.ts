@@ -419,6 +419,43 @@ export function selectionAfterJump(board: Board, state: PegState, jump: Jump): S
 }
 
 // ---------------------------------------------------------------------------
+// 記録に確定させる時機（1 局＝1 結果。docs/features/game-records.md）
+
+/**
+ * 1 局の記録の進み具合。
+ *
+ * 待ったは回数の上限なしで、詰んだ局面からも戻れる。そのため**詰み（2 本以上残って終わり）はその場では記録しない**。
+ * 「最初から」・盤の切り替え・ページを離れる（`leave`）まで負けを保留し、そのとき詰んだままなら `loss` を 1 回だけ確定させる。
+ * クリア（残り 1 本）はその場で `win` を確定させ、以後の待ったは画面側で止める（`settled`）。
+ * こうすると「終わる → 待った → もう一度終わる」で記録が 2 回動くことが無い（#440 のレビュー）。
+ */
+export interface RecordFlow {
+  /** この局の結果を記録に確定させたか */
+  settled: boolean;
+  /** 詰んでいて、まだ負けを確定させていないか */
+  pendingLoss: boolean;
+}
+
+export const FRESH_FLOW: RecordFlow = { settled: false, pendingLoss: false };
+
+export type FlowEvent = 'clear' | 'stuck' | 'undo' | 'leave';
+
+/** 出来事を 1 つ受けて、次の進み具合と、いま記録に確定させる結果（無ければ null）を返す */
+export function nextRecordFlow(flow: RecordFlow, event: FlowEvent): { flow: RecordFlow; record: 'win' | 'loss' | null } {
+  if (flow.settled) return { flow, record: null };
+  switch (event) {
+    case 'clear':
+      return { flow: { settled: true, pendingLoss: false }, record: 'win' };
+    case 'stuck':
+      return { flow: { settled: false, pendingLoss: true }, record: null };
+    case 'undo':
+      return { flow: { settled: false, pendingLoss: false }, record: null };
+    case 'leave':
+      return flow.pendingLoss ? { flow: { settled: true, pendingLoss: false }, record: 'loss' } : { flow, record: null };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 今日の 1 問
 
 /** 生成手順の版。**手順を変えたら上げる**（`dailySeed` に渡す） */

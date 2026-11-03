@@ -28,12 +28,14 @@ import {
   DAILY_VERSION,
   dailyPuzzle,
   ENGLISH_MIN_MOVES,
+  FRESH_FLOW,
   hasPeg,
   hint as findHint,
   initialState,
   isDoomed,
   isOver,
   jumpsFromHole,
+  nextRecordFlow,
   NO_SELECTION,
   remaining,
   selectionAfterJump,
@@ -42,7 +44,9 @@ import {
   VARIANT_LABEL,
   VARIANT_ORDER,
   type Jump,
+  type FlowEvent,
   type PegState,
+  type RecordFlow,
   type Selection,
   type Variant,
 } from '@/lib/peg-solitaire';
@@ -106,6 +110,13 @@ export default function Game() {
   const fxRef = useRef<Jump | null>(null);
   const timer = useRef<number | null>(null);
   const counted = useRef(false);
+  /** 1 局の記録をいつ確定させるか（詰みは保留し、局を離れるときに確定。lib の `nextRecordFlow`） */
+  const flowRef = useRef<RecordFlow>(FRESH_FLOW);
+  /** 局を離れるときの負けの確定で、最新の記録・盤を読む */
+  const recordsRef = useRef(records);
+  recordsRef.current = records;
+  const variantRef = useRef(game.variant);
+  variantRef.current = game.variant;
   const firstMoveSent = useRef(false);
   const guard = useRef(createClickGuard()).current;
   const dragRef = useRef<{ hole: number; pointerId: number; x: number; y: number; dragging: boolean; el: HTMLElement } | null>(
@@ -122,10 +133,24 @@ export default function Game() {
     timer.current = null;
   };
 
+  /** 記録の進み具合を 1 つ進め、確定させる結果を返す */
+  const flow = (event: FlowEvent): 'win' | 'loss' | null => {
+    const r = nextRecordFlow(flowRef.current, event);
+    flowRef.current = r.flow;
+    return r.record;
+  };
+
+  /** 詰んだまま局を離れるなら、ここで負けを 1 回だけ確定させる */
+  const leave = useCallback(() => {
+    if (flow('leave') === 'loss') recordsRef.current.finish({ outcome: 'loss' }, variantRef.current);
+  }, []);
+
   const start = useCallback((variant: Variant, key: string) => {
+    leave();
     clearTimer();
     fxRef.current = null;
     counted.current = false;
+    flowRef.current = FRESH_FLOW;
     setGame(newGame(variant, key));
     setSel(NO_SELECTION);
     setHintNote(null);
@@ -135,14 +160,20 @@ export default function Game() {
     setCopied(false);
     setPhase('choose');
     trackToolUse('peg-solitaire', `new-${variant}`);
-  }, []);
+  }, [leave]);
 
   useEffect(() => {
     // 「今日」と局面はマウント後に決める（静的書き出しの HTML に焼き付けない）
     const key = localDateKey();
     setToday(key);
     start('daily', key);
-    return clearTimer;
+    // ページを離れるとき（タブを閉じる・別のページへ移る）も、詰んだままなら負けを確定させる
+    window.addEventListener('pagehide', leave);
+    return () => {
+      window.removeEventListener('pagehide', leave);
+      leave();
+      clearTimer();
+    };
     // 初回のみ
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -152,6 +183,8 @@ export default function Game() {
     (g: Game, s: PegState, usedHint: boolean) => {
       const v = g.variant;
       if (remaining(s) === 1) {
+        // クリアはその場で確定させる（以後の待ったは止める）
+        if (flow('clear') !== 'win') return;
         const perfect = hasPeg(s, g.goal);
         const res = records.finish(
           {
@@ -169,7 +202,8 @@ export default function Game() {
           trackToolUse('peg-solitaire', 'daily-clear');
         }
       } else {
-        records.finish({ outcome: 'loss' }, v);
+        // 詰みは待ったで戻れるので、ここでは記録しない（局を離れるときに `leave` が確定させる）
+        flow('stuck');
         trackToolUse('peg-solitaire', `stuck-${v}`);
       }
     },
@@ -232,8 +266,9 @@ export default function Game() {
   );
 
   const undo = () => {
-    if (game.history.length === 0 || phase === 'jumping') return;
+    if (!canUndo) return;
     clearTimer();
+    flow('undo');
     const states = game.states.slice(0, -1);
     const s = states[states.length - 1];
     setGame({ ...game, history: game.history.slice(0, -1), states });
@@ -322,6 +357,8 @@ export default function Game() {
   const hintJump = hintNote?.kind === 'jump' && active ? hintNote.jump : null;
 
   const won = phase === 'over' && pegs === 1;
+  // クリアした局は記録を確定させたので戻らない（もう一度は「最初から」）
+  const canUndo = game.history.length > 0 && phase !== 'jumping' && !won;
   const perfect = won && hasPeg(state, game.goal);
   const streakNow = currentStreak(entry.lastClearedOn, today, entry.streak);
 
@@ -467,7 +504,7 @@ export default function Game() {
       </p>
 
       <div className="btn-row pg-actions">
-        <button type="button" className="btn" onClick={undo} disabled={game.history.length === 0 || phase === 'jumping'}>
+        <button type="button" className="btn" onClick={undo} disabled={!canUndo}>
           待った
         </button>
         <button type="button" className="btn" onClick={showHint} disabled={!active}>

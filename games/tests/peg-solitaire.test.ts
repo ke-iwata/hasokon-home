@@ -11,6 +11,7 @@ import {
   ENGLISH_CENTER,
   ENGLISH_MIN_MOVES,
   firstMoveDeadEnds,
+  FRESH_FLOW,
   fromPegs,
   hasPeg,
   hint,
@@ -19,6 +20,7 @@ import {
   isOver,
   KNOWN_ENGLISH_SOLUTION,
   legalJumps,
+  nextRecordFlow,
   NO_SELECTION,
   pegsOf,
   remaining,
@@ -30,6 +32,7 @@ import {
   tap,
   TRIANGLE_INNER,
   withPeg,
+  type FlowEvent,
   type Jump,
   type PegState,
 } from '@/lib/peg-solitaire';
@@ -420,5 +423,40 @@ describe('今日の 1 問', () => {
     expect(shareText({ dateKey: '2026-10-21', moves: 9, url: 'https://hasokon.com/games/peg-solitaire/' })).toBe(
       'ペグ・ソリティア 今日の1問 2026-10-21 クリア（9手）\nhttps://hasokon.com/games/peg-solitaire/',
     );
+  });
+});
+
+describe('記録に確定させる時機（1 局＝1 結果）', () => {
+  /** 出来事を順に流し、確定させた結果を並べて返す */
+  function run(events: FlowEvent[]): ('win' | 'loss')[] {
+    let flow = FRESH_FLOW;
+    const out: ('win' | 'loss')[] = [];
+    for (const e of events) {
+      const r = nextRecordFlow(flow, e);
+      flow = r.flow;
+      if (r.record) out.push(r.record);
+    }
+    return out;
+  }
+
+  it('詰む → 待った → また詰む → 局を離れる：負けは 1 回だけ', () => {
+    expect(run(['stuck', 'undo', 'stuck', 'leave'])).toEqual(['loss']);
+  });
+
+  it('詰む → 待った → クリア：勝ちだけが 1 回（負けは数えない）', () => {
+    expect(run(['stuck', 'undo', 'clear', 'leave'])).toEqual(['win']);
+  });
+
+  it('クリアの後は、待った・詰み・もう一度のクリア・離れるのどれも記録を動かさない', () => {
+    expect(run(['clear', 'undo', 'clear', 'stuck', 'leave'])).toEqual(['win']);
+  });
+
+  it('詰んでいない局を離れても記録しない（途中でやめた局は勝ち負けに数えない）', () => {
+    expect(run(['leave'])).toEqual([]);
+    expect(run(['stuck', 'undo', 'leave'])).toEqual([]);
+  });
+
+  it('詰んだまま離れると負けを 1 回だけ確定させ、続けて離れても増えない', () => {
+    expect(run(['stuck', 'leave', 'leave'])).toEqual(['loss']);
   });
 });
