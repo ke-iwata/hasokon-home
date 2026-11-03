@@ -167,6 +167,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-13',
   },
   {
+    slug: 'yukyu-fuyo',
+    // 休みの島の絵で Island
+    icon: 'Island',
+    name: '有給休暇 付与日数 計算機',
+    description:
+      '入社日と週の勤務日数から、有給休暇の次の付与日と日数を計算。パート・アルバイトの比例付与、繰越を足した残り（最大40日）、2年の時効で消える日、年5日の取得義務の期限まで出します。',
+    category: 'お金・社会保険',
+    // 2026-11 中に preview、12-01 までに public（仕様書の「状態」。年末の取得調整が 11〜12 月に集中する）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-03',
+  },
+  {
     slug: 'yubin-ryokin',
     // 封筒の絵で Envelope
     icon: 'Envelope',
