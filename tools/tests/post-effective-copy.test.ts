@@ -22,6 +22,8 @@ import { tools } from '@/lib/registry';
 import { REVISION_DATE } from '@/lib/shuzei-kaisei';
 import { HEATED_ALIGNED_FROM } from '@/lib/tabako-zei';
 import { WITHHOLDING_TABLE_EFFECTIVE_ON } from '@/lib/tedori-keisan';
+import { metadata as yubinMeta } from '@/app/yubin-ryokin/page';
+import { addDays, NENGA_2027 } from '@/lib/yubin-ryokin';
 
 /**
  * 施行日を過ぎたのに「これから」の文面（未来形）が残っていないかを、施行日を持つツール全体で見る。
@@ -149,6 +151,17 @@ const ENTRIES: Entry[] = [
     patterns: [/が戻ります/, /精算されます/],
     sourcePatterns: [/足りなければ戻ります/, /差し引かれます/],
     description: String(nenkinGensenMeta.description),
+  },
+  {
+    // 年賀状の帯の期日（2027 年用の販売終了 saleTo の翌日。当日まではまだ正しい文面）を過ぎたら、
+    // description から年賀の部分が外れているか。page.tsx の本文は NENGA_* から組み立てるので見ない。
+    // 料金の値上げの表を RATE_TABLES に足す PR では、その effectiveFrom の行を足す
+    // （patterns は 1 つ前の表の額から：/定形110円/・/はがき85円/）。仕様: docs/features/yubin-ryokin-keisan.md
+    slug: 'yubin-ryokin',
+    effectiveOn: addDays(NENGA_2027.saleTo, 1),
+    patterns: [/2027年用年賀状/, /12月20日/, /12月27日/],
+    sourcePatterns: [],
+    description: String(yubinMeta.description),
   },
 ];
 

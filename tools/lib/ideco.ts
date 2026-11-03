@@ -23,7 +23,8 @@
  *   2026年12月の改正でこの内枠が撤廃され、枠が55,000円から62,000円に広がる
  * - 第3号被保険者: 月23,000円（改正後も変わらない）
  *
- * ■ 加入可能年齢は65歳未満 → 70歳未満
+ * ■ 加入可能年齢は（国民年金の資格を失うまで） → 70歳未満
+ * 改正前は国民年金の資格を失うと加入できない。第1号・第3号は60歳、第2号は65歳（INSURED_UNTIL_AGE）。
  * 60〜64歳の第2号・任意加入被保険者はこれまでどおり加入できる。国民年金被保険者でない
  * 60〜69歳が加入できるのは、申出の前日に ①iDeCoの加入者 ②運用指図者 だった方、
  * ③企業型DC等の資産をiDeCoに移換する方のいずれか。経過措置として KEIKA_SOCHI_UNTIL
@@ -31,7 +32,8 @@
  * 老齢基礎年金・iDeCoの老齢給付金を受給した方は、どのパターンでも加入できない。
  * （厚生労働省「iDeCo 加入可能年齢の引上げについて」
  *   https://www.mhlw.go.jp/content/12500000/001714615.pdf 、2026-10-07 取得）
- * 積み立てられる期間が5年延びるので、累計の節税額はその分だけ変わる。
+ * 国民年金の被保険者でない60〜69歳の限度額は月62,000円（企業年金等があれば合算。POST_INSURED_FRAME）。
+ * 積み立てられる期間は第1号・第3号で10年（60→70歳）、第2号で5年（65→70歳）延びる。
  *
  * ■ 適用の時期（この計算機で必ず併記すること）
  * 施行は2026年12月1日で、**新しい限度額は2026年12月拠出分（2027年1月引落分）から**。
@@ -60,7 +62,8 @@
  * - マッチング拠出との選択
  *
  * 【データ更新箇所】限度額が改定されたら LIMITS / SHARED_FRAME_* / INNER_CAP_BEFORE、
- * 加入可能年齢が変わったら JOIN_AGE_LIMIT_*、施行日が動いたら REFORM_EFFECTIVE_FROM。
+ * 加入可能年齢が変わったら JOIN_AGE_LIMIT_* / INSURED_UNTIL_AGE / POST_INSURED_FRAME、
+ * 施行日が動いたら REFORM_EFFECTIVE_FROM。
  * 所得税の速算表・給与所得控除・基礎控除は lib/furusato-nozei.ts のものを再利用しているので、
  * 税制改正のときはそちらを直せばこの計算機にも効く。
  */
@@ -145,11 +148,35 @@ export const SHARED_FRAME_BEFORE = 55_000;
  */
 export const INNER_CAP_BEFORE = 20_000;
 
-/** 加入可能年齢の上限（この年齢「未満」）。改正前 */
-export const JOIN_AGE_LIMIT_BEFORE = 65;
+/**
+ * 国民年金の被保険者でなくなる年齢（この年齢「未満」まで被保険者）。
+ * 厚生労働省「iDeCo 加入可能年齢の引き上げイメージ」（001714615.pdf）の※：
+ * 第1号 60歳・第2号 65歳・第3号 60歳。
+ * 第2号は65歳まで勤める前提（退職の時期は聞かない）。第1号の任意加入（60〜64歳）は扱わない。
+ * 【データ更新箇所】
+ */
+export const INSURED_UNTIL_AGE: Record<InsuredType, number> = {
+  type1: 60,
+  type2: 65,
+  type3: 60,
+};
 
-/** 同・改正後。60歳以降も加入を続けられる条件は冒頭のコメントを参照 */
+/**
+ * 加入可能年齢の上限（この年齢「未満」）。改正前の制度。
+ * 国民年金の資格を失うと加入できないので、区分ごとに INSURED_UNTIL_AGE と同じになる
+ * （第1号・第3号 60歳、第2号 65歳）。
+ */
+export const JOIN_AGE_LIMIT_BEFORE: Record<InsuredType, number> = { ...INSURED_UNTIL_AGE };
+
+/** 同・改正後。区分によらず70歳未満。60歳以降も加入を続けられる条件は冒頭のコメントを参照 */
 export const JOIN_AGE_LIMIT_AFTER = 70;
+
+/**
+ * 国民年金の被保険者でない60〜69歳の拠出限度額（円・月額）。企業年金等があれば合算した枠。
+ * 第1号の75,000円・第3号の23,000円は被保険者でいる間の枠で、60歳以降はこちらになる。
+ * 【データ更新箇所】
+ */
+export const POST_INSURED_FRAME = 62_000;
 
 /**
  * 60〜69歳の方が、加入歴などの条件に当たらなくても新たに加入できる経過措置の終わり（この日を含む）。
@@ -331,6 +358,10 @@ export interface Cumulative {
   untilAge: number;
   /** 残りの加入可能月数 */
   months: number;
+  /** うち国民年金の被保険者でいる間（いまの月額で出す）の月数 */
+  insuredMonths: number;
+  /** うち被保険者でなくなってから（POST_INSURED_FRAME の枠で出す）の月数 */
+  postInsuredMonths: number;
   /** 累計の拠出額（円） */
   contribution: number;
   /** 累計の節税額（円） */
@@ -362,12 +393,18 @@ export interface IdecoResult {
   saving: SavingResult;
   /** 改正前の限度額いっぱいで拠出した場合の節税額（比較用） */
   savingBefore: SavingResult;
-  /** 加入可能年齢（改正前・65歳未満）までの累計 */
+  /** 加入可能年齢（改正前の制度。第1号・第3号は60歳未満、第2号は65歳未満）までの累計 */
   cumulativeBefore: Cumulative;
   /** 加入可能年齢（改正後・70歳未満）までの累計 */
   cumulativeAfter: Cumulative;
   /** 加入可能年齢の延長で増える累計の節税額（円） */
   cumulativeSavingGain: number;
+  /** 改正で加入できる期間が延びる年数（第1号・第3号は10年、第2号は5年） */
+  extensionYears: number;
+  /** 国民年金の被保険者でなくなってから70歳までの拠出限度額（円・月額。1,000円単位） */
+  postInsuredLimitMonthly: number;
+  /** 同・その期間に実際に拠出する月額（円）。いまの月額と限度額の小さいほう */
+  postInsuredContributionMonthly: number;
 }
 
 /** 課税所得は1,000円未満を切り捨てる */
@@ -462,8 +499,17 @@ export function calcSaving(
   };
 }
 
+/** 年齢 from から to（未満）までの月数。0未満にはしない */
+function monthsBetween(from: number, to: number): number {
+  return Math.max(0, Math.round((to - from) * 12));
+}
+
 /**
  * 加入可能年齢までの累計。
+ *
+ * 「国民年金の被保険者でいる間（いまの月額）」と「被保険者でなくなってから untilAge まで
+ * （min(いまの月額, 60歳以降の枠)）」の2区間の和。改正前の制度では後ろの区間は無い
+ * （untilAge が被保険者でなくなる年齢と同じ）。
  *
  * 年齢は歳単位でしか受け取らないので、残り月数は（上限年齢 − 年齢）×12 の概算。
  * 節税額は「いまの課税所得のまま拠出し続けた場合」で、昇給・税制改正は織り込まない。
@@ -471,15 +517,23 @@ export function calcSaving(
 function cumulativeUntil(
   age: number,
   untilAge: number,
-  contributionMonthly: number,
-  savingYearly: number,
+  insuredUntilAge: number,
+  insured: { monthly: number; savingYearly: number },
+  post: { monthly: number; savingYearly: number },
 ): Cumulative {
-  const months = Math.max(0, Math.round((untilAge - Math.max(0, age)) * 12));
+  const a = Math.max(0, age);
+  const insuredEnd = Math.min(insuredUntilAge, untilAge);
+  const insuredMonths = monthsBetween(a, insuredEnd);
+  const postInsuredMonths = monthsBetween(Math.max(a, insuredEnd), untilAge);
   return {
     untilAge,
-    months,
-    contribution: contributionMonthly * months,
-    saving: Math.round((savingYearly / 12) * months),
+    months: insuredMonths + postInsuredMonths,
+    insuredMonths,
+    postInsuredMonths,
+    contribution: insured.monthly * insuredMonths + post.monthly * postInsuredMonths,
+    saving: Math.round(
+      (insured.savingYearly / 12) * insuredMonths + (post.savingYearly / 12) * postInsuredMonths,
+    ),
   };
 }
 
@@ -507,17 +561,28 @@ export function calcIdeco(input: IdecoInput): IdecoResult {
   const saving = calcSaving(input, contributionYearly);
   const savingBefore = calcSaving(input, before.monthly * 12);
 
-  const cumulativeBefore = cumulativeUntil(
-    input.age,
-    JOIN_AGE_LIMIT_BEFORE,
-    contributionMonthly,
-    saving.total,
-  );
+  // 国民年金の被保険者でなくなってからの枠：62,000円（第2号で企業年金があれば事業主掛金等を引く）。
+  // 第2号の改正後の限度額がちょうどこの式なので、それを使う
+  const postFrame = input.insured === 'type2' ? after.monthly : POST_INSURED_FRAME;
+  const postInsuredLimitMonthly = toContributable(postFrame);
+  const postInsuredContributionMonthly = Math.min(contributionMonthly, postInsuredLimitMonthly);
+  const postSaving =
+    postInsuredContributionMonthly === contributionMonthly
+      ? saving
+      : calcSaving(input, postInsuredContributionMonthly * 12);
+
+  const insuredUntil = INSURED_UNTIL_AGE[input.insured];
+  const beforeUntil = JOIN_AGE_LIMIT_BEFORE[input.insured];
+  const insuredPart = { monthly: contributionMonthly, savingYearly: saving.total };
+  const postPart = { monthly: postInsuredContributionMonthly, savingYearly: postSaving.total };
+
+  const cumulativeBefore = cumulativeUntil(input.age, beforeUntil, insuredUntil, insuredPart, postPart);
   const cumulativeAfter = cumulativeUntil(
     input.age,
     JOIN_AGE_LIMIT_AFTER,
-    contributionMonthly,
-    saving.total,
+    insuredUntil,
+    insuredPart,
+    postPart,
   );
 
   return {
@@ -536,5 +601,8 @@ export function calcIdeco(input: IdecoInput): IdecoResult {
     cumulativeBefore,
     cumulativeAfter,
     cumulativeSavingGain: Math.max(0, cumulativeAfter.saving - cumulativeBefore.saving),
+    extensionYears: JOIN_AGE_LIMIT_AFTER - beforeUntil,
+    postInsuredLimitMonthly,
+    postInsuredContributionMonthly,
   };
 }
