@@ -389,7 +389,10 @@ export type HoyoCount = 'meinichi' | 'zenjitsu';
 export interface Hoyo {
   name: string;
   date: Ymd;
-  /** その日以前の直近の土日（当日が土日なら当日だけ） */
+  /**
+   * その日以前の直近の土日（当日が土日なら当日だけ）。**命日以前の日は外す**
+   * （初七日では命日当日・亡くなる前の日が候補に入りうるため）。残らなければ空
+   */
   weekend: Ymd[];
   /** 2/29 の命日を 2/28 にずらした */
   leapAdjusted?: boolean;
@@ -448,13 +451,14 @@ const YEAR_HOYO: readonly [string, number][] = [
  */
 export function hoyoDates(meinichi: Ymd, count: HoyoCount = 'meinichi'): Hoyo[] {
   const base = count === 'zenjitsu' ? addDays(meinichi, -1) : meinichi;
+  const after = (date: Ymd) => weekendBefore(date).filter((w) => w > meinichi);
   const out: Hoyo[] = DAY_HOYO.map(([name, n]) => {
     const date = addDays(base, n);
-    return { name, date, weekend: weekendBefore(date) };
+    return { name, date, weekend: after(date) };
   });
   for (const [name, n] of YEAR_HOYO) {
     const { date, leapAdjusted } = addYears(meinichi, n);
-    out.push({ name, date, weekend: weekendBefore(date), ...(leapAdjusted ? { leapAdjusted } : {}) });
+    out.push({ name, date, weekend: after(date), ...(leapAdjusted ? { leapAdjusted } : {}) });
   }
   return out;
 }

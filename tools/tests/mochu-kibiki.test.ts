@@ -319,6 +319,26 @@ describe('法要の日付', () => {
     expect(weekendBefore('2026-12-12')).toEqual(['2026-12-12']);
   });
 
+  it('命日以前の日は土日の候補から外す（初七日）', () => {
+    // 命日 2026-10-31（土）・命日から：初七日 11-06（金）→ 10-31（命日当日）を外して 11-01 だけ
+    const a = find(hoyoDates('2026-10-31'), '初七日');
+    expect(a.date).toBe('2026-11-06');
+    expect(a.weekend).toEqual(['2026-11-01']);
+    // 命日 2026-11-01（日）・前日から：初七日 11-06（金）→ 10-31（前日）・11-01（当日）とも外れて空
+    const b = find(hoyoDates('2026-11-01', 'zenjitsu'), '初七日');
+    expect(b.date).toBe('2026-11-06');
+    expect(b.weekend).toEqual([]);
+  });
+
+  it('どの命日・数え方でも、土日の候補は命日より後', () => {
+    for (let i = 0; i < 14; i++) {
+      const m = `2026-10-${String(18 + i).padStart(2, '0')}`;
+      for (const c of ['meinichi', 'zenjitsu'] as const) {
+        for (const h of hoyoDates(m, c)) for (const w of h.weekend) expect(w > m, `${m} ${c} ${h.name}`).toBe(true);
+      }
+    }
+  });
+
   it('金曜は前の週の土日', () => {
     expect(weekendBefore('2026-12-18')).toEqual(['2026-12-12', '2026-12-13']);
   });

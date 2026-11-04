@@ -28,6 +28,9 @@ import { trackToolUse } from '@/lib/analytics';
 
 const SLUG = 'mochu-kibiki';
 
+/** '2026-12-12' → '12/12（土）'（狭い幅の土日の列用） */
+const monthDayShort = (ymd: string) => formatMonthDay(ymd).replace(/^(\d+)月(\d+)日/, '$1/$2');
+
 const choiceStyle = (on: boolean) => ({
   padding: '10px 6px',
   fontSize: 'var(--fs-sm)',
@@ -282,23 +285,29 @@ export default function Calculator({ buildDay }: { buildDay: string }) {
         <CardHead title="法要の日付" badge="一般的な目安" />
         {validMeinichi ? (
           <>
+            {/* 360px で横にはみ出さないよう 2 列にし、直前の土日は日付の下に小さく出す。
+                命日と同じ年のうちは年を省く（年忌・年をまたぐ日だけ年を出す） */}
             <table>
               <thead>
                 <tr>
                   <th scope="col">法要</th>
-                  <th scope="col">日付</th>
-                  <th scope="col">直前の土日</th>
+                  <th scope="col">日付（直前の土日）</th>
                 </tr>
               </thead>
               <tbody>
                 {hoyo.map((h) => (
                   <tr key={h.name}>
-                    <th scope="row">{h.name}</th>
+                    <th scope="row" style={{ whiteSpace: 'nowrap' }}>
+                      {h.name}
+                    </th>
                     <td>
-                      {h.date.slice(0, 4)}年{formatMonthDay(h.date)}
+                      {h.date.slice(0, 4) !== validMeinichi.slice(0, 4) && `${h.date.slice(0, 4)}年`}
+                      <span style={{ whiteSpace: 'nowrap' }}>{formatMonthDay(h.date)}</span>
                       {h.leapAdjusted && '※'}
+                      <span className="hint" style={{ display: 'block' }}>
+                        土日：{h.weekend.length === 0 ? '—' : h.weekend.map((w) => monthDayShort(w)).join('・')}
+                      </span>
                     </td>
-                    <td>{h.weekend.map((w) => formatMonthDay(w)).join('・')}</td>
                   </tr>
                 ))}
               </tbody>
@@ -316,7 +325,7 @@ export default function Calculator({ buildDay }: { buildDay: string }) {
               </select>
             </label>
             <p className="hint" style={{ margin: '6px 0 0' }}>
-              法要は当日より前の土日に行うことが多いため、その日以前の直近の土日を並べています（当日が土日なら当日）。日取りはお寺と相談して決めます。
+              法要は当日より前の土日に行うことが多いため、その日以前の直近の土日を並べています（当日が土日なら当日。命日以前の日は出しません）。日取りはお寺と相談して決めます。
             </p>
           </>
         ) : (
