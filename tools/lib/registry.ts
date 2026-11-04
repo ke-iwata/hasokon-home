@@ -818,6 +818,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-07-01',
   },
   {
+    // 仕様: docs/features/gasoline-dai-keisan.md
+    // 公開条件：テスト環境で運営者が割り勘・毎月の額と単価の日付を確かめたら preview → public（2026-12-02 までに）。
+    // public にする PR で FUEL_PRICES を最新の週の値に更新し、カードの絵（ToolPreview / ToolArt）とホームのカードを足す
+    slug: 'gasoline-dai',
+    icon: 'GasPump',
+    name: 'ガソリン代 計算機',
+    description:
+      '距離と燃費から、1回のドライブのガソリン代と割り勘の1人分（運転者を除く切り替えつき）、毎月・1年の燃料費を計算。単価は資源エネルギー庁の全国平均（日付つき）。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-04',
+  },
+  {
     slug: 'warikan',
     icon: 'Receipt',
     name: '割り勘計算機',
