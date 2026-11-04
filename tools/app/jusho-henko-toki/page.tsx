@@ -11,6 +11,8 @@ import {
   JUSHO_KARYO_MAX_YEN,
   JUSHO_KEIKA_SOCHI_DEADLINE,
   SEARCH_INFO_FROM,
+  SMART_TOKI,
+  SMART_TOKI_SCHEDULE_NOTE,
   TOROKU_MENKYO_PER_PROPERTY,
   earliestDeadline,
   tokiDeadline,
@@ -148,6 +150,10 @@ export default function Page() {
         法務局が住基ネットなどで住所等の変更を確認し、<strong>本人への確認を経て</strong>職権で変更登記をします（不動産登記法76条の6）。
         {ja(SEARCH_INFO_FROM)}以後に所有権の登記（購入・相続など）をした人は、その申請と同時に申し出ています。
         それより前から持っている不動産は、別に申出をする必要があります。
+      </p>
+      <p>
+        <strong>{SMART_TOKI_SCHEDULE_NOTE}</strong>
+        （法務省「住所等変更登記の義務化に関するQ&A」{ja(SMART_TOKI.qaAsOf)}現在）
       </p>
       <p>
         職権登記は、法務局からの確認の通知に本人が応答して初めて行われます。申出をしていても、期限は上のとおり把握しておき、

@@ -124,7 +124,8 @@ export interface RateTable {
  * - 日本郵便「オプションサービス」料金表 https://www.post.japanpost.jp/send/domestic/charge/list/option.html
  * - 日本郵便「レターパック」 https://www.post.japanpost.jp/service/send/domestic/mail/letterpack/
  *
- * 次の値上げ（令和8年法律第42号の改正郵便法で、定形郵便の上限料金は認可制に変わった）は
+ * 次の値上げ（改正郵便法（令和8年法律第42号、2026年12月1日施行）により、定形郵便の上限料金は
+ * 日本郵便が定めて総務大臣の認可を受ける仕組みになる。施行前は省令で定める）は
  * **額・時期とも決まっていない**。認可・発表が出たら、新しい表を `effectiveFrom` つきで末尾に足す。
  * 足したら `tests/post-effective-copy.test.ts` にその `effectiveFrom` を登録する（仕様の「ビルド時に焼き込まれる文面」）
  */

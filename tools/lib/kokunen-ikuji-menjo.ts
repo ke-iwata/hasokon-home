@@ -34,13 +34,15 @@ import type { DateParts } from './date-parts';
 export const MONTHLY_PREMIUM: Readonly<Record<string, number>> = {
   '2025': 17_510,
   '2026': 17_920,
+  // 令和9年度。日本年金機構「国民年金保険料の2年前納」の（17,920円×12）＋（18,290円×12）＝434,520円
+  '2027': 18_290,
 };
 
 /** 付加保険料の月額（円）。免除中も納付できる。額には入れず注記だけに使う */
 export const FUKA_PREMIUM = 400;
 
 /** 制度データ（保険料額・施行日）を最後に一次情報と突き合わせた日 */
-export const DATA_CHECKED_AT = '2026-09-27';
+export const DATA_CHECKED_AT = '2026-11-04';
 
 /** 育児免除の施行月（令和8年10月1日施行。これより前の月は育児免除の対象外） */
 export const IKUJI_START = '2026-10';

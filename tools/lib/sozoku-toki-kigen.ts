@@ -46,10 +46,17 @@ export const HOKI_MONTHS = 3;
 export const JUN_KAKUTEI_MONTHS = 4;
 /** 相続税の申告・納付（相続税法27条1項・33条） */
 export const SOZOKUZEI_MONTHS = 10;
-/** 登録免許税の免税措置（100万円以下の土地）の期限（租税特別措置法84条の2の3第2項） */
+/** 登録免許税の免税措置（100万円以下の土地）の期限（MENZEI_ARTICLE） */
 export const MENZEI_DEADLINE = '2027-03-31';
+/**
+ * 100万円以下の土地の免税の根拠条文。法務局は申請書に「この条項により非課税」と
+ * 書くよう案内していて、記載が無いと免税されない（2026-11-04 点検で条文番号の誤りを直した）
+ */
+export const MENZEI_ARTICLE = '租税特別措置法第84条の2の2第2項';
+/** 法務局「相続登記の登録免許税の免税措置について」（申請書の記載例） */
+export const MENZEI_GUIDE_URL = 'https://houmukyoku.moj.go.jp/homu/page7_000017.html';
 /** 条文・法務省Q&Aを最後に確かめた日 */
-export const DATA_CHECKED_AT = '2026-09-29';
+export const DATA_CHECKED_AT = '2026-11-04';
 
 // ---------------------------------------------------------------- 日付の計算
 

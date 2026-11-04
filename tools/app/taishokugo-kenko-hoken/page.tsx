@@ -10,6 +10,7 @@ import {
   DATA_CHECKED_AT,
   FUYO_DAILY_LIMIT,
   FUYO_DAILY_LIMIT_60,
+  FUYO_DAILY_LIMIT_19_22,
   KOKUHO_NOTIFY_DAYS,
   KOKUHO_TABLES,
   NINKEI_APPLY_DAYS,
@@ -60,7 +61,7 @@ const faq = [
   },
   {
     q: '失業保険をもらうと扶養から外れる？',
-    a: `日額が${FUYO_DAILY_LIMIT.toLocaleString('ja-JP')}円以上（60歳以上は${FUYO_DAILY_LIMIT_60.toLocaleString('ja-JP')}円以上）だと、受給している間は扶養に入れません（年収130万円・180万円の基準を360日で割った額）。待期7日・給付制限の間は受けていないので入れ、受給が終われば戻れます。扱いは健康保険によって違うことがあるので、扶養する家族の勤め先の健康保険に確かめてください。`,
+    a: `日額が${FUYO_DAILY_LIMIT.toLocaleString('ja-JP')}円以上（60歳以上は${FUYO_DAILY_LIMIT_60.toLocaleString('ja-JP')}円以上、19歳以上23歳未満（配偶者を除く）は${FUYO_DAILY_LIMIT_19_22.toLocaleString('ja-JP')}円以上）だと、受給している間は扶養に入れません（年収130万円・180万円・150万円の基準を360日で割った額）。19歳以上23歳未満（配偶者を除く）は150万円未満で、年齢は扶養に入る日の年の12月31日時点で見ます。待期7日・給付制限の間は受けていないので入れ、受給が終われば戻れます。扱いは健康保険によって違うことがあるので、扶養する家族の勤め先の健康保険に確かめてください。`,
   },
   {
     q: '任意継続はやめられる？',
@@ -252,9 +253,10 @@ export default function Page() {
 
       <h2>扶養に入れる条件と失業給付の関係</h2>
       <p>
-        家族の扶養（被扶養者）に入るには、年収130万円未満（60歳以上・障害者は180万円未満）で、扶養する人の年収の半分未満であることが要ります。
+        家族の扶養（被扶養者）に入るには、年収130万円未満（60歳以上・障害者は180万円未満、<strong>19歳以上23歳未満（配偶者を除く）は150万円未満</strong>）で、扶養する人の年収の半分未満であることが要ります。
+        19〜22歳かどうかは扶養に入る日の年の12月31日時点の年齢で見るので、新卒で辞めて親の扶養に入る人は150万円の基準になることがあります。
         <strong>失業給付は扶養の判定では収入に数えます</strong>（国保の所得には入らないのと食い違うので注意）。
-        日額{FUYO_DAILY_LIMIT.toLocaleString('ja-JP')}円以上だと受給中は扶養に入れず、その間は国保（または任意継続）に入ります。
+        日額{FUYO_DAILY_LIMIT.toLocaleString('ja-JP')}円以上（19〜22歳で配偶者以外は{FUYO_DAILY_LIMIT_19_22.toLocaleString('ja-JP')}円以上）だと受給中は扶養に入れず、その間は国保（または任意継続）に入ります。
         国民年金が第3号で0円になるのは、会社員・公務員の配偶者の扶養に入る20〜59歳の人だけで、親や子の扶養では国民年金を払い続けます。
         失業給付の日額は<Link href="/shitsugyo-hoken/">失業保険の計算機</Link>で出せます。
       </p>
@@ -290,7 +292,9 @@ export default function Page() {
         ／{src('https://www.city.ota.tokyo.jp/seikatsu/kokunen/kokuho/hokenryou/keisan.html', '大田区「保険料の計算方法」（特別区の令和8年度）')}／
         {src('https://www.city.toshima.lg.jp/documents/55129/20260327165423.pdf', '豊島区 国保運営協議会資料（軽減の基準額）')}／
         {src('https://www.city.shinjuku.lg.jp/hoken/hoken02_000102.html', '新宿区「非自発的失業者の国民健康保険料の軽減」')}／
-        {src('https://www.nenkin.go.jp/service/kokunen/hokenryo/hokenryo.html', '日本年金機構「国民年金保険料」')}
+        {src('https://www.nenkin.go.jp/service/kokunen/hokenryo/hokenryo.html', '日本年金機構「国民年金保険料」')}／
+        {src('https://www.nenkin.go.jp/service/kokunen/hokenryo/ninenzenno.html', '日本年金機構「国民年金保険料の2年前納」（令和9年度）')}／
+        {src('https://www.nenkin.go.jp/oshirase/taisetu/2025/202508/0819.html', '日本年金機構「19歳以上23歳未満の被扶養者に係る認定について」')}
         。制度データの最終確認日は{ja(DATA_CHECKED_AT)}です。
       </ToolMeta>
     </>

@@ -9,6 +9,8 @@ import {
   JUSHO_TOKI_MONTHS,
   OVERDUE_MESSAGE,
   SEARCH_INFO_DONE_NOTE,
+  SMART_TOKI,
+  SMART_TOKI_SCHEDULE_NOTE,
   SEARCH_INFO_UNKNOWN_NOTE,
   addMonthsSameDay,
   earliestDeadline,
@@ -166,5 +168,29 @@ describe('画面の文言（断定しない）', () => {
 
   it('関連リンクは PublicToolLink を通し、<Link> を手で書かない', () => {
     expect(sources[0]).not.toMatch(/from 'next\/link'/);
+  });
+});
+
+describe('個人のスマート変更登記の開始時期（docs/features/kokai-tool-seikaku-2026-11-04.md B3）', () => {
+  it('法務省Q&A（令和8年9月30日現在）の時期を定数で持つ', () => {
+    expect(SMART_TOKI).toMatchObject({
+      kojinStartLabel: '2026年12月中旬',
+      firstBatchApplyUntil: '2026-03-31',
+      hojinStart: '2026-05-15',
+      qaAsOf: '2026-09-30',
+    });
+  });
+
+  it('1文に「個人は2026年12月中旬から」「2026年4月1日以降の申出は2027年度から」が入る', () => {
+    expect(SMART_TOKI_SCHEDULE_NOTE).toContain('個人の職権登記は2026年12月中旬から');
+    expect(SMART_TOKI_SCHEDULE_NOTE).toContain('2026年3月31日までに申し出た人');
+    expect(SMART_TOKI_SCHEDULE_NOTE).toContain('2026年4月1日以降に申し出た人は2027年度（2027年4月以降）から');
+    expect(SMART_TOKI_SCHEDULE_NOTE).toContain('法人は2026年5月15日から');
+  });
+
+  it('申出「はい」の注記と本文の両方に開始時期が出る', () => {
+    expect(SEARCH_INFO_DONE_NOTE).toContain(SMART_TOKI_SCHEDULE_NOTE);
+    const page = readFileSync(new URL('../app/jusho-henko-toki/page.tsx', import.meta.url), 'utf8');
+    expect(page).toContain('{SMART_TOKI_SCHEDULE_NOTE}');
   });
 });

@@ -8,7 +8,9 @@ import ToolMeta from '@/app/ToolMeta';
 import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   DATA_CHECKED_AT,
+  MENZEI_ARTICLE,
   MENZEI_DEADLINE,
+  MENZEI_GUIDE_URL,
   formatJaWithWeekday,
   otherDeadlines,
   taxDueDate,
@@ -167,7 +169,13 @@ export default function Page() {
         期限が近い・過ぎている場合は、不動産の所在地を管轄する法務局の相談窓口か、司法書士に相談してください。
       </p>
       <p>
-        登録免許税は、価額が100万円以下の土地の相続登記などが{ja(MENZEI_DEADLINE)}まで免税です（租税特別措置法84条の2の3）。
+        登録免許税は、価額が100万円以下の土地の相続登記などが{ja(MENZEI_DEADLINE)}まで免税です（{MENZEI_ARTICLE}）。
+        申請書には「{MENZEI_ARTICLE}により非課税」と書きます（<strong>書かないと免税になりません</strong>）。
+        記載例は法務局の
+        <a href={MENZEI_GUIDE_URL} target="_blank" rel="nofollow noopener noreferrer">
+          相続登記の登録免許税の免税措置について
+        </a>
+        にあります。
       </p>
 
       <h2>同じ死亡日から決まる、ほかの3つの期限</h2>
@@ -252,7 +260,7 @@ export default function Page() {
           </span>
         ))}
         （e-Gov 法令検索）。経過措置は民法等の一部を改正する法律（令和3年法律第24号）附則5条6項、
-        税の期限の繰り下げは国税通則法10条2項、登録免許税の免税は租税特別措置法84条の2の3にもとづく。
+        税の期限の繰り下げは国税通則法10条2項、登録免許税の免税は{MENZEI_ARTICLE}にもとづく。
         条文の最終確認日は{ja(DATA_CHECKED_AT)}です。
       </ToolMeta>
     </>

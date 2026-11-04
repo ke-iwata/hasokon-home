@@ -12,6 +12,11 @@ import {
   defaultApplyDate,
   defaultBenefitTerms,
   defaultLeaveYearSalary,
+  fuyoAgeAtYearEndForLeave,
+  needsRelation,
+  FUYO_DAILY_LIMIT,
+  FUYO_DAILY_LIMIT_19_22,
+  FUYO_DAILY_LIMIT_60,
   KOKUHO_NOTIFY_DAYS,
   KOKUHO_TABLES,
   NINKEI_APPLY_DAYS,
@@ -66,7 +71,8 @@ export default function Calculator() {
   const [leaveKind, setLeaveKind] = useState<LeaveKind>('self');
   const [family, setFamily] = useState<Record<keyof Family, string>>({ preschool: '0', minor: '0', kaigo: '0', adult: '0' });
   const [fuyoAvail, setFuyoAvail] = useState(false);
-  const [supporter, setSupporter] = useState<'spouse' | 'other'>('spouse');
+  // 未選択（null）から始める。12/31時点で19〜22歳のときは既定を置かずに選ばせる（A2）
+  const [supporterChoice, setSupporter] = useState<'spouse' | 'other' | null>(null);
   const [daily, setDaily] = useState('');
   const [applyDate, setApplyDate] = useState('');
   const [tenure, setTenure] = useState('10');
@@ -83,6 +89,11 @@ export default function Calculator() {
   const leaveD = parseDate(leave);
   const birthD = parseDate(birth);
   const monthly = num(salary);
+
+  // 扶養に入る日（退職日の翌日）の年の12/31時点で19〜22歳なら、続柄を既定なしで聞く
+  const relationNeeded =
+    leaveD && birthD ? needsRelation(fuyoAgeAtYearEndForLeave(birthD, leaveD)) : false;
+  const supporter: 'spouse' | 'other' | undefined = supporterChoice ?? (relationNeeded ? undefined : 'spouse');
 
   let r: CalcResult | null = null;
   let leaveAge = 0;
@@ -290,6 +301,12 @@ export default function Calculator() {
                 親・子など
               </label>
             </div>
+            {relationNeeded && (
+              <p className="hint">
+                扶養に入る年の12月31日に19〜22歳なので、続柄で基準が変わります（配偶者は130万円未満・子などは150万円未満）。
+                {supporter === undefined && <strong>どちらかを選んでください。</strong>}
+              </p>
+            )}
             <p className="hint">配偶者の扶養なら国民年金も第3号で0円（20〜59歳）。親・子などの扶養では国民年金は払い続けます。</p>
             <div style={{ ...grid2, marginTop: 8 }}>
               <label style={{ fontSize: 'var(--fs-sm)' }}>
@@ -314,7 +331,7 @@ export default function Calculator() {
               </label>
             </div>
             <p className="hint">
-              日額が3,612円以上（60歳以上は5,000円以上）だと、受給している間は扶養に入れません。日額は
+              日額が{yenN(FUYO_DAILY_LIMIT)}円以上（60歳以上は{yenN(FUYO_DAILY_LIMIT_60)}円以上、19〜22歳で配偶者以外は{yenN(FUYO_DAILY_LIMIT_19_22)}円以上）だと、受給している間は扶養に入れません。日額は
               <Link href="/shitsugyo-hoken/">失業保険の計算機</Link>で出せます。申込み日の空欄は退職日の翌日から14日後です。
             </p>
           </>
@@ -360,6 +377,9 @@ export default function Calculator() {
   );
 }
 
+const FUYO_PENDING_TEXT = '続柄（配偶者か、子・その他か）を選ぶと判定します';
+const yenN = (n: number) => n.toLocaleString('ja-JP');
+
 function compareOk(birth: DateParts, leave: DateParts): boolean {
   const age = ageOn(birth, leave);
   return age >= 15 && age < 75;
@@ -394,6 +414,7 @@ function Result({
     <>
       <div className="panel">
         <p style={{ margin: 0 }}>
+          {fuyoAvail && r.fuyoPending && '家族の扶養を除くと、'}
           24か月でいちばん安いのは <strong>{planText(r.best)}</strong> で、合計 <strong>{man(r.best.total)}</strong>
           （健康保険 {man(r.best.health)}＋国民年金 {man(r.best.pension)}）。
           {vsKokuho > 0 && <>国保だけより{man(vsKokuho)}</>}
@@ -435,6 +456,7 @@ function Result({
         <div className="note">離職日に65歳以上のため、国保の非自発的失業の軽減の対象外として計算しています。</div>
       )}
 
+      {fuyoAvail && r.fuyoPending && <div className="note">{FUYO_PENDING_TEXT}</div>}
       {fuyoAvail && r.fuyoBlockedReason && <div className="note">{r.fuyoBlockedReason}。</div>}
       {fuyoAvail && r.benefitPeriod && (
         <p className="hint">
@@ -453,6 +475,14 @@ function Result({
             </tr>
           </thead>
           <tbody>
+            {fuyoAvail && r.fuyoPending && (
+              <tr>
+                <td>家族の扶養</td>
+                <td style={cell}>
+                  <span className="hint">{FUYO_PENDING_TEXT}</span>
+                </td>
+              </tr>
+            )}
             {r.plans.map((p) => (
               <tr key={p.key}>
                 <td>
@@ -470,7 +500,7 @@ function Result({
       </div>
 
       <h3>月ごとの保険料</h3>
-      <MonthTable months={r.months} eligible={eligible} fuyoAvail={fuyoAvail} best={r.best} />
+      <MonthTable months={r.months} eligible={eligible} fuyoAvail={fuyoAvail} fuyoPending={r.fuyoPending} best={r.best} />
 
       <p className="hint">
         金額は100円単位に丸めた目安です。「国民年金」「年金」は、任意継続・国保の人（20〜59歳）が第1号として払う額です（どの入り方でも合計に入れています）。
@@ -485,11 +515,13 @@ function MonthTable({
   months,
   eligible,
   fuyoAvail,
+  fuyoPending,
   best,
 }: {
   months: MonthRow[];
   eligible: boolean;
   fuyoAvail: boolean;
+  fuyoPending: boolean;
   best: PlanResult;
 }) {
   // 360px で列が切れないよう、左右の余白を詰める
@@ -538,7 +570,7 @@ function MonthTable({
                           <td style={tight}>{b('kokuho', yen100(m.kokuho))}</td>
                           {fuyoAvail && (
                             <td style={tight}>
-                              {m.fuyoOk ? b('fuyo', '0円') : '×'}
+                              {fuyoPending ? '未判定' : m.fuyoOk ? b('fuyo', '0円') : '×'}
                             </td>
                           )}
                         </>
