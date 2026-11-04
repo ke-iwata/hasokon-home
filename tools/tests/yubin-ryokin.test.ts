@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   addDays,
@@ -517,5 +518,25 @@ describe('焼き込みの文面', () => {
   it('registry の description に年賀の日付や額を書かない（焼き込みで古くならないように）', () => {
     const d = tools.find((t) => t.slug === 'yubin-ryokin')!.description;
     expect(d).not.toMatch(/年用年賀状|12月20日|12月27日|\d+円になります/);
+  });
+});
+
+describe('改正郵便法の時制（docs/features/kokai-tool-seikaku-2026-11-04.md B2）', () => {
+  // 施行は 2026-12-01。静的書き出しで時制がビルド日に固定されるので、施行の前後どちらで読んでも正しい文にする
+  const root = new URL('../', import.meta.url);
+  const read = (file: string) => readFileSync(new URL(file, root), 'utf8');
+
+  it('page.tsx に「変わりました」「認可制に変わった」が無く、「2026年12月1日施行」がある', () => {
+    const page = read('app/yubin-ryokin/page.tsx');
+    expect(page).not.toContain('変わりました');
+    expect(page).not.toContain('認可制に変わった');
+    expect(page).toContain('2026年12月1日施行');
+    expect(page).toContain('施行前は省令で定めます');
+  });
+
+  it('lib のコメントも施行日を明記した書き方', () => {
+    const lib = read('lib/yubin-ryokin.ts');
+    expect(lib).not.toContain('認可制に変わった');
+    expect(lib).toContain('2026年12月1日施行');
   });
 });

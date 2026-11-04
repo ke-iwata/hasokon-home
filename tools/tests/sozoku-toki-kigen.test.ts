@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import {
   GIMUKA_START,
   KEIKA_SOCHI_DEADLINE,
+  MENZEI_ARTICLE,
   MENZEI_DEADLINE,
+  MENZEI_GUIDE_URL,
   NO_FIRST_REGISTRATION_NOTE,
   OVERDUE_MESSAGE,
   addMonthsSameDay,
@@ -237,5 +239,27 @@ describe('画面の文言（断定しない）', () => {
     const page = sources[0];
     const h1 = /<h1>([^<]+)<\/h1>/.exec(page)?.[1] ?? '';
     expect(h1).toBe('相続登記の期限チェッカー');
+  });
+});
+
+describe('登録免許税の免税の条文番号（docs/features/kokai-tool-seikaku-2026-11-04.md A1）', () => {
+  const root = fileURLToPath(new URL('../', import.meta.url));
+  const page = readFileSync(root + 'app/sozoku-toki-kigen/page.tsx', 'utf8');
+  const lib = readFileSync(root + 'lib/sozoku-toki-kigen.ts', 'utf8');
+
+  it('条文は84条の2の2第2項（法務局の記載例と同じ）', () => {
+    expect(MENZEI_ARTICLE).toBe('租税特別措置法第84条の2の2第2項');
+  });
+
+  it('ページと lib に誤った「84条の2の3」が出ない', () => {
+    expect(page).not.toContain('84条の2の3');
+    expect(lib).not.toContain('84条の2の3');
+  });
+
+  it('本文は定数から条文を出し、申請書への記載の注意と法務局の記載例へのリンクがある', () => {
+    expect(page).toContain('{MENZEI_ARTICLE}により非課税');
+    expect(page).toContain('書かないと免税になりません');
+    expect(page).toContain('MENZEI_GUIDE_URL');
+    expect(MENZEI_GUIDE_URL).toBe('https://houmukyoku.moj.go.jp/homu/page7_000017.html');
   });
 });

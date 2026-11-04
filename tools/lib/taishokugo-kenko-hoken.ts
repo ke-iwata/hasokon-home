@@ -52,7 +52,7 @@ import {
 // ================================================================ 定数
 
 /** 制度データを最後に一次情報と突き合わせた日 */
-export const DATA_CHECKED_AT = '2026-10-31';
+export const DATA_CHECKED_AT = '2026-11-04';
 
 /** 比べる月数（任意継続の最長2年） */
 export const MONTHS = 24;
@@ -78,10 +78,18 @@ export const KOKUHO_NOTIFY_DAYS = 14;
 /** 扶養の年収の基準（60歳未満・60歳以上）と、失業給付の日額に直した線 */
 export const FUYO_INCOME_LIMIT = 1_300_000;
 export const FUYO_INCOME_LIMIT_60 = 1_800_000;
+/**
+ * 19歳以上23歳未満（配偶者を除く）の年収の基準。扶養認定日が令和7年10月1日以降に適用され、
+ * 年齢は扶養認定日の属する年の12月31日時点で判定する（日本年金機構
+ * 「19歳以上23歳未満の被扶養者に係る認定について」。docs/features/kokai-tool-seikaku-2026-11-04.md A2）
+ */
+export const FUYO_INCOME_LIMIT_19_22 = 1_500_000;
 /** 130万円 ÷ 360 の切り上げ。日額がこれ以上だと受給中は扶養に入れない */
 export const FUYO_DAILY_LIMIT = 3_612;
 /** 180万円 ÷ 360 */
 export const FUYO_DAILY_LIMIT_60 = 5_000;
+/** 150万円 ÷ 360 ＝ 4,166.66… の切り上げ */
+export const FUYO_DAILY_LIMIT_19_22 = 4_167;
 
 /** 非自発的失業者の軽減：給与所得を 30/100 とみなす（離職日に65歳未満） */
 export const INVOLUNTARY_RATIO_PERCENT = 30;
@@ -439,11 +447,21 @@ export function defaultBenefitTerms(input: {
   return { restrictionMonths: restriction.months, prescribedDays: prescribed.days };
 }
 
+/**
+ * 扶養に入る人の続柄。扶養してくれるのが配偶者なら 'spouse'（配偶者の扶養）、
+ * 親・子などなら 'other'。19〜22歳の150万円は 'other' だけに効く
+ */
+export type FuyoRelation = 'spouse' | 'other';
+
 export interface FuyoInput {
   /** 扶養してくれる家族がいる */
   available: boolean;
-  /** 扶養してくれるのは配偶者（会社員・公務員）か、それ以外の家族か */
-  supporter: 'spouse' | 'other';
+  /**
+   * 扶養してくれるのは配偶者（会社員・公務員）か、それ以外の家族か。
+   * 扶養に入る年の12/31時点で19〜22歳のとき（needsRelation()）は未選択（undefined）だと
+   * 扶養は「未判定」になる。それ以外の年齢で未選択なら配偶者として扱う（これまでの既定）
+   */
+  supporter?: FuyoRelation;
   /** 失業給付の日額（受けないなら 0） */
   benefitDaily: number;
   /** ハローワークで求職の申込みをする日 */
@@ -471,8 +489,49 @@ export function benefitPeriodOf(leaveDate: DateParts, fuyo: FuyoInput): BenefitP
   return { start: s.benefitStartDate, end: s.benefitEndDate };
 }
 
-/** 扶養の判定に使う日額の線（60歳以上は 180万円 ÷ 360） */
-export const fuyoDailyLimitFor = (age: number) => (age >= 60 ? FUYO_DAILY_LIMIT_60 : FUYO_DAILY_LIMIT);
+/** 19歳以上23歳未満か（扶養に入る日の年の12月31日時点の年齢で見る） */
+export const isFuyoAge19to22 = (ageAtYearEnd: number) => ageAtYearEnd >= 19 && ageAtYearEnd < 23;
+
+/** 扶養に入る日の属する年の12月31日時点の年齢（19〜22歳の判定に使う） */
+export function fuyoAgeAtYearEnd(birth: DateParts, entryDate: DateParts): number {
+  return ageOn(birth, { year: entryDate.year, month: 12, day: 31 });
+}
+
+/**
+ * 続柄（配偶者か、子・その他か）を聞く必要があるか。12/31時点で19〜22歳のときだけ。
+ * それ以外の年齢では続柄で基準が変わらないので聞かない
+ */
+export const needsRelation = (ageAtYearEnd: number) => isFuyoAge19to22(ageAtYearEnd);
+
+/** 退職日から：扶養に入る日（退職日の翌日）の年の12/31時点の年齢。calc() と画面が同じ値を使う */
+export const fuyoAgeAtYearEndForLeave = (birth: DateParts, leaveDate: DateParts) =>
+  fuyoAgeAtYearEnd(birth, addDays(leaveDate, 1));
+
+export interface FuyoLimit {
+  /** 年収の基準（この額以上だと扶養に入れない） */
+  income: number;
+  /** 失業給付の日額の線（この額以上だと受給中は扶養に入れない） */
+  daily: number;
+}
+
+/**
+ * 扶養の収入の基準。60歳以上は180万円、19〜22歳（配偶者を除く）は150万円、それ以外は130万円。
+ * 19〜22歳で続柄が未選択なら、どちらの基準か決まらないので null（未判定）を返す。
+ * `age` はその時点の年齢（60歳の判定。省略すると ageAtYearEnd を使う）
+ */
+export function fuyoLimitFor(input: {
+  ageAtYearEnd: number;
+  relation: FuyoRelation | undefined;
+  age?: number;
+}): FuyoLimit | null {
+  const age = input.age ?? input.ageAtYearEnd;
+  if (age >= 60) return { income: FUYO_INCOME_LIMIT_60, daily: FUYO_DAILY_LIMIT_60 };
+  if (isFuyoAge19to22(input.ageAtYearEnd)) {
+    if (input.relation === undefined) return null;
+    if (input.relation === 'other') return { income: FUYO_INCOME_LIMIT_19_22, daily: FUYO_DAILY_LIMIT_19_22 };
+  }
+  return { income: FUYO_INCOME_LIMIT, daily: FUYO_DAILY_LIMIT };
+}
 
 /**
  * その月に扶養に入っていられるか。月の途中で切り替わる月は**月末にどちらにいるか**で数える。
@@ -482,10 +541,10 @@ export function fuyoOkInMonth(
   ym: YearMonth,
   period: BenefitPeriod | null,
   benefitDaily: number,
-  age: number,
+  dailyLimit: number,
 ): boolean {
   if (!period) return true;
-  if (benefitDaily < fuyoDailyLimitFor(age)) return true;
+  if (benefitDaily < dailyLimit) return true;
   const end = lastDayOf(ym);
   const inPeriod = compareDate(period.start, end) <= 0 && compareDate(end, period.end) <= 0;
   return !inPeriod;
@@ -583,6 +642,13 @@ export interface CalcResult {
   benefitPeriod: BenefitPeriod | null;
   /** 扶養に入れない理由（見込みの年収が基準以上など）。入れる・家族がいないなら null */
   fuyoBlockedReason: string | null;
+  /**
+   * 扶養が未判定か（12/31時点で19〜22歳なのに続柄が未選択）。true のあいだ扶養の列は判定せず、
+   * 任意継続・国保の額だけを出す
+   */
+  fuyoPending: boolean;
+  /** 扶養の判定に使った基準（家族がいない・未判定なら null） */
+  fuyoLimit: FuyoLimit | null;
   /** 非自発的失業者の軽減の対象か（会社都合・離職日に65歳未満） */
   involuntary: boolean;
   plans: PlanResult[];
@@ -652,13 +718,19 @@ export function calc(input: CalcInput): CalcResult {
   const involuntary = input.leaveKind === 'company' && ageAtLeave < INVOLUNTARY_AGE_LIMIT;
   const standard = standardMonthly(Math.max(0, input.monthlySalary));
 
-  // 扶養
-  const futureLimit = ageAtLeave >= 60 ? FUYO_INCOME_LIMIT_60 : FUYO_INCOME_LIMIT;
+  // 扶養（19〜22歳の判定は、扶養に入る日＝退職日の翌日の年の12/31時点の年齢）
+  const ageAtYearEnd = fuyoAgeAtYearEndForLeave(birthDate, leaveDate);
+  const relation: FuyoRelation | undefined =
+    input.fuyo.supporter ?? (needsRelation(ageAtYearEnd) ? undefined : 'spouse');
+  const fuyoPending = input.fuyo.available && needsRelation(ageAtYearEnd) && relation === undefined;
+  const annualLimit = input.fuyo.available
+    ? fuyoLimitFor({ ageAtYearEnd, relation, age: ageAtLeave })
+    : null;
   let fuyoBlockedReason: string | null = null;
-  if (input.fuyo.available && input.salaryAfter + Math.max(0, input.otherIncome) >= futureLimit) {
-    fuyoBlockedReason = `退職後の見込みの年収が${(futureLimit / 10_000).toLocaleString('ja-JP')}万円以上なので、扶養に入れません`;
+  if (annualLimit && input.salaryAfter + Math.max(0, input.otherIncome) >= annualLimit.income) {
+    fuyoBlockedReason = `退職後の見込みの年収が${(annualLimit.income / 10_000).toLocaleString('ja-JP')}万円以上なので、扶養に入れません`;
   }
-  const fuyoUsable = input.fuyo.available && fuyoBlockedReason === null;
+  const fuyoUsable = input.fuyo.available && !fuyoPending && fuyoBlockedReason === null;
   const period = fuyoUsable ? benefitPeriodOf(leaveDate, input.fuyo) : null;
 
   const kokuhoTables = input.kokuhoTables ?? KOKUHO_TABLES;
@@ -723,7 +795,8 @@ export function calc(input: CalcInput): CalcResult {
     const p = premiumFor(ym);
     if (p.estimated && age >= 20 && age < 60) marks.push(`国民年金は${reiwaFy(fy)}の額を直前の年度の額で概算`);
     const pension = age >= 20 && age < 60 ? p.amount : 0;
-    const pensionFuyo = input.fuyo.supporter === 'spouse' ? 0 : pension;
+    const pensionFuyo = relation === 'other' ? pension : 0;
+    const monthLimit = fuyoUsable ? fuyoLimitFor({ ageAtYearEnd, relation, age }) : null;
 
     months.push({
       ym,
@@ -735,7 +808,8 @@ export function calc(input: CalcInput): CalcResult {
       kokuhoAnnual: annual,
       kokuhoIncomeYear: incomeYear,
       involuntary: monthInvoluntary,
-      fuyoOk: fuyoUsable && !kouki && fuyoOkInMonth(ym, period, input.fuyo.benefitDaily, age),
+      fuyoOk:
+        fuyoUsable && monthLimit !== null && !kouki && fuyoOkInMonth(ym, period, input.fuyo.benefitDaily, monthLimit.daily),
       pension: kouki ? 0 : pension,
       pensionFuyo: kouki ? 0 : pensionFuyo,
       marks,
@@ -774,6 +848,8 @@ export function calc(input: CalcInput): CalcResult {
     standard,
     benefitPeriod: period,
     fuyoBlockedReason,
+    fuyoPending,
+    fuyoLimit: fuyoUsable ? annualLimit : null,
     involuntary,
     plans,
     best,

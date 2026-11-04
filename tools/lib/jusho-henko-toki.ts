@@ -32,8 +32,36 @@ export const JUSHO_KARYO_MAX_YEN = 50_000;
 export const TOROKU_MENKYO_PER_PROPERTY = 1_000;
 /** 検索用情報の申出の開始日（この日以後の所有権の登記で同時に申し出る） */
 export const SEARCH_INFO_FROM = '2025-04-21';
+/**
+ * 【データ更新箇所】個人のスマート変更登記（職権登記）を始める時期（法務省「住所等変更登記の義務化に関するQ&A」
+ * 令和8年9月30日現在 第3 Q1・Q8、第4 Q1）。Q&A が更新されたらここだけ直す。
+ * docs/features/kokai-tool-seikaku-2026-11-04.md B3
+ */
+export const SMART_TOKI = {
+  /** 個人の職権登記を始める時期（日付ではなく「中旬」までしか示されていない） */
+  kojinStartLabel: '2026年12月中旬',
+  /** この日までに申出が済んだ人が、令和8年度に処理される */
+  firstBatchApplyUntil: '2026-03-31',
+  /** それより後に申し出た人の処理が始まる時期 */
+  laterBatchLabel: '2027年度（2027年4月以降）',
+  /** 法人（会社法人等番号の登記）の開始日 */
+  hojinStart: '2026-05-15',
+  /** Q&A の「現在」の日付 */
+  qaAsOf: '2026-09-30',
+} as const;
 /** 条文・法務省の案内を最後に確かめた日 */
-export const JUSHO_DATA_CHECKED_AT = '2026-10-02';
+export const JUSHO_DATA_CHECKED_AT = '2026-11-04';
+
+function fmtJa(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  return `${y}年${m}月${d}日`;
+}
+
+function nextDay(ymd: string): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + 1));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
 
 // ---------------------------------------------------------------- 期限
 
@@ -110,7 +138,13 @@ export { OVERDUE_MESSAGE } from './sozoku-toki-kigen';
  * 検索用情報の申出（または会社法人等番号の登記）が「済んでいる」人への注記。
  * 期限は消さない。申出の効果（義務を果たしたことになるか）は言い切らない（#316 レビュー必須 1）
  */
+/** 個人の職権登記がいつから動くかの1文（SMART_TOKI から作る） */
+export const SMART_TOKI_SCHEDULE_NOTE =
+  `個人の職権登記は${SMART_TOKI.kojinStartLabel}から始まり、${fmtJa(SMART_TOKI.firstBatchApplyUntil)}までに申し出た人から処理されます。` +
+  `${fmtJa(nextDay(SMART_TOKI.firstBatchApplyUntil))}以降に申し出た人は${SMART_TOKI.laterBatchLabel}からです（法人は${fmtJa(SMART_TOKI.hojinStart)}から）。`;
+
 export const SEARCH_INFO_DONE_NOTE =
+  SMART_TOKI_SCHEDULE_NOTE +
   '法務局が職権で変更登記をする対象です。職権登記は法務局から本人への確認を経て行われ、応答が無ければ登記されません。法務局からの通知に応答してください。期限までに職権登記がされない場合に備えて、期限は上のとおり把握しておいてください。';
 
 /** 申出をしたか「分からない」人への注記 */

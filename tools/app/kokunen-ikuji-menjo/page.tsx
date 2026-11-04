@@ -13,6 +13,7 @@ import {
   IKUJI_MONTHS_MOTHER,
   IKUJI_MONTHS_OTHERS,
   MONTHLY_PREMIUM,
+  reiwaFiscalYear,
   SANZEN_MONTHS_MULTIPLE,
   SANZEN_MONTHS_SINGLE,
 } from '@/lib/kokunen-ikuji-menjo';
@@ -41,6 +42,10 @@ const ja = (iso: string) => {
 
 const PREMIUM_2026 = MONTHLY_PREMIUM['2026'];
 const PREMIUM_2025 = MONTHLY_PREMIUM['2025'];
+const PREMIUM_2027 = MONTHLY_PREMIUM['2027'];
+/** 公表済みの最新年度（これより後の年度は概算になる） */
+const LATEST_FY = Math.max(...Object.keys(MONTHLY_PREMIUM).map(Number));
+const LATEST_PREMIUM = MONTHLY_PREMIUM[String(LATEST_FY)];
 const MOTHER_MONTHS = SANZEN_MONTHS_SINGLE + IKUJI_MONTHS_MOTHER;
 
 const faq = [
@@ -152,7 +157,8 @@ export default function Page() {
         {MOTHER_MONTHS}か月で{yen(PREMIUM_2026 * MOTHER_MONTHS)}、実父{IKUJI_MONTHS_OTHERS}か月で
         {yen(PREMIUM_2026 * IKUJI_MONTHS_OTHERS)}、
         <strong>夫婦とも第1号なら合計{yen(PREMIUM_2026 * (MOTHER_MONTHS + IKUJI_MONTHS_OTHERS))}</strong>
-        の負担がなくなります（令和9年度以降の月は令和8年度の額で概算）。
+        の負担がなくなります（令和8年度の額で計算した目安。令和9年度は月{yen(PREMIUM_2027)}なので、
+        2027年4月以降の月を含むと実際の額は少し増えます）。
       </p>
 
       <h2>出産した本人は、先に「産前産後免除」がある</h2>
@@ -239,8 +245,9 @@ export default function Page() {
         </tbody>
       </table>
       <p className="hint">
-        令和9年度（2027年4月）以降の月は、保険料が未公表のため令和8年度の月額{yen(PREMIUM_2026)}
-        で概算しています。国民年金保険料は毎年4月に改定されます。
+        令和9年度（2027年4月〜）は月{yen(PREMIUM_2027)}で計算しています。
+        {reiwaFiscalYear(LATEST_FY + 1)}（{LATEST_FY + 1}年4月）以降の月は、保険料が未公表のため
+        {reiwaFiscalYear(LATEST_FY)}の月額{yen(LATEST_PREMIUM)}で概算しています。国民年金保険料は毎年4月に改定されます。
       </p>
 
       <h2>届出のしかた</h2>

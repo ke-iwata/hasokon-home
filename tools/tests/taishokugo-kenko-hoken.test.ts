@@ -12,6 +12,11 @@ import {
   FUYO_DAILY_LIMIT,
   FUYO_DAILY_LIMIT_60,
   fuyoOkInMonth,
+  fuyoLimitFor,
+  needsRelation,
+  fuyoAgeAtYearEnd,
+  FUYO_DAILY_LIMIT_19_22,
+  FUYO_INCOME_LIMIT_19_22,
   involuntaryCovers,
   KOKUHO_TABLES,
   kokuhoAnnual,
@@ -300,15 +305,18 @@ describe('扶養と失業給付', () => {
 
   test('日額 3,612円で入れない／3,611円で入れる（受給中の月）', () => {
     const p = period(0);
-    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT, 45)).toBe(false);
-    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT - 1, 45)).toBe(true);
+    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT, FUYO_DAILY_LIMIT)).toBe(false);
+    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT - 1, FUYO_DAILY_LIMIT)).toBe(true);
   });
 
   test('60歳以上は 180万円（日額5,000円）の線', () => {
     const p = period(0);
-    expect(fuyoOkInMonth('2027-02', p, 4_999, 60)).toBe(true);
-    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT_60, 60)).toBe(false);
-    expect(fuyoOkInMonth('2027-02', p, 4_999, 59)).toBe(false);
+    const at60 = fuyoLimitFor({ ageAtYearEnd: 60, relation: 'spouse', age: 60 })!.daily;
+    const at59 = fuyoLimitFor({ ageAtYearEnd: 60, relation: 'spouse', age: 59 })!.daily;
+    expect(at60).toBe(FUYO_DAILY_LIMIT_60);
+    expect(fuyoOkInMonth('2027-02', p, 4_999, at60)).toBe(true);
+    expect(fuyoOkInMonth('2027-02', p, FUYO_DAILY_LIMIT_60, at60)).toBe(false);
+    expect(fuyoOkInMonth('2027-02', p, 4_999, at59)).toBe(false);
   });
 
   test('自己都合（給付制限1か月）：待期7日＋1か月は扶養、その翌日から所定給付日数ぶん外れる', () => {
@@ -317,16 +325,16 @@ describe('扶養と失業給付', () => {
     expect(p.start).toEqual(addDays(d('2027-01-15'), WAITING_DAYS + 31));
     expect(p.start).toEqual(d('2027-02-22'));
     expect(p.end).toEqual(d('2027-05-22'));
-    expect(fuyoOkInMonth('2027-01', p, 5_000, 45)).toBe(true);
-    expect(fuyoOkInMonth('2027-02', p, 5_000, 45)).toBe(false); // 月末は受給中
-    expect(fuyoOkInMonth('2027-04', p, 5_000, 45)).toBe(false);
-    expect(fuyoOkInMonth('2027-05', p, 5_000, 45)).toBe(true); // 5/22 に終わり、月末は扶養
+    expect(fuyoOkInMonth('2027-01', p, 5_000, FUYO_DAILY_LIMIT)).toBe(true);
+    expect(fuyoOkInMonth('2027-02', p, 5_000, FUYO_DAILY_LIMIT)).toBe(false); // 月末は受給中
+    expect(fuyoOkInMonth('2027-04', p, 5_000, FUYO_DAILY_LIMIT)).toBe(false);
+    expect(fuyoOkInMonth('2027-05', p, 5_000, FUYO_DAILY_LIMIT)).toBe(true); // 5/22 に終わり、月末は扶養
   });
 
   test('会社都合は待期7日のあとすぐ外れる', () => {
     const p = period(0);
     expect(p.start).toEqual(d('2027-01-22'));
-    expect(fuyoOkInMonth('2027-01', p, 5_000, 45)).toBe(false);
+    expect(fuyoOkInMonth('2027-01', p, 5_000, FUYO_DAILY_LIMIT)).toBe(false);
   });
 
   test('所定給付日数・給付制限の既定値は shitsugyo-hoken の値と一致する', () => {
@@ -371,7 +379,8 @@ describe('国民年金', () => {
   test('配偶者の扶養（本人45歳）は 0円', () => {
     const m = withFuyo('spouse').months.find((x) => x.ym === '2027-04')!;
     expect(m.pensionFuyo).toBe(0);
-    expect(m.pension).toBe(17_920);
+    expect(m.pension).toBe(18_290); // 令和9年度（公表済み。概算の印は付かない）
+    expect(m.marks.some((x) => x.includes('国民年金'))).toBe(false);
   });
 
   test('親・子の扶養は健康保険 0円でも国民年金 17,920円（R8）', () => {
@@ -437,3 +446,118 @@ describe('おすすめの入り方', () => {
     expect(r.best.total).toBe(0);
   });
 });
+
+describe('19〜22歳の扶養の基準（docs/features/kokai-tool-seikaku-2026-11-04.md A2）', () => {
+  // 2026-12-31 退職 → 扶養に入るのは 2027-01-01。年齢はその年（2027年）の12/31時点で見る
+  const leave = d('2026-12-31');
+  /** 2027-12-31 時点で ageAtYearEnd 歳になる生年月日（誕生日 6/15） */
+  const birthFor = (ageAtYearEnd: number) => `${2027 - ageAtYearEnd}-06-15`;
+  const withDaily = (ageAtYearEnd: number, supporter: 'spouse' | 'other' | undefined, benefitDaily: number) =>
+    calc(
+      base({
+        birthDate: d(birthFor(ageAtYearEnd)),
+        monthlySalary: 200_000,
+        salaryPrevYear: 2_400_000,
+        salaryLeaveYear: 2_400_000,
+        leaveKind: 'company',
+        fuyo: {
+          available: true,
+          supporter,
+          benefitDaily,
+          applyDate: defaultApplyDate(leave),
+          restrictionMonths: 0,
+          prescribedDays: 90,
+        },
+      }),
+    );
+  const receivingMonth = (r: ReturnType<typeof calc>) => r.months.find((m) => m.ym === '2027-02')!;
+
+  test('定数：150万円・日額 4,167円（150万 ÷ 360 の切り上げ）', () => {
+    expect(FUYO_INCOME_LIMIT_19_22).toBe(1_500_000);
+    expect(FUYO_DAILY_LIMIT_19_22).toBe(Math.ceil(1_500_000 / 360));
+  });
+
+  test('fuyoLimitFor：子・その他の19〜22歳は150万円、配偶者・23歳・18歳は130万円、60歳以上は180万円', () => {
+    expect(fuyoLimitFor({ ageAtYearEnd: 22, relation: 'other' })).toEqual({ income: 1_500_000, daily: 4_167 });
+    expect(fuyoLimitFor({ ageAtYearEnd: 19, relation: 'other' })!.income).toBe(1_500_000);
+    expect(fuyoLimitFor({ ageAtYearEnd: 21, relation: 'spouse' })).toEqual({ income: 1_300_000, daily: 3_612 });
+    expect(fuyoLimitFor({ ageAtYearEnd: 23, relation: 'other' })!.income).toBe(1_300_000);
+    expect(fuyoLimitFor({ ageAtYearEnd: 18, relation: 'other' })!.income).toBe(1_300_000);
+    expect(fuyoLimitFor({ ageAtYearEnd: 60, relation: 'other' })!.income).toBe(1_800_000);
+  });
+
+  test('fuyoLimitFor：19〜22歳で続柄が未選択なら未判定（null）。ほかの年齢は未選択でも決まる', () => {
+    expect(fuyoLimitFor({ ageAtYearEnd: 20, relation: undefined })).toBeNull();
+    expect(fuyoLimitFor({ ageAtYearEnd: 35, relation: undefined })).toEqual({ income: 1_300_000, daily: 3_612 });
+  });
+
+  test('年齢は扶養に入る日の年の12月31日時点（2026-11 に19歳になる人は2026年分から150万円）', () => {
+    expect(fuyoAgeAtYearEnd(d('2007-11-20'), d('2026-07-01'))).toBe(19);
+    expect(fuyoAgeAtYearEnd(d('2007-11-20'), d('2026-07-01'))).not.toBe(ageOnBirthday(d('2007-11-20'), d('2026-07-01')));
+  });
+
+  test('12/31時点で18歳・23歳・35歳 → 続柄の質問が出ない（needsRelation が false）', () => {
+    for (const a of [18, 23, 35]) expect(needsRelation(a)).toBe(false);
+    for (const a of [19, 20, 21, 22]) expect(needsRelation(a)).toBe(true);
+  });
+
+  test('子・22歳・日額 4,000円 → 受給中も扶養に入れる（130万円の線では入れなかった）', () => {
+    const r = withDaily(22, 'other', 4_000);
+    expect(r.fuyoPending).toBe(false);
+    expect(receivingMonth(r).fuyoOk).toBe(true);
+    expect(r.fuyoLimit).toEqual({ income: 1_500_000, daily: 4_167 });
+  });
+
+  test('子・23歳 → 130万円側（日額 4,000円では受給中は入れない）', () => {
+    const r = withDaily(23, 'other', 4_000);
+    expect(receivingMonth(r).fuyoOk).toBe(false);
+  });
+
+  test('配偶者・21歳 → 130万円側（日額 4,000円では受給中は入れない）', () => {
+    const r = withDaily(21, 'spouse', 4_000);
+    expect(receivingMonth(r).fuyoOk).toBe(false);
+  });
+
+  test('子・20歳：日額 4,167円 → 入れない／4,166円 → 入れる', () => {
+    expect(receivingMonth(withDaily(20, 'other', 4_167)).fuyoOk).toBe(false);
+    expect(receivingMonth(withDaily(20, 'other', 4_166)).fuyoOk).toBe(true);
+  });
+
+  test('19〜22歳で未選択 → 扶養は未判定（列も候補も出さない）で、任意継続・国保の額は出る', () => {
+    const r = withDaily(22, undefined, 4_000);
+    const chosen = withDaily(22, 'other', 4_000);
+    expect(r.fuyoPending).toBe(true);
+    expect(r.fuyoBlockedReason).toBeNull();
+    expect(r.months.every((m) => !m.fuyoOk)).toBe(true);
+    expect(r.plans.some((p) => p.key === 'fuyo')).toBe(false);
+    expect(r.ninkeiOnly!.total).toBe(chosen.ninkeiOnly!.total);
+    expect(r.kokuhoOnly.total).toBe(chosen.kokuhoOnly.total);
+    expect(r.kokuhoOnly.total).toBeGreaterThan(0);
+  });
+
+  test('35歳で未選択 → これまでどおり配偶者の扶養として判定（結果は変わらない）', () => {
+    const r = withDaily(35, undefined, 0);
+    const spouse = withDaily(35, 'spouse', 0);
+    expect(r.fuyoPending).toBe(false);
+    expect(r.best).toEqual(spouse.best);
+  });
+
+  test('見込みの年収：子・22歳は140万円なら入れる・150万円なら入れない', () => {
+    const at = (salaryAfter: number) =>
+      calc(
+        base({
+          birthDate: d(birthFor(22)),
+          salaryAfter,
+          fuyo: { ...base().fuyo, available: true, supporter: 'other' },
+        }),
+      ).fuyoBlockedReason;
+    expect(at(1_400_000)).toBeNull();
+    expect(at(1_500_000)).toContain('150万円');
+  });
+});
+
+function ageOnBirthday(birth: { year: number; month: number; day: number }, on: { year: number; month: number; day: number }) {
+  let a = on.year - birth.year;
+  if (on.month < birth.month || (on.month === birth.month && on.day < birth.day)) a -= 1;
+  return a;
+}
