@@ -339,11 +339,8 @@ export default function Game() {
       }
       return;
     }
-    if (phase === 'idle' && mode === 'cpu' && human === 'w') {
-      // 白番で自分から指したときは、それをスタートの合図とみなす（リバーシと同じ）
-    } else if (phase !== 'me') {
-      return;
-    }
+    // スタート待ち（idle）は StartGate の幕が盤を覆っていて、盤には触れない
+    if (phase !== 'me') return;
     if (selected !== null && selected !== sq && tryMove(selected, sq)) return;
     if (own(sq) && selected !== sq) setSelected(sq);
     else setSelected(null);
@@ -419,7 +416,7 @@ export default function Game() {
   };
 
   const canDragFrom = (sq: number) =>
-    (phase === 'me' || (phase === 'idle' && mode === 'cpu' && human === 'w')) && own(sq);
+    phase === 'me' && own(sq);
 
   const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
     if (e.button !== 0) return;
@@ -487,7 +484,7 @@ export default function Game() {
 
   // ---------------------------------------------------------------- 描画の材料
 
-  const targets = selected !== null && (phase === 'me' || phase === 'promote' || phase === 'idle') ? targetsOf(selected) : [];
+  const targets = selected !== null && (phase === 'me' || phase === 'promote') ? targetsOf(selected) : [];
   const targetSet = new Set(targets.map((m) => m.to));
   const lastMove = current.move;
   const checkSq = useMemo(() => {
@@ -519,7 +516,7 @@ export default function Game() {
     else if (phase === 'promote') message = '成る駒を選んでください';
     else message = `${SIDE_NAME[me]}の番です。1手でチェックメイトにする手を指してください`;
   } else if (phase === 'idle') {
-    message = human === 'w' ? '駒をタップすると動ける先が光ります。スタートか最初の1手で始まります' : 'スタートを押すと CPU（白）が指し始めます';
+    message = human === 'w' ? 'スタートを押すと始まります。駒をタップすると動ける先が光ります' : 'スタートを押すと CPU（白）が指し始めます';
   } else if (phase === 'cpu') {
     message = 'CPUが考えています…';
   } else if (phase === 'promote') {
