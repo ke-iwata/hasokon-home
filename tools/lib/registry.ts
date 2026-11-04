@@ -164,7 +164,7 @@ export const tools: ToolDef[] = [
     // （lib/shukuhakuzei.ts の TOKYO_RATE_DETAILS_CONFIRMED / OKINAWA_SPLIT_CONFIRMED。テストが落とす）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
     stage: 'preview',
-    updatedAt: '2026-10-13',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'yukyu-fuyo',
@@ -343,7 +343,7 @@ export const tools: ToolDef[] = [
       '税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を約50項目の一覧から引ける軽減税率チェッカーと、2027年4月からの食料品1%（予定）でいくら安くなるかの計算つき。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shuzei-kaisei',
@@ -452,7 +452,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃と保険料調整制度（本人負担25〜48%）に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shitsugyo-hoken',
@@ -484,7 +484,7 @@ export const tools: ToolDef[] = [
     // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
     // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
     stage: 'public',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shobyo-teate',
