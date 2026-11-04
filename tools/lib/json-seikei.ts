@@ -404,6 +404,14 @@ class ParseError extends Error {
   }
 }
 
+/**
+ * 半角の " で開いて全角の ” で閉じた文字列（"太郎”）の見当。日本語入力でいちばん起きやすい形。
+ * 仕様の判定 1 のとおり、半角の " の中の ” は中身なので直さず、言うだけにする
+ */
+function fullwidthCloseHint(content: string): string | undefined {
+  return /[”＂]/.test(content) ? '閉じの引用符が全角（”）になっていないか確かめてください' : undefined;
+}
+
 const NON_JSON_VALUES = ['-Infinity', 'Infinity', 'NaN', 'undefined'];
 
 const HINT = {
@@ -660,7 +668,7 @@ class Parser {
     const start = ++this.i; // 開きの "
     for (;;) {
       if (this.i >= s.length) {
-        this.fail('文字列が閉じていません（" がありません）', undefined, undefined, start - 1);
+        this.fail('文字列が閉じていません（" がありません）', fullwidthCloseHint(s.slice(start, this.i)), undefined, start - 1);
       }
       const c = s.charCodeAt(this.i);
       if (c === 0x22) {
@@ -687,7 +695,10 @@ class Parser {
         );
       }
       if (c === 0x0a || c === 0x0d) {
-        this.fail('文字列の途中で改行しています', '文字列の閉じの " が抜けていないか確かめてください');
+        this.fail(
+          '文字列の途中で改行しています',
+          fullwidthCloseHint(s.slice(start, this.i)) ?? '文字列の閉じの " が抜けていないか確かめてください',
+        );
       }
       if (c < 0x20) {
         this.fail(`文字列の中に${describeChar(s[this.i])}があります`, 'タブは \\t、改行は \\n と書きます');

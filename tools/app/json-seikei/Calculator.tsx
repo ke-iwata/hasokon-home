@@ -430,7 +430,8 @@ export default function Calculator() {
               type="button"
               style={buttonStyle()}
               onClick={fixZenkaku}
-              disabled={!scan || scan.replaced.length === 0}
+              // 2MB 超で判定が入力に追いついていない間に押すと、最後の打鍵が消えるので押させない
+              disabled={!scan || scan.replaced.length === 0 || input !== settled}
             >
               全角を直す{scan && scan.replaced.length > 0 ? `（${scan.replaced.length}）` : ''}
             </button>

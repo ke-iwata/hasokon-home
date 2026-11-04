@@ -259,6 +259,18 @@ describe('エラーの位置と原因の見当（hint の表）', () => {
     expect(ng('{"a": 1} x').message).toContain('余分な文字');
   });
 
+  it('半角の " で開いて全角の ” で閉じた文字列は、直さずに見当を言う', () => {
+    const r = ng('{"a":"x”}');
+    expect(r.message).toBe('文字列が閉じていません（" がありません）');
+    expect(r.hint).toBe('閉じの引用符が全角（”）になっていないか確かめてください');
+    expect(r.fixable).toBe(false);
+    expect(ng('{\n  "a": "太郎”,\n  "b": 1\n}').hint).toBe(
+      '閉じの引用符が全角（”）になっていないか確かめてください',
+    );
+    // 閉じの ” が無いただの閉じ忘れには言わない
+    expect(ng('{"a": "x').hint).toBeUndefined();
+  });
+
   it('入れ子が深すぎると止める', () => {
     expect(ok('['.repeat(MAX_DEPTH) + ']'.repeat(MAX_DEPTH)).stats.depth).toBe(MAX_DEPTH);
     expect(ng('['.repeat(MAX_DEPTH + 1) + ']'.repeat(MAX_DEPTH + 1)).message).toContain('入れ子が深すぎます');
