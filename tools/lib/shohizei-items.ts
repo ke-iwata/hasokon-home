@@ -23,7 +23,7 @@
 export const QA_REVISION = '令和8年4月改訂';
 
 /** 突き合わせた日 */
-export const ITEMS_CHECKED_AT = '2026-09-18';
+export const ITEMS_CHECKED_AT = '2026-10-19';
 
 /**
  * 適用される税率の区分。
@@ -57,9 +57,9 @@ export const ITEM_CATEGORIES: ItemCategory[] = ['gaishoku', 'sake', 'drink', 'ot
 /**
  * 8% の根拠が「飲食料品」なのか「新聞」なのか。
  *
- * **2027年4月の1%の当たり方がここで分かれる。** 報道では定期購読の新聞は
- * 8%のままとされているが、法案の条文で確認するまで表に書かない
- * （`rate2027For()` が `'newspaper-unconfirmed'` を返す）。
+ * **2027年4月の1%の当たり方がここで分かれる。** 法律案 第2条第1項で1%になるのは
+ * 飲食料品（消費税法 別表第一 第一号）だけで、定期購読の新聞（同 第二号）は入らない
+ * （`rate2027For()` が `'newspaper-8-bill'` を返す）。
  */
 export type ItemScope = 'food' | 'newspaper';
 
@@ -721,16 +721,18 @@ export function itemGroups(items: ShohizeiItem[] = ITEMS): ItemGroup[] {
  * 2027年4月以降にどうなるか。
  *
  * - `'food-1percent'`: 飲食料品なので1%になる（予定）
- * - `'newspaper-unconfirmed'`: 新聞。報道では8%のままとされているが、
- *   **法案の条文で確認できていないので画面に税率を書かない**
+ * - `'newspaper-8-bill'`: 新聞。法律案 第2条第1項の対象（別表第一 第一号の飲食料品）に
+ *   入らないので8%のまま。**報道ではなく法律案を根拠にする**
  * - `'same'`: いまと変わらない（10%・非課税）
  * - `'depends'`: いまと同じく場合によって分かれる
  */
-export type Rate2027 = 'food-1percent' | 'newspaper-unconfirmed' | 'same' | 'depends';
+export type Rate2027 = 'food-1percent' | 'newspaper-8-bill' | 'same' | 'depends';
 
 export const RATE_2027_LABEL: Record<Rate2027, string> = {
   'food-1percent': '1%',
-  'newspaper-unconfirmed': '未確認',
+  // 「（法案）」の添え書きは画面側が `billNote()`（lib/shohizei.ts）から足す。
+  // このファイルは shohizei.ts を import しないので、法案の状態をここに書かない
+  'newspaper-8-bill': '8%のまま',
   same: '変わらない',
   depends: '場合による',
 };
@@ -745,5 +747,5 @@ export function rate2027For(item: ShohizeiItem, shown = true): Rate2027 | null {
   if (!shown) return null;
   if (item.rate === 'depends') return 'depends';
   if (item.rate !== 'reduced') return 'same';
-  return item.scope === 'newspaper' ? 'newspaper-unconfirmed' : 'food-1percent';
+  return item.scope === 'newspaper' ? 'newspaper-8-bill' : 'food-1percent';
 }

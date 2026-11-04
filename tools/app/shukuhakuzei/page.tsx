@@ -239,11 +239,11 @@ export default function Page() {
         </a>
         ／
         <a
-          href="https://www.city.kyoto.lg.jp/gyozai/cmsfiles/contents/0000345/345893/daijindoui_houdouhappyou.pdf"
+          href="https://www.city.kyoto.lg.jp/gyozai/page/0000236942.html"
           target="_blank"
           rel="nofollow noopener noreferrer"
         >
-          京都市 報道発表（総務大臣同意）
+          京都市「宿泊税について」
         </a>
         ／
         <a

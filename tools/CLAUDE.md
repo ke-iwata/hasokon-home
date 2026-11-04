@@ -240,6 +240,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 住所・氏名変更登記の期限の改正時 | `lib/jusho-henko-toki.ts` の冒頭の定数（`JUSHO_GIMUKA_START`・`JUSHO_KEIKA_SOCHI_DEADLINE`・`JUSHO_TOKI_MONTHS`・`JUSHO_KARYO_MAX_YEN`・`TOROKU_MENKYO_PER_PROPERTY`）と `JUSHO_DATA_CHECKED_AT`。法務省「住所等変更登記の義務化に関するQ&A」と e-Gov を正とする。応当日の計算は `sozoku-toki-kigen` の関数を使っているので、ここには持たない |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 速度違反の反則金・点数・法定速度の改正時 | `lib/sokudo-ihan.ts` の `FINE_BANDS`（施行令 別表第六）・`pointsFor()`（別表第二）・`speedLimit()`（施行令11条・27条）と `DATA_CHECKED_AT`。e-Gov 法令API で道路交通法施行令（`335CO0000000270`）を引いて写す（警視庁の表は写しなので、食い違ったら施行令を正とする）。**標識の速度は原付には30km/hを超えて及ばない**（標識令 別表第一「最高速度」）ので、`speedLimit()` の `Math.min` を外さないこと |
+| 毎年12月（税制改正大綱が出たら）・自動車の税の改正時 | 自動車の税金：`lib/jidosha-zei.ts` の `DISPLACEMENT_CLASSES`（種別割・重課・グリーン化特例）・`KEI_RATES`・`JURYO_RATES`・`ECO_PERIODS`・`JUKA_STATUTORY_UNTIL`（重課の対象の登録日。延長されたら進める）と `DATA_CHECKED_AT`。e-Gov 法令API で地方税法（`325AC0000000226`）の154条・157条・附則12条の3〜12条の4・448条・附則30条、自動車重量税法（`346AC0000000089`）7条、租税特別措置法（`332AC0000000026`）90条の11〜90条の12 を引く。**令和9年度大綱（2026年12月中旬）で EV・PHEV の新しい負担の額が決まり、改正法が成立したら `EV_SURCHARGE_DECIDED` を true にして `EV_SURCHARGE_PER_UNIT` を入れる**（それまでは「未定」を返す）。令和10年度以後の種別割の見直し（重量・環境性能）が決まったら、`shubetsuwari()` に年度つきの表を足す（[仕様](../docs/features/jidosha-zei-keisan.md)） |
 | 割増賃金令・労基法37条の改正時（残業代） | `lib/zangyodai.ts` の `PREMIUM_RATES`（時間外1.25・60時間超1.50・法定休日1.35・深夜の加算0.25）と `MONTHLY_OVERTIME_THRESHOLD`。率は**法定の最低限度**なので、就業規則が上回る場合の上書きは持たせていない。深夜は「他の率に +0.25 が乗るだけ」の1項目にしてある（施行規則20条の5割／7割5分／6割と一致する） |
 | 通勤手当の非課税限度額の改正時 | `lib/tsukin-teate.ts` の `DISTANCE_BANDS`・`PARKING_CAP`・`TOTAL_CAP`（国税庁「通勤手当の非課税限度額の改正について」とQ&Aを正とする）。確かめただけでも `DATA_CHECKED_AT` を進める。改正前の表（`DISTANCE_BANDS_BEFORE_2026_04`）は令和8年1〜3月分の確認用で、令和9年分の年末調整が済んだら外してよい |
 | 食事補助の非課税限度額の改正時 | `lib/shokuji-hojo-hikazei.ts` の `LIMIT_FROM_2026_04` / `LIMIT_BEFORE`・夜食代の `YASHOKU_FROM_2026_04` / `YASHOKU_BEFORE` と `DATA_CHECKED_AT`（国税庁 No.2594・No.2594-1・個別通達 840726/01 を正とする）。**税抜きへの換算は税率ごとに合計してから**（行ごとに直さない）。夜食代の換算の税率が一次情報で示されたら、保留の帯（`judgeYashoku()` の `pending`）を狭める |
@@ -249,7 +250,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 就学支援金の限度額改定時 | `lib/koko-jugyoryo.ts` の `SUPPORT_LIMITS`（公立・私立の年額と通信制の1単位あたり）。上限単位数は `UNITS_PER_YEAR_CAP` / `UNITS_TOTAL_CAP` |
 | 防衛特別所得税・復興特別所得税の税率・課税期間の改正時 | `lib/boei-tokubetsu-shotokuzei.ts` の `SURTAX_PERIODS`（税率は千分率の整数）。区切りの年（`DEFENSE_START_YEAR` / `RECONSTRUCTION_LAST_YEAR_*`）も同じ場所。**合計2.1%が改正前後で同じ**ことは `tests/boei-tokubetsu-shotokuzei.test.ts` が令和9年分 源泉徴収税額表の別表第四と突き合わせて見張っている。控除額は `lib/furusato-nozei.ts`・`lib/nenmatsu-chosei.ts` にあり、ここには持たない |
 | たばこ税率の改正時 | `lib/tabako-zei.ts` の `PHASES` に施行日つきのフェーズを1つ足す（施行日の昇順を保つこと。財務省「たばこ税等に関する資料」・国税庁を正とする）。現行の3段階は2029年4月で終わるので、それ以降の改正が決まるまで追加は不要 |
-| 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞の扱いも条文で確認し、確認できるまで `rate2027For()` は `'newspaper-unconfirmed'` を返したままにする |
+| 飲食料品1%の法案が動いたとき（成立・否決・施行） | `lib/shohizei.ts` の `FOOD_RATE_2027.status` を `'cabinet-decision'` → `'enacted'` → `'in-force'`（否決なら `'withdrawn'`）に進める。**UIの「成立前です」の印と、`title` / `description` の「（予定）」はこの1つの値から決まる**ので、他を触らない。成立したら `app/shohizei-keisan/page.tsx` の `title` / `description` から「（予定）」が外れることと、**1%の対象範囲が現行の軽減税率の範囲とずれていないか**を条文で確かめる（ずれるとB・Cの両方に効く）。定期購読の新聞は法律案 第2条で対象外（8%のまま）なので `rate2027For()` は `'newspaper-8-bill'` を返す。成立したら条文で同じか確かめる。**「（成立前）」「（法案）」は `pendingNote()` / `billNote()` から作っていて、status を上げれば消える**（直書きは `tests/shohizei.test.ts` が落とす） |
 | 軽減税率Q&Aが改訂されたとき | `lib/shohizei-items.ts` の `ITEMS` の `qa`（設問番号）を国税庁「消費税の軽減税率制度に関するQ&A（個別事例編）」と突き合わせ直し、`QA_REVISION` / `ITEMS_CHECKED_AT` を直す。**改訂で設問番号がずれる**ので番号だけ信じないこと。有料老人ホーム等の金額基準（令和8年6月1日から一食730円以下・1日2,190円まで）も同じQ&Aにある |
 | 毎年2月上旬（家計調査の前年平均が出たら） | `lib/shohizei.ts` の `KAKEI_CHOSA`（`food` / `eatingOut` / `alcohol` と `year` / `table` / `publishedOn`）を総務省「家計調査（家計収支編）」の「家計の概要」表Ⅰ－１－１から写す。**プリセットは `食料 − 外食 − 酒類` で導出している**ので3つとも写すこと |
 | 酒税率の改正時 | `lib/shuzei-kaisei.ts` の `STAGES` に段階を1つ足し、`CATEGORIES` の `ratesPerKl` に同じ `StageId` の行を足す（型が全段階を要求するので書き漏れるとビルドが落ちる）。国税庁「酒税率一覧表」を正とする。現行の3段階は2026年10月で完了するので、それ以降の改正が決まるまで追加は不要 |
@@ -258,6 +259,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 官公庁の備蓄目安が改定されたとき | `lib/bosai-bichiku.ts` の `STOCK_ITEMS`（農林水産省「災害時に備えた食品ストックガイド」と東京都「東京備蓄ナビ」を正とする）。**係数を直したら `source` と `basis` も一緒に直すこと**。`basis: 'official'` は一次資料に数値そのものが書かれているものだけに使う |
 | 毎年10月（厄年）・11-16以降（七五三） | `lib/toshi-iwai.ts` の `YAKUDOSHI_YEAR`（10月に翌年へ）と `SHICHIGOSAN_YEAR`（11-16以降、年内に翌年へ）を1つ上げ、registry の `yakudoshi` / `shichigosan` の `updatedAt` を直す。title・description・早見表はこの定数だけから作られる。`tests/toshi-iwai.test.ts` が「今年か来年」から外れると落とす（[仕様](../docs/features/shichigosan-yakudoshi-hayamihyo.md)の「年の定数と年またぎ」） |
 | 宿泊税の新設・改正時（2027-02・2027-04 の施行後と、以後は毎年4月に見直す） | `lib/shukuhakuzei.ts` の `AREAS` の `periods` に施行日つきの期間を1つ足し、`DATA_CHECKED_AT` を進める（確認しただけでも進める）。東京 3% の端数処理・上限を条例で確かめたら `TOKYO_2027` の値と `TOKYO_RATE_DETAILS_CONFIRMED`、沖縄の併課を確かめたら `OKINAWA_SPLIT_CONFIRMED` を直し、`tests/shukuhakuzei.test.ts` の `test.todo` を本テストにする |
+| 毎年2月（償却資産税の申告期限の翌日以降） | `lib/shokyaku-shisanzei.ts` の `TITLE_NENDO` を1つ上げ、registry の `shokyaku-shisanzei` の `updatedAt` と `DATA_CHECKED_AT` を直す（期限の翌日以降の CI を `tests/shokyaku-shisanzei.test.ts` が落として知らせる）。免税点（`MENZEITEN`）・標準税率（`STANDARD_RATE_PERMIL`）の改正がないかもこのとき確かめる。[仕様](../docs/features/shokyaku-shisanzei.md) |
 | 毎年8月末（年賀はがきの発行の報道発表が出たら）・11-01 まで | 郵便料金：`lib/yubin-ryokin.ts` に翌年用の `NENGA_{YYYY}`（販売開始・引受開始・元日に届ける目安・販売終了）を足して `NENGA_SCHEDULES` に並べる。足し忘れたまま 11-01 を迎えると `tests/yubin-ryokin.test.ts` が落ちる（関係のない PR の CI も赤くなる）。料金の値上げの認可が出たら `RATE_TABLES` に `effectiveFrom` つきの表を1つ足し、`tests/post-effective-copy.test.ts` にその日を登録する（[仕様](../docs/features/yubin-ryokin-keisan.md)） |
 | 労働基準法の改正案が国会に提出・成立・施行されたとき | 有給休暇 付与日数：`lib/yukyu-fuyo.ts` の `LAW_REFORM`（`status` と `checkedAt`）を進める。FAQ「法改正で変わりますか」の文面はここから組み立てる。付与日数・時効・年5日の義務が変わるなら `GRANT_TABLE` などの定数とテストも直す（[仕様](../docs/features/yukyu-fuyo-nissu.md)） |
 | 毎年2月（国立天文台の暦要項が出たら） | 喪中・忌引き・法要 早見：`lib/mochu-kibiki.ts` の `RISSHUN` に翌々年の立春の日を1行足す（寒中見舞いの終わり＝立春の前日）。年賀の日付は郵便料金の `NENGA_SCHEDULES` を使うので、ここには持たない。`NENGA_SCHEDULES` に年を足したのに `RISSHUN` が無いと `tests/mochu-kibiki.test.ts` が落ちる。`NENGA_2028` を足す PR で `tests/post-effective-copy.test.ts` の `mochu-kibiki` の行も `NENGA_2028` に差し替える（[仕様](../docs/features/mochu-kibiki-hayami.md)） |
@@ -268,12 +270,12 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール79本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
+- **ツール81本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
   `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
-  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに `public` にする）** /
+  `kosei-nenkin-jogen` は上限額の施行日つきへの置き換えを済ませてから 2027-08-31 までに、`kodomo-nisa` は運営者の J-PlatPat の商標確認のあと 2026-12-15 までに、`shokyaku-shisanzei`（償却資産税）は運営者が柏市・東京都・神戸市の例と同じ額が出ることを確かめたら12月中旬に `public` にする）** /
   用途別ルーレット10本 / 使い方の記事6本
   （この16本は**2026-09-26から `noindex`・サイトマップ外**。Google の登録が戻るまでの措置で、
   `lib/roulette/indexing.ts` と `tests/thin-pages-noindex.test.ts`。戻すかの判断は
@@ -412,14 +414,15 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   `roundBy`）は `lib/rounding.ts` に分けてある（`shohizei.ts` ↔ `waribiki-percent.ts` の
   循環importを避けるため。トップレベルで早見表を作っているので、輪があるとTDZで落ちる）。
   **既定の丸めはツールごとに違う**（消費税は切り捨て・割引は四捨五入）。同じ関数を共有するからと揃えないこと
-- **2027年4月の飲食料品1%は「閣議決定済み・法案未成立」。** 印を出すかどうかは
+- **2027年4月の飲食料品1%は「法案提出済み・未成立」**（2026-08-05 に基本方針を閣議決定、2026-10-09 に法案を閣議決定・国会提出）。印を出すかどうかは
   `FOOD_RATE_2027.status` の1つの値だけで決まる。**画面の印は検索結果のスニペットに見えない**ので、
   `title` / `description` にも文字列として「（予定）」を入れてある
   （`tests/shohizei.test.ts` が status と文字列の食い違いを落とす）。軽減額は
   `1 − 1.01 / 1.08 ≒ 6.48%` で**「最大で」の目安**（便乗値上げ・値下げの遅れは織り込まない）。
   給付付き税額控除の給付額は制度設計が未公表なので計算しない。
-  **定期購読の新聞が1%になるかは条文で未確認**なので、`rate2027For()` は税率を返さず
-  `'newspaper-unconfirmed'` を返す（報道の見方を表に書かない）
+  **定期購読の新聞は法律案 第2条で1%の対象（別表第一 第一号の飲食料品）に入らない**ので、
+  `rate2027For()` は `'newspaper-8-bill'`（8%のまま）を返す（出典は報道ではなく法律案）。
+  1%の対象範囲は現行の軽減税率の飲食料品と同じ（法律案 第2条第1項）
   （[docs/features/shohizei-keisan-shokuryohin-1percent.md](../docs/features/shohizei-keisan-shokuryohin-1percent.md)）
 - 傷病手当金の端数処理は協会けんぽの実務ベース。健保組合により運用差がある
 - **出産手当金の日額は傷病手当金と同一**（健康保険法102条2項が99条2項を準用）。

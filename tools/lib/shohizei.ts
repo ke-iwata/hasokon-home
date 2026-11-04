@@ -57,7 +57,7 @@ export const TAX_RATE_FOOD_2027 = TAX_PERCENT_FOOD_2027 / 100;
 export const TAX_UPDATED_AT = '2019-10-01';
 
 /** このファイルのデータを一次資料と突き合わせた日 */
-export const DATA_CHECKED_AT = '2026-09-18';
+export const DATA_CHECKED_AT = '2026-10-19';
 
 /**
  * 「食料品1%」の法案の状態。
@@ -77,7 +77,19 @@ export const FOOD_RATE_2027 = {
    * `'withdrawn'` にすると C（軽減額の計算）が消え、A・B は 8%/10% の2税率に戻る。
    */
   status: 'cabinet-decision' as BillStatus,
+  /** 基本方針の閣議決定の日（法案の閣議決定ではない） */
   decidedOn: '2026-08-05',
+  /**
+   * 法案の閣議決定・国会提出の日。
+   * 「租税及び社会保険料による負担の軽減のための飲食料品に係る消費税率の臨時的な引下げ
+   * 及び就業者負担軽減支援金の支給に関する法律案」。1%の対象は法律案 第2条第1項で、
+   * 現行の軽減税率の飲食料品（消費税法 別表第一 第一号）と同じ範囲。新聞（同 第二号）は入らない。
+   */
+  billSubmittedOn: '2026-10-09',
+  /** 法案の要綱（内閣官房）。cas.go.jp は User-Agent が無いと 404 を返す */
+  billSource: 'https://www.cas.go.jp/jp/houan/261009/jinkousenryaku_shiryo2.pdf',
+  /** 法律案・理由の本文。経過措置（第2条第1項各号）と総額表示の特例（第6条）はこちら */
+  billTextSource: 'https://www.cas.go.jp/jp/houan/261009/jinkousenryaku_shiryo3.pdf',
   /**
    * 一次資料。閣議決定文書の原本 URL が見つかればそれに差し替える
    * （報道記事の URL は数か月で消えるので出典には使わない）。
@@ -87,7 +99,9 @@ export const FOOD_RATE_2027 = {
 
 /** `status` の日本語表示 */
 export const BILL_STATUS_LABEL: Record<BillStatus, string> = {
-  'cabinet-decision': '閣議決定済み・法案未成立',
+  // 値の名前は 'cabinet-decision' のまま（テストと他の参照を壊さないため）。
+  // 2026-10-09 に法案が閣議決定・国会提出された
+  'cabinet-decision': '法案提出済み・未成立',
   enacted: '成立',
   'in-force': '施行済み',
   withdrawn: '成立せず',
@@ -106,6 +120,26 @@ export function isFoodRatePending(status: BillStatus = FOOD_RATE_2027.status): b
   return status === 'cabinet-decision';
 }
 
+/**
+ * 「（成立前）」の添え書き。成立していなければ「（成立前）」、それ以外は空文字。
+ *
+ * **画面・FAQ・新聞のラベルの「成立前」はすべてここから作る**（手で書かない）。
+ * 法案が成立して `status` を `'enacted'` に上げたとき、直書きの「成立前」が残ると
+ * 法的状態が古いまま載り続けるため（`tests/shohizei.test.ts` が直書きを落とす）。
+ * 成立後の言い方（「法律では」・法律番号）は、status を上げる PR で足す。
+ */
+export function pendingNote(status: BillStatus = FOOD_RATE_2027.status): string {
+  return isFoodRatePending(status) ? '（成立前）' : '';
+}
+
+/**
+ * 新聞の「8%のまま」に添える「（法案）」。成立していなければ「（法案）」、それ以外は空文字。
+ * `pendingNote()` と同じく、成立したら勝手に外れる。
+ */
+export function billNote(status: BillStatus = FOOD_RATE_2027.status): string {
+  return isFoodRatePending(status) ? '（法案）' : '';
+}
+
 /** 1% を画面に出してよいか（撤回されたら出さない） */
 export function isFoodRateShown(status: BillStatus = FOOD_RATE_2027.status): boolean {
   return status !== 'withdrawn';
@@ -119,7 +153,7 @@ export function isFoodRateShown(status: BillStatus = FOOD_RATE_2027.status): boo
 export function foodRateBadge(status: BillStatus = FOOD_RATE_2027.status): string | null {
   switch (status) {
     case 'cabinet-decision':
-      return `閣議決定済み（${formatDate(FOOD_RATE_2027.decidedOn)}）。法案は臨時国会で審議中。成立前です`;
+      return `${formatDate(FOOD_RATE_2027.decidedOn)}に基本方針を閣議決定、${formatDate(FOOD_RATE_2027.billSubmittedOn)}に法案を国会に提出。成立前です`;
     case 'enacted':
       return '法案成立。施行は2027年4月1日';
     case 'in-force':
@@ -492,6 +526,16 @@ export const SOURCE_NTA_QA = {
 export const SOURCE_KANTEI = {
   label: '首相官邸「内閣総理大臣記者会見」（2026年7月30日）',
   url: FOOD_RATE_2027.source,
+} as const;
+
+export const SOURCE_BILL = {
+  label: '内閣官房「飲食料品に係る消費税率の臨時的な引下げ等に関する法律案」要綱（2026年10月9日提出）',
+  url: FOOD_RATE_2027.billSource,
+} as const;
+
+export const SOURCE_BILL_TEXT = {
+  label: '同 法律案・理由（第2条・第6条）',
+  url: FOOD_RATE_2027.billTextSource,
 } as const;
 
 export const SOURCE_KAKEI_CHOSA = {

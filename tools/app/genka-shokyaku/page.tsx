@@ -16,6 +16,7 @@ import {
   straightLine,
   usedLife,
 } from '@/lib/genka-shokyaku';
+import { KAISEI_AFTER_NENDO, KAISEI_BEFORE_NENDO, menzeiten, reiwa } from '@/lib/shokyaku-shisanzei';
 import Calculator from './Calculator';
 
 const title = '減価償却 計算機 — 40万円未満の特例（2026年4月から）・一括償却・耐用年数・中古の簡便法';
@@ -31,6 +32,9 @@ export const metadata: Metadata = {
 
 const man = (v: number) => `${(v / 10_000).toLocaleString('ja-JP')}万円`;
 const yen = (v: number) => `${v.toLocaleString('ja-JP')}円`;
+
+/** 償却資産税の免税点（年度つき。額は lib/shokyaku-shisanzei の MENZEITEN から引く） */
+const MENZEITEN_TEXT = `令和${reiwa(KAISEI_BEFORE_NENDO)}年度は${man(menzeiten(KAISEI_BEFORE_NENDO))}未満、令和${reiwa(KAISEI_AFTER_NENDO)}年度（${KAISEI_AFTER_NENDO}年1月1日に持っている資産）からは${man(menzeiten(KAISEI_AFTER_NENDO))}未満なら`;
 
 /** 本文の例（額を手で書かないため lib で出す） */
 const USED_CAR_LIFE = usedLife(6, 48);
@@ -59,7 +63,7 @@ const faq = [
   },
   {
     q: '全額経費にしたのに償却資産税の申告が要るのはなぜ？',
-    a: '10万円未満で全額経費にした物と一括償却にした物は償却資産（固定資産税）の対象から外れますが、40万円未満の特例で全額経費にした物は対象のままです（地方税法施行令49条）。償却資産の課税標準額の合計が150万円未満なら固定資産税はかかりませんが（免税点）、申告そのものは市町村の案内に従ってください。',
+    a: `10万円未満で全額経費にした物と一括償却にした物は償却資産（固定資産税）の対象から外れますが、40万円未満の特例で全額経費にした物は対象のままです（地方税法施行令49条）。償却資産の課税標準額の合計が${MENZEITEN_TEXT}固定資産税はかかりませんが（免税点）、申告そのものは市町村の案内に従ってください。`,
   },
   {
     q: '中古車の耐用年数は？',
@@ -220,7 +224,7 @@ export default function Page() {
       <p>
         10万円未満で全額経費にした物と、一括償却にした物は、償却資産（固定資産税）の対象から外れます。 一方、
         <strong>40万円未満の特例で全額経費にした物は対象のまま</strong>です（地方税法施行令49条）。
-        1月1日に持っている償却資産は、市町村に申告します（課税標準額の合計が150万円未満なら固定資産税はかかりません）。
+        1月1日に持っている償却資産は、市町村に申告します（課税標準額の合計が{MENZEITEN_TEXT}固定資産税はかかりません）。
       </p>
 
       <PublicToolLink slug="kakutei-shinkoku-hantei">
