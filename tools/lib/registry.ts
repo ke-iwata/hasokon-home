@@ -754,6 +754,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-17',
   },
   {
+    // 仕様: docs/features/jidosha-zei-keisan.md
+    // 公開条件：テスト環境で運営者が「1.5L・2019年10月以後・1.2t の年額」「2012年4月登録の 2.0L の重課の年度」
+    // 「軽の13年超」を確認したら public（2026-12-15 までに。EV の欄は大綱の公表後に書き足す）
+    slug: 'jidosha-zei',
+    icon: 'Car',
+    name: '自動車の税金 計算機（令和8年度改正対応）',
+    description:
+      '排気量・初度登録の年月・車両重量から、毎年5月の自動車税（種別割）と車検の重量税、13年超の重課が何年度から始まるかを計算。環境性能割の廃止・エコカー減税の基準引上げ・EV/PHEVの2028年5月からの新しい負担にも対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-11-04',
+  },
+  {
     slug: 'bosai-bichiku-keisan',
     icon: 'Package',
     name: '防災備蓄 計算ツール',
