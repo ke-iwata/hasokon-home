@@ -943,6 +943,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-08-14',
   },
   {
+    // 仕様: docs/features/json-seikei.md
+    slug: 'json-seikei',
+    // Phosphor に Braces は無い。波かっこの BracketsCurly
+    icon: 'BracketsCurly',
+    name: 'JSON 整形・チェック',
+    description:
+      'JSONを貼るだけで整形・圧縮・構文チェック。エラーは行と原因を日本語で表示し、全角スペースや全角の引用符の混入も見つけて直します。送信・保存はしません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-04',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',

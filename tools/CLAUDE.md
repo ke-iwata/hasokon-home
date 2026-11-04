@@ -270,7 +270,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール81本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
+- **ツール82本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei` が `wip`。ほかの71本は `public`。
   `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
