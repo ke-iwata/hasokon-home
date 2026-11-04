@@ -1168,6 +1168,18 @@ const BOARD: Record<string, ReactNode> = {
       ))}
     </>
   ),
+  // ダウト：伏せて出した札と、疑いの「？」
+  Doubt: (
+    <>
+      <g transform="rotate(-12 22 36)">
+        <rect x="9" y="18" width="26" height="36" rx="4" {...F} />
+        <rect x="9" y="18" width="26" height="36" rx="4" {...S} />
+      </g>
+      <rect x="28" y="12" width="28" height="40" rx="4" {...SOLID} />
+      <rect x="32" y="16" width="20" height="32" rx="2" {...CUT_S} strokeWidth={1.6} />
+      <text x="42" y="40" fontSize="20" {...DIGIT} {...CUT}>?</text>
+    </>
+  ),
 };
 
 /** 盤面の絵がある icon 名（tests/game-art.test.ts が、公開中のゲームがすべて含まれるかを見る） */
