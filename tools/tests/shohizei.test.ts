@@ -13,6 +13,7 @@ import {
   TAX_RATE_FOOD_2027,
   TAX_RATE_REDUCED,
   TAX_RATE_STANDARD,
+  billNote,
   compareRates,
   foodRateBadge,
   foodRelief,
@@ -20,6 +21,7 @@ import {
   isFoodRatePending,
   isFoodRateShown,
   lookupTable,
+  pendingNote,
   taxBreakdown,
   taxRate,
   taxRates,
@@ -30,6 +32,7 @@ import {
   ITEM_CATEGORIES,
   ITEM_COUNT,
   QA_REVISION,
+  RATE_2027_LABEL,
   findItem,
   itemGroups,
   rate2027For,
@@ -116,7 +119,31 @@ describe('taxRates（税率の選択肢）', () => {
   });
 
   it('状態のラベルに「決定」「確定」と書かない（閣議決定は条文ではない）', () => {
-    expect(BILL_STATUS_LABEL['cabinet-decision']).toBe('閣議決定済み・法案未成立');
+    expect(BILL_STATUS_LABEL['cabinet-decision']).toBe('法案提出済み・未成立');
+  });
+
+  /**
+   * 2026-10-09 に法案が閣議決定・国会提出された
+   * （docs/features/kokai-tool-seikaku-2026-10-19.md の A）。
+   * 成立はしていないので status は 'cabinet-decision' のまま。
+   */
+  it('法案の提出日と出典（内閣官房の要綱）を持つ', () => {
+    expect(FOOD_RATE_2027.billSubmittedOn).toBe('2026-10-09');
+    expect(new URL(FOOD_RATE_2027.billSource).hostname).toBe('www.cas.go.jp');
+    expect(new URL(FOOD_RATE_2027.billTextSource).hostname).toBe('www.cas.go.jp');
+    expect(FOOD_RATE_2027.status).toBe('cabinet-decision');
+    // 基本方針の閣議決定の日は残す
+    expect(FOOD_RATE_2027.decidedOn).toBe('2026-08-05');
+    expect(foodRateBadge('cabinet-decision')).toContain('2026年10月9日');
+  });
+
+  it('「（成立前）」「（法案）」は成立前だけ付き、成立後は空になる', () => {
+    expect(pendingNote('cabinet-decision')).toBe('（成立前）');
+    expect(billNote('cabinet-decision')).toBe('（法案）');
+    for (const status of ['enacted', 'in-force', 'withdrawn'] as BillStatus[]) {
+      expect(pendingNote(status)).toBe('');
+      expect(billNote(status)).toBe('');
+    }
   });
 });
 
@@ -442,12 +469,14 @@ describe('rate2027For（2027年4月以降）', () => {
   });
 
   /**
-   * **新聞は税率を書かない。** 報道では8%のままとされているが、
-   * 法案の条文で確認するまで表に出さない（仕様書の指示）。
+   * **新聞は8%のまま（法案）。** 法律案 第2条第1項で1%になるのは飲食料品
+   * （消費税法 別表第一 第一号）だけで、定期購読の新聞（同 第二号）は入らない。
+   * 報道ではなく法律案を根拠にする（kokai-tool-seikaku-2026-10-19.md の A）。
    */
-  it('8%の新聞は「未確認」（条文で確認するまで税率を書かない）', () => {
-    expect(rate2027For(findItem('newspaper-teiki')!)).toBe('newspaper-unconfirmed');
-    expect(rate2027For(findItem('newspaper-sports')!)).toBe('newspaper-unconfirmed');
+  it('8%の新聞は「8%のまま」（法律案 第2条）', () => {
+    expect(rate2027For(findItem('newspaper-teiki')!)).toBe('newspaper-8-bill');
+    expect(rate2027For(findItem('newspaper-sports')!)).toBe('newspaper-8-bill');
+    expect(RATE_2027_LABEL['newspaper-8-bill']).toBe('8%のまま');
   });
 
   it('10%・非課税は変わらない', () => {
@@ -522,5 +551,79 @@ describe('page.tsx の title / description', () => {
 
   it('noindex の判定を registry に通している（stage が効く）', () => {
     expect(pageSource).toContain("robotsFor('shohizei-keisan')");
+  });
+});
+
+/* ===================================================================
+   法案の状態の書き方（kokai-tool-seikaku-2026-10-19.md の A）
+   =================================================================== */
+
+const calculatorSource = readFileSync(
+  fileURLToPath(new URL('../app/shohizei-keisan/Calculator.tsx', import.meta.url)),
+  'utf8',
+);
+const itemsSource = readFileSync(
+  fileURLToPath(new URL('../lib/shohizei-items.ts', import.meta.url)),
+  'utf8',
+);
+
+/** コメント（`/* … *\/`・`{/* … *\/}`・`// …`）を除いた本文 */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+}
+
+describe('法案の状態（2026-10-09 に法案提出）', () => {
+  /**
+   * 法案の条文は 2026-10-09 に出ている。FAQ は JSON-LD（FAQPage）にも入り、
+   * AI 回答にそのまま引かれるので、古い法的状態の言い回しを残さない。
+   */
+  it('page.tsx が「条文が出るまで」「条文で確認できていない」と書いていない', () => {
+    for (const phrase of ['条文が出るまで', '条文で確認できていない', '臨時国会で審議中']) {
+      expect(pageSource).not.toContain(phrase);
+      expect(calculatorSource).not.toContain(phrase);
+    }
+    expect(pageSource).not.toContain('閣議決定であって、条文ではありません');
+  });
+
+  it('新聞の「未確認」の区分が残っていない', () => {
+    for (const source of [pageSource, calculatorSource, itemsSource]) {
+      expect(source).not.toContain('newspaper-unconfirmed');
+    }
+  });
+
+  it('FAQ と本文が法律案 第2条を出典にしている', () => {
+    expect(pageSource).toContain('法律案 第2条');
+    expect(pageSource).toContain('SOURCE_BILL.url');
+  });
+
+  /**
+   * **「成立前」「未成立」を手で書かない。** 法案が成立して status を
+   * `'enacted'` に上げたとき、直書きが残ると今回と同じ「法的状態が古い」
+   * ずれがまた起きる。`pendingNote()` / `billNote()` / `BILL_STATUS_LABEL`
+   * （lib/shohizei.ts）から作ること。既存の「（予定）」のテストと同じ考え方。
+   */
+  it('page.tsx / Calculator.tsx / shohizei-items.ts に「成立前」「未成立」が直書きされていない', () => {
+    for (const source of [pageSource, calculatorSource, itemsSource]) {
+      const body = stripComments(source);
+      expect(body).not.toContain('成立前');
+      expect(body).not.toContain('未成立');
+    }
+  });
+
+  it('総額表示の特例（第6条）と経過措置を本文に書いている', () => {
+    expect(pageSource).toContain('法律案 第6条');
+    expect(pageSource).toContain('経過措置');
+  });
+
+  /**
+   * **第6条は「税込で表示しなくてよい」特例ではない。** 第1項は8%の税込価格に代えて
+   * 1%の税込価格を、第2項はその逆を表示できるというもので、どちらも税込価格は表示する
+   * （#423 のレビューで、条文と違う書き方をしていたのを直した）。
+   */
+  it('第6条を「税込で表示しなくてよい」特例と書いていない', () => {
+    for (const phrase of ['税込でない', '税込の総額で表示しなくてもよい', '税抜で表示', '総額で表示しなくて']) {
+      expect(pageSource).not.toContain(phrase);
+    }
+    expect(pageSource).toContain('値札の税込価格');
   });
 });

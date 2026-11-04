@@ -90,8 +90,8 @@ export type AreaId = 'tokyo' | 'okinawa' | 'kyoto' | 'osaka';
 const TOKYO_SOURCE = 'https://www.tax.metro.tokyo.lg.jp/kazei/leisure/shuk/2';
 const OKINAWA_SOURCE =
   'https://www.pref.okinawa.jp/kurashikankyo/zeikin/1003660/1036559/1041134.html';
-const KYOTO_SOURCE =
-  'https://www.city.kyoto.lg.jp/gyozai/cmsfiles/contents/0000345/345893/daijindoui_houdouhappyou.pdf';
+// 総務大臣同意の報道発表 PDF は 2026-10-19 に 404。税率表と施行日（令和8年3月1日）が載る本ページにした
+const KYOTO_SOURCE = 'https://www.city.kyoto.lg.jp/gyozai/page/0000236942.html';
 const OSAKA_SOURCE = 'https://www.pref.osaka.lg.jp/o050040/zei/alacarte/shukuhakuzei-kaisei.html';
 
 /** 東京都 2027-04-01 からの定率。端数処理・上限は TOKYO_RATE_DETAILS_CONFIRMED を見ること */

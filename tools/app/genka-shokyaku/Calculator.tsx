@@ -17,6 +17,7 @@ import {
   type MethodResult,
   type Unavailable,
 } from '@/lib/genka-shokyaku';
+import { KAISEI_AFTER_NENDO, menzeiten, reiwa as reiwaNendo } from '@/lib/shokyaku-shisanzei';
 import { trackToolUse } from '@/lib/analytics';
 
 type Ok = Extract<GenkaResult, { ok: true }>;
@@ -457,7 +458,7 @@ function Result({ r, acquiredOn }: { r: Ok; acquiredOn: string }) {
       )}
 
       <p className="hint" style={{ marginTop: 12 }}>
-        どの方法を選ぶかで、今年と来年以降の経費の配分と、償却資産税の申告に載るかが変わります（どれが得かは、その年と翌年以降の所得、償却資産税の免税点150万円に近いかで変わります）。
+        どの方法を選ぶかで、今年と来年以降の経費の配分と、償却資産税の申告に載るかが変わります（どれが得かは、その年と翌年以降の所得、償却資産税の免税点〔令和{reiwaNendo(KAISEI_AFTER_NENDO)}年度から{man(menzeiten(KAISEI_AFTER_NENDO))}〕に近いかで変わります）。
         {r.used && `中古なので、耐用年数は簡便法で${r.life}年（法定${r.legalYears}年）にしています。`}
         {r.depMethodForced && 'ソフトウエアは定額法だけなので、定額法で計算しています。'}
         40万円未満の特例の対象は、常時使用する従業員が400人以下の個人です。

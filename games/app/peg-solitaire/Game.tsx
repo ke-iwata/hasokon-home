@@ -169,8 +169,15 @@ export default function Game() {
     start('daily', key);
     // ページを離れるとき（タブを閉じる・別のページへ移る）も、詰んだままなら負けを確定させる
     window.addEventListener('pagehide', leave);
+    // bfcache から戻ったとき（`persisted`）は、`pagehide` で前の局の記録を確定させてある。
+    // 確定した局のまま続けると、待ったで戻ってクリアしても記録に残らないので、新しい局として始め直す（#440 のレビュー）
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) start(variantRef.current, localDateKey());
+    };
+    window.addEventListener('pageshow', onShow);
     return () => {
       window.removeEventListener('pagehide', leave);
+      window.removeEventListener('pageshow', onShow);
       leave();
       clearTimer();
     };

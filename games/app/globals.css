@@ -487,6 +487,7 @@ ol {
 .pg-board,
 .ts-board,
 .yn-board,
+.ch-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -1929,6 +1930,227 @@ ol {
   .hs-ghost {
     display: none;
   }
+}
+
+/* ---- チェス ----
+   仕様: docs/features/game-chess.md「画面」。盤は SVG（viewBox 0 0 8 8）で、大きさは「盤を画面の高さに合わせる」節の
+   共通指定に任せる（ここで max-width を書き直さないこと）。`--chrome` は盤以外が使う高さ（パンくず・見出し・リード文・
+   設定の段・記録の帯・取った駒の 2 行・知らせの行・ボタンの行まで）の実測値。
+   マスの色・駒の色は自分で決めた値（他サイト・アプリの盤の配色は写さない。着手条件 2） */
+.ch-game {
+  --chrome: 460px;
+  --board-max: 520px;
+  --ch-light: #e4e8ee;
+  --ch-dark: #8796ab;
+}
+
+.ch-board {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* ドラッグ中に画面がスクロールしないように（タップは効く） */
+  touch-action: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.ch-board.dragging {
+  cursor: grabbing;
+}
+
+.ch-board:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ch-sq.light {
+  fill: var(--ch-light);
+}
+
+.ch-sq.dark {
+  fill: var(--ch-dark);
+}
+
+/* 直前の手（元のマスと行き先）を薄く色づけする */
+.ch-sq.last {
+  fill: color-mix(in srgb, #e3b341 45%, var(--ch-light));
+}
+
+.ch-sq.dark.last {
+  fill: color-mix(in srgb, #e3b341 45%, var(--ch-dark));
+}
+
+.ch-sq.selected {
+  fill: color-mix(in srgb, var(--accent) 45%, var(--ch-light));
+}
+
+/* チェック中のキングのマスを赤く縁取る（色だけに頼らず太い枠で） */
+.ch-sq.check {
+  stroke: var(--danger);
+  stroke-width: 0.08;
+}
+
+.ch-coord {
+  font-size: 0.2px;
+  font-weight: 700;
+  fill: color-mix(in srgb, #1c1917 60%, transparent);
+  pointer-events: none;
+}
+
+/* 動ける先。空きマスには丸、取れる先には輪（色だけに頼らない） */
+.ch-dot {
+  fill: color-mix(in srgb, #14532d 55%, transparent);
+  pointer-events: none;
+}
+
+.ch-ring {
+  fill: none;
+  stroke: color-mix(in srgb, #14532d 60%, transparent);
+  stroke-width: 0.09;
+  pointer-events: none;
+}
+
+.ch-piece {
+  pointer-events: none;
+}
+
+.ch-drag {
+  opacity: 0.9;
+}
+
+.ch-pc path,
+.ch-pc circle,
+.ch-pc ellipse {
+  stroke-width: 3.2;
+  stroke-linejoin: round;
+}
+
+.ch-pc-w path,
+.ch-pc-w circle,
+.ch-pc-w ellipse {
+  fill: #fbfaf7;
+  stroke: #1c1917;
+}
+
+.ch-pc-b path,
+.ch-pc-b circle,
+.ch-pc-b ellipse {
+  fill: #26221f;
+  stroke: #0c0a09;
+}
+
+/* 駒の中の線（ビショップの切れ込み・台の線）。地と逆の色で引く */
+.ch-pc .ch-pc-detail {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.ch-pc-w .ch-pc-detail {
+  stroke: #1c1917;
+}
+
+.ch-pc-b .ch-pc-detail {
+  stroke: #e7e5e4;
+}
+
+.ch-pc-w .ch-pc-detail-fill {
+  fill: #1c1917;
+  stroke: none;
+}
+
+.ch-pc-b .ch-pc-detail-fill {
+  fill: #e7e5e4;
+  stroke: none;
+}
+
+/* プロモーションの駒選び。行き先のマスから盤の内側へ 4 マス縦に並べる（モーダルにしない） */
+.ch-promo rect {
+  fill: var(--surface);
+  stroke: var(--accent);
+  stroke-width: 0.04;
+}
+
+/* 今日の 1 手詰めで外れたときの、正解の手の矢印 */
+.ch-arrow line {
+  stroke: color-mix(in srgb, var(--accent) 80%, transparent);
+  stroke-width: 0.16;
+  stroke-linecap: round;
+}
+
+.ch-arrow polygon {
+  fill: color-mix(in srgb, var(--accent) 80%, transparent);
+}
+
+/* キーボードで動かす枠。盤にフォーカスがあるときだけ見せる */
+.ch-cursor {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.06;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ch-board:focus-visible .ch-cursor {
+  opacity: 1;
+}
+
+/* 盤の上下の行（名前と取った駒）。駒の数で伸び縮みしないよう高さを固定する（画面の約束 1） */
+.ch-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  line-height: 24px;
+  margin: 4px auto;
+  overflow: hidden;
+  font-size: 0.85rem;
+  max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
+}
+
+.ch-side-label {
+  flex: none;
+  color: var(--muted);
+}
+
+.ch-side-pieces {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ch-side-pieces svg {
+  flex: none;
+  margin-right: -4px;
+}
+
+/* 本文の駒の動き方の図 */
+.ch-diagrams {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.ch-diagram-fig {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.ch-diagram {
+  display: block;
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 1;
+  margin: 0 auto 6px;
+  --ch-light: #e4e8ee;
+  --ch-dark: #8796ab;
 }
 
 /* ---- マッチ3パズル ----
@@ -8394,5 +8616,24 @@ button.hf-card {
     padding-inline: 8px;
     font-size: 0.8rem;
     white-space: nowrap;
+  }
+}
+
+/* チェス：狭い画面では設定の段が折り返すぶん、盤以外の高さが増える（実測） */
+@media (max-width: 600px) {
+  .ch-game .ch-wide {
+    display: none;
+  }
+
+  /* 「1手もどす・投了・はじめから」を1段に収める（2段に折れると 38px 伸びる。実測） */
+  .ch-game .btn-row .btn {
+    padding: 8px 8px;
+    min-height: 44px;
+  }
+
+  .ch-side {
+    height: 20px;
+    line-height: 20px;
+    margin: 2px auto;
   }
 }
