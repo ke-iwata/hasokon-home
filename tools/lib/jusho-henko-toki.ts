@@ -134,18 +134,19 @@ export const INPUT_ERROR_MESSAGES: Record<InputError, string> = {
 /** 期限を過ぎているときに画面へそのまま出す文言（相続登記と同じ。過料の有無は書かない） */
 export { OVERDUE_MESSAGE } from './sozoku-toki-kigen';
 
-/**
- * 検索用情報の申出（または会社法人等番号の登記）が「済んでいる」人への注記。
- * 期限は消さない。申出の効果（義務を果たしたことになるか）は言い切らない（#316 レビュー必須 1）
- */
 /** 個人の職権登記がいつから動くかの1文（SMART_TOKI から作る） */
 export const SMART_TOKI_SCHEDULE_NOTE =
   `個人の職権登記は${SMART_TOKI.kojinStartLabel}から始まり、${fmtJa(SMART_TOKI.firstBatchApplyUntil)}までに申し出た人から処理されます。` +
   `${fmtJa(nextDay(SMART_TOKI.firstBatchApplyUntil))}以降に申し出た人は${SMART_TOKI.laterBatchLabel}からです（法人は${fmtJa(SMART_TOKI.hojinStart)}から）。`;
 
+/**
+ * 検索用情報の申出（または会社法人等番号の登記）が「済んでいる」人への注記。
+ * 期限は消さない。申出の効果（義務を果たしたことになるか）は言い切らない（#316 レビュー必須 1）
+ */
 export const SEARCH_INFO_DONE_NOTE =
+  '法務局が職権で変更登記をする対象です。' +
   SMART_TOKI_SCHEDULE_NOTE +
-  '法務局が職権で変更登記をする対象です。職権登記は法務局から本人への確認を経て行われ、応答が無ければ登記されません。法務局からの通知に応答してください。期限までに職権登記がされない場合に備えて、期限は上のとおり把握しておいてください。';
+  '職権登記は法務局から本人への確認を経て行われ、応答が無ければ登記されません。法務局からの通知に応答してください。期限までに職権登記がされない場合に備えて、期限は上のとおり把握しておいてください。';
 
 /** 申出をしたか「分からない」人への注記 */
 export const SEARCH_INFO_UNKNOWN_NOTE =

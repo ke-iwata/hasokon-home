@@ -647,7 +647,7 @@ export interface CalcResult {
    * 任意継続・国保の額だけを出す
    */
   fuyoPending: boolean;
-  /** 扶養の判定に使った基準（家族がいない・未判定なら null） */
+  /** 年収の見込み（退職翌年以降）の判定に使った基準（家族がいない・未判定なら null）。月ごとの線は暦年で変わりうる */
   fuyoLimit: FuyoLimit | null;
   /** 非自発的失業者の軽減の対象か（会社都合・離職日に65歳未満） */
   involuntary: boolean;
@@ -718,13 +718,17 @@ export function calc(input: CalcInput): CalcResult {
   const involuntary = input.leaveKind === 'company' && ageAtLeave < INVOLUNTARY_AGE_LIMIT;
   const standard = standardMonthly(Math.max(0, input.monthlySalary));
 
-  // 扶養（19〜22歳の判定は、扶養に入る日＝退職日の翌日の年の12/31時点の年齢）
+  // 扶養。19〜22歳の150万円は暦年ごとの基準で、その年の12/31時点の年齢で見る（日本年金機構）。
+  // 続柄を聞くかは扶養に入る日（退職日の翌日）の年で決め、判定そのものは年ごとにやり直す
+  // （その年の12/31に23歳になる年は130万円に戻る。#458 レビュー必須）
   const ageAtYearEnd = fuyoAgeAtYearEndForLeave(birthDate, leaveDate);
+  const ageAtYearEndOf = (year: number) => ageOn(birthDate, { year, month: 12, day: 31 });
   const relation: FuyoRelation | undefined =
     input.fuyo.supporter ?? (needsRelation(ageAtYearEnd) ? undefined : 'spouse');
   const fuyoPending = input.fuyo.available && needsRelation(ageAtYearEnd) && relation === undefined;
+  // salaryAfter は退職翌年以降の見込みなので、退職翌年の12/31時点の年齢で見る
   const annualLimit = input.fuyo.available
-    ? fuyoLimitFor({ ageAtYearEnd, relation, age: ageAtLeave })
+    ? fuyoLimitFor({ ageAtYearEnd: ageAtYearEndOf(leaveYear + 1), relation, age: ageAtLeave })
     : null;
   let fuyoBlockedReason: string | null = null;
   if (annualLimit && input.salaryAfter + Math.max(0, input.otherIncome) >= annualLimit.income) {
@@ -796,7 +800,9 @@ export function calc(input: CalcInput): CalcResult {
     if (p.estimated && age >= 20 && age < 60) marks.push(`国民年金は${reiwaFy(fy)}の額を直前の年度の額で概算`);
     const pension = age >= 20 && age < 60 ? p.amount : 0;
     const pensionFuyo = relation === 'other' ? pension : 0;
-    const monthLimit = fuyoUsable ? fuyoLimitFor({ ageAtYearEnd, relation, age }) : null;
+    const monthLimit = fuyoUsable
+      ? fuyoLimitFor({ ageAtYearEnd: ageAtYearEndOf(Number(ym.slice(0, 4))), relation, age })
+      : null;
 
     months.push({
       ym,

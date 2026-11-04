@@ -303,7 +303,7 @@ export default function Calculator() {
             </div>
             {relationNeeded && (
               <p className="hint">
-                扶養に入る年の12月31日に19〜22歳なので、続柄で基準が変わります（配偶者は130万円・子などは150万円未満）。
+                扶養に入る年の12月31日に19〜22歳なので、続柄で基準が変わります（配偶者は130万円未満・子などは150万円未満）。
                 {supporter === undefined && <strong>どちらかを選んでください。</strong>}
               </p>
             )}

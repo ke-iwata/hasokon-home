@@ -542,6 +542,58 @@ describe('19〜22歳の扶養の基準（docs/features/kokai-tool-seikaku-2026-1
     expect(r.best).toEqual(spouse.best);
   });
 
+  test('150万円は暦年ごと：2004-01-15生まれ・2026-11-30退職・子・日額4,000円 → 2026年12月は○、23歳になる2027年の受給月は ×（#458 レビュー）', () => {
+    const leave2 = d('2026-11-30');
+    const r = calc(
+      base({
+        leaveDate: leave2,
+        birthDate: d('2004-01-15'),
+        monthlySalary: 200_000,
+        salaryPrevYear: 2_400_000,
+        salaryLeaveYear: 2_200_000,
+        fuyo: {
+          available: true,
+          supporter: 'other',
+          benefitDaily: 4_000,
+          applyDate: d('2026-12-03'),
+          restrictionMonths: 1,
+          prescribedDays: 90,
+        },
+      }),
+    );
+    expect(r.fuyoPending).toBe(false);
+    expect(r.benefitPeriod!.start).toMatchObject({ year: 2027, month: 1 }); // 受給は翌年から
+    const ok = (ym: string) => r.months.find((m) => m.ym === ym)!.fuyoOk;
+    expect(ok('2026-12')).toBe(true);
+    for (const ym of ['2027-01', '2027-02', '2027-03']) expect(ok(ym)).toBe(false);
+    // 2003-06-15 生まれ（2026-12-31 に 23歳）と同じ判定になる
+    const older = calc(
+      base({
+        leaveDate: leave2,
+        birthDate: d('2003-06-15'),
+        monthlySalary: 200_000,
+        salaryPrevYear: 2_400_000,
+        salaryLeaveYear: 2_200_000,
+        fuyo: { available: true, supporter: 'other', benefitDaily: 4_000, applyDate: d('2026-12-03'), restrictionMonths: 1, prescribedDays: 90 },
+      }),
+    );
+    for (const ym of ['2027-01', '2027-02', '2027-03']) {
+      expect(older.months.find((m) => m.ym === ym)!.fuyoOk).toBe(ok(ym));
+    }
+  });
+
+  test('見込みの年収（退職翌年以降）は退職翌年の12/31時点の年齢：翌年23歳なら145万円でも入れない', () => {
+    const r = calc(
+      base({
+        leaveDate: d('2026-11-30'),
+        birthDate: d('2004-01-15'),
+        salaryAfter: 1_450_000,
+        fuyo: { ...base().fuyo, available: true, supporter: 'other' },
+      }),
+    );
+    expect(r.fuyoBlockedReason).toContain('130万円');
+  });
+
   test('見込みの年収：子・22歳は140万円なら入れる・150万円なら入れない', () => {
     const at = (salaryAfter: number) =>
       calc(
