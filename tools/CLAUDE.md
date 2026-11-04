@@ -262,6 +262,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 毎年2月（償却資産税の申告期限の翌日以降） | `lib/shokyaku-shisanzei.ts` の `TITLE_NENDO` を1つ上げ、registry の `shokyaku-shisanzei` の `updatedAt` と `DATA_CHECKED_AT` を直す（期限の翌日以降の CI を `tests/shokyaku-shisanzei.test.ts` が落として知らせる）。免税点（`MENZEITEN`）・標準税率（`STANDARD_RATE_PERMIL`）の改正がないかもこのとき確かめる。[仕様](../docs/features/shokyaku-shisanzei.md) |
 | 毎年8月末（年賀はがきの発行の報道発表が出たら）・11-01 まで | 郵便料金：`lib/yubin-ryokin.ts` に翌年用の `NENGA_{YYYY}`（販売開始・引受開始・元日に届ける目安・販売終了）を足して `NENGA_SCHEDULES` に並べる。足し忘れたまま 11-01 を迎えると `tests/yubin-ryokin.test.ts` が落ちる（関係のない PR の CI も赤くなる）。料金の値上げの認可が出たら `RATE_TABLES` に `effectiveFrom` つきの表を1つ足し、`tests/post-effective-copy.test.ts` にその日を登録する（[仕様](../docs/features/yubin-ryokin-keisan.md)） |
 | 労働基準法の改正案が国会に提出・成立・施行されたとき | 有給休暇 付与日数：`lib/yukyu-fuyo.ts` の `LAW_REFORM`（`status` と `checkedAt`）を進める。FAQ「法改正で変わりますか」の文面はここから組み立てる。付与日数・時効・年5日の義務が変わるなら `GRANT_TABLE` などの定数とテストも直す（[仕様](../docs/features/yukyu-fuyo-nissu.md)） |
+| 毎年2月（国立天文台の暦要項が出たら） | 喪中・忌引き・法要 早見：`lib/mochu-kibiki.ts` の `RISSHUN` に翌々年の立春の日を1行足す（寒中見舞いの終わり＝立春の前日）。年賀の日付は郵便料金の `NENGA_SCHEDULES` を使うので、ここには持たない。`NENGA_SCHEDULES` に年を足したのに `RISSHUN` が無いと `tests/mochu-kibiki.test.ts` が落ちる。`NENGA_2028` を足す PR で `tests/post-effective-copy.test.ts` の `mochu-kibiki` の行も `NENGA_2028` に差し替える（[仕様](../docs/features/mochu-kibiki-hayami.md)） |
 | 月1回 | Search Console でクエリを確認し、伸びているページを強化 |
 
 記事の定期更新は不要。これは意図的な設計です（[docs/CONCEPT.md](./docs/CONCEPT.md) 参照）。
@@ -269,7 +270,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール79本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
+- **ツール81本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
+  `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、

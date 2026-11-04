@@ -23,6 +23,7 @@ import { REVISION_DATE } from '@/lib/shuzei-kaisei';
 import { HEATED_ALIGNED_FROM } from '@/lib/tabako-zei';
 import { WITHHOLDING_TABLE_EFFECTIVE_ON } from '@/lib/tedori-keisan';
 import { metadata as yubinMeta } from '@/app/yubin-ryokin/page';
+import { metadata as mochuMeta } from '@/app/mochu-kibiki/page';
 import { addDays, NENGA_2027 } from '@/lib/yubin-ryokin';
 
 /**
@@ -51,6 +52,8 @@ type Entry = {
   extraFiles?: string[];
   extraPatterns?: RegExp[];
   description: string;
+  /** page.tsx の title（ビルド日で組み立てるページだけ。patterns で同じように見る） */
+  title?: string;
 };
 
 const WALL_PATTERNS = [/撤廃されます/, /撤廃され[^。]*変わります/, /10月1日に始まる/];
@@ -163,6 +166,17 @@ const ENTRIES: Entry[] = [
     sourcePatterns: [],
     description: String(yubinMeta.description),
   },
+  {
+    // 喪中・忌引き・法要 早見。年賀の表示期間（2027 年用の販売終了 saleTo まで）を過ぎたら、
+    // title・description から 2027 年用の受付開始の部分が外れているか（ビルドし直していないと古い文面が残る）。
+    // 翌年の定数を足す PR で NENGA_2028 に差し替える。仕様: docs/features/mochu-kibiki-hayami.md
+    slug: 'mochu-kibiki',
+    effectiveOn: addDays(NENGA_2027.saleTo, 1),
+    patterns: [/2027年用/, /12月20日/, /12\/20/],
+    sourcePatterns: [],
+    description: String(mochuMeta.description),
+    title: String(mochuMeta.title),
+  },
 ];
 
 /** 実行環境のローカル日付 'YYYY-MM-DD'（各ツールの Calculator と同じ判定。UTC の CI では 09:00 JST から） */
@@ -223,6 +237,7 @@ describe('施行日を過ぎたら「これから」の文面が残っていな�
       for (const re of e.patterns) {
         expect(e.description, `page.tsx の description に ${re}`).not.toMatch(re);
         expect(registryDescription, `registry の description に ${re}`).not.toMatch(re);
+        if (e.title !== undefined) expect(e.title, `page.tsx の title に ${re}`).not.toMatch(re);
       }
       const body = stripLinks(pageSource(e.slug));
       for (const re of e.sourcePatterns) {
