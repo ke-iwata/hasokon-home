@@ -5,9 +5,12 @@ import { trackToolUse } from '@/lib/analytics';
 import {
   CAR_KINDS,
   DISPLACEMENT_CLASSES,
-  ECO_CLASSES,
   EV_SURCHARGE_FROM,
+  JURYO_RATES,
   KANKYO_SEINOWARI_ABOLISHED,
+  MIN_REGISTERED,
+  SECOND_EXEMPT_RATE,
+  honsokuThresholdAt,
   POWERS,
   WEIGHT_CLASSES,
   ageBandStart,
@@ -22,7 +25,6 @@ import {
   timeline,
   ymLabel,
   type CarKind,
-  type EcoClass,
   type JuryoInput,
   type JuryoResult,
   type Power,
@@ -31,6 +33,15 @@ import {
 
 /** ビルド時の日付で描いてからマウント後に今日へ差し替える（静的書き出しなので） */
 const BUILD_DEFAULT_DATE = '2026-11-04';
+
+const ECO_LABEL = {
+  none: 'エコカー外',
+  exempt: '免税',
+  cut75: '▲75%',
+  cut50: '▲50%',
+  cut25: '▲25%',
+  honsoku: '本則税率',
+} as const;
 
 const RATE_LABEL: Record<JuryoResult['rate'], string> = {
   exempt: '免税',
@@ -81,7 +92,7 @@ export default function Calculator() {
   const [year, setYear] = useState(Number(BUILD_DEFAULT_DATE.slice(0, 4)));
   const [month, setMonth] = useState(Number(BUILD_DEFAULT_DATE.slice(5, 7)));
   const [weightUnits, setWeightUnits] = useState(3);
-  const [ecoClass, setEcoClass] = useState<EcoClass>('unknown');
+  const [fuelRate, setFuelRate] = useState('');
   const [price, setPrice] = useState('');
 
   useEffect(() => {
@@ -95,7 +106,7 @@ export default function Calculator() {
 
   const thisYear = Number(today.slice(0, 4));
   const years: number[] = [];
-  for (let y = thisYear; y >= 1990; y--) years.push(y);
+  for (let y = thisYear; y >= Number(MIN_REGISTERED.slice(0, 4)); y--) years.push(y);
 
   const changeKind = (k: CarKind) => {
     setKind(k);
@@ -108,7 +119,7 @@ export default function Calculator() {
     displacementClass,
     firstRegistered: `${year}-${String(month).padStart(2, '0')}`,
     weightUnits,
-    ecoClass,
+    fuelRate2030: fuelRate.trim() === '' ? null : Number(fuelRate.replace(/[%％\s]/g, '')),
   };
   const r = summarize(car, today);
   const track = () => trackToolUse('jidosha-zei', 'calculate');
@@ -202,16 +213,19 @@ export default function Calculator() {
 
         {!denki && (
           <label>
-            {kind === 'futsu' ? '6.' : '5.'} エコカー減税の区分（新車のときの書類で分かれば）
-            <select value={ecoClass} onChange={(e) => setEcoClass(e.target.value as EcoClass)}>
-              {ECO_CLASSES.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            {kind === 'futsu' ? '6.' : '5.'} 2030年度燃費基準の達成率（%。任意）
+            <input
+              type="text"
+              inputMode="decimal"
+              placeholder="例：95（分からなければ空欄）"
+              value={fuelRate}
+              onChange={(e) => setFuelRate(e.target.value)}
+              onBlur={track}
+            />
             <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
-              エコカー減税の対象車は、継続車検の重量税が本則税率（安いほう）になり、13年・18年の重課もかかりません
+              カタログや販売店の書類の「2030年度燃費基準◯%達成」。車検のときに{honsokuThresholdAt('2027-05')}%以上
+              （2027年4月までは{honsokuThresholdAt('2027-04')}%以上）なら重量税は本則税率で、13年・18年の重課もかかりません。
+              新車のときのエコカー減税の区分は引き継がれません。空欄ならエコカー外で計算します
             </span>
           </label>
         )}
@@ -233,7 +247,9 @@ export default function Calculator() {
         <p className="hint">
           {r.error === 'future'
             ? '初度登録の年月が今月より先になっています。'
-            : '入力を確かめてください。'}
+            : r.error === 'rate'
+              ? '燃費基準の達成率は数字（%）で入れてください。'
+              : '入力を確かめてください。'}
         </p>
       )}
 
@@ -303,12 +319,13 @@ function Result({
         )}
         {s.next.assumedNonEco && (
           <p className="hint" style={{ marginTop: 6 }}>
-            エコカー減税の区分が分からないので、エコカー外の税率で出しています。エコカーなら本則税率（{formatYen(car.kind === 'kei' ? 5000 : 5000 * car.weightUnits)}）です。
+            燃費基準の達成率が空欄なので、エコカー外の税率で出しています。車検のときに基準を満たすなら本則税率（
+            {formatYen(JURYO_RATES[car.kind].honsoku2 * (car.kind === 'kei' ? 1 : car.weightUnits))}）です。
           </p>
         )}
         {s.next.maybeExempt125 && (
           <p className="hint" style={{ marginTop: 6 }}>
-            新車のとき免税だったガソリン車は、2030年度燃費基準125%以上なら初回の継続車検も免税です（ここでは本則税率で出しています）。
+            初回の継続車検を免税で出しています（{SECOND_EXEMPT_RATE}%以上で、新車のとき免税を受けた車に限ります。そうでなければ本則税率です）。
           </p>
         )}
       </div>
@@ -340,7 +357,7 @@ function Result({
             </p>
           </>
         )}
-        {s.juka.kind === 'start' && car.ecoClass !== 'unknown' && car.ecoClass !== 'none' ? null : (
+        {s.juka.kind === 'start' && s.next.rate === 'honsoku' ? null : (
           s.juka.kind === 'start' && (
             <p className="hint" style={{ marginTop: 6 }}>
               重量税の「13年」は数え方が違い、{ymLabel(ageBandStart(car.kind, car.firstRegistered, 'over13'))}
@@ -392,7 +409,7 @@ function Result({
         <li>
           <strong>いま新車で買うと、重量税は3年分 {formatYen(shinsha.yen)}</strong>
           {shinsha.period
-            ? `（エコカー減税の期間 ${shinsha.period.label}${shinsha.classUnavailable ? '。選んだ区分はこの期間に無いのでエコカー外で計算' : ''}）`
+            ? `（エコカー減税の期間 ${shinsha.period.label}・${ECO_LABEL[shinsha.appliedClass]}${shinsha.assumedNonEco ? '。達成率が空欄なのでエコカー外で計算' : ''}）`
             : '（エコカー減税の期間外）'}
           。基準は2026年5月と2027年5月の2回に分けて引き上げられます。
         </li>

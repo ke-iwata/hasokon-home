@@ -4,7 +4,9 @@ import {
   EV_SURCHARGE_DECIDED,
   ageBandAt,
   ageBandStart,
+  ecoClassFor,
   ecoPeriodOn,
+  honsokuThresholdAt,
   fiscalYearOf,
   inspectionMonths,
   jukaStartFiscalYear,
@@ -27,7 +29,7 @@ const futsu = (over: Partial<JuryoInput> = {}): JuryoInput => ({
   displacementClass: 1,
   firstRegistered: '2020-04',
   weightUnits: 3,
-  ecoClass: 'unknown',
+  fuelRate2030: null,
   ...over,
 });
 const kei = (over: Partial<JuryoInput> = {}): JuryoInput =>
@@ -231,14 +233,31 @@ describe('重量税', () => {
     expect(juryozei(kei({ firstRegistered: '2008-01' }), '2027-01').yen).toBe(8800);
   });
 
-  test('エコカーは本則（2年 5,000円／0.5t）で、経年の重課もない', () => {
-    expect(juryozei(futsu({ ecoClass: 'cut50' }), '2027-04')).toMatchObject({ rate: 'honsoku', yen: 15000 });
-    expect(juryozei(futsu({ ecoClass: 'honsoku', firstRegistered: '2008-01' }), '2027-01').rate).toBe('honsoku');
+  test('その車検のときに免税対象車等なら本則（2年 5,000円／0.5t）で、経年の重課もない', () => {
+    expect(honsokuThresholdAt('2027-04')).toBe(80);
+    expect(honsokuThresholdAt('2027-05')).toBe(85);
+    expect(juryozei(futsu({ fuelRate2030: 95 }), '2027-04')).toMatchObject({ rate: 'honsoku', yen: 15000 });
+    expect(juryozei(futsu({ fuelRate2030: 90, firstRegistered: '2008-01' }), '2027-01').rate).toBe('honsoku');
+    // 達成率が基準に届かなければ、経年の重課がかかる
+    expect(juryozei(futsu({ fuelRate2030: 70, firstRegistered: '2008-01' }), '2027-01').rate).toBe('over18');
   });
 
-  test('ガソリン車の「免税」は初回の継続車検で 125% 以上なら免税の印', () => {
-    const r = juryozei(futsu({ ecoClass: 'exempt' }), '2023-04');
-    expect(r).toMatchObject({ rate: 'honsoku', maybeExempt125: true });
+  test('新車のときの区分は継続車検に引き継がない（レビュー #457 の例：2025-06 登録 → 2028-06 の車検）', () => {
+    // 2025年6月に r7 の「▲25%（80%以上）」で登録した 1.5t の車。2028年6月の車検は基準が85%なので本則にならない
+    const car = futsu({ firstRegistered: '2025-06', fuelRate2030: 80 });
+    expect(ecoClassFor(ecoPeriodOn('2025-06-15'), 'gasoline', 80)).toBe('cut25');
+    expect(juryozei(car, '2028-06')).toMatchObject({ rate: 'normal', yen: 24600 });
+    // 同じ車でも 2027年4月までの車検なら80%で本則
+    expect(juryozei(futsu({ firstRegistered: '2024-04', fuelRate2030: 80 }), '2027-04').rate).toBe('honsoku');
+    // 「本則税率（75%以上）」の区分で登録した車も同じ
+    expect(juryozei(futsu({ firstRegistered: '2025-06', fuelRate2030: 76 }), '2028-06').yen).toBe(24600);
+  });
+
+  test('初回の継続車検の免税は125%以上（90条の12 5項）', () => {
+    expect(juryozei(futsu({ fuelRate2030: 125 }), '2023-04')).toMatchObject({ rate: 'exempt', yen: 0, maybeExempt125: true });
+    expect(juryozei(futsu({ fuelRate2030: 124 }), '2023-04')).toMatchObject({ rate: 'honsoku', maybeExempt125: false });
+    // 2回目以降の継続車検は免税にならない
+    expect(juryozei(futsu({ fuelRate2030: 130 }), '2025-04').rate).toBe('honsoku');
   });
 
   test('EV・PHEV：初回の継続車検は免税、以後は本則', () => {
@@ -281,29 +300,32 @@ describe('エコカー減税（新車の新規検査・3年分）', () => {
 
   test('区分ごとの額（1.5t：本則 22,500円、当分の間 36,900円）', () => {
     const on = '2026-06-01';
-    expect(shinshaJuryozei(futsu({ ecoClass: 'none' }), on).yen).toBe(36900);
-    expect(shinshaJuryozei(futsu({ ecoClass: 'exempt' }), on).yen).toBe(0);
-    expect(shinshaJuryozei(futsu({ ecoClass: 'cut75' }), on).yen).toBe(5600);
-    expect(shinshaJuryozei(futsu({ ecoClass: 'cut50' }), on).yen).toBe(11200);
-    expect(shinshaJuryozei(futsu({ ecoClass: 'cut25' }), on).yen).toBe(16800);
+    expect(shinshaJuryozei(futsu(), on)).toMatchObject({ yen: 36900, appliedClass: 'none', assumedNonEco: true });
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 79 }), on).yen).toBe(36900);
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 105 }), on).yen).toBe(0);
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 100 }), on).yen).toBe(5600);
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 95 }), on).yen).toBe(11200);
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 80 }), on).yen).toBe(16800);
   });
 
-  test('2026-05〜2027-04 には本則の区分が無い（エコカー外で計算）', () => {
-    expect(shinshaJuryozei(futsu({ ecoClass: 'honsoku' }), '2026-05-01')).toMatchObject({
-      classUnavailable: true,
-      yen: 36900,
-    });
-    expect(shinshaJuryozei(futsu({ ecoClass: 'honsoku' }), '2027-05-01')).toMatchObject({
-      classUnavailable: false,
-      yen: 22500,
-    });
-    expect(shinshaJuryozei(futsu({ ecoClass: 'cut75' }), '2026-04-30').classUnavailable).toBe(true);
+  test('2027年5月から ▲25% は85%以上。80〜85%未満はエコカー外（本則の区分は条文に無い）', () => {
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 82 }), '2027-04-30')).toMatchObject({ appliedClass: 'cut25', yen: 16800 });
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 82 }), '2027-05-01')).toMatchObject({ appliedClass: 'none', yen: 36900 });
+    expect(shinshaJuryozei(futsu({ fuelRate2030: 85 }), '2027-05-01').appliedClass).toBe('cut25');
+  });
+
+  test('改正前の期間（2025-05〜2026-04）は 100% 免税・90% ▲50%・80% ▲25%・75% 本則', () => {
+    expect(ecoClassFor(ecoPeriodOn('2026-04-30'), 'gasoline', 100)).toBe('exempt');
+    expect(ecoClassFor(ecoPeriodOn('2026-04-30'), 'gasoline', 99)).toBe('cut50');
+    expect(ecoClassFor(ecoPeriodOn('2026-04-30'), 'gasoline', 75)).toBe('honsoku');
+    expect(ecoClassFor(ecoPeriodOn('2026-05-01'), 'gasoline', 75)).toBe('none');
+    expect(ecoClassFor(null, 'gasoline', 130)).toBe('none');
   });
 
   test('EV は免税、軽は1両あたり', () => {
     expect(shinshaJuryozei(futsu({ power: 'ev' }), '2026-06-01').yen).toBe(0);
-    expect(shinshaJuryozei(kei({ ecoClass: 'none' }), '2026-06-01').yen).toBe(9900);
-    expect(shinshaJuryozei(kei({ ecoClass: 'cut50' }), '2026-06-01').yen).toBe(3700);
+    expect(shinshaJuryozei(kei(), '2026-06-01').yen).toBe(9900);
+    expect(shinshaJuryozei(kei({ fuelRate2030: 95 }), '2026-06-01').yen).toBe(3700);
   });
 });
 
@@ -352,6 +374,9 @@ describe('まとめ・推移', () => {
     expect(summarize(futsu({ firstRegistered: '2026-12' }), '2026-11-04')).toEqual({ kind: 'error', error: 'future' });
     expect(summarize(futsu({ weightUnits: 9 }), '2026-11-04')).toEqual({ kind: 'error', error: 'weight' });
     expect(summarize(futsu({ displacementClass: 10 }), '2026-11-04')).toEqual({ kind: 'error', error: 'displacement' });
+    expect(summarize(futsu({ fuelRate2030: Number.NaN }), '2026-11-04')).toEqual({ kind: 'error', error: 'rate' });
+    expect(summarize(futsu({ firstRegistered: '1969-12' }), '2026-11-04')).toEqual({ kind: 'error', error: 'registered' });
+    expect(summarize(futsu({ firstRegistered: '1970-01' }), '2026-11-04').kind).toBe('ok');
     // EV と軽は排気量・重量を見ない
     expect(summarize(futsu({ power: 'ev', displacementClass: 10 }), '2026-11-04').kind).toBe('ok');
     expect(summarize(kei({ weightUnits: 9 }), '2026-11-04').kind).toBe('ok');

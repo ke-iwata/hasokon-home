@@ -14,6 +14,7 @@ import {
   KEI_RATES,
   SOURCES,
   formatYen,
+  honsokuThresholdAt,
   jukaStartFiscalYear,
   proratedOnAcquire,
   reiwaLabel,
@@ -41,6 +42,7 @@ const EX_2012 = jukaExample('2012-04');
 const EX_2013 = jukaExample('2013-04');
 const EX_PRORATE = proratedOnAcquire(DISPLACEMENT_CLASSES[1].from2019, '2026-10');
 const R = JURYO_RATES.futsu;
+const pct = (n: number | null) => (n === null ? '—' : `${n}%以上`);
 
 const faq = [
   {
@@ -65,7 +67,7 @@ const faq = [
   },
   {
     q: 'ハイブリッド車やEVも13年で重課されますか？',
-    a: '自動車税（種別割）の重課は、電気自動車・天然ガス自動車・ガソリンのハイブリッド・プラグインハイブリッドを除いています。重量税も、エコカー減税の対象車は本則税率で、13年・18年の重課はかかりません。',
+    a: `自動車税（種別割）の重課は、電気自動車・天然ガス自動車・ガソリンのハイブリッド・プラグインハイブリッドを除いています。重量税は動力ではなく、その車検のときの燃費で決まります。EV・PHEVと、2030年度燃費基準の${honsokuThresholdAt('2027-05')}%以上（2027年4月までは${honsokuThresholdAt('2027-04')}%以上）の車は本則税率で、13年・18年の重課もかかりません。新車のときにエコカー減税を受けた車でも、基準に届かなければエコカー外の税率になります。`,
   },
   {
     q: '電気自動車の自動車税はいくらですか？',
@@ -176,11 +178,11 @@ export default function Page() {
             {ECO_PERIODS.map((p) => (
               <tr key={p.id}>
                 <td style={{ textAlign: 'left' }}>{p.label}</td>
-                <td>{p.criteria.exempt}</td>
-                <td>{p.criteria.cut75 ?? '—'}</td>
-                <td>{p.criteria.cut50 ?? '—'}</td>
-                <td>{p.criteria.cut25 ?? '—'}</td>
-                <td>{p.criteria.honsoku ?? '—'}</td>
+                <td>電気自動車等・{pct(p.thresholds.exempt)}</td>
+                <td>{pct(p.thresholds.cut75)}</td>
+                <td>{pct(p.thresholds.cut50)}</td>
+                <td>{pct(p.thresholds.cut25)}</td>
+                <td>{pct(p.thresholds.honsoku)}</td>
               </tr>
             ))}
           </tbody>
@@ -189,6 +191,8 @@ export default function Page() {
       <p className="hint">
         パーセントは2030年度燃費基準の達成率。「電気自動車等」は電気・燃料電池・プラグインハイブリッド・天然ガス自動車です。
         免税の車のうち電気自動車等と125%以上の車は、初回の継続車検も免税です。▲は本則税率からの軽減で、100円未満は切り捨てです。
+        2027年5月からの「本則税率（80%以上）」は環境省の資料にありますが、成立した租税特別措置法90条の12と施行令には
+        2030年度基準80%の区分が見当たらないため、この表と計算では「—」（エコカー外）にしています。
       </p>
 
       <h2>自動車税（種別割）の税額・自家用乗用車</h2>
@@ -229,7 +233,9 @@ export default function Page() {
         </li>
         <li>
           <strong>重量税</strong>：登録から12年11か月の月以後に受ける車検から13年経過の税率、17年11か月の月以後から18年経過の税率。
-          軽自動車は最初の検査の年から13年（18年）たった年の12月から
+          軽自動車は最初の検査の年から13年（18年）たった年の12月から。
+          その車検のときにエコカー減税の基準（2030年度燃費基準の85%以上。2027年4月までは80%以上）を満たす車は、
+          本則税率で経年の重課もかかりません
         </li>
       </ul>
 

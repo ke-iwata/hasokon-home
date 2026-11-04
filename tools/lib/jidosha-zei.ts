@@ -35,7 +35,9 @@
  *     （日本自動車検査登録情報協会の案内）
  *   - 90条の12：エコカー減税。令和8年5月1日〜令和10年4月30日の新規検査で 免税・本則の25%・50%・75%。
  *     6項：100円未満の端数は切り捨て。5項：免税を受けた電気自動車等（ガソリン車は燃費基準125%以上）は
- *     初回の継続車検も免税
+ *     初回の継続車検も免税。90条の11 の当分の間税率と 90条の11の2・11の3 の経年の重課は「免税対象車等」
+ *     （90条の12 1〜4項の各号の車＋施行令51条の2）を除く。各号は燃費の達成率で決まるので、継続車検が本則に
+ *     なるかは「その車検のとき」の基準で判定する（新車のときの区分を引き継がない）
  * - 環境省「令和8年度税制改正における自動車関係諸税（車体課税）の結果について」（2026-02-19）：
  *   環境性能割の廃止（2026-03-31）、エコカー減税の2段階の基準引上げ、EV・PHEV の新しい負担
  *   （2028-05-01 以後の車検から。額は令和9年度改正で決まる）
@@ -59,6 +61,9 @@ export const EV_SURCHARGE_FROM = '2028-05-01';
 export const KANKYO_SEINOWARI_ABOLISHED = '2026-04-01';
 
 /** 2019-10-01 の税率引下げ（附則12条の4「特定日」） */
+/** 入力できる初度登録のいちばん古い年月 */
+export const MIN_REGISTERED = '1970-01';
+
 export const RATE_CUT_DATE = '2019-10';
 /** 軽の 10,800円 が始まった最初の検査の月（平成26年改正法附則15条） */
 export const KEI_NEW_RATE_FROM = '2015-04';
@@ -150,18 +155,11 @@ export const WEIGHT_CLASSES: { units: number; label: string }[] = [
   { units: 6, label: '2.5t超〜3.0t' },
 ];
 
-/** エコカー減税の区分（新車の新規検査で使う。継続車検は本則税率か免税かだけが効く） */
-export type EcoClass = 'unknown' | 'none' | 'exempt' | 'cut75' | 'cut50' | 'cut25' | 'honsoku';
-
-export const ECO_CLASSES: { id: EcoClass; label: string }[] = [
-  { id: 'unknown', label: 'わからない（エコカー外として計算）' },
-  { id: 'exempt', label: '免税' },
-  { id: 'cut75', label: '▲75%' },
-  { id: 'cut50', label: '▲50%' },
-  { id: 'cut25', label: '▲25%' },
-  { id: 'honsoku', label: '本則税率' },
-  { id: 'none', label: '対象外' },
-];
+/**
+ * エコカー減税の区分。新車の新規検査（3年分）にだけ使う。
+ * 継続車検は区分ではなく「その車検のときに免税対象車等に当たるか」（燃費の達成率）で決まる（`juryozei()`）
+ */
+export type EcoClass = 'none' | 'exempt' | 'cut75' | 'cut50' | 'cut25' | 'honsoku';
 
 export interface EcoPeriod {
   id: 'r7' | 'r8a' | 'r8b';
@@ -169,52 +167,56 @@ export interface EcoPeriod {
   /** この日を含む */
   to: string;
   label: string;
-  /** 区分ごとの基準（2030年度燃費基準の達成率）。null はその区分が無い */
-  criteria: Record<'exempt' | 'cut75' | 'cut50' | 'cut25' | 'honsoku', string | null>;
+  /**
+   * 区分ごとの下限（2030年度燃費基準の達成率 %。ガソリン・ハイブリッド・ディーゼルの乗用車）。null はその区分が無い。
+   * 免税は「電気自動車等」も（達成率によらず）
+   */
+  thresholds: Record<'exempt' | 'cut75' | 'cut50' | 'cut25' | 'honsoku', number | null>;
 }
 
-/** 【データ更新箇所】エコカー減税（重量税・乗用車）の期間と基準（環境省資料4ページ・租特法90条の12） */
+/**
+ * 【データ更新箇所】エコカー減税（重量税・乗用車）の期間と基準。
+ * r8a・r8b は租特法90条の12 1〜4項（1項4号イ 105%・2項 100%・3項 95%・4項 85%、
+ * 4項は「令和九年四月三十日までの間は、百分の八十」）。
+ * r8b の「本則税率 80%以上」は環境省資料（大綱段階）にはあるが、成立した90条の12 にも施行令51条の2 にも
+ * 2030年度基準の80%の区分は見当たらなかった（2026-11-04 確認）ので null にしてある。
+ * r7 は改正前の期間（環境省資料4ページの表）で、新車の新規検査の額を出すときだけ使う
+ */
 export const ECO_PERIODS: EcoPeriod[] = [
   {
     id: 'r7',
     from: '2025-05-01',
     to: '2026-04-30',
     label: '2025年5月〜2026年4月',
-    criteria: {
-      exempt: '電気自動車等・2030年度基準100%以上',
-      cut75: null,
-      cut50: '90%以上',
-      cut25: '80%以上',
-      honsoku: '75%以上',
-    },
+    thresholds: { exempt: 100, cut75: null, cut50: 90, cut25: 80, honsoku: 75 },
   },
   {
     id: 'r8a',
     from: '2026-05-01',
     to: '2027-04-30',
     label: '2026年5月〜2027年4月',
-    criteria: {
-      exempt: '電気自動車等・2030年度基準105%以上',
-      cut75: '100%以上',
-      cut50: '95%以上',
-      cut25: '80%以上',
-      honsoku: null,
-    },
+    thresholds: { exempt: 105, cut75: 100, cut50: 95, cut25: 80, honsoku: null },
   },
   {
     id: 'r8b',
     from: '2027-05-01',
     to: '2028-04-30',
     label: '2027年5月〜2028年4月',
-    criteria: {
-      exempt: '電気自動車等・2030年度基準105%以上',
-      cut75: '100%以上',
-      cut50: '95%以上',
-      cut25: '85%以上',
-      honsoku: '80%以上',
-    },
+    thresholds: { exempt: 105, cut75: 100, cut50: 95, cut25: 85, honsoku: null },
   },
 ];
+
+/**
+ * 継続車検で本則税率になる（免税対象車等に当たる）2030年度基準の達成率の下限。
+ * 90条の11 が当分の間税率から除くのは90条の12 1〜4項の各号の車で、いちばん低いのが4項（▲25%）の
+ * 85%（2027-04-30 までは 80%）。同じ理由で13年・18年の重課（90条の11の2・90条の11の3）からも除かれる
+ */
+export function honsokuThresholdAt(inspectionYm: string): number {
+  return ymIndex(inspectionYm) <= ymIndex('2027-04') ? 80 : 85;
+}
+
+/** 初回の継続車検も免税になる達成率（90条の12 5項。新車のとき免税を受けたガソリン車など） */
+export const SECOND_EXEMPT_RATE = 125;
 
 export const SOURCES: { label: string; url: string }[] = [
   {
@@ -422,7 +424,8 @@ export function shubetsuwari(car: CarInput, fiscalYear: number): ShubetsuResult 
 export interface JuryoInput extends CarInput {
   /** 0.5t の個数（WEIGHT_CLASSES の units）。軽は使わない */
   weightUnits: number;
-  ecoClass: EcoClass;
+  /** 2030年度燃費基準の達成率（%）。分からなければ null（エコカー外として計算） */
+  fuelRate2030: number | null;
 }
 
 /** 電気自動車等（EV・FCV・PHEV）。継続車検は本則税率で、経年の重課もない（租特法90条の11 の「免税対象車等」） */
@@ -488,7 +491,7 @@ export interface JuryoResult {
   ageBand: AgeBand;
   /** エコカーかどうかが分からず、エコカー外として計算した */
   assumedNonEco: boolean;
-  /** ガソリン車で「免税」を選んだ人の初回の継続車検。燃費基準125%以上なら免税（ここでは本則で出す） */
+  /** ガソリン車などで達成率125%以上を理由に初回の継続車検を免税にした（新車のとき免税を受けた車に限る、の注記用） */
   maybeExempt125: boolean;
   evSurcharge: EvSurcharge;
   /** EV の新しい負担の額（決まったときだけ） */
@@ -502,10 +505,14 @@ export function juryozei(car: JuryoInput, inspectionYm: string): JuryoResult {
   const ageBand = ageBandAt(car.kind, car.firstRegistered, inspectionYm);
   const firstContinuing = ymIndex(inspectionYm) === ymIndex(car.firstRegistered) + 36;
   const denki = isDenkiTo(car.power);
-  const eco = denki || (car.ecoClass !== 'unknown' && car.ecoClass !== 'none');
+  const rate2030 = car.fuelRate2030;
+  // その車検のときに免税対象車等に当たるか（新車のときの区分ではなく、その時点の基準で決まる）
+  const eco = denki || (rate2030 !== null && rate2030 >= honsokuThresholdAt(inspectionYm));
+  const secondExempt =
+    firstContinuing && (denki || (rate2030 !== null && rate2030 >= SECOND_EXEMPT_RATE));
 
   let rate: JuryoResult['rate'];
-  if (denki && firstContinuing) rate = 'exempt';
+  if (secondExempt) rate = 'exempt';
   else if (eco) rate = 'honsoku';
   else if (ageBand === 'over18') rate = 'over18';
   else if (ageBand === 'over13') rate = 'over13';
@@ -534,8 +541,8 @@ export function juryozei(car: JuryoInput, inspectionYm: string): JuryoResult {
     yen: perUnit * units,
     rate,
     ageBand,
-    assumedNonEco: !denki && car.ecoClass === 'unknown',
-    maybeExempt125: !denki && car.ecoClass === 'exempt' && firstContinuing,
+    assumedNonEco: !denki && rate2030 === null,
+    maybeExempt125: !denki && secondExempt,
     evSurcharge,
     evSurchargeYen,
   };
@@ -550,9 +557,22 @@ export interface ShinshaJuryo {
   /** 3年分の額 */
   yen: number;
   period: EcoPeriod | null;
-  /** 選んだ区分がその期間に無かった（エコカー外として計算） */
-  classUnavailable: boolean;
   appliedClass: EcoClass;
+  /** 達成率が分からず、エコカー外として計算した */
+  assumedNonEco: boolean;
+}
+
+/** 期間と達成率から新車のエコカー減税の区分 */
+export function ecoClassFor(period: EcoPeriod | null, power: Power, fuelRate2030: number | null): EcoClass {
+  if (period === null) return 'none';
+  if (isDenkiTo(power)) return 'exempt';
+  if (fuelRate2030 === null) return 'none';
+  const order: EcoClass[] = ['exempt', 'cut75', 'cut50', 'cut25', 'honsoku'];
+  for (const c of order) {
+    const t = period.thresholds[c as Exclude<EcoClass, 'none'>];
+    if (t !== null && fuelRate2030 >= t) return c;
+  }
+  return 'none';
 }
 
 /** 新車を買うときの重量税（3年分。租特法90条の12。▲は本則に掛けて100円未満切捨て） */
@@ -560,17 +580,9 @@ export function shinshaJuryozei(car: JuryoInput, registeredOn: string): ShinshaJ
   const table = JURYO_RATES[car.kind];
   const units = car.kind === 'kei' ? 1 : car.weightUnits;
   const period = ecoPeriodOn(registeredOn);
-  let cls: EcoClass = isDenkiTo(car.power) ? 'exempt' : car.ecoClass;
-  let classUnavailable = false;
-  if (cls !== 'unknown' && cls !== 'none') {
-    if (period === null || period.criteria[cls] === null) {
-      classUnavailable = true;
-      cls = 'none';
-    }
-  }
+  const cls = ecoClassFor(period, car.power, car.fuelRate2030);
   const honsoku = table.honsoku3 * units;
   const yen = {
-    unknown: table.normal3 * units,
     none: table.normal3 * units,
     exempt: 0,
     cut75: floor100(honsoku * 0.25),
@@ -578,7 +590,7 @@ export function shinshaJuryozei(car: JuryoInput, registeredOn: string): ShinshaJ
     cut25: floor100(honsoku * 0.75),
     honsoku,
   }[cls];
-  return { yen, period, classUnavailable, appliedClass: cls };
+  return { yen, period, appliedClass: cls, assumedNonEco: !isDenkiTo(car.power) && car.fuelRate2030 === null };
 }
 
 // ───────────────────────── 月割・環境性能割 ─────────────────────────
@@ -628,11 +640,11 @@ export interface Summary {
 
 export type SummaryResult =
   | { kind: 'ok'; summary: Summary }
-  | { kind: 'error'; error: 'registered' | 'future' | 'displacement' | 'weight' };
+  | { kind: 'error'; error: 'registered' | 'future' | 'displacement' | 'weight' | 'rate' };
 
 /** 入力の検査とまとめ。asOf は 'YYYY-MM-DD'（開いた日） */
 export function summarize(car: JuryoInput, asOf: string): SummaryResult {
-  if (Number.isNaN(ymIndex(car.firstRegistered)) || ymIndex(car.firstRegistered) < ymIndex('1970-01')) {
+  if (Number.isNaN(ymIndex(car.firstRegistered)) || ymIndex(car.firstRegistered) < ymIndex(MIN_REGISTERED)) {
     return { kind: 'error', error: 'registered' };
   }
   if (ymIndex(car.firstRegistered) > ymIndex(asOf)) return { kind: 'error', error: 'future' };
@@ -645,6 +657,9 @@ export function summarize(car: JuryoInput, asOf: string): SummaryResult {
   }
   if (car.kind === 'futsu' && !WEIGHT_CLASSES.some((w) => w.units === car.weightUnits)) {
     return { kind: 'error', error: 'weight' };
+  }
+  if (car.fuelRate2030 !== null && !(car.fuelRate2030 > 0 && car.fuelRate2030 < 1000)) {
+    return { kind: 'error', error: 'rate' };
   }
   const fiscalYear = fiscalYearOf(asOf);
   const shubetsu = shubetsuwari(car, fiscalYear);
