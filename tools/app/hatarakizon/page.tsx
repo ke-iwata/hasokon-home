@@ -261,11 +261,11 @@ export default function Page() {
         </a>
         ／
         <a
-          href="https://www.nenkin.go.jp/service/kounen/hokenryo/hoshu/20120817.html"
+          href="https://www.nenkin.go.jp/section/faq/kounen/hyoujunhoushu/20140602-02.html"
           target="_blank"
           rel="nofollow noopener noreferrer"
         >
-          日本年金機構「標準報酬月額の決め方」
+          日本年金機構「標準報酬月額は、いつどのように決まるのですか。」
         </a>
         ／
         <a

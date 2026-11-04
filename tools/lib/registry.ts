@@ -164,7 +164,7 @@ export const tools: ToolDef[] = [
     // （lib/shukuhakuzei.ts の TOKYO_RATE_DETAILS_CONFIRMED / OKINAWA_SPLIT_CONFIRMED。テストが落とす）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
     stage: 'preview',
-    updatedAt: '2026-10-13',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'yukyu-fuyo',
@@ -226,6 +226,18 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-10-16',
+  },
+  {
+    // 仕様: docs/features/shokyaku-shisanzei.md
+    slug: 'shokyaku-shisanzei',
+    // 事業で持っている物（資産）にかかる税なので Package
+    icon: 'Package',
+    name: '償却資産税 計算機（免税点180万円対応）',
+    description:
+      '事業用の資産の取得価額・取得年月・耐用年数から、1月1日時点の評価額・課税標準・税額（1.4%）を計算。令和9年度から免税点が150万円→180万円に上がる改正の前後で「かかる／かからない」を並べ、40万円未満の特例で経費にした資産の申告と申告期限も出します。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-10-26',
   },
   {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
@@ -331,7 +343,7 @@ export const tools: ToolDef[] = [
       '税込・税抜をどちらの向きにも計算し、10%／8%／1%を横並びで比べられます。「これは8%か10%か」を約50項目の一覧から引ける軽減税率チェッカーと、2027年4月からの食料品1%（予定）でいくら安くなるかの計算つき。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shuzei-kaisei',
@@ -440,7 +452,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃と保険料調整制度（本人負担25〜48%）に対応。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-12',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shitsugyo-hoken',
@@ -472,7 +484,7 @@ export const tools: ToolDef[] = [
     // 公開の判断は docs/features/google-index-recovery.md の運営者確認のあと。
     // `public` にする PR で home/index.html・home/404.html・home/llms.txt も一緒に足す
     stage: 'public',
-    updatedAt: '2026-09-18',
+    updatedAt: '2026-10-19',
   },
   {
     slug: 'shobyo-teate',
@@ -567,6 +579,21 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-10-01',
+  },
+  {
+    // 仕様: docs/features/mochu-kibiki-hayami.md
+    slug: 'mochu-kibiki',
+    // 弔事のページなので蓮の花（FlowerLotus）。ほかで使っていない
+    icon: 'FlowerLotus',
+    name: '喪中・忌引き・法要 早見',
+    // 年賀状の日付は書かない（page.tsx の title・description は NENGA_SCHEDULES から組み立てる）
+    description:
+      '亡くなった方の続柄と命日から、何親等か・喪中はがきを出す範囲と時期・寒中見舞いの期間・忌引きの日数（国家公務員の基準）・初七日や四十九日、一周忌・三回忌の日付と直前の土日を一度に表示。',
+    category: '生活・健康',
+    // 2026-11-13 までに preview、11-20 までに public（喪中はがきの検索の山の前。仕様書の「状態」）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-04',
   },
   {
     // 仕様: docs/features/sozoku-toki-kigen.md
@@ -752,6 +779,19 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-10-17',
+  },
+  {
+    // 仕様: docs/features/jidosha-zei-keisan.md
+    // 公開条件：テスト環境で運営者が「1.5L・2019年10月以後・1.2t の年額」「2012年4月登録の 2.0L の重課の年度」
+    // 「軽の13年超」を確認したら public（2026-12-15 までに。EV の欄は大綱の公表後に書き足す）
+    slug: 'jidosha-zei',
+    icon: 'Car',
+    name: '自動車の税金 計算機（令和8年度改正対応）',
+    description:
+      '排気量・初度登録の年月・車両重量から、毎年5月の自動車税（種別割）と車検の重量税、13年超の重課が何年度から始まるかを計算。環境性能割の廃止・エコカー減税の基準引上げ・EV/PHEVの2028年5月からの新しい負担にも対応。',
+    category: 'お金・社会保険',
+    stage: 'preview',
+    updatedAt: '2026-11-04',
   },
   {
     slug: 'bosai-bichiku-keisan',
