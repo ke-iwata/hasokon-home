@@ -316,6 +316,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-10-14',
   },
   {
+    // チェス（docs/features/game-chess.md）。数百年前から遊ばれている伝統ゲームの一般名称で、ルールに権利は無い。
+    // **名称と slug の J-PlatPat 確認（第9類・第28類・第41類）は運営者のタスク**で、済むまで `wip`
+    // （slug は公開後に動かせないので、確認してから `preview` に上げる。仕様書の着手条件 1）。
+    // 市販品・アプリ・サービスの名称は表示名にも title にも使わない。駒の絵は自作の SVG（着手条件 2）。
+    // カードの絵（GamePreview・GameIcon の BOARD）は `public` にするPRで描く
+    slug: 'chess',
+    icon: 'ChessKnight',
+    name: 'チェス',
+    description:
+      'CPUは かんたん・ふつう・つよい の3段階、白・黒を選べるチェス。駒をタップすると動ける先が光ります。日替わりの「今日の1手詰め」つき。',
+    keywords: ['キャスリング', 'アンパッサン', 'プロモーション', 'ステイルメイト', '今日の1手詰め', '1手もどす', '投了'],
+    stage: 'wip',
+    updatedAt: '2026-11-03',
+  },
+  {
     // 「大富豪（大貧民）」は日本の伝統的なトランプ遊びの一般名称で、ルールも名称も
     // パブリックドメイン。商標の問題は無い
     // （docs/features/game-daifugo.md の「権利面が完全にクリーン」）
@@ -405,7 +420,7 @@ export const games: GameDef[] = [
     description:
       'A・2・3…Kの順に札を伏せて出し、ウソだと思ったら「ダウト！」。CPU 3人と4人で遊ぶ、読み合いのトランプ。CPUは3段階。',
     keywords: ['ダウト', 'トランプ', 'CPU対戦', 'ウソ', '読み合い'],
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-18',
   },
   {

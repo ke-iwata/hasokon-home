@@ -167,6 +167,33 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-19',
   },
   {
+    slug: 'yukyu-fuyo',
+    // 休みの島の絵で Island
+    icon: 'Island',
+    name: '有給休暇 付与日数 計算機',
+    description:
+      '入社日と週の勤務日数から、有給休暇の次の付与日と日数を計算。パート・アルバイトの比例付与、繰越を足した残り（最大40日）、2年の時効で消える日、年5日の取得義務の期限まで出します。',
+    category: 'お金・社会保険',
+    // 2026-11 中に preview、12-01 までに public（仕様書の「状態」。年末の取得調整が 11〜12 月に集中する）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-03',
+  },
+  {
+    slug: 'yubin-ryokin',
+    // 封筒の絵で Envelope
+    icon: 'Envelope',
+    name: '郵便料金 計算機',
+    // 年賀状の日付や額は書かない（page.tsx の title・description は RATE_TABLES・NENGA_* から組み立てる）
+    description:
+      '封筒の大きさと重さから定形・定形外（規格内・規格外）を判定し、はがき・封書の郵便料金を計算。速達・書留・特定記録の加算、手持ちの古い切手（84円・63円など）にあと何円足すか、レターパックのほうが安いかも表示。',
+    category: '生活・健康',
+    // 2026-11-15 までに preview、11 月中に public（仕様書の「状態」。年賀状の受付開始 12-20 より前に Bing に拾わせる）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'public',
+    updatedAt: '2026-11-02',
+  },
+  {
     slug: 'zaishoku-rorei-nenkin',
     icon: 'PiggyBank',
     name: '在職老齢年金 計算機',
@@ -259,7 +286,7 @@ export const tools: ToolDef[] = [
       '2026年12月の改正でiDeCoの上限は会社員なら月6.2万円へ。ただし「6.2万円 − 事業主掛金」があなたの上限です。勤め先の事業主掛金を入れて、上限と年間の節税額、70歳までの累計を計算します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-19',
+    updatedAt: '2026-11-03',
   },
   {
     slug: 'koko-jugyoryo',
@@ -682,6 +709,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-17',
   },
   {
+    // 仕様: docs/features/taishokugo-kenko-hoken-hikaku.md
+    // 2026-11-30 までに preview、12-15 までに public（仕様書の状態の行）。
+    // public にする PR で home/index.html・home/404.html のカードと ToolPreview / ToolArt の絵を足す
+    slug: 'taishokugo-kenko-hoken',
+    icon: 'Stethoscope',
+    name: '退職後の健康保険 比較（任意継続・国保・扶養）',
+    description:
+      '退職日と前年の所得から、任意継続・国民健康保険・家族の扶養の保険料を退職翌月から24か月の月ごとに比較。令和8年度の子ども・子育て支援金分、任意継続の上限32万円、会社都合の退職で国保が下がる軽減（給与所得30/100）に対応し、2年目の4月に国保へ乗り換えると得になるかまで出します。',
+    category: 'お金・社会保険',
+    stage: 'public',
+    updatedAt: '2026-10-31',
+  },
+  {
     // 仕様: docs/features/shokuji-hojo-hikazei.md
     slug: 'shokuji-hojo-hikazei',
     icon: 'ForkKnife',
@@ -689,7 +729,7 @@ export const tools: ToolDef[] = [
     description:
       '会社の弁当・社員食堂・食事券の1か月分から、所得税が非課税かを判定。本人が半分以上を負担・会社負担が月7,500円（税抜き、令和8年4月から）以下の2条件を確かめ、課税なら給与に足す額とあと何円で非課税かを出します。8%と10%の混在・夜食代650円にも対応。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-18',
   },
   {

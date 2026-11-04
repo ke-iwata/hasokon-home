@@ -7,6 +7,7 @@ import {
   JOIN_AGE_LIMIT_AFTER,
   JOIN_AGE_LIMIT_BEFORE,
   MIN_CONTRIBUTION,
+  POST_INSURED_FRAME,
   REFORM_FIRST_CONTRIBUTION,
   calcIdeco,
   type CorporatePension,
@@ -453,18 +454,22 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 
       <h3 style={{ marginTop: 22 }}>加入可能年齢までの累計</h3>
       <p className="hint" style={{ marginTop: 0 }}>
-        加入可能年齢も{JOIN_AGE_LIMIT_BEFORE}歳未満から{JOIN_AGE_LIMIT_AFTER}
+        加入可能年齢が{JOIN_AGE_LIMIT_BEFORE[insured]}歳未満
+        {insured === 'type2' ? '' : '（国民年金の資格を失う年齢）'}から{JOIN_AGE_LIMIT_AFTER}
         歳未満に{r.reformApplied ? '延びました' : '延びます'}
         （加入を続けられる条件は下の解説をご覧ください）。
         いまの拠出額・いまの課税所得のまま続けた場合の累計です。
         {JOIN_AGE_LIMIT_AFTER}歳までの累計は、60歳以降も加入を続けられる条件に当たる場合の計算です。
+        国民年金の被保険者でなくなってからは月{man(POST_INSURED_FRAME)}
+        {insured === 'type2' ? '（企業年金等があれば合算）' : ''}の枠で数えます。
+        {insured === 'type2' && '第2号は65歳まで勤める前提です。'}
       </p>
       <table>
         <thead>
           <tr>
             <th></th>
-            <th>{JOIN_AGE_LIMIT_BEFORE}歳まで</th>
-            <th>{JOIN_AGE_LIMIT_AFTER}歳まで</th>
+            <th>改正前（{JOIN_AGE_LIMIT_BEFORE[insured]}歳まで）</th>
+            <th>改正後（{JOIN_AGE_LIMIT_AFTER}歳まで）</th>
           </tr>
         </thead>
         <tbody>
@@ -489,8 +494,26 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
       </table>
       {r.cumulativeSavingGain > 0 && (
         <p className="hint" style={{ marginTop: 8 }}>
-          加入できる期間が5年延びるぶん、累計の節税額が{' '}
+          加入できる期間が{r.extensionYears}年延びるぶん、累計の節税額が{' '}
           <strong>{yen(r.cumulativeSavingGain)}</strong> 増えます。
+        </p>
+      )}
+      {r.cumulativeAfter.postInsuredMonths > 0 &&
+        r.postInsuredContributionMonthly < r.contributionMonthly && (
+          <p className="hint" style={{ marginTop: 8 }}>
+            国民年金の被保険者でなくなってからは限度額が月
+            {yen(r.postInsuredLimitMonthly)}になるため、その期間は月
+            {yen(r.postInsuredContributionMonthly)}で数えています。
+          </p>
+        )}
+      {insured === 'type3' && r.cumulativeAfter.postInsuredMonths > 0 && (
+        <p className="hint" style={{ marginTop: 8 }}>
+          60歳以降は月{man(POST_INSURED_FRAME)}まで増やせます（この表はいまの拠出額のままの計算です）。
+        </p>
+      )}
+      {insured === 'type1' && (
+        <p className="hint" style={{ marginTop: 8 }}>
+          60歳以降に国民年金に任意加入する方は、65歳まで第1号の枠で出せます（この表には入れていません）。
         </p>
       )}
 
