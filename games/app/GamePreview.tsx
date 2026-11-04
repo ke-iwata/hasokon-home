@@ -620,6 +620,30 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={269} y={126} s={12} w={700} c="ink" a="middle">0</T>
     </>
   ),
+  // 4人の卓。場の山は伏せたまま「次は 7」、手札から出すか「ダウト！」と言うか
+  doubt: (
+    <>
+      {[0, 1, 2].map((i) => (
+        <Card key={`t${i}`} x={146 + i * 12} y={12} w={16} h={22} up={false} />
+      ))}
+      {[0, 1].map((i) => (
+        <Card key={`l${i}`} x={22} y={44 + i * 10} w={16} h={22} up={false} />
+      ))}
+      {[0, 1].map((i) => (
+        <Card key={`r${i}`} x={302} y={44 + i * 10} w={16} h={22} up={false} />
+      ))}
+      {[0, 1, 2].map((i) => (
+        <Card key={`p${i}`} x={120 + i * 4} y={48 - i * 3} up={false} />
+      ))}
+      <T x={168} y={60} s={11} c="muted">場に［◯］枚</T>
+      <T x={168} y={80} s={17} w={900} c="ink">次は 7</T>
+      {['A', '3', '7', '7', '9', 'J'].map((r, i) => (
+        <Card key={`h${i}`} x={60 + i * 22} y={104} r={r} hot={r === '7'} />
+      ))}
+      <rect x="236" y="104" width="80" height="30" rx="15" {...MARK} />
+      <T x={276} y={124} s={13} w={900} c="bg" a="middle">ダウト！</T>
+    </>
+  ),
 };
 
 export const GAME_PREVIEW_SLUGS: readonly string[] = Object.keys(PREVIEW);

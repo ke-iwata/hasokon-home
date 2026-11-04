@@ -420,7 +420,7 @@ export const games: GameDef[] = [
     description:
       'A・2・3…Kの順に札を伏せて出し、ウソだと思ったら「ダウト！」。CPU 3人と4人で遊ぶ、読み合いのトランプ。CPUは3段階。',
     keywords: ['ダウト', 'トランプ', 'CPU対戦', 'ウソ', '読み合い'],
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-18',
   },
   {

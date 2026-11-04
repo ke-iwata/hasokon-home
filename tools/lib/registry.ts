@@ -167,6 +167,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-13',
   },
   {
+    slug: 'yukyu-fuyo',
+    // 休みの島の絵で Island
+    icon: 'Island',
+    name: '有給休暇 付与日数 計算機',
+    description:
+      '入社日と週の勤務日数から、有給休暇の次の付与日と日数を計算。パート・アルバイトの比例付与、繰越を足した残り（最大40日）、2年の時効で消える日、年5日の取得義務の期限まで出します。',
+    category: 'お金・社会保険',
+    // 2026-11 中に preview、12-01 までに public（仕様書の「状態」。年末の取得調整が 11〜12 月に集中する）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-03',
+  },
+  {
     slug: 'yubin-ryokin',
     // 封筒の絵で Envelope
     icon: 'Envelope',
@@ -177,7 +190,7 @@ export const tools: ToolDef[] = [
     category: '生活・健康',
     // 2026-11-15 までに preview、11 月中に public（仕様書の「状態」。年賀状の受付開始 12-20 より前に Bing に拾わせる）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-11-02',
   },
   {
@@ -705,7 +718,7 @@ export const tools: ToolDef[] = [
     description:
       '退職日と前年の所得から、任意継続・国民健康保険・家族の扶養の保険料を退職翌月から24か月の月ごとに比較。令和8年度の子ども・子育て支援金分、任意継続の上限32万円、会社都合の退職で国保が下がる軽減（給与所得30/100）に対応し、2年目の4月に国保へ乗り換えると得になるかまで出します。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-31',
   },
   {
@@ -716,7 +729,7 @@ export const tools: ToolDef[] = [
     description:
       '会社の弁当・社員食堂・食事券の1か月分から、所得税が非課税かを判定。本人が半分以上を負担・会社負担が月7,500円（税抜き、令和8年4月から）以下の2条件を確かめ、課税なら給与に足す額とあと何円で非課税かを出します。8%と10%の混在・夜食代650円にも対応。',
     category: 'お金・社会保険',
-    stage: 'preview',
+    stage: 'public',
     updatedAt: '2026-10-18',
   },
   {
