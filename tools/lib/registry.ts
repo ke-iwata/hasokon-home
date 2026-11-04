@@ -569,6 +569,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-01',
   },
   {
+    // 仕様: docs/features/mochu-kibiki-hayami.md
+    slug: 'mochu-kibiki',
+    // 弔事のページなので蓮の花（FlowerLotus）。ほかで使っていない
+    icon: 'FlowerLotus',
+    name: '喪中・忌引き・法要 早見',
+    // 年賀状の日付は書かない（page.tsx の title・description は NENGA_SCHEDULES から組み立てる）
+    description:
+      '亡くなった方の続柄と命日から、何親等か・喪中はがきを出す範囲と時期・寒中見舞いの期間・忌引きの日数（国家公務員の基準）・初七日や四十九日、一周忌・三回忌の日付と直前の土日を一度に表示。',
+    category: '生活・健康',
+    // 2026-11-13 までに preview、11-20 までに public（喪中はがきの検索の山の前。仕様書の「状態」）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-04',
+  },
+  {
     // 仕様: docs/features/sozoku-toki-kigen.md
     slug: 'sozoku-toki-kigen',
     // 期限（残り日数）のツールなので砂時計。Hourglass はほかで使っていない
