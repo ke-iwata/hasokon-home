@@ -25,6 +25,7 @@ import {
   type UnixResult,
 } from '@/lib/unix-jikan';
 import { robotsFor, tools } from '@/lib/registry';
+import { EXCEL_FAQ_EXAMPLE } from '@/app/unix-jikan/tables';
 
 /**
  * UNIX時間・Excel シリアル値 変換（docs/features/unix-jikan-excel-serial.md の「計算の約束」1〜6）
@@ -397,6 +398,26 @@ describe('registry と送らない約束', () => {
     expect(source).not.toContain('requestAnimationFrame');
     expect(source).toContain('setInterval');
     expect(source).toContain('visibilitychange');
+  });
+
+  it('コピーのボタンの aria-label に値そのもの（ログは最大 1MB）を入れない', () => {
+    const source = readFileSync(`${dir}Calculator.tsx`, 'utf8');
+    expect(source).not.toContain('aria-label={`${value}');
+    expect(source).toContain('aria-label={`${label}をコピー`}');
+  });
+
+  it('答え（NumberResult）を読み方の切り替えボタンより先に出す（360px で最初の画面に答えが入る）', () => {
+    const source = readFileSync(`${dir}Calculator.tsx`, 'utf8');
+    expect(source.indexOf('<NumberResult')).toBeLessThan(source.indexOf('として読む'));
+  });
+
+  it('結果の文字は数字の途中で折らない（break-all を使わない）', () => {
+    const source = readFileSync(`${dir}Calculator.tsx`, 'utf8');
+    expect(source).not.toContain("wordBreak: 'break-all'");
+  });
+
+  it('FAQ の Excel の例は lib から作る', () => {
+    expect(EXCEL_FAQ_EXAMPLE).toEqual({ serial: '46331', date: '2026年11月5日' });
   });
 
   it('lib はローカルタイムの関数と Intl のタイムゾーンを使わない', () => {

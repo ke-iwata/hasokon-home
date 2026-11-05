@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DEBOUNCE_MS,
   JST_OFFSET_MS,
@@ -42,7 +42,9 @@ const FONT_SIZE = 16;
 
 const mono: React.CSSProperties = {
   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-  wordBreak: 'break-all',
+  // break-all だと「09:00:00.」「123」のように数字の途中で折れる。
+  // anywhere なら空白で先に折れ、19 桁の数字のような長い 1 語だけがはみ出さずに折れる
+  overflowWrap: 'anywhere',
 };
 
 const buttonStyle = (active = false): React.CSSProperties => ({
@@ -96,15 +98,18 @@ function useNow(): number | null {
 /** 一度だけ送る（入力のたびに送らない。値そのものは送らない） */
 function useTrackOnce() {
   const sent = useRef(new Set<string>());
-  return (action: string) => {
+  // 毎秒の描画（useNow）のたびに effect を回さないよう、同じ関数を返す
+  return useCallback((action: string) => {
     if (sent.current.has(action)) return;
     sent.current.add(action);
     trackToolUse(SLUG, action);
-  };
+  }, []);
 }
 
-function CopyButton({ value, id, copied, onCopy }: {
+function CopyButton({ value, label, id, copied, onCopy }: {
   value: string;
+  /** 読み上げ用の項目名。値そのものを aria-label に入れない（ログは最大 1MB になる） */
+  label: string;
   id: string;
   copied: string | null;
   onCopy: (value: string, id: string) => void;
@@ -114,7 +119,7 @@ function CopyButton({ value, id, copied, onCopy }: {
       type="button"
       onClick={() => onCopy(value, id)}
       style={{ ...buttonStyle(), minHeight: 44, flexShrink: 0 }}
-      aria-label={`${value} をコピー`}
+      aria-label={`${label}をコピー`}
     >
       {copied === id ? 'コピーしました' : 'コピー'}
     </button>
@@ -152,7 +157,7 @@ function ResultRows({ rows, copied, onCopy }: {
             <div style={{ ...mono, fontWeight: 700 }}>{row.value}</div>
           </div>
           {row.copy !== false && (
-            <CopyButton value={row.value} id={row.id} copied={copied} onCopy={onCopy} />
+            <CopyButton value={row.value} label={row.label} id={row.id} copied={copied} onCopy={onCopy} />
           )}
         </li>
       ))}
@@ -247,7 +252,7 @@ export default function Calculator() {
           </div>
         </div>
         {nowSeconds !== null && (
-          <CopyButton value={String(nowSeconds)} id="now" copied={copied} onCopy={onCopy} />
+          <CopyButton value={String(nowSeconds)} label="いまの UNIX時間" id="now" copied={copied} onCopy={onCopy} />
         )}
       </div>
 
@@ -282,7 +287,16 @@ export default function Calculator() {
             {converted.unit !== converted.detected && '（手で切り替え）'}
             {converted.unit === 'excel' && `・${excelBase} 年基準`}
           </p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <NumberResult
+            converted={converted}
+            asSeconds={asSeconds}
+            now={now}
+            copied={copied}
+            onCopy={onCopy}
+          />
+
+          {/* 答えを先に見せ、読み方の切り替えはその下に置く（360px で最初の画面に答えが入るように） */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
             {UNITS.filter((u) => u !== converted.unit).map((u) => (
               <button key={u} type="button" style={buttonStyle()} onClick={() => chooseUnit(u)}>
                 {UNIT_LABELS[u]}として読む
@@ -303,13 +317,6 @@ export default function Calculator() {
             )}
           </div>
 
-          <NumberResult
-            converted={converted}
-            asSeconds={asSeconds}
-            now={now}
-            copied={copied}
-            onCopy={onCopy}
-          />
         </>
       )}
 
@@ -378,7 +385,7 @@ export default function Calculator() {
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
               <strong>{logResult.count}件に日時を添えました</strong>
               {logResult.count > 0 && (
-                <CopyButton value={logResult.output} id="log" copied={copied} onCopy={onCopy} />
+                <CopyButton value={logResult.output} label="変換したログ" id="log" copied={copied} onCopy={onCopy} />
               )}
             </div>
             <pre

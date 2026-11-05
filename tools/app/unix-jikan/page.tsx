@@ -7,7 +7,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import Calculator from './Calculator';
-import { EXAMPLES, Y2038_EXAMPLE } from './tables';
+import { EXAMPLES, EXCEL_FAQ_EXAMPLE, Y2038_EXAMPLE } from './tables';
 
 // 仕様: docs/features/unix-jikan-excel-serial.md
 
@@ -33,7 +33,7 @@ const faq = [
   },
   {
     q: 'Excel で日付が「46331」のような数字になったのはなぜ？ 戻し方は？',
-    a: 'Excel は日付を 1900年1月1日を 1 とする通し番号（シリアル値）で持っていて、セルの書式が「標準」や「数値」になると、その番号がそのまま見えます。CSV を開いたときや、別のブックから値だけ貼り付けたときによく起きます。戻すには、セルを選んで右クリック →「セルの書式設定」→「日付」を選びます。46331 は 2026年11月5日、小数の .5 は正午（12:00）です。',
+    a: `Excel は日付を 1900年1月1日を 1 とする通し番号（シリアル値）で持っていて、セルの書式が「標準」や「数値」になると、その番号がそのまま見えます。CSV を開いたときや、別のブックから値だけ貼り付けたときによく起きます。戻すには、セルを選んで右クリック →「セルの書式設定」→「日付」を選びます。${EXCEL_FAQ_EXAMPLE.serial} は ${EXCEL_FAQ_EXAMPLE.date}、小数の .5 は正午（12:00）です。`,
   },
   {
     q: 'Excel のシリアル値の「1900年2月29日」問題とは？',
@@ -176,11 +176,11 @@ export default function Page() {
         </a>
         、Excel の日付の扱いは{' '}
         <a
-          href="https://learn.microsoft.com/ja-jp/troubleshoot/microsoft-365-apps/excel/1900-and-1904-date-system"
+          href="https://support.microsoft.com/ja-jp/office/date-systems-in-excel-e7fe7167-48a9-4b96-bb53-5612a800b487"
           target="_blank"
           rel="nofollow noopener noreferrer"
         >
-          Microsoft「Excel の 1900 年と 1904 年の日付システムの違い」
+          Microsoft サポート「Excel の日付システム」
         </a>
         と{' '}
         <a

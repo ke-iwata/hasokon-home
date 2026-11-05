@@ -39,3 +39,11 @@ export const Y2038_EXAMPLE = {
   seconds: String(Y2038_LAST_SECOND),
   jst: y2038.kind === 'unix' ? `${formatYmd(y2038.jst)} ${formatHms(y2038.jst)}` : '',
 };
+
+const excel = convertNumber('46331')!.result;
+
+/** FAQ「Excel で日付が数字になった」の例 */
+export const EXCEL_FAQ_EXAMPLE = {
+  serial: '46331',
+  date: excel.kind === 'excel' ? `${excel.wall.year}年${excel.wall.month}月${excel.wall.day}日` : '',
+};
