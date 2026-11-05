@@ -40,8 +40,17 @@ describe('月の算術', () => {
     expect(premiumFor('2026-04')).toEqual({ amount: 17_920, fiscalYear: 2026, estimated: false });
   });
 
+  it('令和9年度は公表済みの 18,290円（概算ではない）', () => {
+    expect(MONTHLY_PREMIUM['2027']).toBe(18_290);
+    expect(premiumFor('2027-04')).toEqual({ amount: 18_290, fiscalYear: 2027, estimated: false });
+  });
+
+  it('2年前納の例と一致：（17,920円×12）＋（18,290円×12）＝434,520円', () => {
+    expect(MONTHLY_PREMIUM['2026'] * 12 + MONTHLY_PREMIUM['2027'] * 12).toBe(434_520);
+  });
+
   it('未公表の年度は最新年度の額で概算する', () => {
-    expect(premiumFor('2027-04')).toEqual({ amount: 17_920, fiscalYear: 2027, estimated: true });
+    expect(premiumFor('2028-04')).toEqual({ amount: 18_290, fiscalYear: 2028, estimated: true });
   });
 });
 
@@ -146,21 +155,24 @@ describe('施行日の壁（2026-10 より前は育児免除の対象外）', ()
 });
 
 describe('仕様書の表示例', () => {
-  it('2026年10月〜2027年8月の 11 か月・197,120円（うち 2027年4月〜8月の 5 か月は概算）', () => {
+  it('2026年10月〜2027年8月の 11 か月・198,970円（2027年4月〜8月の 5 か月は令和9年度の 18,290円）', () => {
     const r = run('2026-09-10', 'father');
     expect(r.ikuji).toEqual({ from: '2026-10', to: '2027-08', months: 11 });
-    expect(r.amount).toBe(197_120);
-    expect(r.amount).toBe(17_920 * 11);
-    expect(r.estimatedMonths).toBe(5);
-    expect(r.estimatedPeriod).toEqual({ from: '2027-04', to: '2027-08', months: 5 });
+    expect(r.amount).toBe(198_970);
+    expect(r.amount).toBe(17_920 * 6 + 18_290 * 5);
+    expect(r.estimatedMonths).toBe(0);
+    expect(r.estimatedPeriod).toBeNull();
   });
 
-  it('夫婦とも第1号なら合計 448,000円（実母 232,960円 + 実父 215,040円。令和8年度の額）', () => {
+  it('夫婦とも第1号なら合計 453,180円（実母 235,550円 + 実父 217,630円。令和8・9年度の額）', () => {
     const mother = run('2026-11-15', 'mother');
     const father = run('2026-11-15', spouseRole('mother'));
-    expect(mother.amount).toBe(232_960);
-    expect(father.amount).toBe(215_040);
-    expect(mother.amount + father.amount).toBe(448_000);
+    // 実母 2026-10〜2027-10（13か月：令和8年度 6・令和9年度 7）、実父 2026-11〜2027-10（12か月：5・7）
+    expect(mother.amount).toBe(17_920 * 6 + 18_290 * 7);
+    expect(mother.amount).toBe(235_550);
+    expect(father.amount).toBe(17_920 * 5 + 18_290 * 7);
+    expect(father.amount).toBe(217_630);
+    expect(mother.amount + father.amount).toBe(453_180);
   });
 });
 
@@ -176,12 +188,18 @@ describe('年度またぎ', () => {
     expect(r.byFiscalYear[0]).toEqual({ fiscalYear: 2025, months: 2, premium: 17_510, estimated: false });
   });
 
-  it('令和9年度の額が未定のうちは同額で、境目だけ概算の印が立つ', () => {
+  it('2027-03 と 2027-04 で月額が変わる（令和8年度 17,920円 → 令和9年度 18,290円。概算の印は立たない）', () => {
     const r = run('2027-03-10', 'father');
     const mar = r.cells.find((c) => c.ym === '2027-03')!;
     const apr = r.cells.find((c) => c.ym === '2027-04')!;
     expect(mar).toMatchObject({ premium: 17_920, estimated: false });
-    expect(apr).toMatchObject({ premium: 17_920, estimated: true });
+    expect(apr).toMatchObject({ premium: 18_290, estimated: false });
+  });
+
+  it('令和10年度の額が未定のうちは令和9年度と同額で、境目だけ概算の印が立つ', () => {
+    const r = run('2028-03-10', 'father');
+    expect(r.cells.find((c) => c.ym === '2028-03')).toMatchObject({ premium: 18_290, estimated: false });
+    expect(r.cells.find((c) => c.ym === '2028-04')).toMatchObject({ premium: 18_290, estimated: true });
   });
 });
 

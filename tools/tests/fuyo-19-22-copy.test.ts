@@ -16,6 +16,9 @@ const FILES = [
   'app/hatarakizon/page.tsx',
   'lib/nenshu-kabe.ts',
   'lib/hatarakizon.ts',
+  // 2026-11-04 点検で追加（10-12 にはまだ無かったツール。docs/features/kokai-tool-seikaku-2026-11-04.md A2）
+  'app/taishokugo-kenko-hoken/page.tsx',
+  'lib/taishokugo-kenko-hoken.ts',
 ];
 
 const FORBIDDEN = ['19〜22歳の学生は150万円', '学生の扶養認定基準', '（学生）'];
@@ -41,5 +44,13 @@ describe('19〜22歳の基準を「学生だけ」と書かない', () => {
         'https://www.nenkin.go.jp/section/faq/kounen/dependents/aged19to22/student.html'
       );
     }
+  });
+
+  it('退職後の健康保険 比較の本文と FAQ に「19歳以上23歳未満（配偶者を除く）は150万円未満」がある', () => {
+    const page = readFileSync(root + 'app/taishokugo-kenko-hoken/page.tsx', 'utf8');
+    expect(page).toContain('19歳以上23歳未満（配偶者を除く）は150万円未満');
+    const faq = page.slice(page.indexOf("q: '失業保険をもらうと扶養から外れる？'"));
+    expect(faq.slice(0, 600)).toContain('19歳以上23歳未満（配偶者を除く）は150万円未満');
+    expect(page).toContain('https://www.nenkin.go.jp/oshirase/taisetu/2025/202508/0819.html');
   });
 });

@@ -191,7 +191,7 @@ export const tools: ToolDef[] = [
     // 2026-11-15 までに preview、11 月中に public（仕様書の「状態」。年賀状の受付開始 12-20 より前に Bing に拾わせる）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
     stage: 'public',
-    updatedAt: '2026-11-02',
+    updatedAt: '2026-11-04',
   },
   {
     slug: 'zaishoku-rorei-nenkin',
@@ -527,7 +527,7 @@ export const tools: ToolDef[] = [
       '2026年10月から、自営業・フリーランスなど国民年金第1号被保険者の親は、子が1歳になるまでの保険料が所得に関係なく免除されます。子の生年月日（予定日）と実母・実父を選ぶと、産前産後免除と育児免除の月と免除額を出します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-05',
+    updatedAt: '2026-11-04',
   },
   {
     // 仕様: docs/features/ikuji-jitan-kyufu.md
@@ -606,7 +606,7 @@ export const tools: ToolDef[] = [
       '相続登記は2024年4月から義務になり、それより前の相続も2027年3月31日が期限です。死亡日と不動産を相続したことを知った日を入れると、相続登記の期限と残り日数、遺産分割後の期限を日付で出します。相続放棄（3か月）・準確定申告（4か月）・相続税申告（10か月）の期限も同じ画面で。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-09-29',
+    updatedAt: '2026-11-04',
   },
   {
     // 仕様: docs/features/jusho-henko-toki-kigen.md
@@ -619,7 +619,7 @@ export const tools: ToolDef[] = [
       '不動産の住所・氏名の変更登記は2026年4月から義務になり、変わった日から2年以内、それより前の変更は2028年3月31日が期限です。引っ越し・改姓の日を入れると、期限と残り日数を日付で出します。未登記の変更が2回あるときは早いほうの期限を、登録免許税（1個1,000円）の目安も。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-02',
+    updatedAt: '2026-11-04',
   },
   {
     // 仕様: docs/features/mynumber-card-yuko-kigen.md
@@ -746,7 +746,7 @@ export const tools: ToolDef[] = [
       '退職日と前年の所得から、任意継続・国民健康保険・家族の扶養の保険料を退職翌月から24か月の月ごとに比較。令和8年度の子ども・子育て支援金分、任意継続の上限32万円、会社都合の退職で国保が下がる軽減（給与所得30/100）に対応し、2年目の4月に国保へ乗り換えると得になるかまで出します。',
     category: 'お金・社会保険',
     stage: 'public',
-    updatedAt: '2026-10-31',
+    updatedAt: '2026-11-04',
   },
   {
     // 仕様: docs/features/shokuji-hojo-hikazei.md
@@ -954,6 +954,18 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'public',
     updatedAt: '2026-08-14',
+  },
+  {
+    // 仕様: docs/features/json-seikei.md
+    slug: 'json-seikei',
+    // Phosphor に Braces は無い。波かっこの BracketsCurly
+    icon: 'BracketsCurly',
+    name: 'JSON 整形・チェック',
+    description:
+      'JSONを貼るだけで整形・圧縮・構文チェック。エラーは行と原因を日本語で表示し、全角スペースや全角の引用符の混入も見つけて直します。送信・保存はしません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-04',
   },
   {
     slug: 'hankaku-zenkaku',

@@ -236,7 +236,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 | 相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/sozokuzei-keisan.ts` の冒頭の定数（`BASIC_FIXED`・`BASIC_PER_HEIR`・`BRACKETS`・`SPOUSE_RELIEF_FLOOR`・`SURCHARGE_RATE`・未成年者／障害者控除・非課税枠）と `DATA_CHECKED_AT`。国税庁 No.4152・4155 ほかと e-Gov の相続税法を正とする。**加算する生前贈与の期間はここに持たない**（`lib/zoyozei-keisan.ts` の `TRANSITION`）。総額用の相続人（`LegalHeirs`）と実際の取得者（`Acquirer`）は型を分けてあるので、混ぜないこと |
 | 贈与税・相続税の改正時（毎年12月の税制改正大綱を見る） | `lib/zoyozei-keisan.ts` の速算表2本（`GENERAL_BRACKETS` / `SPECIAL_BRACKETS`）・`BASIC_DEDUCTION`・`EXTENDED_EXCLUSION`・精算課税の `SETTLEMENT_*`・加算期間の切り替え日 `TRANSITION`。国税庁 No.4408・No.4161・No.4103 を正とし、`DATA_CHECKED_AT` を進める。`app/zoyozei-keisan/page.tsx` の「この計算に乗らない贈与」の**適用期限**（住宅取得等資金 2026-12-31・結婚子育て 2027-03-31）も同じときに確かめる。**加算されるかは贈与日ではなく相続開始日で決まる**（「2026年内に駆け込むと有利」と読める文言を置かない） |
 | 毎年12月（税制改正大綱が出たら・住宅取得等資金の非課税） | `lib/jutaku-shutoku-shikin.ts` の `MEASURE.extension` を `'undecided'` → `'extended'` / `'ended'` に切り替える（画面の文言はこの1語で決まる）。延長なら `MEASURE.to`・`LIMITS`・床面積や所得の閾値も大綱と国税庁 No.4508 に合わせ、`DATA_CHECKED_AT` を進める。70条の2と70条の3の一方だけが延長されたら、そのときにフラグを2つに分ける。**延長の見通しを画面に書かない** |
-| 相続登記・相続の期限の改正時（登録免許税の免税措置の延長も） | `lib/sozoku-toki-kigen.ts` の冒頭の定数（`GIMUKA_START`・`KEIKA_SOCHI_DEADLINE`・期間4つ・`MENZEI_DEADLINE`）と `DATA_CHECKED_AT`。法務省「相続登記の申請義務化に関するQ&A」と e-Gov の条文を正とする。**免税措置（租特法84条の2の3）は現行 2027-03-31 まで**なので、毎年12月の税制改正大綱で延長を確かめる。税の期限の繰り下げは `nissu-keisan` の `HOLIDAYS` に乗っているので、祝日を足せば自動で追随する |
+| 相続登記・相続の期限の改正時（登録免許税の免税措置の延長も） | `lib/sozoku-toki-kigen.ts` の冒頭の定数（`GIMUKA_START`・`KEIKA_SOCHI_DEADLINE`・期間4つ・`MENZEI_DEADLINE`）と `DATA_CHECKED_AT`。法務省「相続登記の申請義務化に関するQ&A」と e-Gov の条文を正とする。**免税措置（租特法84条の2の2第2項。定数 `MENZEI_ARTICLE`）は現行 2027-03-31 まで**なので、毎年12月の税制改正大綱で延長を確かめる。税の期限の繰り下げは `nissu-keisan` の `HOLIDAYS` に乗っているので、祝日を足せば自動で追随する |
 | 住所・氏名変更登記の期限の改正時 | `lib/jusho-henko-toki.ts` の冒頭の定数（`JUSHO_GIMUKA_START`・`JUSHO_KEIKA_SOCHI_DEADLINE`・`JUSHO_TOKI_MONTHS`・`JUSHO_KARYO_MAX_YEN`・`TOROKU_MENKYO_PER_PROPERTY`）と `JUSHO_DATA_CHECKED_AT`。法務省「住所等変更登記の義務化に関するQ&A」と e-Gov を正とする。応当日の計算は `sozoku-toki-kigen` の関数を使っているので、ここには持たない |
 | 自転車の反則金の改定時 | `lib/jitensha-hansokukin.ts` の `VIOLATIONS`（警察庁の一覧PDFを正とする。自治体サイトには誤りの実例がある）。制度そのものの数値は `SYSTEM` |
 | 速度違反の反則金・点数・法定速度の改正時 | `lib/sokudo-ihan.ts` の `FINE_BANDS`（施行令 別表第六）・`pointsFor()`（別表第二）・`speedLimit()`（施行令11条・27条）と `DATA_CHECKED_AT`。e-Gov 法令API で道路交通法施行令（`335CO0000000270`）を引いて写す（警視庁の表は写しなので、食い違ったら施行令を正とする）。**標識の速度は原付には30km/hを超えて及ばない**（標識令 別表第一「最高速度」）ので、`speedLimit()` の `Math.min` を外さないこと |
@@ -270,7 +270,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール81本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku` が `wip`。ほかの71本は `public`。
+- **ツール82本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei` が `wip`。ほかの71本は `public`。
   `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
