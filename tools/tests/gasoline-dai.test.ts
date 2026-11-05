@@ -199,6 +199,30 @@ describe('毎月・1年', () => {
     expect(all).not.toContain('軽くなった');
   });
 
+  it('軽油の行名に「消費税込み」と書かない（軽油引取税には消費税がかからない）', () => {
+    const diesel = monthlyDetailLines(ok(calcMonthly(monthly({ fuel: 'diesel' }))));
+    const row = diesel.find((l) => l.label.startsWith('暫定税率の分の税'));
+    expect(row?.label).toBe('暫定税率の分の税（17.1 円/L・消費税はかからない）');
+    expect(row?.label).not.toContain('消費税込み');
+    for (const fuel of ['regular', 'highOctane'] as const) {
+      const g = monthlyDetailLines(ok(calcMonthly(monthly({ fuel }))));
+      expect(g.find((l) => l.label.startsWith('暫定税率の分の税'))?.label).toBe('暫定税率の分の税（消費税込み・27.61 円/L）');
+    }
+  });
+
+  it('注記のある行は最後の行（画面は注記を dl の直後に出すため）', () => {
+    const lines = monthlyDetailLines(ok(calcMonthly(monthly())));
+    expect(lines.findIndex((l) => l.note)).toBe(lines.length - 1);
+    expect(lines.filter((l) => l.note)).toHaveLength(1);
+  });
+
+  it('dl > div の中に dt / dd 以外を置かない', () => {
+    const calc = source('../app/gasoline-dai/Calculator.tsx');
+    for (const m of calc.matchAll(/<dl className="kv">([\s\S]*?)<\/dl>/g)) {
+      expect(m[1]).not.toMatch(/<p[\s>]/);
+    }
+  });
+
   it('画面・本文に「軽くなった」と書かず、注記は ZANTEI_NOTE を使う', () => {
     const calc = source('../app/gasoline-dai/Calculator.tsx');
     const page = source('../app/gasoline-dai/page.tsx');

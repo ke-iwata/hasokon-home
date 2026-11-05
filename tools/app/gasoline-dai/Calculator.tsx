@@ -279,17 +279,20 @@ export default function Calculator() {
             </div>
             <dl className="kv">
               {monthlyDetailLines(monthly).map((l) => (
-                <div key={l.label} style={l.note ? { flexWrap: 'wrap' } : undefined}>
+                <div key={l.label}>
                   <dt>{l.label}</dt>
                   <dd>{l.value}</dd>
-                  {l.note && (
-                    <p className="hint" style={{ flexBasis: '100%', margin: 0 }}>
-                      {l.note}
-                    </p>
-                  )}
                 </div>
               ))}
             </dl>
+            {/* dl > div の中には dt / dd しか置けないので、注記は dl の後ろに出す（注記のある行は最後の行） */}
+            {monthlyDetailLines(monthly)
+              .filter((l) => l.note)
+              .map((l) => (
+                <p key={l.label} className="hint" style={{ margin: 0 }}>
+                  {l.note}
+                </p>
+              ))}
           </>
         ) : null}
       </div>

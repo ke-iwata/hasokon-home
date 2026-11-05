@@ -244,6 +244,7 @@ export type MonthlyInput = {
 
 export type MonthlyResult = {
   ok: true;
+  fuel: FuelType;
   litersPerMonth: number;
   litersPerYear: number;
   /** 月額（1円未満四捨五入） */
@@ -275,6 +276,7 @@ export function calcMonthly(input: MonthlyInput): MonthlyResult | Invalid {
   const zanteiPerLiter = zanteiTaxPerLiter(input.fuel);
   return {
     ok: true,
+    fuel: input.fuel,
     litersPerMonth,
     litersPerYear,
     monthYen,
@@ -291,7 +293,10 @@ export function calcMonthly(input: MonthlyInput): MonthlyResult | Invalid {
 export const ZANTEI_NOTE =
   '店頭価格がこの額だけ下がったとは限りません（廃止の前後で補助の額が変わったため）。';
 
-/** 毎月・1年の結果の下に出す行（画面とテストで同じ文を使う） */
+/**
+ * 毎月・1年の結果の下に出す行（画面とテストで同じ文を使う）。
+ * 注記（note）のある行は最後に置く。画面は注記を `</dl>` のすぐ後ろに出すので、その直上の行の注記になる
+ */
 export function monthlyDetailLines(r: MonthlyResult): { label: string; value: string; note?: string }[] {
   return [
     {
@@ -299,7 +304,10 @@ export function monthlyDetailLines(r: MonthlyResult): { label: string; value: st
       value: `月 ＋${formatYen(r.riseMonthYen)} 円・年 ＋${formatYen(r.riseYearYen)} 円`,
     },
     {
-      label: `暫定税率の分の税（消費税込み・${r.zanteiPerLiter} 円/L）`,
+      // 軽油引取税には消費税がかからないので、軽油のときに「消費税込み」と書かない（#459 のレビュー）
+      label: r.fuel === 'diesel'
+        ? `暫定税率の分の税（${r.zanteiPerLiter} 円/L・消費税はかからない）`
+        : `暫定税率の分の税（消費税込み・${r.zanteiPerLiter} 円/L）`,
       value: `年 ${formatYen(r.zanteiYearYen)} 円相当`,
       note: ZANTEI_NOTE,
     },
