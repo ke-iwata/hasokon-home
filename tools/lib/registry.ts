@@ -955,6 +955,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-04',
   },
   {
+    // 仕様: docs/features/unix-jikan-excel-serial.md
+    slug: 'unix-jikan',
+    icon: 'Timer',
+    name: 'UNIX時間・Excelシリアル値 変換',
+    description:
+      '10桁・13桁のUNIX時間（エポック秒・ミリ秒）やExcelのシリアル値を貼るだけで日本時間・和暦・曜日に変換。日時からの逆変換、ログ中の時刻のまとめ変換も。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-05',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
