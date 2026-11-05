@@ -158,9 +158,17 @@ export default function Game() {
   // 1試合につき1回だけ数える
   const started = useRef(false);
   const recorded = useRef(false);
+  /**
+   * 試合ごとに最初に begun が true になった瞬間を1回だけ送る（`begin-<強さ>`）。
+   * 「スタート」・♦3での最初の「出す」・「第n回戦へ」のどれが合図でも同じ扱い。
+   * `new-*` は設定変更と「もう一度あそぶ」でしか送られず、勝敗は5回戦を終えたときだけなので、
+   * 「1局始めた割合」はこれで測る（docs/features/desktop-one-screen-card-games.md の「計測」）
+   */
+  const beginSent = useRef(false);
 
   const start = useCallback((nextLevel: Level, nextRules: Rules) => {
     started.current = false;
+    beginSent.current = false;
     recorded.current = false;
     setSelected([]);
     setBegun(false);
@@ -200,6 +208,13 @@ export default function Game() {
     }, delayFor(THINK_MS, speed));
     return () => window.clearTimeout(timer);
   }, [ready, begun, match, state, commit, speed]);
+
+  // 試合の始まりを1回だけ数える
+  useEffect(() => {
+    if (!begun || !match || beginSent.current) return;
+    beginSent.current = true;
+    trackToolUse('daifugo', `begin-${match.level}`);
+  }, [begun, match]);
 
   // 5回戦ぶんが終わったら記録する
   useEffect(() => {
