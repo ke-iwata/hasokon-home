@@ -1,10 +1,10 @@
 # 公開中ツールの正確さ（2026-11-06 点検）— 割引・パーセント計算が浮動小数の誤差で1円ずれる（1000円の80%オフを切り捨てで199円、税抜100円の10%を切り上げで111円）。ヘボン式ローマ字が末尾の長音「お」を落とす（高遠 たかとお → TAKATO、正しくは TAKATOO）
 
-**状態**：提案（2026-11-06 起票。セッション `session_012RoU2EPREpLPHMV4zSnwtp`）
+**状態**：提案（2026-11-06 起票。セッション `session_012RoU2EPREpLPHMV4zSnwtp`。**同日の企画レビュー（#466）の 2 点を反映**：小数 2 桁を超える率の入力はエラーで案内する／「AのB%はいくら」（`percentOf`）も A1 の対象に入れる）
 **優先度：A は高、B は中、C は低。**
 - **A1（割引・パーセント計算 `waribiki-percent`）**：割引後の額と税込の額を `price * (1 - eff/100)`・`discounted * (1 + rate)` の**浮動小数**で出してから切り捨て・切り上げている。
   `1000 * (1 - 0.8)` は `199.99999999999997` になるので、**1000円の80%オフを「切り捨て」で 199円**と出す（正しくは 200円）。
-  「レジと 1 円合わない」を解消するのがこのツールの売りで、そこが崩れている
+  「レジと 1 円合わない」を解消するのがこのツールの売りで、そこが崩れている。**「AのB%はいくら」も同じ**（375円の 18.4% を切り捨てで 68。正しくは 69）
 - **A2（ヘボン式ローマ字 `hebon-romaji`）**：お段＋「お」の長音を**位置にかかわらず**書かない。
   旅券のヘボン式は「**末尾の長音の『お』は『O』で表記します**」（高遠 TAKATOO・御園生 MISONOO）。
   パスポート申請書に写されるツールなので、**写した人の申請書の綴りが規則と違う**
@@ -13,7 +13,7 @@
 **着手条件**：なし（どれも他の open PR と同じファイルを触らない。`tools/lib/registry.ts` の `updatedAt` だけは他の PR と重なりうるので、後からマージする側が解く）。
 **A1・A2 は 2026-11-30 までに本番へ**（A1：年末のセール・初売りで「◯%オフ いくら」が増える。A2：年末年始の海外旅行の前にパスポートの新規申請が増える）。
 **公開条件**：実装 PR のマージで test.hasokon.com に出る。次の `v*` タグで本番。`stage` は動かさない（どれも `public` のまま）。
-**対象**：`tools/lib/waribiki-percent.ts`（104〜108・181〜199 行）・`tools/tests/waribiki-percent.test.ts`／
+**対象**：`tools/lib/waribiki-percent.ts`（104〜108・181〜199・241〜244 行）・`tools/app/waribiki-percent/Calculator.tsx`（265・306・508 行）・`tools/tests/waribiki-percent.test.ts`／
 `tools/lib/hebon-romaji.ts`（220〜236 行）・`tools/app/hebon-romaji/page.tsx`（26・33〜34・137・163 付近・206〜219 行）・`tools/tests/hebon-romaji.test.ts`／
 `tools/lib/bosai-bichiku.ts`（141 行）・`tools/app/bosai-bichiku-keisan/page.tsx`（29 行）／`tools/lib/aspect-ratio.ts`・`tools/app/aspect-ratio/page.tsx`（260〜261 行）／
 `tools/app/group/page.tsx`／`tools/app/warikan/Calculator.tsx`／`tools/app/interval-timer/page.tsx`・`Timer.tsx`／`tools/app/gazo-resize/Calculator.tsx`／`tools/app/tsubo-heibei/page.tsx`／
@@ -79,13 +79,21 @@ const includingTax = roundBy(rawIncluding, input.rounding);
 
 ### 仕様（直し方）
 
-1. **率は 0.01% 単位の整数に直す**（`r100 = Math.round(r * 100)`。入力欄は小数 2 桁まで）
+1. **率は 0.01% 単位の整数に直す**（`r100 = Math.round(r * 100)`）。
+   **小数 2 桁を超える入力（`33.333` など）は計算せず、入力欄の下に「割引率は小数第 2 位まで入力してください（例：33.33）」と出す**。
+   いまの入力欄は `step="any"`（`tools/app/waribiki-percent/Calculator.tsx` 265・306 行）で何桁でも入るため、黙って 0.01% に丸めると画面の率と計算に使った率が食い違う。
+   判定は文字列で行う（入力の文字列の小数点以下の桁数を数える。`r * 100` が整数かを浮動小数で見ると、それ自体が誤差でぶれる）。`step` は `0.01` に改める
 2. 割引後の額は**分子・分母を整数のまま持って丸める**：
    `numer = price × Π(10000 − r100ᵢ)`、`denom = 10000ⁿ`。`floor` は整数の割り算、`ceil` は `(numer + denom − 1) / denom`、`round` は `(2·numer + denom) / (2·denom)` の切り捨て。
    二重割引の段数（n ≤ 3）と価格の上限で `Number.MAX_SAFE_INTEGER` を超えうるので **`BigInt` で計算**する
 3. 税込は消費税計算機（`tools/lib/shohizei.ts`）と同じく `discounted × (100 + 税率%) / 100` を整数で
 4. 実効の割引率の表示（`effectiveRate`）は表示用なので小数のままでよいが、**丸めの計算には使わない**
-5. 上の再現の 5 行をテストに足す。あわせて「価格 1〜2,000円 × 割引 1〜99% の総当たりで、`BigInt` で求めた正解と一致する」性質テストを 1 本
+5. **「AのB%はいくら」（`percentOf`、`tools/lib/waribiki-percent.ts` 241〜244 行。`Calculator.tsx` 508 行で `roundBy` している）も同じ整数化の関数を通す**。
+   いまは `(base * percent) / 100` を浮動小数で出しているので、**375円の 18.4% が `68.99999999999999` になり、切り捨てで 68**（正しくは 69）。
+   価格 1〜2,000 × 率 0.1〜99.9%（小数 1 桁）の総当たりの切り捨てで 127 件ずれる（企画レビュー #466 で確認）。
+   A・B とも小数 2 桁まで（超えたら 1. と同じ案内）とし、`numer = A100 × B100`、`denom = 1,000,000` を `BigInt` で丸める。
+   丸めない表示（端数「そのまま」）も `numer / denom` を文字列で小数に起こし、`68.99999999999999` のような表示を出さない
+6. 上の再現の 5 行と、375円の 18.4%（切り捨てで 69）をテストに足す。あわせて「価格 1〜2,000円 × 割引 1〜99% の総当たりで、`BigInt` で求めた正解と一致する」性質テストを 1 本
 
 ---
 
@@ -161,11 +169,11 @@ const includingTax = roundBy(rawIncluding, input.rounding);
 
 | 作業 | 目安 |
 |---|---|
-| A1（`BigInt` の丸め・再現テスト・総当たりの性質テスト） | 約 35k トークン |
+| A1（`BigInt` の丸め・`percentOf` も同じ関数へ・小数 3 桁以上の案内・再現テスト・総当たりの性質テスト） | 約 45k トークン |
 | A2・B1〜B4（末尾の「お」・注記・本文の書き直し・テスト） | 約 35k トークン |
 | B5・B6・C（文言と小さなロジック） | 約 30k トークン |
 | テスト環境での確認 | 約 10k トークン |
-| **合計** | **約 110k トークン**（1 PR。A1 と A2 を先に出したければ 2 PR に分けてよい） |
+| **合計** | **約 120k トークン**（1 PR。A1 と A2 を先に出したければ 2 PR に分けてよい） |
 
 ## やらないこと
 
