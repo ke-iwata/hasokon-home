@@ -18,7 +18,8 @@ export default function Calculator() {
   const [mode, setMode] = useState<KanjiMode>('kanji-more');
 
   const total = Math.max(0, Number(totalStr) || 0);
-  const people = Math.max(1, Number(peopleStr) || 1);
+  // lib と同じく整数に切り捨てる（2.5人で画面だけ「× 1.5人」と出ないように）
+  const people = Math.max(1, Math.floor(Number(peopleStr)) || 1);
   const r = calcWarikan({ total, people, roundUnit, mode });
 
   const participants = people - 1;

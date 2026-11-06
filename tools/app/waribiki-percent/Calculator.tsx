@@ -10,11 +10,13 @@ import {
   applyDiscount,
   formatPercent,
   formatYen,
+  hasAtMostTwoDecimals,
   percentChange,
-  percentOf,
+  percentOfExact,
+  percentOfRounded,
   percentRatio,
   reverseDiscount,
-  roundBy,
+  TOO_MANY_DECIMALS_MESSAGE,
   type Rounding,
   type TaxMode,
   type TaxRateId,
@@ -111,16 +113,22 @@ export default function Calculator() {
     return [r1, num(rate2Str)];
   }, [rate1Str, useSecondDiscount, rate2Str]);
 
+  // 小数第2位を超える率は黙って丸めず、計算しないで案内する（画面の率と計算に使う率を食い違わせない）
+  const ratesTooPrecise =
+    !hasAtMostTwoDecimals(rate1Str) || (useSecondDiscount && !hasAtMostTwoDecimals(rate2Str));
+
   const discountResult = useMemo(
     () =>
-      applyDiscount({
+      ratesTooPrecise
+        ? null
+        : applyDiscount({
         price: num(priceStr),
         rates,
         rounding,
         taxMode,
         taxRateId,
       }),
-    [priceStr, rates, rounding, taxMode, taxRateId],
+    [ratesTooPrecise, priceStr, rates, rounding, taxMode, taxRateId],
   );
 
   const reverseResult = useMemo(
@@ -132,13 +140,25 @@ export default function Calculator() {
     [originalStr, saleStr],
   );
 
+  const percentTooPrecise =
+    subMode === 'of' && (!hasAtMostTwoDecimals(pA) || !hasAtMostTwoDecimals(pB));
+
   const percentResult = useMemo(() => {
     const a = numOrNaN(pA);
     const b = numOrNaN(pB);
-    if (subMode === 'of') return percentOf(a, b);
+    if (subMode === 'of') {
+      if (percentTooPrecise) return null;
+      // 浮動小数を介さず、整数の分子・分母のまま丸める（375 の 18.4% が 68 にならないように）
+      return percentOfRounded(a, b, rounding);
+    }
     if (subMode === 'ratio') return percentRatio(a, b);
     return percentChange(a, b);
-  }, [subMode, pA, pB]);
+  }, [subMode, pA, pB, rounding, percentTooPrecise]);
+
+  const percentOfExactStr = useMemo(
+    () => (subMode === 'of' && !percentTooPrecise ? percentOfExact(numOrNaN(pA), numOrNaN(pB)) : null),
+    [subMode, pA, pB, percentTooPrecise],
+  );
 
   const track = (action: string) => trackToolUse('waribiki-percent', action);
 
@@ -262,7 +282,7 @@ export default function Calculator() {
                 inputMode="decimal"
                 min={0}
                 max={100}
-                step="any"
+                step={0.01}
                 value={rate1Str}
                 onChange={(e) => setRate1Str(e.target.value)}
                 onBlur={() => track('discount')}
@@ -303,7 +323,7 @@ export default function Calculator() {
                     inputMode="decimal"
                     min={0}
                     max={100}
-                    step="any"
+                    step={0.01}
                     value={rate2Str}
                     onChange={(e) => setRate2Str(e.target.value)}
                     onBlur={() => track('discount')}
@@ -317,8 +337,10 @@ export default function Calculator() {
           </div>
 
           {discountResult === null ? (
-            <p className="hint" style={{ marginTop: 16 }}>
-              値段は0以上、割引率は0〜100%で入力してください。
+            <p className="hint" style={{ marginTop: 16 }} role="alert">
+              {ratesTooPrecise
+                ? TOO_MANY_DECIMALS_MESSAGE
+                : '値段は0以上、割引率は0〜100%で入力してください。'}
             </p>
           ) : (
             <>
@@ -494,7 +516,9 @@ export default function Calculator() {
           {percentResult === null ? (
             <p className="hint" style={{ marginTop: 16 }}>
               {subMode === 'of'
-                ? 'AとBに数値を入れてください。'
+                ? percentTooPrecise
+                  ? 'A・Bは小数第2位まで入力してください（例：33.33）'
+                  : 'AとBに数値を入れてください。'
                 : subMode === 'ratio'
                   ? 'Bに0以外の数値を入れてください。'
                   : 'Aに0以外の数値を入れてください。'}
@@ -505,14 +529,18 @@ export default function Calculator() {
                 <span className="label">{percentSubMode.label}</span>
                 <span className="value">
                   {subMode === 'of'
-                    ? roundBy(percentResult, rounding).toLocaleString('ja-JP')
+                    ? percentResult.toLocaleString('ja-JP')
                     : formatPercent(percentResult).replace('%', '')}
                 </span>
                 <span className="unit">{subMode === 'of' ? '' : '%'}</span>
               </div>
               <p className="hint" style={{ marginTop: 4 }}>
                 {subMode === 'of'
-                  ? `A × B ÷ 100（端数は${ROUNDINGS.find((r) => r.id === rounding)?.label}で整数に）`
+                  ? `A × B ÷ 100（端数は${ROUNDINGS.find((r) => r.id === rounding)?.label}で整数に）${
+                      percentOfExactStr !== null && percentOfExactStr !== String(percentResult)
+                        ? `。丸める前は ${percentOfExactStr}`
+                        : ''
+                    }`
                   : subMode === 'ratio'
                     ? 'A ÷ B × 100'
                     : '(B − A) ÷ A × 100'}

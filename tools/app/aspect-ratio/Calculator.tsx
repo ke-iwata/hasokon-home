@@ -45,7 +45,7 @@ export default function Calculator() {
             type="number"
             inputMode="numeric"
             min={1}
-            step={1}
+            step="any"
             value={width}
             onChange={(e) => setWidth(e.target.value)}
           />
@@ -56,7 +56,7 @@ export default function Calculator() {
             type="number"
             inputMode="numeric"
             min={1}
-            step={1}
+            step="any"
             value={height}
             onChange={(e) => setHeight(e.target.value)}
           />
@@ -80,6 +80,8 @@ export default function Calculator() {
               <>
                 よく使う比率 <strong>{nearest.label}</strong> にぴったりです。
               </>
+            ) : !nearest.near ? (
+              <>よく使う比率（16:9・4:3・3:2・21:9・1:1・4:5 など）に近いものはありません。</>
             ) : (
               <>
                 よく使う比率では <strong>{nearest.label}</strong> に近い比率です（ずれ 約
