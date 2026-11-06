@@ -175,6 +175,8 @@ export interface DiscountResult {
 export function applyDiscount(input: DiscountInput): DiscountResult | null {
   if (!isValidPrice(input.price)) return null;
   if (!input.rates.every(isValidRate)) return null;
+  // 1e307 のような有限値でも ×100 で Infinity になり BigInt() が例外を投げる（画面ごと消える）
+  if (!canScaleToHundredths(input.price)) return null;
   // 二重割引で 100% を素通しにする合理的なケースはないので、100は許容し、
   // 合計割引率が100を超える定義を出さないよう rates の各要素を上でクランプ済み。
   // 合計割引率（eff）は表示用。丸めの計算には使わない（浮動小数の誤差で
@@ -261,7 +263,7 @@ export function percentOf(base: number, percent: number): number | null {
  * A・B は小数第2位まで（超える入力は画面側で `hasAtMostTwoDecimals` で弾く）。
  */
 export function percentOfRounded(base: number, percent: number, rounding: Rounding): number | null {
-  if (!Number.isFinite(base) || !Number.isFinite(percent)) return null;
+  if (!canScaleToHundredths(base) || !canScaleToHundredths(percent)) return null;
   return roundFraction(
     BigInt(toHundredths(base)) * BigInt(toHundredths(percent)),
     1_000_000n,
@@ -275,7 +277,7 @@ export function percentOfRounded(base: number, percent: number, rounding: Roundi
  * 375 の 18.4% → "69"、1200 の 8.5% → "102"、33 の 12.34% → "4.0722"。
  */
 export function percentOfExact(base: number, percent: number): string | null {
-  if (!Number.isFinite(base) || !Number.isFinite(percent)) return null;
+  if (!canScaleToHundredths(base) || !canScaleToHundredths(percent)) return null;
   return fractionToDecimal(BigInt(toHundredths(base)) * BigInt(toHundredths(percent)), 6);
 }
 
@@ -289,6 +291,14 @@ export function percentOfExact(base: number, percent: number): string | null {
  */
 export function toHundredths(value: number): number {
   return Math.round(value * 100);
+}
+
+/**
+ * `toHundredths` → `BigInt` に渡してよい値か（×100 しても有限か）。
+ * `Number.isFinite` だけだと 1e307 が素通りし、×100 で Infinity になって BigInt() が RangeError を投げる。
+ */
+export function canScaleToHundredths(value: number): boolean {
+  return Number.isFinite(value) && Number.isFinite(value * 100);
 }
 
 /**

@@ -43,7 +43,7 @@ export default function Calculator() {
           幅（px）
           <input
             type="number"
-            inputMode="numeric"
+            inputMode="decimal"
             min={1}
             step="any"
             value={width}
@@ -54,7 +54,7 @@ export default function Calculator() {
           高さ（px）
           <input
             type="number"
-            inputMode="numeric"
+            inputMode="decimal"
             min={1}
             step="any"
             value={height}

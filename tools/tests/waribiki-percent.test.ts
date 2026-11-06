@@ -501,3 +501,18 @@ describe('浮動小数の誤差で1円ずれない（2026-11-06 点検 A1）', (
     expect(() => roundFraction(1n, 0n, 'floor')).toThrow();
   });
 });
+
+describe('巨大な値で例外を投げない（#467 レビュー）', () => {
+  it('applyDiscount は 1e307 で throw せず null を返す', () => {
+    expect(() => applyDiscount({ price: 1e307, rates: [10], rounding: 'floor' })).not.toThrow();
+    expect(applyDiscount({ price: 1e307, rates: [10], rounding: 'floor' })).toBeNull();
+  });
+  it('percentOfRounded・percentOfExact も 1e307 で null', () => {
+    expect(percentOfRounded(1e307, 10, 'floor')).toBeNull();
+    expect(percentOfRounded(10, 1e307, 'floor')).toBeNull();
+    expect(percentOfExact(1e307, 10)).toBeNull();
+  });
+  it('ふつうの大きな額（1兆円）は計算できる', () => {
+    expect(applyDiscount({ price: 1e12, rates: [10], rounding: 'floor' })?.discounted).toBe(9e11);
+  });
+});
