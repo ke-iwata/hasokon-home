@@ -439,6 +439,22 @@ export const games: GameDef[] = [
     updatedAt: '2026-10-19',
   },
   {
+    // 縦 6 × 横 7 の盤の上からコマを落として 4 つ並べる「四目並べ」（docs/features/game-yonmoku-narabe.md）。
+    // 19 世紀からある遊びで、ルールに権利は無い。**米国の玩具会社の商品名は表示名・title・description・
+    // keywords・slug・本文のどこにも書かない**（仕様書の着手条件 2。`tests/yonmoku-narabe.test.ts` が見張る）。
+    // 盤の色もその商品（青い枠・赤と黄のコマ）をまねず、リバーシと同じ黒・白のコマで描く。
+    // **J-PlatPat の確認（第9類・第28類・第41類で「四目並べ」）は運営者のタスク**で、
+    // 済むまで `wip`（slug は公開後に動かせない）
+    slug: 'yonmoku-narabe',
+    icon: 'YonmokuNarabe',
+    name: '四目並べ',
+    description:
+      '縦6×横7の盤に上からコマを落とし、縦・横・斜めに4つ並べたら勝ち。CPU対戦は3段階、1台を交互に使う2人対戦も。1局2〜5分です。',
+    keywords: ['CPUと対戦', '2人で対戦', '1手もどす', '投了', '斜め'],
+    stage: 'wip',
+    updatedAt: '2026-11-06',
+  },
+  {
     // 隣の駒を縦か横に飛び越えて取り、1 本だけ残す一人用パズル（docs/features/game-peg-solitaire.md）。
     // 17 世紀末のフランス宮廷から続く古典で、ルールに権利は無い。**英語圏の市販品・アプリの名前は
     // 名称・title・description・keywords・本文のどれにも書かない**（仕様書の着手条件 2）。
