@@ -195,3 +195,32 @@ describe('戸籍フリガナ・自署のFAQ（page.tsx）', () => {
     expect(page).toContain('https://www.mofa.go.jp/mofaj/toko/todoke/pagew_000001_01529.html');
   });
 });
+
+describe('末尾の長音「お」（2026-11-06 点検 A2）', () => {
+  // 仕様: docs/features/kokai-tool-seikaku-2026-11-06.md
+  // 神奈川県パスポートセンター「末尾の長音の『お』は『O』で表記します」
+  it('たかとお → TAKATOO（末尾の「お」は O を書く）', () => {
+    const r = toHebonRomaji('たかとお');
+    expect(r.romaji).toBe('TAKATOO');
+    expect(r.ohRomaji).toBeNull(); // TAKATOH にしない
+  });
+  it('みそのお → MISONOO', () => {
+    expect(toHebonRomaji('みそのお').romaji).toBe('MISONOO');
+    expect(toHebonRomaji('ミソノオ').romaji).toBe('MISONOO');
+  });
+  it('おおの → ONO のまま（末尾以外の「お」は書かない）', () => {
+    expect(toHebonRomaji('おおの').romaji).toBe('ONO');
+  });
+  it('さとう → SATO のまま（末尾でも「う」は書かない）', () => {
+    expect(toHebonRomaji('さとう').romaji).toBe('SATO');
+  });
+  it('ようこ → YOKO のまま', () => {
+    expect(toHebonRomaji('ようこ').romaji).toBe('YOKO');
+  });
+  it('ゔ はかなで入れていても「自動変換に対応していません」と案内する', () => {
+    const r = toHebonRomaji('ヴィ');
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('自動変換に対応していません');
+    expect(toHebonRomaji('abc').error).toContain('ひらがな・カタカナで入力してください');
+  });
+});

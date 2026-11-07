@@ -301,3 +301,13 @@ describe('groupByCategory', () => {
     expect(groups.flatMap((g) => g.lines)).toHaveLength(lines.length);
   });
 });
+
+describe('飲料水の注記（2026-11-06 点検 B5）', () => {
+  // 仕様: docs/features/kokai-tool-seikaku-2026-11-06.md
+  it('「半分は調理用」「1Lまで減らせる」と減らす方向に書かない', () => {
+    const water = STOCK_ITEMS.find((i) => i.id === 'water');
+    expect(water?.note).not.toContain('半分');
+    expect(water?.note).not.toContain('減らせ');
+    expect(water?.note).toContain('3L');
+  });
+});

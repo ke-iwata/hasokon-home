@@ -224,6 +224,17 @@ function assemble(tokens: Token[], useOh: boolean): { romaji: string; hasLongO: 
       const isU = next.type === 'syllable' && (next.char === 'う' || next.char === 'ぅ');
       const isO = next.type === 'syllable' && (next.char === 'お' || next.char === 'ぉ');
       const isChoon = next.type === 'choon';
+      // 末尾の長音の「お」は O を書く（高遠 たかとお → TAKATOO・御園生 みそのお → MISONOO）。
+      // 神奈川県パスポートセンター「ヘボン式ローマ字綴方表」：「末尾の長音の『お』は『O』で表記します」。
+      // 末尾以外の「お」（大野 ONO）と、位置にかかわらず「う」（佐藤 SATO）は書かない。
+      // OH 表記の代替案でも末尾の「お」は OH にしない（TAKATOH は非ヘボン式の扱い）。
+      // 仕様: docs/features/kokai-tool-seikaku-2026-11-06.md A2
+      const isFinalO = isO && i + 1 === tokens.length - 1;
+      if (lastVowel === 'o' && isFinalO) {
+        out += 'o';
+        i += 2;
+        continue;
+      }
       if (lastVowel === 'o' && (isU || isO || isChoon)) {
         // 長音 O: 表記しない（OH 表記なら H を置く）
         hasLongO = true;
@@ -262,11 +273,15 @@ export function toHebonRomaji(input: string): HebonResult {
   const kana = toHiragana(trimmed);
   const { tokens, invalid } = tokenize(kana);
   if (invalid.length > 0) {
+    // 「ゔ」のように、かなではあるが表に無い文字は「かなで入れて」と言うと的外れになる
+    const allKana = invalid.every((c) => /[\u3041-\u309f\u30a0-\u30ff]/.test(c));
     return {
       ok: false,
       romaji: '',
       ohRomaji: null,
-      error: `変換できない文字が含まれています: ${invalid.join('、')}（ひらがな・カタカナで入力してください）`,
+      error: allKana
+        ? `変換できない文字が含まれています: ${invalid.join('、')}（この文字は自動変換に対応していません。窓口で確認してください）`
+        : `変換できない文字が含まれています: ${invalid.join('、')}（ひらがな・カタカナで入力してください）`,
     };
   }
   const normal = assemble(tokens, false);
