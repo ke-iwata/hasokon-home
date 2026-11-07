@@ -60,6 +60,12 @@ const buttonStyle = (active = false): React.CSSProperties => ({
   cursor: 'pointer',
 });
 
+/**
+ * 開閉の ▶ を消さないため display は変えない（flex にすると list-item でなくなり印が消える。#473 のレビュー）。
+ * タップ域は padding で 44px を確保する
+ */
+const summaryStyle: React.CSSProperties = { cursor: 'pointer', fontWeight: 700, padding: '11px 0', lineHeight: 1.5 };
+
 const rowStyle: React.CSSProperties = { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', margin: '8px 0' };
 
 /** 印の付いた部分の見た目（壊れた %・読めないバイト・その文字コードに無い文字） */
@@ -74,6 +80,17 @@ const MARK_TITLES: Record<NonNullable<Segment['mark']>, string> = {
   broken: '途中で切れた %',
   unreadable: 'この文字コードでは読めないバイト',
   unencodable: 'この文字コードに無い文字',
+  invisible: '見えない文字',
+};
+
+/** 見えない文字の印（文字の代わりに薄い色で描く。コピーする値は元の文字のまま） */
+const invisibleStyle: React.CSSProperties = {
+  color: 'var(--muted)',
+  border: '1px dashed var(--border)',
+  borderRadius: 3,
+  padding: '0 2px',
+  margin: '0 1px',
+  fontSize: '0.85em',
 };
 
 function useDebounced<T>(value: T, ms: number): T {
@@ -117,7 +134,11 @@ function Marked({ segments }: { segments: Segment[] }) {
   return (
     <>
       {segments.map((s, i) =>
-        s.mark ? (
+        s.mark === 'invisible' && s.invisible ? (
+          <mark key={i} style={invisibleStyle} title={s.invisible.name} aria-label={s.invisible.name}>
+            {s.invisible.mark}
+          </mark>
+        ) : s.mark ? (
           <mark key={i} style={markStyle} title={MARK_TITLES[s.mark]}>
             {s.text}
           </mark>
@@ -266,8 +287,8 @@ export default function Calculator() {
         onChange={setDirectionChoice}
         options={[
           ['auto', '自動'],
-          ['decode', 'デコード（%XX → 文字）'],
-          ['encode', 'エンコード（文字 → %XX）'],
+          ['decode', 'デコード'],
+          ['encode', 'エンコード'],
         ]}
       />
 
@@ -286,11 +307,11 @@ export default function Calculator() {
             <>{detected.reason}。向きを選べば、その向きで変換します。</>
           ) : directionChoice === 'auto' ? (
             <>
-              <strong>{direction === 'decode' ? 'デコード' : 'エンコード'}</strong>しました（{detected.reason}）
+              <strong>{direction === 'decode' ? 'デコード（%XX → 文字）' : 'エンコード（文字 → %XX）'}</strong>しました（{detected.reason}）
             </>
           ) : (
             <>
-              <strong>{direction === 'decode' ? 'デコード' : 'エンコード'}</strong>しました（手で選択）
+              <strong>{direction === 'decode' ? 'デコード（%XX → 文字）' : 'エンコード（文字 → %XX）'}</strong>しました（手で選択）
             </>
           )}
         </p>
@@ -318,6 +339,17 @@ export default function Calculator() {
                   </li>
                 ))}
               </ul>
+            </div>
+          )}
+          {decoded.lineHints.length > 0 && (
+            <div className="note">
+              {DECODE_CHARSETS.map((cs) => {
+                const hit = decoded.lineHints.filter((h) => h.charset === cs).map((h) => h.line);
+                if (hit.length === 0) return null;
+                const shown = hit.slice(0, 5).join('・') + (hit.length > 5 ? ` ほか${hit.length - 5}` : '');
+                return <span key={cs}>{shown}行目は {CHARSET_LABELS[cs]} かもしれません。</span>;
+              })}
+              全体を {CHARSET_LABELS[decoded.charset]} で読んでいるので、化けているときはその行だけを貼り直してください。
             </div>
           )}
           {decoded.guess.unreadable && !charsetChoice && (
@@ -379,7 +411,7 @@ export default function Calculator() {
 
       {direction === 'decode' && (
         <details style={{ margin: '8px 0' }}>
-          <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>デコードの設定（文字コード・+ の扱い）</summary>
+          <summary style={summaryStyle}>デコードの設定（文字コード・+ の扱い）</summary>
           <Choice<Charset | 'auto'>
             label="文字コード"
             value={charsetChoice ?? 'auto'}
@@ -402,7 +434,7 @@ export default function Calculator() {
 
       {direction === 'encode' && (
         <details open style={{ margin: '8px 0' }}>
-          <summary style={{ cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>エンコードの設定</summary>
+          <summary style={summaryStyle}>エンコードの設定</summary>
           <Choice<EncodeScope>
             label="範囲"
             value={scope}

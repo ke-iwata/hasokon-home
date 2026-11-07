@@ -10,6 +10,8 @@
  * - DOM・React に依存しない
  */
 
+import { INVISIBLE_CHARS, LINE_BREAK_CHARS, type InvisibleChar } from './invisible-chars';
+
 // ---------------------------------------------------------------------------
 // 上限・定数
 // ---------------------------------------------------------------------------
@@ -245,7 +247,8 @@ function decoder(charset: Charset, fatal: boolean): TextDecoder {
   const key = `${charset}:${fatal}`;
   let d = decoders.get(key);
   if (!d) {
-    d = new TextDecoder(charset, { fatal });
+    // ignoreBOM：先頭の %EF%BB%BF を黙って消さず、見えない文字として印を付けるため
+    d = new TextDecoder(charset, { fatal, ignoreBOM: true });
     decoders.set(key, d);
   }
   return d;
@@ -370,13 +373,18 @@ export function guessCharset(input: string, plus: PlusMode = 'auto'): CharsetGue
 
 export interface Segment {
   text: string;
-  /** broken＝壊れた `%`・途中で切れた文字／unreadable＝この文字コードで読めないバイト */
-  mark?: 'broken' | 'unreadable' | 'unencodable';
+  /**
+   * broken＝壊れた `%`・途中で切れた文字／unreadable＝この文字コードで読めないバイト／
+   * unencodable＝その文字コードに無い文字／invisible＝デコード結果に出てきた見えない文字
+   */
+  mark?: 'broken' | 'unreadable' | 'unencodable' | 'invisible';
+  /** invisible のとき、画面で文字の代わりに出す印と呼び名（コピーする値は text のまま） */
+  invisible?: InvisibleChar;
 }
 
 export interface Problem {
-  kind: 'bad-percent' | 'truncated' | 'unreadable' | 'unencodable';
-  /** 入力の何文字目か（1始まり・書記素単位） */
+  kind: 'bad-percent' | 'truncated' | 'unreadable' | 'unencodable' | 'invisible';
+  /** 何文字目か（1始まり・書記素単位）。invisible だけは変換結果の、ほかは入力の何文字目 */
   at: number;
   /** その部分の元の文字（`%E3%81` など） */
   raw: string;
@@ -407,7 +415,7 @@ function pushText(segments: Segment[], text: string, mark?: Segment['mark']) {
 
 /** 最初に読めなくなるバイトの位置（stream で1バイトずつ食わせて例外の出た位置） */
 function firstUnreadable(bytes: number[], charset: Charset): number {
-  const d = new TextDecoder(charset, { fatal: true });
+  const d = new TextDecoder(charset, { fatal: true, ignoreBOM: true });
   for (let i = 0; i < bytes.length; i++) {
     try {
       d.decode(Uint8Array.of(bytes[i]), { stream: true });
@@ -486,7 +494,52 @@ export function decodeLine(line: string, charset: Charset, plus: PlusMode = 'aut
       });
     } else decodeBytes(line, piece, charset, segments, problems);
   }
-  return { segments, text: segments.map((s) => s.text).join(''), problems };
+  const marked = markInvisible(segments, problems);
+  return { segments: marked, text: marked.map((s) => s.text).join(''), problems };
+}
+
+/** 見えない文字の呼び名（テキスト比較と共有の一覧に、改行を足したもの） */
+const INVISIBLE_BY_CHAR = new Map([...INVISIBLE_CHARS, ...LINE_BREAK_CHARS].map((c) => [c.char, c]));
+
+/**
+ * デコード結果に出てきた見えない文字（ゼロ幅の文字・BOM・ノーブレークスペース・全角スペース・タブ・改行）に印を付ける。
+ * 文字そのものは text に残す（コピーする値は変えない）。仕様の「デコードの約束」5
+ */
+function markInvisible(segments: Segment[], problems: Problem[]): Segment[] {
+  const out: Segment[] = [];
+  let n = 0;
+  for (const seg of segments) {
+    if (seg.mark) {
+      out.push(seg);
+      n += graphemes(seg.text).length;
+      continue;
+    }
+    let plain = '';
+    for (const { segment } of graphemes(seg.text)) {
+      n += 1;
+      // ゼロ幅接合子は前の文字にくっついて1つの書記素になる（`a` + ZWJ）。絵文字の組み合わせ
+      // （👨‍👩‍👧）の中の ZWJ は正しい使い方なので印を付けず、それ以外は1文字ずつ見る
+      const parts = /\p{Extended_Pictographic}/u.test(segment) ? [segment] : segment === '\r\n' ? ['\r', '\n'] : Array.from(segment);
+      for (const part of parts) {
+        const inv = INVISIBLE_BY_CHAR.get(part);
+        if (!inv) {
+          plain += part;
+          continue;
+        }
+        if (plain) out.push({ text: plain });
+        plain = '';
+        out.push({ text: part, mark: 'invisible', invisible: inv });
+        problems.push({
+          kind: 'invisible',
+          at: n,
+          raw: part,
+          message: `変換結果の${n}文字目に見えない文字（${inv.name}）があります`,
+        });
+      }
+    }
+    if (plain) out.push({ text: plain });
+  }
+  return out;
 }
 
 /**
@@ -507,6 +560,11 @@ export interface DecodeResult {
   /** 使った文字コード（手で選んだときはそれ） */
   charset: Charset;
   doubleEncoded: boolean;
+  /**
+   * 複数行のとき、全体と別の文字コードで読めそうな行（1始まりの行番号）。
+   * 全体を1つの文字コードで読むので、Shift_JIS の行と EUC-JP の行が混ざると片方が黙って化けるため
+   */
+  lineHints: { line: number; charset: Charset }[];
 }
 
 /** 複数行をまとめてデコードする。`charset` を渡せば自動判別より優先 */
@@ -516,7 +574,17 @@ export function decodeText(input: string, opts: { charset?: Charset; plus?: Plus
   const charset = opts.charset ?? guess.charset;
   const lines = splitLines(input).map((line) => decodeLine(line, charset, plus));
   const output = lines.map((l) => l.text).join('\n');
-  return { lines, guess, charset, doubleEncoded: looksDoubleEncoded(input, output) };
+  const rawLines = splitLines(input);
+  const lineHints: DecodeResult['lineHints'] = [];
+  if (rawLines.length > 1) {
+    rawLines.forEach((line, i) => {
+      const g = guessCharset(line, plus);
+      if (!g.asciiOnly && !g.unreadable && g.candidates.length === 1 && g.charset !== charset) {
+        lineHints.push({ line: i + 1, charset: g.charset });
+      }
+    });
+  }
+  return { lines, guess, charset, doubleEncoded: looksDoubleEncoded(input, output), lineHints };
 }
 
 // ---------------------------------------------------------------------------

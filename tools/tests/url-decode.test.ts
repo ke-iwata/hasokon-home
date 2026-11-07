@@ -24,6 +24,7 @@ import {
   trackCharset,
   trackingReason,
 } from '@/lib/url-decode';
+import { INVISIBLE_CHARS, LINE_BREAK_CHARS } from '@/lib/invisible-chars';
 
 // 仕様: docs/features/url-decode-encode.md
 
@@ -149,6 +150,46 @@ describe('デコードの約束', () => {
   it('4. 何文字目は書記素で数える（絵文字を割らない）', () => {
     const r = decodeLine('👨‍👩‍👧%E3%81', 'utf-8');
     expect(r.problems[0].at).toBe(2);
+  });
+
+  it('5. 見えない文字（ゼロ幅・BOM・NBSP・全角スペース・タブ・改行）に印を付ける。コピーする値は変えない', () => {
+    const r = decodeLine('a%E2%80%8Bb%EF%BB%BF%C2%A0%E3%80%80%09%0A%0Dc', 'utf-8');
+    expect(r.text).toBe('a\u200Bb\uFEFF\u00A0\u3000\t\n\rc');
+    const marks = r.segments.filter((s) => s.mark === 'invisible');
+    expect(marks.map((s) => s.invisible!.name)).toEqual([
+      'ゼロ幅スペース',
+      'BOM（ゼロ幅ノーブレークスペース）',
+      'ノーブレークスペース',
+      '全角スペース',
+      'タブ',
+      '改行（LF）',
+      '改行（CR）',
+    ]);
+    expect(r.problems[0]).toMatchObject({ kind: 'invisible', at: 2, message: '変換結果の2文字目に見えない文字（ゼロ幅スペース）があります' });
+  });
+
+  it('5. 呼び名はテキスト比較と共有の一覧（invisible-chars.ts）から引く', () => {
+    for (const c of [...INVISIBLE_CHARS, ...LINE_BREAK_CHARS]) {
+      const r = decodeLine(encodeLine(c.char).text, 'utf-8');
+      expect(r.segments.find((s) => s.mark === 'invisible')?.invisible).toBe(c);
+    }
+  });
+
+  it('5. 前の文字にくっつくゼロ幅接合子も印を付けるが、絵文字の組み合わせの中の ZWJ には付けない', () => {
+    expect(decodeLine('a%E2%80%8Db', 'utf-8').segments.some((s) => s.mark === 'invisible')).toBe(true);
+    expect(decodeLine(encodeLine('👨‍👩‍👧').text, 'utf-8').segments.some((s) => s.mark === 'invisible')).toBe(false);
+  });
+
+  it('5. 普通の空白（%20・+）には印を付けない', () => {
+    expect(decodeLine('a%20b?q=c+d', 'utf-8').segments.some((s) => s.mark === 'invisible')).toBe(false);
+  });
+
+  it('複数行で別の文字コードの行が混ざったら、その行を知らせる', () => {
+    const r = decodeText(`${SJIS_KONNICHIWA}\n${SJIS_KONNICHIWA}\n${EUC_KONNICHIWA}`);
+    expect(r.charset).toBe('shift_jis');
+    expect(r.lineHints).toEqual([{ line: 3, charset: 'euc-jp' }]);
+    expect(decodeText(`${SJIS_KONNICHIWA}\n${SJIS_KONNICHIWA}`).lineHints).toEqual([]);
+    expect(decodeText(EUC_KONNICHIWA).lineHints).toEqual([]);
   });
 
   it('どの文字コードでも読めないときは位置を示し、UTF-8 で読めた分を出す', () => {
