@@ -979,6 +979,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-05',
   },
   {
+    // 仕様: docs/features/text-hikaku.md
+    slug: 'text-hikaku',
+    icon: 'GitDiff',
+    name: 'テキスト比較（差分チェック）',
+    description:
+      '2つの文章を貼るだけで追加・削除・変更を色分け。日本語は変わった文字まで示します。全角半角・空白の違いを無視、見えない文字の検出、次の違いへジャンプ。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-06',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
