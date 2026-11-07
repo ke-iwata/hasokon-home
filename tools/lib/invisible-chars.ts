@@ -53,3 +53,14 @@ const BY_CHAR = new Map(INVISIBLE_CHARS.map((c) => [c.char, c]));
 export function invisibleChar(ch: string): InvisibleChar | undefined {
   return BY_CHAR.get(ch);
 }
+
+/**
+ * 改行の呼び名と印。URLデコード（lib/url-decode.ts）が、デコード結果に出てきた `%0A`・`%0D` に印を付けるのに使う。
+ * テキスト比較は行に分けてから比べる（行の中に改行が残らない）ので、`INVISIBLE_CHARS` には入れない。
+ *
+ * 仕様: docs/features/url-decode-encode.md「デコードの約束」5
+ */
+export const LINE_BREAK_CHARS: readonly InvisibleChar[] = [
+  { char: '\n', name: '改行（LF）', mark: '↵' },
+  { char: '\r', name: '改行（CR）', mark: '␍' },
+];

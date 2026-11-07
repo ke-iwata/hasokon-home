@@ -990,6 +990,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/url-decode-encode.md
+    slug: 'url-decode',
+    icon: 'LinkSimple',
+    name: 'URLデコード・エンコード',
+    description:
+      '%E3%81%82のような文字化けしたURLを貼るだけで日本語に戻します。Shift_JIS・EUC-JPの古いURLも自動判別、クエリを表に分解、utm_やfbclidを外した共有用URL、日本語ドメイン(xn--)の変換。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-07',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
