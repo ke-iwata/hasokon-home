@@ -8791,6 +8791,14 @@ button.hf-card {
 
 .ig-status .gm-score {
   gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* 手番の文言は、入りきらなければ「…」で切る（行を折り返さず、ページを横に押し広げない） */
+.ig-turn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 結果の行は式が入るので 2 行ぶん。高さは固定（盤を動かさない） */
@@ -8904,6 +8912,11 @@ button.hf-card {
 
   .ig-game .ig-status .gm-score {
     gap: 6px;
+  }
+
+  /* 320px 幅で「取った石 ●あなた 0 ○CPU 0 スタート待ち」が1行に入らず、横スクロールが出ていた（#472 のレビュー） */
+  .ig-game .ig-caplabel {
+    display: none;
   }
 
   .ig-game .btn-row {

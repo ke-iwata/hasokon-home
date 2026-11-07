@@ -693,12 +693,12 @@ export default function Game() {
           <span className="gm-chip">
             <span className="gm-stone black" aria-hidden="true" />
             {vsCpu ? (human === BLACK ? 'あなた' : 'CPU') : '黒'}
-            <span className="ig-cap">{capturedBy(BLACK)}</span>
+            <span className="ig-cap" title="取った石">{capturedBy(BLACK)}</span>
           </span>
           <span className="gm-chip">
             <span className="gm-stone white" aria-hidden="true" />
             {vsCpu ? (human === WHITE ? 'あなた' : 'CPU') : '白'}
-            <span className="ig-cap">{capturedBy(WHITE)}</span>
+            <span className="ig-cap" title="取った石">{capturedBy(WHITE)}</span>
           </span>
         </span>
         <span className="ig-turn">{statusText}</span>
