@@ -12,6 +12,7 @@ import {
   collapseRows,
   compareAction,
   compareTexts,
+  decodeText,
   formatUnified,
   lineCount,
   sizeBucket,
@@ -366,6 +367,8 @@ export default function Calculator() {
   const [copied, setCopied] = useState(false);
   /** 「次の違い」を押した回数（同じ違いにもう一度移るときも effect を回すため） */
   const [jumpTick, setJumpTick] = useState(0);
+  /** ファイルを Shift_JIS として読んだときの知らせ */
+  const [fileNote, setFileNote] = useState<string | null>(null);
 
   const workerRef = useRef<Worker | null>(null);
   const reqId = useRef(0);
@@ -490,10 +493,20 @@ export default function Calculator() {
     return () => document.removeEventListener('keydown', onKey);
   }, [jump]);
 
-  const readFile = (file: File, set: (v: string) => void) => {
+  // FileReader でバイト列として読み、文字コードを見て文字列にする（Excel の CSV は Shift_JIS のため）
+  const readFile = (file: File, side: string, set: (v: string) => void) => {
     const reader = new FileReader();
-    reader.onload = () => set(typeof reader.result === 'string' ? reader.result : '');
-    reader.readAsText(file);
+    reader.onload = () => {
+      if (!(reader.result instanceof ArrayBuffer)) return;
+      const { text, encoding } = decodeText(new Uint8Array(reader.result));
+      set(text);
+      setFileNote(
+        encoding === 'shift_jis'
+          ? `${side}の「${file.name}」は UTF-8 ではなかったので、Shift_JIS として読み込みました。文字化けしているときは、UTF-8 で保存し直してから読み込んでください。`
+          : null,
+      );
+    };
+    reader.readAsArrayBuffer(file);
     trackOnce('file');
   };
 
@@ -545,8 +558,8 @@ export default function Calculator() {
   return (
     <div className="card">
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        <TextBox label="元の文章" value={left} onChange={setLeft} onFile={(f) => readFile(f, setLeft)} />
-        <TextBox label="新しい文章" value={right} onChange={setRight} onFile={(f) => readFile(f, setRight)} />
+        <TextBox label="元の文章" value={left} onChange={setLeft} onFile={(f) => readFile(f, '元の文章', setLeft)} />
+        <TextBox label="新しい文章" value={right} onChange={setRight} onFile={(f) => readFile(f, '新しい文章', setRight)} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
@@ -567,6 +580,7 @@ export default function Calculator() {
             setLeft('');
             setRight('');
             setResult(null);
+            setFileNote(null);
           }}
         >
           クリア
@@ -577,6 +591,8 @@ export default function Calculator() {
           </button>
         )}
       </div>
+
+      {fileNote && <p style={bandStyle('warn')}>{fileNote}</p>}
 
       <fieldset style={{ border: 'none', padding: 0, margin: '12px 0 0' }}>
         <legend style={{ fontWeight: 700, fontSize: 'var(--fs-sm)', marginBottom: 4 }}>無視する違い</legend>
@@ -708,7 +724,10 @@ export default function Calculator() {
                 <ResultGrid rows={ok.rows} items={items} limit={limit} view={view} currentRow={currentRow} />
               </div>
               <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: 6 }}>
-                赤は削除・緑は追加・黄は変更（濃い部分が変わった文字）。キーボードの n／p で次・前の違いへ移れます。
+                {view === 'split'
+                  ? '赤は削除・緑は追加・黄は変更（濃い部分が変わった文字）。'
+                  : '− の赤い行は元の文章、＋ の緑の行は新しい文章（変更は − の直後に ＋。濃い部分が変わった文字）。'}
+                キーボードの n／p で次・前の違いへ移れます。
               </p>
             </>
           )}

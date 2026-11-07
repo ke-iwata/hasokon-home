@@ -11,7 +11,9 @@
  * 4. 削除と追加が隣り合う区間は、一致率（Dice 係数）40% 以上の行どうしを対にして「変更」とし、
  *    対の中を書記素単位で再び Myers で比べる
  *
- * 外部ライブラリは使わない（依存を増やさない。docs/features/dependency-vulnerability-audit.md）。
+ * 外部ライブラリは入れない（依存を増やさない。docs/features/dependency-vulnerability-audit.md）。
+ * ただし中央 snake を探す bisect() は diff-match-patch（Apache License 2.0）の diff_bisect_ を
+ * 元にしている（出どころとライセンスは bisect() の JSDoc）。
  */
 
 import { convertWidth } from './hankaku-zenkaku';
@@ -333,7 +335,15 @@ function diffRange(a: Seq, b: Seq, a0: number, a1: number, b0: number, b1: numbe
   for (let i = 0; i < suffix; i++) out.push(0);
 }
 
-/** 前後から同時に伸ばし、重なった点（最短経路の上の 1 点）を返す */
+/**
+ * 前後から同時に伸ばし、重なった点（最短経路の上の 1 点）を返す。
+ *
+ * 出どころ：diff-match-patch（Copyright 2018 The diff-match-patch Authors / Google LLC,
+ * Apache License 2.0 — https://github.com/google/diff-match-patch ・
+ * https://www.apache.org/licenses/LICENSE-2.0）の `diff_bisect_` を元にした。
+ * 改変点：文字列ではなく整数の配列の区間（a0〜a1・b0〜b1）を受け取り、時間切れの打ち切りを外して、
+ * 重なった点だけを返すようにした（分割と再帰は diffRange が行う）
+ */
 function bisect(a: Seq, b: Seq, a0: number, a1: number, b0: number, b1: number): [number, number] | null {
   const n = a1 - a0;
   const m = b1 - b0;
@@ -850,6 +860,34 @@ export function formatUnified(
     out.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`, ...body);
   }
   return out.join('\n') + '\n';
+}
+
+// ---------------------------------------------------------------------------
+// ファイルの読み込み（文字コード）
+// ---------------------------------------------------------------------------
+
+export type FileEncoding = 'utf-8' | 'utf-16le' | 'utf-16be' | 'shift_jis';
+
+/**
+ * 読み込んだファイルのバイト列を文字列にする。
+ *
+ * UTF-8（BOM の有無を問わない）・UTF-16（BOM つき）を先に見て、UTF-8 として正しくなければ
+ * Shift_JIS で読み直す。Excel の「CSV（コンマ区切り）」や古いメモ帳の既定は Shift_JIS のため。
+ * BOM は取り除く（比較に混ぜない）
+ */
+export function decodeText(bytes: Uint8Array): { text: string; encoding: FileEncoding } {
+  if (bytes.length >= 2 && bytes[0] === 0xff && bytes[1] === 0xfe) {
+    return { text: new TextDecoder('utf-16le').decode(bytes.subarray(2)), encoding: 'utf-16le' };
+  }
+  if (bytes.length >= 2 && bytes[0] === 0xfe && bytes[1] === 0xff) {
+    return { text: new TextDecoder('utf-16be').decode(bytes.subarray(2)), encoding: 'utf-16be' };
+  }
+  try {
+    // ignoreBOM: false（既定）で、先頭の UTF-8 の BOM は取り除かれる
+    return { text: new TextDecoder('utf-8', { fatal: true }).decode(bytes), encoding: 'utf-8' };
+  } catch {
+    return { text: new TextDecoder('shift_jis').decode(bytes), encoding: 'shift_jis' };
+  }
 }
 
 // ---------------------------------------------------------------------------

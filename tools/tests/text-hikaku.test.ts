@@ -12,6 +12,7 @@ import {
   collapseRows,
   compareAction,
   compareTexts,
+  decodeText,
   diffSequences,
   editDistance,
   formatUnified,
@@ -405,5 +406,39 @@ describe('計測', () => {
     expect(compareAction('lines-gte1000', opt({ whitespace: true, width: true }), 'unified')).toBe(
       'compare-lines-gte1000-ignore-ws+width-unified',
     );
+  });
+});
+
+describe('ファイルの文字コード', () => {
+  /** 「テスト,東京」を Shift_JIS で書いたバイト列 */
+  const SJIS = new Uint8Array([0x83, 0x65, 0x83, 0x58, 0x83, 0x67, 0x2c, 0x93, 0x8c, 0x8b, 0x9e]);
+
+  it('UTF-8 はそのまま読み、BOM は取り除く', () => {
+    const bytes = new TextEncoder().encode('テスト,東京');
+    expect(decodeText(bytes)).toEqual({ text: 'テスト,東京', encoding: 'utf-8' });
+    expect(decodeText(new Uint8Array([0xef, 0xbb, 0xbf, ...bytes]))).toEqual({ text: 'テスト,東京', encoding: 'utf-8' });
+  });
+
+  it('UTF-8 として正しくなければ Shift_JIS で読み直す（Excel の CSV）', () => {
+    expect(decodeText(SJIS)).toEqual({ text: 'テスト,東京', encoding: 'shift_jis' });
+  });
+
+  it('BOM つきの UTF-16 も読める', () => {
+    expect(decodeText(new Uint8Array([0xff, 0xfe, 0x42, 0x30]))).toEqual({ text: 'あ', encoding: 'utf-16le' });
+    expect(decodeText(new Uint8Array([0xfe, 0xff, 0x30, 0x42]))).toEqual({ text: 'あ', encoding: 'utf-16be' });
+  });
+
+  it('画面はファイルを readAsText（UTF-8 決め打ち）で読まない', () => {
+    const src = readFileSync(fileURLToPath(new URL('../app/text-hikaku/Calculator.tsx', import.meta.url)), 'utf8');
+    expect(src).not.toMatch(/readAsText/);
+    expect(src).toMatch(/decodeText/);
+  });
+});
+
+describe('出どころの表示', () => {
+  it('bisect() の JSDoc に diff-match-patch とライセンスを書いてある', () => {
+    const src = readFileSync(fileURLToPath(new URL('../lib/text-hikaku.ts', import.meta.url)), 'utf8');
+    const doc = src.slice(0, src.indexOf('function bisect('));
+    expect(doc.slice(doc.lastIndexOf('/**'))).toMatch(/diff-match-patch[\s\S]*Apache License 2\.0/);
   });
 });

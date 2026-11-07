@@ -185,7 +185,12 @@ export default function Page() {
       <RelatedTools current="text-hikaku" />
 
       <ToolMeta slug="text-hikaku">
-        差分は E. W. Myers「An O(ND) Difference Algorithm and Its Variations」（Algorithmica, 1986）の方法で当サイトが実装しました（外部のサービスやライブラリは使っていません）。
+        差分は E. W. Myers「An O(ND) Difference Algorithm and Its Variations」（Algorithmica, 1986）の方法で、当サイトが
+        {' '}
+        <a href="https://github.com/google/diff-match-patch" target="_blank" rel="nofollow noopener noreferrer">
+          diff-match-patch
+        </a>
+        （© Google、Apache License 2.0）の中央の分割の手順を元に実装しました。比較はすべてお使いのブラウザの中で行い、外部のサービスとの通信はありません。
       </ToolMeta>
     </>
   );
