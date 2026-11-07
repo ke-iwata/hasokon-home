@@ -258,7 +258,7 @@ export default function Page() {
           <tr>
             <td style={{ textAlign: 'left' }}>ウルトラワイドモニター</td>
             <td>21:9</td>
-            <td>2560x1080</td>
+            <td>2560x1080（正確には 64:27）</td>
           </tr>
         </tbody>
       </table>

@@ -436,7 +436,7 @@ export default function Timer() {
           type="button"
           onClick={() => setSoundOn((v) => !v)}
           aria-pressed={soundOn}
-          aria-label={soundOn ? '音を消す' : '音を出す'}
+          aria-label="音"
           style={{ ...BTN_SECONDARY, padding: '12px 16px' }}
         >
           {soundOn ? '🔊' : '🔇'}

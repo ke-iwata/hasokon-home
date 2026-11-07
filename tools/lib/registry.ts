@@ -95,7 +95,7 @@ export const tools: ToolDef[] = [
     description: '名前を入れるだけで班分け・チーム分けをランダムに作成。人数は自動で均等に振り分けます。',
     category: '決める・選ぶ',
     stage: 'public',
-    updatedAt: '2026-08-16',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'dice',
@@ -801,7 +801,7 @@ export const tools: ToolDef[] = [
       '家族の人数を入れるだけで、水・食料・カセットボンベ・簡易トイレの必要量が出ます。3日分と7日分を切り替えでき、乳幼児のミルク・おむつ、ペットのフードにも対応。そのまま印刷できる買い物チェックリストつき。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-08-15',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'interval-timer',
@@ -811,7 +811,7 @@ export const tools: ToolDef[] = [
       'トレーニング用のインターバルタイマー。タバタ式・HIITのプリセット付きで、運動・休憩・セット数を自由に設定。ビープ音で切り替えを知らせます。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-08-11',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'sleep-cycle',
@@ -852,7 +852,7 @@ export const tools: ToolDef[] = [
     description: '飲み会の合計金額と人数から一人あたりの支払額を計算。傾斜配分にも対応。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-09-26',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'waribiki-percent',
@@ -862,7 +862,7 @@ export const tools: ToolDef[] = [
       '「30%オフはいくら？」「割引率は何%？」を、税込／税抜と端数の丸め方（切り捨て・四捨五入・切り上げ）を選んで計算。二重割引（30%オフからさらに20%オフ）や、〇%オフ早見表つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-20',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'nenrei-keisan',
@@ -953,7 +953,7 @@ export const tools: ToolDef[] = [
     description: '氏名のふりがなをパスポート表記のヘボン式ローマ字に変換。五十音の一覧表つき。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-11-06',
   },
   {
     // 仕様: docs/features/json-seikei.md
@@ -979,6 +979,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-05',
   },
   {
+    // 仕様: docs/features/text-hikaku.md
+    slug: 'text-hikaku',
+    icon: 'GitDiff',
+    name: 'テキスト比較（差分チェック）',
+    description:
+      '2つの文章を貼るだけで追加・削除・変更を色分け。日本語は変わった文字まで示します。全角半角・空白の違いを無視、見えない文字の検出、次の違いへジャンプ。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-06',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
@@ -996,7 +1007,7 @@ export const tools: ToolDef[] = [
       '写真のサイズ変更とファイルサイズの圧縮を、アップロードなしで。処理はブラウザ内で完結し、位置情報（EXIF）も残りません。「300KB以下」のような目標サイズ指定とJPEG・PNG・WebPの変換に対応。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-19',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'tsubo-heibei',
@@ -1006,7 +1017,7 @@ export const tools: ToolDef[] = [
       '坪・平米（㎡）・畳をまとめて相互変換。1坪＝400/121㎡を丸めずに計算し、30坪は何平米・6畳は何平米の逆引き早見表つき。畳は京間・中京間・江戸間・団地間と不動産広告の1.62㎡換算を切り替えられます。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-19',
+    updatedAt: '2026-11-06',
   },
   {
     slug: 'aspect-ratio',
@@ -1016,7 +1027,7 @@ export const tools: ToolDef[] = [
       '幅と高さから縦横比を計算。16:9の逆引き早見表やリサイズ後のサイズ算出、CSSコピーにも対応。',
     category: '計算・変換',
     stage: 'public',
-    updatedAt: '2026-08-17',
+    updatedAt: '2026-11-06',
   },
 ];
 

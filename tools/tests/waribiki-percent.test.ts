@@ -14,15 +14,20 @@ import {
   effectiveRate,
   formatPercent,
   formatYen,
+  hasAtMostTwoDecimals,
   isValidPrice,
   isValidRate,
   lookupTable,
   percentChange,
   percentOf,
+  percentOfExact,
+  percentOfRounded,
   percentRatio,
   reverseDiscount,
   roundBy,
+  roundFraction,
   taxRate,
+  TOO_MANY_DECIMALS_MESSAGE,
   type Rounding,
 } from '@/lib/waribiki-percent';
 
@@ -416,5 +421,98 @@ describe('表示ヘルパ', () => {
 
   it('formatPercent: 非有限数はダッシュ', () => {
     expect(formatPercent(Number.NaN)).toBe('—');
+  });
+});
+
+/* ===================================================================
+   2026-11-06 点検 A1：浮動小数の誤差で1円ずれない
+   仕様: docs/features/kokai-tool-seikaku-2026-11-06.md
+   =================================================================== */
+describe('浮動小数の誤差で1円ずれない（2026-11-06 点検 A1）', () => {
+  it('1000円の80%オフを切り捨てると200円（199円ではない）', () => {
+    expect(applyDiscount({ price: 1000, rates: [80], rounding: 'floor' })?.discounted).toBe(200);
+  });
+  it('1000円の70%オフを切り上げると300円（301円ではない）', () => {
+    expect(applyDiscount({ price: 1000, rates: [70], rounding: 'ceil' })?.discounted).toBe(300);
+  });
+  it('100円の55%オフを切り捨てると45円（44円ではない）', () => {
+    expect(applyDiscount({ price: 100, rates: [55], rounding: 'floor' })?.discounted).toBe(45);
+  });
+  it('1000円を30%オフ→さらに20%オフ、切り捨てで560円（559円ではない）', () => {
+    expect(applyDiscount({ price: 1000, rates: [30, 20], rounding: 'floor' })?.discounted).toBe(560);
+  });
+  it('税抜100円に10%を切り上げると税込110円（111円ではない）', () => {
+    const r = applyDiscount({ price: 100, rates: [0], rounding: 'ceil', taxMode: 'exclusive' });
+    expect(r?.discountedIncludingTax).toBe(110);
+    expect(r?.tax).toBe(10);
+  });
+  it('375の18.4%を切り捨てると69（68ではない）', () => {
+    expect(percentOfRounded(375, 18.4, 'floor')).toBe(69);
+    expect(percentOfExact(375, 18.4)).toBe('69');
+  });
+  it('percentOfExact は二進小数の誤差を出さない', () => {
+    expect(percentOfExact(33, 12.34)).toBe('4.0722');
+    expect(percentOfExact(1200, 8)).toBe('96');
+    expect(percentOfExact(-50, 10)).toBe('-5');
+    expect(percentOfExact(Number.NaN, 10)).toBeNull();
+  });
+  it('percentOfRounded は 3 方式とも正しい向きに丸める', () => {
+    expect(percentOfRounded(1000, 8.5, 'floor')).toBe(85);
+    expect(percentOfRounded(105, 10, 'floor')).toBe(10);
+    expect(percentOfRounded(105, 10, 'round')).toBe(11);
+    expect(percentOfRounded(105, 10, 'ceil')).toBe(11);
+    expect(percentOfRounded(-105, 10, 'floor')).toBe(Math.floor(-10.5));
+    expect(percentOfRounded(-105, 10, 'ceil')).toBe(Math.ceil(-10.5));
+    expect(percentOfRounded(-105, 10, 'round')).toBe(Math.round(-10.5));
+  });
+
+  it('性質：価格1〜2,000円×割引1〜99%の総当たりで BigInt の正解と一致する', () => {
+    const roundings: Rounding[] = ['floor', 'round', 'ceil'];
+    const expected = (price: number, rate: number, rounding: Rounding): number => {
+      const n = BigInt(price) * BigInt(100 - rate);
+      const d = 100n;
+      if (rounding === 'floor') return Number(n / d);
+      if (rounding === 'ceil') return Number((n + d - 1n) / d);
+      return Number((2n * n + d) / (2n * d));
+    };
+    let mismatches = 0;
+    for (let price = 1; price <= 2000; price++) {
+      for (let rate = 1; rate <= 99; rate++) {
+        for (const rounding of roundings) {
+          const got = applyDiscount({ price, rates: [rate], rounding })?.discounted;
+          if (got !== expected(price, rate, rounding)) mismatches++;
+        }
+      }
+    }
+    expect(mismatches).toBe(0);
+  });
+
+  it('小数第2位までの率は判定を文字列で行う', () => {
+    expect(hasAtMostTwoDecimals('33.33')).toBe(true);
+    expect(hasAtMostTwoDecimals('1.1')).toBe(true);
+    expect(hasAtMostTwoDecimals('30')).toBe(true);
+    expect(hasAtMostTwoDecimals('')).toBe(true);
+    expect(hasAtMostTwoDecimals('33.333')).toBe(false);
+    expect(hasAtMostTwoDecimals('0.005')).toBe(false);
+    expect(TOO_MANY_DECIMALS_MESSAGE).toContain('小数第2位まで');
+  });
+
+  it('roundFraction は分母が0以下なら例外', () => {
+    expect(() => roundFraction(1n, 0n, 'floor')).toThrow();
+  });
+});
+
+describe('巨大な値で例外を投げない（#467 レビュー）', () => {
+  it('applyDiscount は 1e307 で throw せず null を返す', () => {
+    expect(() => applyDiscount({ price: 1e307, rates: [10], rounding: 'floor' })).not.toThrow();
+    expect(applyDiscount({ price: 1e307, rates: [10], rounding: 'floor' })).toBeNull();
+  });
+  it('percentOfRounded・percentOfExact も 1e307 で null', () => {
+    expect(percentOfRounded(1e307, 10, 'floor')).toBeNull();
+    expect(percentOfRounded(10, 1e307, 'floor')).toBeNull();
+    expect(percentOfExact(1e307, 10)).toBeNull();
+  });
+  it('ふつうの大きな額（1兆円）は計算できる', () => {
+    expect(applyDiscount({ price: 1e12, rates: [10], rounding: 'floor' })?.discounted).toBe(9e11);
   });
 });

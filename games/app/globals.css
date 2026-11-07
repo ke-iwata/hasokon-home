@@ -489,6 +489,7 @@ ol {
 .yn-board,
 .ch-board,
 .y4-board,
+.ig-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
@@ -8811,6 +8812,264 @@ button.hf-card {
   margin: 8px auto;
 }
 
+/* ---- 囲碁（docs/features/game-igo.md） ----
+   盤は SVG で描く（交点に石を置く。座標の数字を縁に描く）。押す先の判定は Game.tsx が
+   座標から最寄りの交点を求める。9路の交点の間隔は 390px 幅で約 38px なので、
+   スマホは「指を離した交点に打つ」（games/docs/DECISIONS.md） */
+.ig-board {
+  --chrome: 430px;
+  --board-max: 520px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  /* 押さえて動かすあいだにページが動かないように（離した交点に打つ） */
+  touch-action: none;
+  outline: none;
+}
+
+.ig-board svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 木地は明暗どちらのテーマでも同じ色（五目並べと同じ。石の白黒が地に負けないため） */
+.ig-wood {
+  fill: #d8b177;
+}
+
+.ig-line {
+  stroke: rgba(90, 62, 30, 0.75);
+  stroke-width: 0.03;
+}
+
+.ig-frame {
+  fill: none;
+  stroke: rgba(90, 62, 30, 0.9);
+  stroke-width: 0.05;
+}
+
+.ig-star {
+  fill: rgba(90, 62, 30, 0.85);
+}
+
+.ig-coord {
+  fill: rgba(70, 45, 20, 0.85);
+  font-size: 0.32px;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+.ig-black {
+  fill: #1f1b18;
+  stroke: #000;
+  stroke-width: 0.02;
+}
+
+.ig-white {
+  fill: #f7f5f0;
+  stroke: #8d8577;
+  stroke-width: 0.03;
+}
+
+.ig-last-b {
+  fill: none;
+  stroke: #f7f5f0;
+  stroke-width: 0.05;
+}
+
+.ig-last-w {
+  fill: none;
+  stroke: #1f1b18;
+  stroke-width: 0.05;
+}
+
+/* アタリ：赤い縁取りと札（入門向け。設定で消せる） */
+.ig-atari {
+  fill: none;
+  stroke: #d94f3d;
+  stroke-width: 0.07;
+}
+
+.ig-atari-tag {
+  fill: #d94f3d;
+}
+
+.ig-atari-text {
+  fill: #fff;
+  font-size: 0.2px;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+/* 打つ前の影（マウスは石の影、指は十字と浮かせた石） */
+.ig-ghost {
+  opacity: 0.45;
+}
+
+.ig-cross {
+  stroke: #d94f3d;
+  stroke-width: 0.04;
+  opacity: 0.8;
+}
+
+.ig-float {
+  opacity: 0.85;
+}
+
+.ig-float-text {
+  fill: #5a3e1e;
+  font-size: 0.2px;
+  font-weight: 700;
+  font-family: system-ui, sans-serif;
+  text-anchor: middle;
+}
+
+/* キーボードのカーソル。盤に焦点があるときだけ見せる */
+.ig-cursor {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 0.06;
+  opacity: 0;
+}
+
+.ig-board:focus-visible .ig-cursor {
+  opacity: 1;
+}
+
+/* 数え方：死に石は半透明に × 、地は小さな四角で色分け、ダメは灰色の点 */
+.ig-dead {
+  opacity: 0.45;
+}
+
+.ig-x {
+  stroke: #d94f3d;
+  stroke-width: 0.07;
+}
+
+.ig-terr-b {
+  fill: #1f1b18;
+}
+
+.ig-terr-w {
+  fill: #f7f5f0;
+  stroke: #8d8577;
+  stroke-width: 0.02;
+}
+
+.ig-dame {
+  fill: #8a8580;
+}
+
+.ig-board.counting {
+  cursor: pointer;
+}
+
+/* 取られた石が消える（150ms。動きを減らす設定なら即消す） */
+.ig-fade {
+  animation: ig-fade-out 150ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ig-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ig-fade {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.ig-caplabel {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 取った数（あげはま）。名前の後ろに数字だけ置く */
+.ig-cap {
+  min-width: 1.4em;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.85rem;
+  text-align: center;
+  color: var(--text);
+}
+
+/* 状態の行は 1 行で固定（文言が変わっても盤が動かない） */
+.ig-status {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  height: 1.6em;
+  line-height: 1.6;
+}
+
+.ig-status .gm-score {
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+/* 手番の文言は、入りきらなければ「…」で切る（行を折り返さず、ページを横に押し広げない） */
+.ig-turn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 結果の行は式が入るので 2 行ぶん。高さは固定（盤を動かさない） */
+.ig-result {
+  height: 3em;
+}
+
+.ig-help {
+  height: 3em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.ig-actions {
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.ig-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+
+/* 読み上げだけに出す（交点の一覧と、打った手の知らせ） */
+.ig-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 @media (max-width: 600px) {
   /* 押す先 44px を守る：盤だけカード（10px）と main（16px）の余白にはみ出させ、内側 308px（7×44px）を取る
      （枠の 1px×2 を足して 310px）。
@@ -8865,6 +9124,49 @@ button.hf-card {
     height: 20px;
     line-height: 20px;
     margin: 2px auto;
+  }
+}
+
+/* 囲碁：狭い画面では設定の段を詰める */
+@media (max-width: 600px) {
+  .ig-game .seg button {
+    padding-inline: 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .ig-game .ig-status {
+    margin: 6px 0;
+    font-size: 0.8rem;
+  }
+
+  .ig-game .ig-status .gm-score {
+    gap: 6px;
+  }
+
+  /* 320px 幅で「取った石 ●あなた 0 ○CPU 0 スタート待ち」が1行に入らず、横スクロールが出ていた（#472 のレビュー） */
+  .ig-game .ig-caplabel {
+    display: none;
+  }
+
+  .ig-game .btn-row {
+    gap: 6px;
+  }
+
+  .ig-game .ig-result {
+    height: 3em;
+    font-size: 0.8rem;
+  }
+
+  .ig-game .ig-help {
+    height: 2.8em;
+    line-height: 1.4;
+    font-size: 0.72rem;
+    margin-top: 4px;
+  }
+
+  .ig-game .ig-actions .btn {
+    padding-inline: 12px;
   }
 }
 

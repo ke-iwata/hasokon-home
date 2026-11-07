@@ -5,6 +5,7 @@ import {
   gcd,
   simplify,
   nearestCommonRatio,
+  NEAR_TOLERANCE_PERCENT,
   scaleByWidth,
   scaleByHeight,
   lookupTable,
@@ -209,5 +210,29 @@ describe('アスペクト比ページ（逆引き早見表の導線）', () => {
     for (const word of ['早見表', '変換', '一覧']) {
       expect(`${title}${description}`, `「${word}」が無い`).toContain(word);
     }
+  });
+});
+
+describe('2026-11-06 点検 B6・C（小数の約分・4:5・近い比率なし）', () => {
+  it('小数は丸めずに約分する：2.39×1 → 239:100、1.85×1 → 37:20', () => {
+    expect(simplify(2.39, 1)).toEqual({ w: 239, h: 100 });
+    expect(simplify(1.85, 1)).toEqual({ w: 37, h: 20 });
+  });
+  it('1080×1350 は 4:5 にぴったり', () => {
+    const m = nearestCommonRatio(1080, 1350);
+    expect(m?.label).toBe('4:5');
+    expect(m?.exact).toBe(true);
+    expect(m?.near).toBe(true);
+  });
+  it('ずれが 3% を超えるときは near: false', () => {
+    // 2.39:1 は 2:1 から約19.5%、21:9 から約2.4% → 21:9 に近い
+    expect(nearestCommonRatio(2.39, 1)?.near).toBe(true);
+    // 3:1 はどの比率からも 3% を超えて離れている
+    const m = nearestCommonRatio(3000, 1000);
+    expect(m?.near).toBe(false);
+    expect(m?.diffPercent).toBeGreaterThan(NEAR_TOLERANCE_PERCENT);
+  });
+  it('2560×1080 は 64:27', () => {
+    expect(simplify(2560, 1080)).toEqual({ w: 64, h: 27 });
   });
 });

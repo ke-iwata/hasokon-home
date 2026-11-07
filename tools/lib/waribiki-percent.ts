@@ -175,11 +175,21 @@ export interface DiscountResult {
 export function applyDiscount(input: DiscountInput): DiscountResult | null {
   if (!isValidPrice(input.price)) return null;
   if (!input.rates.every(isValidRate)) return null;
+  // 1e307 のような有限値でも ×100 で Infinity になり BigInt() が例外を投げる（画面ごと消える）
+  if (!canScaleToHundredths(input.price)) return null;
   // 二重割引で 100% を素通しにする合理的なケースはないので、100は許容し、
   // 合計割引率が100を超える定義を出さないよう rates の各要素を上でクランプ済み。
+  // 合計割引率（eff）は表示用。丸めの計算には使わない（浮動小数の誤差で
+  // 1000円の80%オフが 199.99999999999997 → 切り捨て 199円 になるため）。
+  // 割引後の額は分子・分母を整数のまま持って丸める（docs/features/kokai-tool-seikaku-2026-11-06.md A1）
   const eff = effectiveRate(input.rates);
-  const rawDiscounted = input.price * (1 - eff / 100);
-  const discounted = roundBy(rawDiscounted, input.rounding);
+  let numer = BigInt(toHundredths(input.price));
+  let denom = 100n;
+  for (const r of input.rates) {
+    numer *= BigInt(10000 - toHundredths(r));
+    denom *= 10000n;
+  }
+  const discounted = roundFraction(numer, denom, input.rounding);
   const saved = input.price - discounted;
 
   const taxMode: TaxMode = input.taxMode ?? DEFAULT_TAX_MODE;
@@ -195,8 +205,9 @@ export function applyDiscount(input: DiscountInput): DiscountResult | null {
 
   const rateId: TaxRateId = input.taxRateId ?? 'standard';
   const rate = taxRate(rateId).rate;
-  const rawIncluding = discounted * (1 + rate);
-  const includingTax = roundBy(rawIncluding, input.rounding);
+  // 消費税計算機（shohizei.ts）と同じく discounted × (100 + 税率%) / 100 を整数で
+  const ratePct = BigInt(Math.round(rate * 100));
+  const includingTax = roundFraction(BigInt(discounted) * (100n + ratePct), 100n, input.rounding);
   return {
     ...base,
     discountedIncludingTax: includingTax,
@@ -241,6 +252,109 @@ export function reverseDiscount(input: ReverseDiscountInput): ReverseDiscountRes
 export function percentOf(base: number, percent: number): number | null {
   if (!Number.isFinite(base) || !Number.isFinite(percent)) return null;
   return (base * percent) / 100;
+}
+
+/**
+ * AのB%を、選んだ丸め方で整数にする。
+ *
+ * `roundBy(percentOf(a, b))` だと 375 × 18.4 / 100 が 68.99999999999999 になり、
+ * 切り捨てで 68 と出る（正しくは 69）。A・B を 0.01 単位の整数にして
+ * `numer = A100 × B100`・`denom = 1,000,000` を BigInt のまま丸める。
+ * A・B は小数第2位まで（超える入力は画面側で `hasAtMostTwoDecimals` で弾く）。
+ */
+export function percentOfRounded(base: number, percent: number, rounding: Rounding): number | null {
+  if (!canScaleToHundredths(base) || !canScaleToHundredths(percent)) return null;
+  return roundFraction(
+    BigInt(toHundredths(base)) * BigInt(toHundredths(percent)),
+    1_000_000n,
+    rounding,
+  );
+}
+
+/**
+ * AのB%の正確な値を、10進の文字列で返す（丸めない表示用）。
+ * `68.99999999999999` のような二進小数の誤差を出さないため、分子・分母から起こす。
+ * 375 の 18.4% → "69"、1200 の 8.5% → "102"、33 の 12.34% → "4.0722"。
+ */
+export function percentOfExact(base: number, percent: number): string | null {
+  if (!canScaleToHundredths(base) || !canScaleToHundredths(percent)) return null;
+  return fractionToDecimal(BigInt(toHundredths(base)) * BigInt(toHundredths(percent)), 6);
+}
+
+/* ===================================================================
+   整数での丸め（A1：浮動小数の誤差で1円ずれないように）
+   =================================================================== */
+
+/**
+ * 数値を 0.01 単位の整数に直す（12.34 → 1234）。
+ * 小数第2位までの入力を前提にしている（超える入力は画面側で弾く）。
+ */
+export function toHundredths(value: number): number {
+  return Math.round(value * 100);
+}
+
+/**
+ * `toHundredths` → `BigInt` に渡してよい値か（×100 しても有限か）。
+ * `Number.isFinite` だけだと 1e307 が素通りし、×100 で Infinity になって BigInt() が RangeError を投げる。
+ */
+export function canScaleToHundredths(value: number): boolean {
+  return Number.isFinite(value) && Number.isFinite(value * 100);
+}
+
+/**
+ * 入力の文字列が小数第2位までか（`33.33` は true、`33.333` は false）。
+ *
+ * 判定は**文字列で**行う。`r * 100` が整数かを浮動小数で見ると、
+ * それ自体が誤差でぶれる（例：`1.1 * 100` は 110.00000000000001）。
+ * 空欄・数値でない文字列は true を返す（そちらは別の案内で扱う）。
+ */
+export function hasAtMostTwoDecimals(str: string): boolean {
+  const t = str.trim();
+  if (t === '') return true;
+  const m = /^[+-]?(\d*)(?:\.(\d*))?$/.exec(t);
+  if (!m) {
+    // 1e-3 のような指数表記。値で判定する（文字列が数字だけでないので例外的に）
+    const v = Number(t);
+    if (!Number.isFinite(v)) return true;
+    return Number.isInteger(Number((v * 100).toPrecision(12)));
+  }
+  return (m[2] ?? '').length <= 2;
+}
+
+/** 小数第2位を超える率を入れたときの案内 */
+export const TOO_MANY_DECIMALS_MESSAGE = '割引率は小数第2位まで入力してください（例：33.33）';
+
+/**
+ * 分数 numer / denom を、選んだ丸め方で整数にする（BigInt のまま）。
+ * denom は正の数。負の numer も JavaScript の Math.floor / ceil / round と同じ向きに丸める。
+ */
+export function roundFraction(numer: bigint, denom: bigint, rounding: Rounding): number {
+  if (denom <= 0n) throw new Error('分母は正の数にしてください');
+  // BigInt の割り算は0方向への切り捨てなので、負の数は floor を自前で作る
+  const floorDiv = (n: bigint, d: bigint): bigint => {
+    const q = n / d;
+    return n % d !== 0n && n < 0n ? q - 1n : q;
+  };
+  switch (rounding) {
+    case 'floor':
+      return Number(floorDiv(numer, denom));
+    case 'ceil':
+      return Number(-floorDiv(-numer, denom));
+    case 'round':
+      // floor((2·numer + denom) / (2·denom))。x.5 は上へ（Math.round と同じ）
+      return Number(floorDiv(2n * numer + denom, 2n * denom));
+  }
+}
+
+/** numer / 10^scale を10進の文字列にする（末尾の0は落とす） */
+function fractionToDecimal(numer: bigint, scale: number): string {
+  const neg = numer < 0n;
+  const abs = neg ? -numer : numer;
+  const unit = 10n ** BigInt(scale);
+  const int = abs / unit;
+  const frac = (abs % unit).toString().padStart(scale, '0').replace(/0+$/, '');
+  const body = frac === '' ? int.toString() : `${int.toString()}.${frac}`;
+  return neg && body !== '0' ? `-${body}` : body;
 }
 
 /**

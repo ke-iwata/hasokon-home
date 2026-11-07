@@ -130,6 +130,19 @@ function drawResized(source: HTMLCanvasElement, target: Size): HTMLCanvasElement
   return current;
 }
 
+/**
+ * JPEG は透過を持てず、そのまま書き出すと透明部分が黒く塗られる。
+ * 白で下塗りした canvas に描き直してから書き出す（2026-11-06 点検 C）。
+ */
+function flattenOnWhite(source: HTMLCanvasElement): HTMLCanvasElement {
+  const canvas = createCanvas({ width: source.width, height: source.height });
+  const ctx = context2d(canvas);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(source, 0, 0);
+  return canvas;
+}
+
 /** canvas.toBlob の Promise 版 */
 function encode(canvas: HTMLCanvasElement, mime: string, quality?: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -309,8 +322,9 @@ export default function Calculator() {
       );
       if (target === null) throw new Error('リサイズの大きさを入力してください');
 
-      const canvas = drawResized(oriented, target);
+      const resized = drawResized(oriented, target);
       const outFormat: OutputFormat = format === 'auto' ? keepFormat(item.file.type) : format;
+      const canvas = outFormat === 'jpeg' ? flattenOnWhite(resized) : resized;
       const mime = mimeTypeFor(outFormat);
 
       let blob: Blob;

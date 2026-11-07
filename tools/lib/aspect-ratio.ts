@@ -21,7 +21,15 @@ export interface CommonRatioMatch {
   exact: boolean;
   /** 比率の値のずれ（%）。exact のときは 0 */
   diffPercent: number;
+  /**
+   * 「近い」と言ってよいか（ずれが `NEAR_TOLERANCE_PERCENT` 以内）。
+   * false のときは画面で「近い比率なし」と出す（1080×1350 を「1:1 に近い（ずれ約20%）」と言わない）
+   */
+  near: boolean;
 }
+
+/** 「近い比率」と言ってよいずれの上限（%） */
+export const NEAR_TOLERANCE_PERCENT = 3;
 
 /** よく使う比率の一覧（照合順） */
 export const COMMON_RATIOS: Ratio[] = [
@@ -33,6 +41,8 @@ export const COMMON_RATIOS: Ratio[] = [
   { w: 9, h: 16 },
   { w: 2, h: 1 },
   { w: 5, h: 4 },
+  // 縦長の SNS 投稿（1080×1350 など）。2026-11-06 点検 C
+  { w: 4, h: 5 },
 ];
 
 /**
@@ -50,19 +60,24 @@ export function gcd(a: number, b: number): number {
 /**
  * 幅と高さを最簡分数の比にする。
  *
- * @returns 例: simplify(1920, 1080) → {w:16, h:9}。無効な入力は null
+ * 小数（2.39×1 など）は小数第2位までを 100 倍して整数にしてから約分する。
+ * 先に `Math.round` すると 2.39×1 が 2:1 になり、近い比率の判定（丸める前の値）と食い違う
+ * （docs/features/kokai-tool-seikaku-2026-11-06.md B6）。
+ *
+ * @returns 例: simplify(1920, 1080) → {w:16, h:9}、simplify(2.39, 1) → {w:239, h:100}。無効な入力は null
  */
 export function simplify(w: number, h: number): Ratio | null {
   if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) return null;
-  const iw = Math.round(w);
-  const ih = Math.round(h);
+  const iw = Math.round(w * 100);
+  const ih = Math.round(h * 100);
   if (iw <= 0 || ih <= 0) return null;
   const g = gcd(iw, ih);
   return { w: iw / g, h: ih / g };
 }
 
 /**
- * よく使う比率（16:9, 4:3, 3:2, 21:9, 1:1, 9:16, 2:1, 5:4）のうち最も近いものを返す。
+ * よく使う比率（16:9, 4:3, 3:2, 21:9, 1:1, 9:16, 2:1, 5:4, 4:5）のうち最も近いものを返す。
+ * ずれが 3% を超えるときは `near: false`（画面では「近い比率なし」）。
  * 値が完全に一致する場合は exact: true（ぴったり）。無効な入力は null
  */
 export function nearestCommonRatio(w: number, h: number): CommonRatioMatch | null {
@@ -78,6 +93,7 @@ export function nearestCommonRatio(w: number, h: number): CommonRatioMatch | nul
         label: `${r.w}:${r.h}`,
         exact: diffPercent === 0,
         diffPercent,
+        near: diffPercent <= NEAR_TOLERANCE_PERCENT,
       };
     }
   }

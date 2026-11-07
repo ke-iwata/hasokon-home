@@ -89,6 +89,9 @@ export default function Calculator() {
             {seiResult.ohRomaji ? `（OH表記: ${seiResult.ohRomaji}）` : ''} ／ 名: {meiResult.romaji}
             {meiResult.ohRomaji ? `（OH表記: ${meiResult.ohRomaji}）` : ''}
           </div>
+          <p className="hint" style={{ marginTop: 8 }}>
+            松浦（まつ・うら）＝MATSUURA のように、語の区切りで母音が続くときは長音ではないので U／O を書きます。かなだけでは区切りが分からないため、このツールは長音として省いて表示します。
+          </p>
         </div>
       )}
     </div>
