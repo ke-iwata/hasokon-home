@@ -20,6 +20,7 @@ import {
   RacquetIcon,
   SpadeIcon,
   SquaresFourIcon,
+  StackIcon,
   StarIcon,
 } from '@phosphor-icons/react/dist/ssr';
 
@@ -1242,6 +1243,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Mancala: DotsSixIcon,
   // ペグ・ソリティア。市販の木の盤・ガラス玉の意匠はまねず、並んだ穴の点で表す（盤面の絵は `public` にするPRで描く）
   PegSolitaire: DotsNineIcon,
+  // ハノイの塔。市販の木の盤の意匠はまねず、重なった板で表す（盤面の絵は `public` にするPRで描く）
+  Hanoi: StackIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {

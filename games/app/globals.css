@@ -496,6 +496,204 @@ ol {
 
 
 
+/* ---- ハノイの塔（docs/features/game-hanoi-no-to.md） ----
+
+   盤は横長で、高さは枚数によらず 8 枚ぶんで固定する（枚数を変えても盤の下が動かない）：
+   持ち上げ表示 24px ＋ 円盤 18px（16px＋間隔 2px）× 8 ＋ 台 12px ＝ 180px。
+   **押す先は円盤ではなく柱の列全体**（縦長の矩形。375px で 1 列 約 110px）。
+   円盤の幅は Game.tsx が大きさから決める（列の 25〜90%。色だけでなく幅で区別できる）。
+   **ドラッグとスクロールを取り合わない**ように、盤の上だけ `touch-action: none` */
+.hno-game .hno-counts {
+  display: flex;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto 8px;
+  flex-wrap: nowrap;
+}
+
+/* 6 つを 1 段に並べる。押す先 44px を割らない（画面の約束4） */
+.hno-game .hno-counts button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding-inline: 4px;
+  white-space: nowrap;
+}
+
+.hno-status {
+  flex-wrap: nowrap;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+}
+
+.hno-board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  max-width: 520px;
+  margin-inline: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+
+.hno-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  height: 180px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.hno-col:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.hno-col.selected {
+  border-color: var(--accent);
+}
+
+.hno-col.hint-from,
+.hno-col.hint-to {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.hno-col.hint-to {
+  border-style: dashed;
+}
+
+.hno-col.rejected {
+  border-color: var(--danger);
+}
+
+.hno-rod {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  width: 6px;
+  height: 150px;
+  margin-left: -3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--border);
+}
+
+.hno-lift {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 24px;
+  flex: none;
+}
+
+.hno-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  width: 100%;
+  height: 144px;
+  flex: none;
+  padding-bottom: 2px;
+  box-sizing: border-box;
+}
+
+.hno-base {
+  position: relative;
+  width: 96%;
+  height: 12px;
+  flex: none;
+  border-radius: 3px;
+  background: var(--muted);
+  opacity: 0.55;
+}
+
+.hno-disc {
+  display: block;
+  min-width: 24px;
+  height: 16px;
+  flex: none;
+  border-radius: 8px;
+  box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.18);
+}
+
+/* 円盤の色（大きさごと）。色だけでは区別させず、幅の差で必ず見分けられる */
+.hno-d1 { background: hsl(0 70% 58%); }
+.hno-d2 { background: hsl(28 85% 55%); }
+.hno-d3 { background: hsl(48 85% 50%); }
+.hno-d4 { background: hsl(100 50% 45%); }
+.hno-d5 { background: hsl(170 55% 40%); }
+.hno-d6 { background: hsl(205 70% 50%); }
+.hno-d7 { background: hsl(250 50% 60%); }
+.hno-d8 { background: hsl(300 40% 52%); }
+
+.hno-perfect {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.hno-actions {
+  max-width: 520px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.hno-actions .btn {
+  min-height: 44px;
+  padding-inline: 4px;
+  white-space: nowrap;
+}
+
+.hno-table {
+  border-collapse: collapse;
+  margin: 8px 0 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hno-table th,
+.hno-table td {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hno-col.rejected {
+    animation: hno-reject 0.5s ease-out;
+  }
+}
+
+@keyframes hno-reject {
+  0%,
+  60% {
+    border-color: var(--danger);
+  }
+  100% {
+    border-color: transparent;
+  }
+}
+
 /* ---- スタート待ちの幕（app/_cpu/StartGate.tsx） ---- */
 
 /* 盤の入れ物。幕を絶対配置で重ねるための基準 */
@@ -8937,5 +9135,22 @@ button.hf-card {
 
   .ig-game .ig-actions .btn {
     padding-inline: 12px;
+  }
+}
+
+/* ハノイの塔：狭い画面では枚数の段とボタンの文字を詰める（4 つのボタンを 1 段に収める） */
+@media (max-width: 600px) {
+  .hno-game .hno-counts button {
+    font-size: 0.8rem;
+  }
+
+  .hno-actions .btn {
+    font-size: 0.8rem;
+  }
+
+  .hno-table th,
+  .hno-table td {
+    padding: 4px 5px;
+    font-size: 0.85rem;
   }
 }
