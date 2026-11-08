@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { metadata } from '@/app/nenrei-keisan/page';
+import { baseYearWarekiLabel, faq } from '@/app/nenrei-keisan/copy';
 import {
   ageAt,
   ageDetail,
@@ -584,13 +588,52 @@ describe('満◯歳◯ヶ月（ageDetail）', () => {
   });
 });
 
+/** 実行環境のローカル日付 'YYYY-MM-DD'（furusato-tax-year.test.ts・post-effective-copy.test.ts と同じ判定） */
+function todayYmd(now: Date = new Date()): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * その日に `HAYAMIHYO_BASE_YEAR` として許す年。ふだんは今年だけで、
+ * 12-20〜12-31 は翌年も許す（年末に来年版の早見表を前倒しで出せるように）。
+ * ふるさと納税の `DEFAULT_TAX_YEAR` は 12/31 まで今年分が正しいので、この幅を使わない。
+ *
+ * 仕様: docs/features/nenmatagi-2027-rollover.md の A
+ */
+function allowedHayamihyoBaseYears(ymd: string): number[] {
+  const year = Number(ymd.slice(0, 4));
+  return ymd.slice(5) >= '12-20' ? [year, year + 1] : [year];
+}
+
 describe('年齢早見表の基準年', () => {
   /**
    * 【このテストが落ちたら】`lib/nenrei.ts` の `HAYAMIHYO_BASE_YEAR` を今年に直す。
-   * title の「【◯年版】」も本文も表も、この定数から作られるのでここだけで済む。
+   * title の「【◯年版】」も本文も表も FAQ も、この定数から作られるのでここだけで済む。
    */
-  it('HAYAMIHYO_BASE_YEAR が今年と一致する（年が変わったら更新する）', () => {
-    expect(HAYAMIHYO_BASE_YEAR).toBe(new Date().getFullYear());
+  it('HAYAMIHYO_BASE_YEAR が今年と一致する（12-20〜12-31 は翌年も可）', () => {
+    const today = todayYmd();
+    expect(
+      allowedHayamihyoBaseYears(today),
+      `${today} です。tools/lib/nenrei.ts の HAYAMIHYO_BASE_YEAR（いま ${HAYAMIHYO_BASE_YEAR}）を上げてください` +
+        '（docs/features/nenmatagi-2027-rollover.md。本番への反映はリリースで行う）',
+    ).toContain(HAYAMIHYO_BASE_YEAR);
+  });
+
+  it('許す年の境界：12-19 は今年のみ、12-20 と 12-31 は今年か翌年、1-01 は今年のみ', () => {
+    expect(allowedHayamihyoBaseYears('2026-12-19')).toEqual([2026]);
+    expect(allowedHayamihyoBaseYears('2026-12-20')).toEqual([2026, 2027]);
+    expect(allowedHayamihyoBaseYears('2026-12-31')).toEqual([2026, 2027]);
+    expect(allowedHayamihyoBaseYears('2027-01-01')).toEqual([2027]);
+    // 元日に去年のままなら落ちる、は変えない
+    expect(allowedHayamihyoBaseYears('2027-01-01')).not.toContain(2026);
+  });
+
+  it('todayYmd はローカル日付で数える（UTC の CI では 09:00 JST から翌日になる）', () => {
+    expect(todayYmd(new Date(2026, 11, 20, 0, 0, 0))).toBe('2026-12-20');
+    expect(todayYmd(new Date(2027, 0, 1, 0, 0, 0))).toBe('2027-01-01');
   });
 
   it('早見表の掲載上限は基準年より先まである（表の末尾に達したら TABLE_END_YEAR を伸ばす）', () => {
@@ -720,5 +763,72 @@ describe('その年度に18歳になる学年（gradeTurningAge）', () => {
   it('学年の数え方は schoolYears と同じ', () => {
     expect(schoolYears(grade.from).cohortYear).toBe(grade.cohortYear);
     expect(schoolYears(grade.to).cohortYear).toBe(grade.cohortYear);
+  });
+});
+
+describe('年齢計算ページの年の直書き（基準年に追随する文言）', () => {
+  /**
+   * 【このテストが落ちたら】app/nenrei-keisan/ の文言に基準年の値が直書きされている。
+   * `baseYear`・`baseYearWarekiLabel`・`zodiac(baseYear)`・`sexagenary(baseYear)` から組み立てる。
+   * 改元の年（2019年・1989年など）のように年が変わっても正しい年はここでは見ない。
+   *
+   * 仕様: docs/features/nenmatagi-2027-rollover.md の B
+   */
+  const dir = resolve(__dirname, '../app/nenrei-keisan');
+  const sources = ['page.tsx', 'copy.ts'].map((f) => ({
+    file: f,
+    text: readFileSync(resolve(dir, f), 'utf8'),
+  }));
+
+  /** 基準年に追随すべき値（定数から組み立てていればソースには出てこない） */
+  function followingValues(year: number): string[] {
+    return [
+      `${year}年は`,
+      `${year}年なら`,
+      `${year}年です`,
+      ...warekiYearLabels(year),
+      sexagenary(year),
+      `${zodiac(year)}年です`,
+    ];
+  }
+
+  it('page.tsx・copy.ts のソースに基準年の値が直書きされていない', () => {
+    const found: string[] = [];
+    for (const { file, text } of sources) {
+      for (const v of followingValues(HAYAMIHYO_BASE_YEAR)) {
+        if (text.includes(v)) found.push(`${file}: 「${v}」`);
+      }
+    }
+    expect(found).toEqual([]);
+  });
+
+  it('組み立てた description と FAQ に基準年の値が入っている', () => {
+    const y = HAYAMIHYO_BASE_YEAR;
+    const wareki = warekiYearLabels(y).at(-1) as string;
+    expect(baseYearWarekiLabel).toBe(wareki);
+    expect(metadata.description).toContain(`「${wareki}は西暦何年」`);
+
+    const seireki = faq.find((f) => f.q.endsWith('は西暦何年ですか？'));
+    expect(seireki?.q).toBe(`${wareki}は西暦何年ですか？`);
+    expect(seireki?.a.startsWith(`${y}年です。`)).toBe(true);
+
+    const eto = faq.find((f) => f.q.startsWith('干支（えと）'));
+    expect(eto?.a).toContain(`${y}年は${zodiac(y)}年です`);
+    expect(eto?.a).toContain(`${y}年なら${sexagenary(y)}`);
+  });
+
+  it('JSON-LD の FAQPage も同じ配列から作られる（page.tsx で faq を作り直していない）', () => {
+    const page = sources.find((s) => s.file === 'page.tsx')!.text;
+    expect(page).toMatch(/import \{[^}]*\bfaq\b[^}]*\} from '\.\/copy'/);
+    expect(page).not.toMatch(/const faq\s*=/);
+  });
+
+  it('2027 年に上げると「令和9年は西暦何年」「2027年は未年」「丁未」になる', () => {
+    expect(warekiYearLabels(2027).at(-1)).toBe('令和9年');
+    expect(zodiac(2027)).toBe('未');
+    expect(sexagenary(2027)).toBe('丁未');
+    // 2026 年（いまの値）の組み合わせも確かめておく
+    expect(warekiYearLabels(2026).at(-1)).toBe('令和8年');
+    expect(sexagenary(2026)).toBe('丙午');
   });
 });

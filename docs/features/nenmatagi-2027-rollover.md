@@ -1,6 +1,6 @@
 # 2027-01-01 の年またぎ — 元日 09:00（JST）から tools のテストが落ち、**テスト環境・本番とも tools のデプロイが止まる**。年の定数を1枚の表にまとめ、「元日の1本」を12月中に用意して元日に通す手順を決める
 
-**状態**：提案（2026-11-08 起票。セッション `session_012RoU2Eg18Xq5oEffxf79vC`）。**同日の企画レビュー（#474）の必須2点・任意2点を反映**（元日に落ちる検査は4本・直書きの検査は基準年の値だけを見る・リリースの依頼の書き方・法令の期間の定数は対象外）。
+**状態**：A・B 実装済み（2026-11-08。セッション `session_012RoU2E3k48mE3dY7pcdRbL`。FAQ と description は `tools/app/nenrei-keisan/copy.ts` に移した）。C（12-20〜の `HAYAMIHYO_BASE_YEAR = 2027`・12-26〜の「元日の1本」）は未着手。提案は 2026-11-08 起票（セッション `session_012RoU2Eg18Xq5oEffxf79vC`）。**同日の企画レビュー（#474）の必須2点・任意2点を反映**（元日に落ちる検査は4本・直書きの検査は基準年の値だけを見る・リリースの依頼の書き方・法令の期間の定数は対象外）。
 **優先度：高（公開中ページの正確さ・リリースが止まる）。** 期日は **2026-12-25**（下記「段取り」の 1・2 をそこまでに main へ）。
 **対象**：`tools/tests/nenrei.test.ts`・`tools/tests/furusato-tax-year.test.ts`（見張りの判定の幅）・
 `tools/lib/nenrei.ts`・`tools/app/nenrei-keisan/page.tsx`（年を直書きした FAQ 2 問）・`tools/lib/furusato-nozei.ts`・
