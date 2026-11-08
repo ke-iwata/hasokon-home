@@ -1,6 +1,6 @@
 # 2027-01-01 の年またぎ — 元日 09:00（JST）から tools のテストが落ち、**テスト環境・本番とも tools のデプロイが止まる**。年の定数を1枚の表にまとめ、「元日の1本」を12月中に用意して元日に通す手順を決める
 
-**状態**：提案（2026-11-08 起票。セッション `session_012RoU2Eg18Xq5oEffxf79vC`）。
+**状態**：提案（2026-11-08 起票。セッション `session_012RoU2Eg18Xq5oEffxf79vC`）。**同日の企画レビュー（#474）の必須2点・任意2点を反映**（元日に落ちる検査は4本・直書きの検査は基準年の値だけを見る・リリースの依頼の書き方・法令の期間の定数は対象外）。
 **優先度：高（公開中ページの正確さ・リリースが止まる）。** 期日は **2026-12-25**（下記「段取り」の 1・2 をそこまでに main へ）。
 **対象**：`tools/tests/nenrei.test.ts`・`tools/tests/furusato-tax-year.test.ts`（見張りの判定の幅）・
 `tools/lib/nenrei.ts`・`tools/app/nenrei-keisan/page.tsx`（年を直書きした FAQ 2 問）・`tools/lib/furusato-nozei.ts`・
@@ -18,14 +18,19 @@
 
 ## 背景と根拠
 
-### 1. 元日に CI が落ちるテストが2本ある
+### 1. 元日に CI が落ちる検査が4本ある
 
 | テスト | 判定 | 元日に起きること |
 |---|---|---|
 | `tools/tests/nenrei.test.ts:592` | `HAYAMIHYO_BASE_YEAR` が `new Date().getFullYear()` と**一致** | 2026 のままなので落ちる |
 | `tools/tests/furusato-tax-year.test.ts:43` | `DEFAULT_TAX_YEAR >= 今年` | 2026 のままなので落ちる |
+| `tools/tests/post-effective-copy.test.ts`（`tedori-keisan`。施行日 `WITHHOLDING_TABLE_EFFECTIVE_ON = '2027-01-01'`） | `it.runIf(today >= effectiveOn)` で施行前の言い回しを探す | `/給与明細に現れるのは2027年1月から/`・`/天引きが変わるのは2027年1月から/` の**2か所**が page.tsx に残っているので落ちる |
+| `tools/tests/post-effective-copy.test.ts`（`iryohi-kojo`。施行日 `SELF_MED_REFORM_EFFECTIVE_ON = '2027-01-01'`） | 同上 | `/見直されるので/` の**1か所**が残っているので落ちる |
 
 CI は UTC で動くので、落ち始めるのは **2027-01-01 09:00（JST）**。
+下の2本（`post-effective-copy.test.ts`）は `runIf` で**施行日になるまで検査そのものが走らない**ので、12 月中に文面を直した PR を用意しても CI は緑のまま。
+逆に言えば、**文面の直しを「元日の1本」から落としても 12 月中は誰も気づけない**。下記 C で名前を挙げて「元日の1本」に入れる。
+（2026-11-08 の企画レビュー〔#474〕で指摘を受けて 2 本 → 4 本に直した）
 
 ### 2. デプロイがテストを通してからビルドするので、tools のデプロイが全部止まる
 
@@ -75,6 +80,9 @@ FAQ は `FAQPage` の JSON-LD にも出ている。2027 年に「令和9年は�
 | `toshi-iwai.ts` `SHICHIGOSAN_YEAR`・`YAKUDOSHI_YEAR` | 2026・2027 | 上げない | 「今年か翌年」で見張り済み。七五三は 2027-11-16 以降に 2027→2028 |
 | `boei-tokubetsu-shotokuzei.ts` `DEFENSE_START_YEAR` | 2027 | 上げない | 施行年そのもの。ページの文面は [r8-12gatsu-1gatsu-shikogo-copy.md](./r8-12gatsu-1gatsu-shikogo-copy.md) と同じ「施行後の文面」の扱いで要確認 |
 
+**表の対象外**：同じ grep に引っかかる `zoyozei-keisan.ts` の `HAYAMI_YEARS`・`jutaku-loan-kojo.ts` の `MOVE_IN_YEARS`・`invoice-nozeigaku.ts` の `NIWARI_YEARS` のような
+**法令で決まった期間を表す定数**は、年が明けても上げない（法令が変わったときに直す）。年またぎで見るのは「今年」「既定の年分」を表す定数だけ。
+
 ## 提案する仕様
 
 ### A. 見張りの判定の幅を「前倒しできるもの」と「できないもの」で分ける
@@ -90,16 +98,22 @@ FAQ は `FAQPage` の JSON-LD にも出ている。2027 年に「令和9年は�
 
 - description と FAQ（70〜71・79行目）の年を `baseYear`・`warekiYearLabels(baseYear)`・既存の干支の関数から組み立てる
   （`lib/nenrei.ts` に干支を返す関数があればそれを使い、無ければ `lib/` に足す。ページで計算しない）
-- `tests/nenrei.test.ts` に「page.tsx に 4 桁の年（20xx）と『令和N年』の直書きが無い」ことの検査を足す
-  （出典リンクの題名は除く。`post-effective-copy.test.ts` の `stripLinks` を流用）
+- `tests/nenrei.test.ts` に、**基準年に追随すべき値だけ**を見る検査を足す（`20xx` で一律に検査しない）
+  - page.tsx は、年が変わっても正しい年をたくさん持っている（71行目「令和元年が2019年」、75行目「1989年1月1日」「2019年1月1日」、
+    240・245行目の改元の表、268行目「2019年も4月30日までが平成31年」など）。一律の検査はここに引っかかり、
+    検査を緩めるか正しい記述を消すかの二択を実装者に迫ることになる
+  - 検査1：page.tsx の**ソース**に `String(HAYAMIHYO_BASE_YEAR)`（例 `2026`）を含む「`${年}年は`」「`${年}年なら`」の形・
+    `warekiYearLabels(HAYAMIHYO_BASE_YEAR)` の各ラベル（例「令和8年」）・`sexagenary(HAYAMIHYO_BASE_YEAR)`（例「丙午」）・
+    `zodiac(HAYAMIHYO_BASE_YEAR)` + 「年です」（例「午年です」）が**直書きされていない**（定数から組み立てていればソースには出てこない）
+  - 検査2：組み立てた **description と FAQ の文に、それらの値が入っている**（`metadata.description` と FAQ の配列を import して確かめる）
 
 ### C. 「元日の1本」と段取り
 
 | いつ | 何を | 誰が |
 |---|---|---|
 | 〜12-20 | A・B を main へ（`feat:` の PR）。テスト環境で年齢計算のページを確認 | 実装者 |
-| 12-20〜12-25 | `HAYAMIHYO_BASE_YEAR = 2027` の PR を出して main へ入れる（A で CI が通る）。**12-25 までの本番リリースに載せる** | 実装者・運営者（リリース） |
-| 12-26〜12-30 | **「元日の1本」の PR を用意する**：`DEFAULT_TAX_YEAR = 2027`・ふるさと納税の title／description の「令和9年分」・r8-12gatsu-1gatsu の 01-01 分の文面・各 `updatedAt`。furusato の見張り（`DEFAULT_TAX_YEAR >= 今年`）は 12 月中の 2027 を通すので CI は緑になるが、**12/31 まではマージしない**（12/31 の寄附は令和8年分。PR 本文の冒頭に「1/1 09:00 以降にマージ」と書く） | 実装者 |
+| 12-20〜12-25 | `HAYAMIHYO_BASE_YEAR = 2027` の PR を出して main へ入れる（A で CI が通る）。12-25 までの本番リリースに載せる：**実装者が運営者に依頼し、運営者の明示的な指示を受けてから `release.yml` を起動する** | 実装者 → 運営者 |
+| 12-26〜12-30 | **「元日の1本」の PR を用意する**：`DEFAULT_TAX_YEAR = 2027`・ふるさと納税の title／description の「令和9年分」・**`tedori-keisan` の page.tsx の2か所（「給与明細に現れるのは2027年1月から」「天引きが変わるのは2027年1月から」）と `iryohi-kojo` の page.tsx の1か所（「見直されるので」）の施行後の文面**（[r8-12gatsu-1gatsu-shikogo-copy.md](./r8-12gatsu-1gatsu-shikogo-copy.md) の A・C）・各 `updatedAt`。`post-effective-copy.test.ts` は施行日まで検査を走らせないので、この3か所を直していなくても 12 月中の CI は緑になる。**PR 本文に上の4つの検査の名前を並べ、全部に手を入れたことをチェックボックスで示す**。furusato の見張り（`DEFAULT_TAX_YEAR >= 今年`）は 12 月中の 2027 を通すので CI は緑になるが、**12/31 まではマージしない**（12/31 の寄附は令和8年分。PR 本文の冒頭に「1/1 09:00 以降にマージ」と書く） | 実装者 |
 | 12-26〜12-30 | 運営者に「元日 09:00 以降に、この PR のマージと `release.yml` の起動をしてよいか」を**事前に確認しておく**（承認は運営者の明示的な指示でだけ得る。事前の確認は承認の代わりにならないので、元日に改めて指示を受ける） | 実装者 → 運営者 |
 | 1-01 09:00〜 | main を取り込んで CI を回し直す → マージ → 運営者の指示で `release.yml` | 実装者・運営者 |
 | 1-04〜 | 連休計算の title・`FIRST_SELECTABLE_YEAR` を直す PR（急がない） | 実装者 |
@@ -113,7 +127,8 @@ FAQ は `FAQPage` の JSON-LD にも出ている。2027 年に「令和9年は�
 ## テスト
 
 - A：`nenrei.test.ts` に「12-19 は一致のみ」「12-20 と 12-31 は今年か翌年」「1-01 は一致のみ」の3境界（日付を引数で渡す小さな関数にして、`new Date()` を直接見ない）
-- B：直書きの検査（上記）。2027 に上げたときに description と FAQ が「令和9年は西暦何年」「2027年は未年」「丁未」になること
+- 「元日の1本」：実装者が手元で `vi.setSystemTime('2027-01-01T00:00:00Z')` 相当（または TZ と日付を差し替えた実行）で背景 1 の 4 本を回し、全部通ることを PR 本文に書く
+- B：直書きの検査（上記の検査1・2）。2027 に上げたときに description と FAQ が「令和9年は西暦何年」「2027年は未年」「丁未」になること
   （2027 年の干支は丁未。実装時に `lib/nenrei.ts` の関数の出力で確かめる）
 
 ## 期待される効果
