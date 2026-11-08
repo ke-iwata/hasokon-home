@@ -137,6 +137,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-17',
   },
   {
+    // 仕様: docs/features/gensen-choshuhyo-kenzan.md
+    slug: 'gensen-choshuhyo',
+    // 源泉徴収票＝紙の明細なので Receipt
+    icon: 'Receipt',
+    name: '源泉徴収票の見方と検算',
+    description:
+      '支払金額・給与所得控除後の金額・所得控除の額の合計額・源泉徴収税額を入れると、各欄の意味と計算が合っているかを表示。令和8年分の基礎控除104万円・給与所得控除74万円に対応。入力は送信しません。',
+    category: 'お金・社会保険',
+    // 運営者がテスト環境で検算ケースを画面でも確かめたら public（遅くとも 2026-12-20）。
+    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'preview',
+    updatedAt: '2026-11-08',
+  },
+  {
     // 仕様: docs/features/seimei-hokenryo-kojo.md
     slug: 'seimei-hokenryo-kojo',
     // 保険の絵で Umbrella（傘＝備え）
