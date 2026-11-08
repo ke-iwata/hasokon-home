@@ -4,6 +4,7 @@ import {
   BinocularsIcon,
   BombIcon,
   CardsIcon,
+  CirclesFourIcon,
   ClubIcon,
   CrownIcon,
   DetectiveIcon,
@@ -1242,6 +1243,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Mancala: DotsSixIcon,
   // ペグ・ソリティア。市販の木の盤・ガラス玉の意匠はまねず、並んだ穴の点で表す（盤面の絵は `public` にするPRで描く）
   PegSolitaire: DotsNineIcon,
+  // 四目並べ。市販品の青い枠・赤と黄のコマはまねず、4 つの丸で表す（盤面の絵は `public` にするPRで描く）
+  YonmokuNarabe: CirclesFourIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
