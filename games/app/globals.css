@@ -488,6 +488,7 @@ ol {
 .ts-board,
 .yn-board,
 .ch-board,
+.y4-board,
 .ig-board,
 .sk-stage {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
@@ -8506,6 +8507,235 @@ button.hf-card {
   justify-content: center;
 }
 
+
+/* ---- 四目並べ（app/yonmoku-narabe/Game.tsx。docs/features/game-yonmoku-narabe.md） ----
+
+   盤は「影の段 1 行＋盤 6 行」で縦 7 マスぶん、横も 7 マスなので**全体が正方形**になり、
+   「盤を画面の高さに合わせる」節の共通指定にそのまま乗る（ここで max-width を書き直さないこと）。
+   `--chrome` / `--board-max` は入れ物（`.y4-game`）に置く。`--chrome` は盤以外が使う高さの実測値
+   （PC はカードの中の盤以外が約 331px。600px 以下は段が詰まって約 282px なので、末尾の
+   `@media (max-width: 600px)` で 310px に下げる。2026-11-06 に 320×568・390×844・1366×768 で実測）。
+   320px 幅では盤が約 258px（1 列 約 36px）になる。列は縦 6 マスぶんの高さがあるボタンなので、
+   幅は 44px を割るが押す面は縦に長い（7 列を 44px にすると 320×568 で 1 画面に収まらない）。
+   色は市販品（青い枠・赤と黄のコマ）をまねず、リバーシと同じ黒・白のコマを墨色の枠に入れる */
+.y4-game {
+  --chrome: 360px;
+  --board-max: 470px;
+}
+
+.y4-options {
+  height: 38px;
+  overflow: hidden;
+  margin: 0 0 8px;
+}
+
+.y4-option-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.y4-status {
+  flex-wrap: nowrap;
+  height: 1.5em;
+  line-height: 1.5;
+  overflow: hidden;
+  margin: 6px 0 0;
+}
+
+.y4-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.y4-chip {
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  border-radius: 50%;
+}
+
+.y4-result {
+  height: 1.5em;
+  margin: 4px 0;
+  color: var(--text);
+}
+
+.y4-good {
+  color: var(--ok);
+}
+
+/* 読み上げ専用の行（見た目には出さない） */
+.y4-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.y4-board {
+  width: 100%;
+}
+
+.y4-ghosts {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  padding: 0 6px;
+}
+
+.y4-ghost-slot {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.y4-frame {
+  position: relative;
+  padding: 6px;
+  border-radius: 10px;
+  background: #44403c;
+}
+
+.y4-cols {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.y4-colcell {
+  display: block;
+}
+
+/* 列そのものがボタン。列のどこを押してもその列に落ちる（マスを狙わせない） */
+.y4-col {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: default;
+}
+
+.y4-col.playable {
+  cursor: pointer;
+}
+
+.y4-col.playable:hover,
+.y4-col.y4-cursor {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.y4-col:focus-visible {
+  outline: 2px solid #f5d76e;
+  outline-offset: -2px;
+}
+
+.y4-cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 穴 */
+.y4-cell::before {
+  content: '';
+  position: absolute;
+  inset: 9%;
+  border-radius: 50%;
+  background: #d6d3d1;
+  box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+.y4-disc {
+  position: relative;
+  z-index: 1;
+  width: 82%;
+  height: 82%;
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.y4-disc.black,
+.y4-chip.black {
+  background: #1c1917;
+}
+
+.y4-disc.white,
+.y4-chip.white {
+  background: #fafaf9;
+  box-shadow: inset 0 0 0 1px #a8a29e, 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.y4-chip.white {
+  box-shadow: inset 0 0 0 1px #a8a29e;
+}
+
+/* 盤の上の影 */
+.y4-shadow {
+  opacity: 0.45;
+}
+
+/* 直前の手（CPU がどこに指したかを追えるように） */
+.y4-last {
+  outline: 2px solid #f5d76e;
+  outline-offset: 1px;
+}
+
+/* 並んだ 4 つ */
+.y4-win .y4-disc {
+  outline: 3px solid #f5d76e;
+  outline-offset: 1px;
+}
+
+.y4-line {
+  position: absolute;
+  inset: 6px;
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.y4-line line {
+  stroke: #f5d76e;
+  stroke-width: 6px;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.85;
+}
+
+.y4-actions {
+  justify-content: center;
+  margin-top: 10px;
+}
+
+/* コマが落ちる動き（150ms）。`--y4-fall` は上から何マスぶん落ちるか。
+   動きを減らす設定のときは動かさず置く */
+@media (prefers-reduced-motion: no-preference) {
+  .y4-drop {
+    animation: y4-drop 150ms ease-in;
+  }
+}
+
+@keyframes y4-drop {
+  from {
+    transform: translateY(calc(var(--y4-fall, 1) * -122%));
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 .mc-figure {
   display: block;
   width: 100%;
@@ -9152,5 +9382,26 @@ button.hf-card {
   .hno-table td {
     padding: 4px 5px;
     font-size: 0.85rem;
+  }
+}
+
+/* 四目並べ：320px でも 3 つのボタンを 1 段に収め、設定の段を折り返させない（実測） */
+@media (max-width: 600px) {
+  .y4-game {
+    --chrome: 310px;
+  }
+
+  .y4-game .seg button {
+    padding-inline: 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .y4-actions .btn {
+    padding-inline: 10px;
+  }
+
+  .y4-status {
+    font-size: 0.8rem;
   }
 }

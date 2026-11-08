@@ -53,7 +53,8 @@ describe('ふるさと納税：改正の注記の課税所得（給与収入500�
 });
 
 describe('年齢計算：FAQ「満18歳になるのは何年生まれ？」', () => {
-  const page = read('nenrei-keisan');
+  // FAQ は年の直書きを避けるため app/nenrei-keisan/copy.ts に移した（docs/features/nenmatagi-2027-rollover.md）
+  const page = readFileSync(join(__dirname, '../app/nenrei-keisan/copy.ts'), 'utf8');
   const answer = page.match(/q: '満18歳になるのは何年生まれですか？',\s*a: `([^`]*)`/)?.[1] ?? '';
 
   it('FAQ の答えを取り出せる', () => {

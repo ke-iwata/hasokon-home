@@ -4,6 +4,7 @@ import {
   BinocularsIcon,
   BombIcon,
   CardsIcon,
+  CirclesFourIcon,
   ClubIcon,
   CrownIcon,
   DetectiveIcon,
@@ -1245,6 +1246,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   PegSolitaire: DotsNineIcon,
   // ハノイの塔。市販の木の盤の意匠はまねず、重なった板で表す（盤面の絵は `public` にするPRで描く）
   Hanoi: StackIcon,
+  // 四目並べ。市販品の青い枠・赤と黄のコマはまねず、4 つの丸で表す（盤面の絵は `public` にするPRで描く）
+  YonmokuNarabe: CirclesFourIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
