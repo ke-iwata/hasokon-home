@@ -109,7 +109,8 @@ export const TABLE_END_YEAR = 2040;
  * 表と食い違う（表は新しい年、文章は去年、という腐り方をする）。
  *
  * そこで**基準年を1つの定数に固定し、`tests/nenrei.test.ts` で
- * `new Date().getFullYear()` と一致することを検証している**。
+ * `new Date().getFullYear()` と一致することを検証している**（12-20〜12-31 だけは翌年も許すので、
+ * 年末に来年版へ前倒しできる。docs/features/nenmatagi-2027-rollover.md）。
  * 年が変わると最初のテスト実行で落ちるので、更新が強制される
  * （`lib/saitei-chingin.ts` の `DATA_CHECKED_AT` と同じ「鮮度を見張る」やり方）。
  *
