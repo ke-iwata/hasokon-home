@@ -541,13 +541,20 @@ ol {
   touch-action: none;
 }
 
+.hno-game {
+  /* 円盤 1 枚の高さ・持ち上げ表示・台。盤の高さはここから決まる（8 枚ぶんで固定） */
+  --hno-disc: 16px;
+  --hno-lift: 24px;
+  --hno-base: 12px;
+}
+
 .hno-col {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   min-width: 44px;
-  height: 180px;
+  height: calc(var(--hno-lift) + 8 * (var(--hno-disc) + 2px) + var(--hno-base));
   padding: 0;
   border: 2px solid transparent;
   border-radius: var(--radius);
@@ -583,9 +590,9 @@ ol {
 .hno-rod {
   position: absolute;
   left: 50%;
-  bottom: 12px;
+  bottom: var(--hno-base);
   width: 6px;
-  height: 150px;
+  height: calc(8 * (var(--hno-disc) + 2px) + 6px);
   margin-left: -3px;
   border-radius: 3px 3px 0 0;
   background: var(--border);
@@ -597,7 +604,7 @@ ol {
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 24px;
+  height: var(--hno-lift);
   flex: none;
 }
 
@@ -609,7 +616,7 @@ ol {
   justify-content: flex-start;
   gap: 2px;
   width: 100%;
-  height: 144px;
+  height: calc(8 * (var(--hno-disc) + 2px));
   flex: none;
   padding-bottom: 2px;
   box-sizing: border-box;
@@ -618,7 +625,7 @@ ol {
 .hno-base {
   position: relative;
   width: 96%;
-  height: 12px;
+  height: var(--hno-base);
   flex: none;
   border-radius: 3px;
   background: var(--muted);
@@ -628,9 +635,9 @@ ol {
 .hno-disc {
   display: block;
   min-width: 24px;
-  height: 16px;
+  height: var(--hno-disc);
   flex: none;
-  border-radius: 8px;
+  border-radius: calc(var(--hno-disc) / 2);
   box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.18);
 }
 
@@ -9368,8 +9375,16 @@ button.hf-card {
   }
 }
 
-/* ハノイの塔：狭い画面では枚数の段とボタンの文字を詰める（4 つのボタンを 1 段に収める） */
+/* ハノイの塔：狭い画面では枚数の段とボタンの文字を詰める（4 つのボタンを 1 段に収める）。
+   盤は 180px → 158px（円盤 14px・持ち上げ 20px・台 10px）に詰める。記録の帯が出た 2 回目以降の訪問でも、
+   375×667 でボタン行とカードの下端が画面に収まるようにするため（#479 のレビュー。実測） */
 @media (max-width: 600px) {
+  .hno-game {
+    --hno-disc: 14px;
+    --hno-lift: 20px;
+    --hno-base: 10px;
+  }
+
   .hno-game .hno-counts button {
     font-size: 0.8rem;
   }

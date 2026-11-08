@@ -351,13 +351,14 @@ export default function Game() {
         ))}
       </div>
 
+      {/* 記録の帯は短い呼び名で 1 行に収める（「最少手数」「ベストタイム」と書くと 375px で 3 行に折れ、
+          2 回目以降の訪問でボタン行が画面の外へ出ていた。#479 のレビュー）。
+          ★は最少手数（2ⁿ−1）で解いた記録の印。欄は持たず bestMoves から毎回判定する */}
       <RecordStrip
         items={[
           ...(entry.wins ? [{ label: 'クリア', value: `${entry.wins}回` }] : []),
-          ...(best
-            ? [{ label: '最少手数', value: isPerfect(n, best) ? `${best}手（最少手数！）` : `${best}手` }]
-            : []),
-          ...(entry.bestTimeMs ? [{ label: 'ベストタイム', value: formatTime(entry.bestTimeMs) }] : []),
+          ...(best ? [{ label: '最少', value: isPerfect(n, best) ? `${best}手★` : `${best}手` }] : []),
+          ...(entry.bestTimeMs ? [{ label: 'ベスト', value: formatTime(entry.bestTimeMs) }] : []),
         ]}
       />
 
@@ -489,7 +490,7 @@ export default function Game() {
           置く柱まで<strong>ドラッグ</strong>しても動かせます）。同じ柱をもう一度タップすると取り消しです。
           小さい円盤の上に大きい円盤は置けません。<strong>全部を右の柱に移せば完成</strong>です。
           キーボードでは <kbd>1</kbd>・<kbd>2</kbd>・<kbd>3</kbd> で柱を選び、<kbd>Z</kbd> で1手戻します。
-          ヒントや自動再生を使った回は、クリア回数だけを記録します。
+          ヒントや自動再生を使った回は、クリア回数だけを記録します。記録の「最少」に付く ★ は、最少手数（2ⁿ−1）で解いた印です。
         </p>
       </details>
     </div>
