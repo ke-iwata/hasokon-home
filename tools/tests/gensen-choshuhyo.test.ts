@@ -2,7 +2,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  BASIC_BAND_EDGES,
   TAX_YEAR,
+  basicDeductionBandLabel,
   checkGensenChoshuhyo,
   parseYen,
   type GensenInput,
@@ -164,6 +166,30 @@ describe('4つの欄の検算', () => {
     expect(r.reasons).toContain('previous-employer');
   });
 
+  it('④が計算より小さく住宅ローン控除が空欄なら、住宅ローン控除を先頭の理由にする', () => {
+    const slip = slipFrom(5_000_000, 720_000);
+    const r = checked(checkGensenChoshuhyo({ ...slip, withheldTax: 0 }));
+    expect(r.yearTax.ok).toBe(false);
+    expect(r.reasons[0]).toBe('housing-loan');
+    expect(r.reasons.length).toBeLessThanOrEqual(3);
+    // ②は一致しているので、②にしか効かない所得金額調整控除は出さない
+    expect(r.reasons).not.toContain('adjustment-deduction');
+    // 住宅ローン控除の額を入れると ✓
+    const fixed = checked(
+      checkGensenChoshuhyo({ ...slip, withheldTax: 0, housingLoanCredit: 90_000 }),
+    );
+    expect(fixed.allOk).toBe(true);
+  });
+
+  it('住宅ローン控除を入れていても合わなければ、住宅ローン控除は理由に出さない', () => {
+    const slip = slipFrom(5_000_000, 720_000);
+    const r = checked(
+      checkGensenChoshuhyo({ ...slip, withheldTax: 10_000, housingLoanCredit: 50_000 }),
+    );
+    expect(r.yearTax.ok).toBe(false);
+    expect(r.reasons).not.toContain('housing-loan');
+  });
+
   it('給与所得控除後の金額が表より小さければ、所得金額調整控除を先頭の理由にする', () => {
     const slip = slipFrom(9_000_000, 1_200_000);
     const r = checked(checkGensenChoshuhyo({ ...slip, salaryIncome: slip.salaryIncome - 150_000 }));
@@ -208,6 +234,25 @@ describe('年調未済・乙欄', () => {
     expect(checked(checkGensenChoshuhyo(slipFrom(20_000_000, 2_000_000))).recommendKakutei).toBe(
       false,
     );
+  });
+});
+
+describe('基礎控除の段の名前', () => {
+  it('段の境目が令和8年分の基礎控除の関数の境目と一致する（しきい値の二重持ちを見張る）', () => {
+    for (const edge of BASIC_BAND_EDGES) {
+      expect(RULES_R8.basicDeduction(edge)).not.toBe(RULES_R8.basicDeduction(edge + 1));
+    }
+    // 2,350万円（これを超えると逓減が始まる）までの範囲で、関数の額が変わる境目はこの3つだけ
+    const edges: number[] = [];
+    for (let v = 0; v <= 23_500_000; v += 10_000) {
+      if (RULES_R8.basicDeduction(v) !== RULES_R8.basicDeduction(v + 10_000)) edges.push(v);
+    }
+    expect(edges).toEqual([...BASIC_BAND_EDGES]);
+  });
+  it('文言', () => {
+    expect(basicDeductionBandLabel(3_560_000)).toBe('合計所得489万円以下');
+    expect(basicDeductionBandLabel(6_000_000)).toBe('合計所得489万円超655万円以下');
+    expect(basicDeductionBandLabel(10_000_000)).toBe('合計所得655万円超2,350万円以下');
   });
 });
 

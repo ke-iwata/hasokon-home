@@ -110,9 +110,15 @@ export interface GensenInput {
 }
 
 /** 一致しないときの「よくある理由」 */
-export type MismatchReason = 'adjustment-deduction' | 'previous-employer' | 'not-adjusted';
+export type MismatchReason =
+  | 'housing-loan'
+  | 'adjustment-deduction'
+  | 'previous-employer'
+  | 'not-adjusted';
 
 export const MISMATCH_REASON_TEXT: Record<MismatchReason, string> = {
+  'housing-loan':
+    '住宅借入金等特別控除（住宅ローン控除）を受けている。票の中段「住宅借入金等特別控除の額」に額があれば、上の任意の欄に入れて確かめてください（摘要欄の「控除可能額」ではなく、中段の欄の額です）',
   'adjustment-deduction':
     '所得金額調整控除（23歳未満の扶養親族や特別障害者がいる・給与と年金の両方がある、など）を受けている。票の「所得金額調整控除額」の欄に額があれば、それを入れて確かめてください',
   'previous-employer':
@@ -230,12 +236,14 @@ export function checkGensenChoshuhyo(input: GensenInput): GensenResult {
 
   const reasons: MismatchReason[] = [];
   if (!allOk) {
+    // 4欄だけ写して住宅ローン控除を入れていない人が一番多い（計算が票より大きくなる）
+    if (!taxOk && housingLoan === 0 && t.yearTax > withheldTax) reasons.push('housing-loan');
+    // 所得金額調整控除は②の検算にしか効かない（④は票の②をそのまま使う）ので、②が合わないときだけ出す。
     // 給与所得控除後の金額が表より小さく、調整控除を入れていないなら、それが一番ありそう
     if (!salaryOk && adjustment === 0 && salaryIncome < tableIncome) {
       reasons.push('adjustment-deduction');
     }
     reasons.push('previous-employer', 'not-adjusted');
-    if (!reasons.includes('adjustment-deduction')) reasons.push('adjustment-deduction');
   }
 
   // 所得控除の額の合計額の内訳
@@ -290,10 +298,20 @@ export function checkGensenChoshuhyo(input: GensenInput): GensenResult {
   };
 }
 
-/** 基礎控除の段（「各欄の意味」の説明に使う）。令和8年分の段の上限を返す */
+/**
+ * 基礎控除の段の名前（「各欄の意味」の説明に使う）。
+ * しきい値は持たず、CURRENT_RULES.basicDeduction の額が変わる境目を
+ * BASIC_BAND_EDGES に並べ、tests/gensen-choshuhyo.test.ts が関数の境目と一致するか見張る
+ * （年分を切り替えるときに片方だけ直す事故を防ぐため）。
+ */
+export const BASIC_BAND_EDGES = [4_890_000, 6_550_000, 23_500_000] as const;
+
+const man = (v: number) => `${(v / 10_000).toLocaleString('ja-JP')}万円`;
+
 export function basicDeductionBandLabel(totalIncome: number): string {
-  if (totalIncome <= 4_890_000) return '合計所得489万円以下';
-  if (totalIncome <= 6_550_000) return '合計所得489万円超655万円以下';
-  if (totalIncome <= 23_500_000) return '合計所得655万円超2,350万円以下';
-  return '合計所得2,350万円超';
+  const [a, b, c] = BASIC_BAND_EDGES;
+  if (totalIncome <= a) return `合計所得${man(a)}以下`;
+  if (totalIncome <= b) return `合計所得${man(a)}超${man(b)}以下`;
+  if (totalIncome <= c) return `合計所得${man(b)}超${man(c)}以下`;
+  return `合計所得${man(c)}超`;
 }
