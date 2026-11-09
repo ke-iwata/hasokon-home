@@ -1920,3 +1920,298 @@ label {
     color: #444;
   }
 }
+
+/* ------------------------------------------------------------------
+   ビンゴ抽選機（docs/features/bingo-chusenki.md）
+
+   盤面の色は既存のトークンだけで塗る（暗いテーマで同化させない）。
+   1〜75 の盤面は、広い画面では B〜O の5行×15、スマホでは5列×15行の縦向きに組み替える
+   （横15マスは1マス20pxを割るため）。
+   ------------------------------------------------------------------ */
+
+.bingo-stage {
+  display: grid;
+  gap: 16px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+@media (min-width: 900px) {
+  .bingo-stage {
+    grid-template-columns: minmax(220px, 1fr) 2fr;
+    align-items: start;
+  }
+}
+
+.bingo-now-wrap {
+  text-align: center;
+}
+
+.bingo-now {
+  /* 「O-75」が左の列で折り返さない大きさ */
+  font-size: clamp(3.5rem, 16vw, 6rem);
+  white-space: nowrap;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+  padding: 12px 0;
+}
+
+.bingo-now[data-rolling='true'] {
+  color: var(--muted);
+}
+
+.bingo-draw {
+  min-height: 64px;
+  min-width: 200px;
+  padding: 12px 28px;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: var(--fs-xl);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.bingo-draw:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.bingo-board {
+  display: grid;
+  gap: 4px;
+}
+
+.bingo-board-row {
+  display: grid;
+  gap: 4px;
+}
+
+.bingo-board-letter,
+.bingo-board-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.bingo-board-letter {
+  color: var(--accent-strong);
+  font-size: var(--fs-lg);
+}
+
+.bingo-board-cell {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.bingo-board-cell[data-drawn='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.bingo-board-cell[data-last='true'] {
+  background: var(--cat-mark);
+  border-color: var(--cat-mark);
+  color: var(--bg);
+  outline: 3px solid var(--text);
+  outline-offset: 1px;
+}
+
+/* スマホ：B〜O を列にして縦に 15 行 */
+.bingo-board75 {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.bingo-board75 .bingo-board-row {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 600px) {
+  .bingo-board75 {
+    grid-template-columns: 1fr;
+  }
+
+  .bingo-board75 .bingo-board-row {
+    grid-template-columns: 2rem repeat(15, 1fr);
+  }
+}
+
+/* 全画面（プロジェクター）：いま出た番号と盤面だけ */
+.bingo-stage:fullscreen {
+  padding: 3vh 3vw;
+  background: var(--bg);
+  grid-template-columns: 1fr 2fr;
+  align-items: center;
+}
+
+.bingo-stage:fullscreen .bingo-controls {
+  display: none;
+}
+
+.bingo-stage:fullscreen .bingo-now {
+  font-size: min(22vw, 30vh);
+}
+
+.bingo-stage:fullscreen .bingo-board-cell,
+.bingo-stage:fullscreen .bingo-board-letter {
+  min-height: 7vh;
+  font-size: min(2.6vw, 4vh);
+}
+
+.bingo-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.bingo-history li[data-last='true'] {
+  font-weight: 800;
+  color: var(--accent-strong);
+}
+
+/* カード（画面では小さめ。印刷では 1 マス 18mm 以上） */
+.bingo-card {
+  border: 2px solid var(--text);
+  border-radius: 6px;
+  padding: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.bingo-card-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.bingo-card-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.bingo-card-head,
+.bingo-card-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  font-weight: 800;
+  font-size: var(--fs-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.bingo-card-head {
+  color: var(--accent-strong);
+}
+
+.bingo-card-cell {
+  border: 1px solid var(--text);
+}
+
+.bingo-card-cell[data-free='true'] {
+  font-size: var(--fs-xs);
+}
+
+.bingo-card-cell[data-marked='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.bingo-sheet {
+  display: grid;
+  gap: 16px;
+}
+
+.bingo-page {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+@media print {
+  /* 暗いテーマでも紙は白地・黒字（暗い地のまま刷るとインクを大量に使い、読めないカードになる） */
+  .bingo-sheet {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --text: #000000;
+    --muted: #000000;
+    --border: #000000;
+    --accent-strong: #000000;
+    color: #000000;
+    background: #ffffff;
+    display: block;
+  }
+
+  /* A4 に 2×2 の4枚。カードの周りの破線が切り取り線 */
+  .bingo-page {
+    display: grid;
+    /* 既定の余白（約10mm）を引いた A4 の幅 190mm に 2 列。カード 1 枚は 90mm（18mm×5）＋枠で約 94mm */
+    grid-template-columns: repeat(2, 95mm);
+    grid-auto-rows: 132mm;
+    gap: 0;
+    justify-content: center;
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  .bingo-page:last-child {
+    break-after: auto;
+  }
+
+  .bingo-slot {
+    border: 1px dashed #000000;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .bingo-card {
+    border: 0.5mm solid #000000;
+    border-radius: 0;
+    padding: 1.5mm;
+  }
+
+  .bingo-card-meta {
+    font-size: 10pt;
+    margin-bottom: 1mm;
+  }
+
+  .bingo-card-grid {
+    grid-template-columns: repeat(5, 18mm);
+    grid-auto-rows: 18mm;
+    justify-content: center;
+  }
+
+  .bingo-card-head,
+  .bingo-card-cell {
+    aspect-ratio: auto;
+    font-size: 26pt;
+  }
+
+  .bingo-card-cell {
+    border: 0.3mm solid #000000;
+  }
+
+  .bingo-card-cell[data-free='true'] {
+    font-size: 13pt;
+  }
+}
