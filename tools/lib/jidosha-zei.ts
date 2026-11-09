@@ -31,8 +31,10 @@
  *   - 90条の11：当分の間税率（自家用乗用 3年 12,300円・2年 8,200円／0.5t、軽 9,900円・6,600円）
  *   - 90条の11の3：13年経過（2年 11,400円／0.5t、軽 8,200円）。90条の11の2：18年経過（12,600円、軽 8,800円）。
  *     起点は「初めて登録を受けた日の属する月から起算して十三年（十八年）を経過する月の前月の初日以後」
- *     ＝初度登録から 12年11か月（17年11か月）の月から。軽は初度検査の年から13年（18年）たった年の12月から
- *     （日本自動車検査登録情報協会の案内）
+ *     ＝初度登録から 12年10か月（17年10か月）の月から（2012-06 登録なら 13年経過する月は 2025-05、その前月の
+ *     2025-04 から）。軽は施行令51条の3 2項・3項で初度検査の年から13年（18年）たった年の11月から
+ *     （国土交通省「2026年5月1日からの自動車重量税の税額表」https://www.mlit.go.jp/jidosha/content/001884517.pdf
+ *     の例：2012年6月登録 → 2025-04-01 から、軽 2012年検査 → 2025-11-01 から）
  *   - 90条の12：エコカー減税。令和8年5月1日〜令和10年4月30日の新規検査で 免税・本則の25%・50%・75%。
  *     6項：100円未満の端数は切り捨て。5項：免税を受けた電気自動車等（ガソリン車は燃費基準125%以上）は
  *     初回の継続車検も免税。90条の11 の当分の間税率と 90条の11の2・11の3 の経年の重課は「免税対象車等」
@@ -209,10 +211,19 @@ export const ECO_PERIODS: EcoPeriod[] = [
 /**
  * 継続車検で本則税率になる（免税対象車等に当たる）2030年度基準の達成率の下限。
  * 90条の11 が当分の間税率から除くのは90条の12 1〜4項の各号の車で、いちばん低いのが4項（▲25%）の
- * 85%（2027-04-30 までは 80%）。同じ理由で13年・18年の重課（90条の11の2・90条の11の3）からも除かれる
+ * 85%（2027-04-30 までは 80%）。同じ理由で13年・18年の重課（90条の11の2・90条の11の3）からも除かれる。
+ * 2026-04-30 までの車検は改正前の基準なので、`ECO_PERIODS` の r7 の本則（75%）を返す
+ * （r7 より前の月も r7 で代用する。過去の月の目安なので影響は小さい）。
+ * 2027-05 以後を 85% にしているのは条文の字面どおり。国交省の税額表は 2028-04 まで 80% としていて、
+ * どちらに合わせるかは一次確認待ち（docs/features/kokai-tool-seikaku-2026-11-09.md の B）
  */
 export function honsokuThresholdAt(inspectionYm: string): number {
-  return ymIndex(inspectionYm) <= ymIndex('2027-04') ? 80 : 85;
+  const at = ymIndex(inspectionYm);
+  if (at <= ymIndex('2026-04')) {
+    const r7 = ECO_PERIODS.find((p) => p.id === 'r7');
+    if (r7?.thresholds.honsoku != null) return r7.thresholds.honsoku;
+  }
+  return at <= ymIndex('2027-04') ? 80 : 85;
 }
 
 /** 初回の継続車検も免税になる達成率（90条の12 5項。新車のとき免税を受けたガソリン車など） */
@@ -451,24 +462,25 @@ export function ageBandAt(kind: CarKind, firstRegistered: string, inspectionYm: 
   const reg = ymIndex(firstRegistered);
   const at = ymIndex(inspectionYm);
   if (kind === 'kei') {
-    // 軽は初度検査の「年」で数え、13年（18年）たった年の12月から
+    // 軽は初度検査の「年」で数え、13年（18年）たった年の11月から（施行令51条の3。月の添字 10＝11月）
     const y = Math.floor(reg / 12);
-    if (at >= (y + 18) * 12 + 11) return 'over18';
-    if (at >= (y + 13) * 12 + 11) return 'over13';
+    if (at >= (y + 18) * 12 + 10) return 'over18';
+    if (at >= (y + 13) * 12 + 10) return 'over13';
     return 'under13';
   }
-  // 「十三年を経過する月の前月の初日以後」＝登録から 12年11か月の月から
-  if (at >= reg + 18 * 12 - 1) return 'over18';
-  if (at >= reg + 13 * 12 - 1) return 'over13';
+  // 「十三年を経過する月の前月の初日以後」＝登録から 12年10か月の月から
+  // （登録月から起算して13年を経過する月は reg + 13*12 - 1、その前月は - 2）
+  if (at >= reg + 18 * 12 - 2) return 'over18';
+  if (at >= reg + 13 * 12 - 2) return 'over13';
   return 'under13';
 }
 
-/** 経年の重課が始まる車検の月（13年・18年）。登録車は 12年11か月・17年11か月の月 */
+/** 経年の重課が始まる車検の月（13年・18年）。登録車は 12年10か月・17年10か月の月、軽はその年の11月 */
 export function ageBandStart(kind: CarKind, firstRegistered: string, band: 'over13' | 'over18'): string {
   const reg = ymIndex(firstRegistered);
   const years = band === 'over13' ? 13 : 18;
-  if (kind === 'kei') return ymFromIndex((Math.floor(reg / 12) + years) * 12 + 11);
-  return ymFromIndex(reg + years * 12 - 1);
+  if (kind === 'kei') return ymFromIndex((Math.floor(reg / 12) + years) * 12 + 10);
+  return ymFromIndex(reg + years * 12 - 2);
 }
 
 export type EvSurcharge =
