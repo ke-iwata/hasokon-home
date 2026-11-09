@@ -211,26 +211,50 @@ describe('重量税', () => {
     expect(inspectionMonths('2020-04', '2027-04', 1)).toEqual(['2027-04']);
   });
 
-  test('13年の境目：登録から 12年11か月の月から（H11.6 登録 → H24.5 から）', () => {
-    expect(ageBandStart('futsu', '1999-06', 'over13')).toBe('2012-05');
-    expect(ageBandAt('futsu', '2013-06', '2026-04')).toBe('under13');
-    expect(ageBandAt('futsu', '2013-06', '2026-05')).toBe('over13');
-    expect(juryozei(futsu({ firstRegistered: '2013-06' }), '2026-05')).toMatchObject({ rate: 'over13', yen: 11400 * 3 });
+  test('13年の境目：登録から 12年10か月の月から（国交省の例：2012-06 登録 → 2025-04 から）', () => {
+    expect(ageBandStart('futsu', '2012-06', 'over13')).toBe('2025-04');
+    expect(ageBandAt('futsu', '2012-06', '2025-03')).toBe('under13');
+    expect(ageBandAt('futsu', '2012-06', '2025-04')).toBe('over13');
+    expect(ageBandStart('futsu', '1999-06', 'over13')).toBe('2012-04');
+    expect(ageBandStart('futsu', '2013-06', 'over13')).toBe('2026-04');
+    // 満了の前倒しで 2026-04 に受けた車検も 13年経過
+    expect(ageBandAt('futsu', '2013-06', '2026-03')).toBe('under13');
+    expect(juryozei(futsu({ firstRegistered: '2013-06' }), '2026-04')).toMatchObject({ rate: 'over13', yen: 11400 * 3 });
   });
 
-  test('18年の境目：17年11か月の月から 12,600円／0.5t', () => {
-    expect(ageBandAt('futsu', '2008-06', '2026-04')).toBe('over13');
-    expect(ageBandAt('futsu', '2008-06', '2026-05')).toBe('over18');
+  test('18年の境目：17年10か月の月から 12,600円／0.5t', () => {
+    expect(ageBandStart('futsu', '2007-06', 'over18')).toBe('2025-04');
+    expect(ageBandAt('futsu', '2007-06', '2025-03')).toBe('over13');
+    expect(ageBandAt('futsu', '2007-06', '2025-04')).toBe('over18');
+    expect(ageBandAt('futsu', '2008-06', '2026-03')).toBe('over13');
+    expect(ageBandAt('futsu', '2008-06', '2026-04')).toBe('over18');
     expect(juryozei(futsu({ firstRegistered: '2008-06' }), '2026-05').yen).toBe(12600 * 3);
   });
 
-  test('軽：初度検査の年から13年（18年）たった年の12月から', () => {
-    expect(ageBandAt('kei', '2013-01', '2026-11')).toBe('under13');
-    expect(ageBandAt('kei', '2013-12', '2026-12')).toBe('over13');
-    expect(ageBandAt('kei', '2008-03', '2026-12')).toBe('over18');
+  test('軽：初度検査の年から13年（18年）たった年の11月から（施行令51条の3・国交省の例：2012年 → 2025-11）', () => {
+    expect(ageBandStart('kei', '2012-01', 'over13')).toBe('2025-11');
+    expect(ageBandStart('kei', '2012-12', 'over13')).toBe('2025-11');
+    expect(ageBandAt('kei', '2012-12', '2025-10')).toBe('under13');
+    expect(ageBandAt('kei', '2012-01', '2025-11')).toBe('over13');
+    expect(ageBandStart('kei', '2007-03', 'over18')).toBe('2025-11');
+    expect(ageBandAt('kei', '2007-03', '2025-10')).toBe('over13');
+    expect(ageBandAt('kei', '2007-03', '2025-11')).toBe('over18');
+    expect(ageBandAt('kei', '2013-01', '2026-10')).toBe('under13');
+    expect(ageBandAt('kei', '2013-11', '2026-11')).toBe('over13');
+    expect(ageBandAt('kei', '2008-03', '2026-11')).toBe('over18');
+    expect(juryozei(kei({ firstRegistered: '2013-11' }), '2026-11').yen).toBe(8200);
+    expect(juryozei(kei({ firstRegistered: '2008-03' }), '2026-11').yen).toBe(8800);
     expect(juryozei(kei({ firstRegistered: '2020-04' }), '2027-04').yen).toBe(6600);
     expect(juryozei(kei({ firstRegistered: '2013-01' }), '2027-01').yen).toBe(8200);
     expect(juryozei(kei({ firstRegistered: '2008-01' }), '2027-01').yen).toBe(8800);
+  });
+
+  test('2026-04 以前の車検は改正前の本則の基準（r7 の 75%）', () => {
+    expect(honsokuThresholdAt('2026-04')).toBe(75);
+    expect(honsokuThresholdAt('2025-05')).toBe(75);
+    expect(honsokuThresholdAt('2026-05')).toBe(80);
+    expect(juryozei(futsu({ fuelRate2030: 77 }), '2026-04').rate).toBe('honsoku');
+    expect(juryozei(futsu({ fuelRate2030: 77 }), '2026-05').rate).not.toBe('honsoku');
   });
 
   test('その車検のときに免税対象車等なら本則（2年 5,000円／0.5t）で、経年の重課もない', () => {

@@ -197,6 +197,8 @@ export default function Calculator() {
             />
             <p className="hint">
               繰越分から取った日も含めてください。半日は0.5日で数えます。時間単位で取った分は年5日に数えられないので、含めずに入れてください。
+              <br />
+              時間単位で取った分は、残りの日数からは引いてください（年5日の数には入りません）。
             </p>
           </div>
           <div className="field">
