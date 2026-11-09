@@ -98,6 +98,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/bingo-chusenki.md
+    slug: 'bingo',
+    icon: 'GridFour',
+    name: 'ビンゴ抽選機・ビンゴカード',
+    description:
+      'ビンゴの番号を重複なく引いて大きく映せる抽選機。番号つきのカードをA4に4枚ずつ印刷でき、カード番号を入れると本当にビンゴかを確かめられます。',
+    category: '決める・選ぶ',
+    stage: 'wip',
+    updatedAt: '2026-11-09',
+  },
+  {
     slug: 'dice',
     icon: 'DiceFive',
     name: 'サイコロ',
