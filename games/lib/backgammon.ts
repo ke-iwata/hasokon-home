@@ -455,23 +455,32 @@ export function endTurn(state: BgState): BgState {
 /**
  * 選んだ駒の行き先の候補。**行き先ごとに1つ**（重複させない）。
  * 2つ以上の目を合わせた行き先は、途中で止まれる場合だけ出す。
- * 値はその行き先までの1歩の並び（短い順・小さい目から先に探す）
+ * 値はその行き先までの1歩の並び（短い順・小さい目から先に探す）。
+ *
+ * **同じ行き先に、途中で相手のブロットを打つ道と打たない道があるときは、打たない道を採る。**
+ * 2本は別の局面になる（`legalMoves` も別の手として分けている）ので、黙って打たせない。
+ * 打ちたいときは、そのブロットのポイントで止まれば打てる（打つのは本人が選んだときだけ）
  */
 export function destinations(state: BgState, from: number): Map<number, Step[]> {
   const out = new Map<number, Step[]>();
+  const hits = (path: Step[]) => path.filter((s) => s.hit).length;
   let frontier: { state: BgState; at: number; path: Step[] }[] = [{ state, at: from, path: [] }];
   while (frontier.length > 0) {
-    const next: typeof frontier = [];
+    // 同じ段（同じ歩数）で届く行き先ごとに、打つ数の少ない道を1本選ぶ
+    const level = new Map<number, { state: BgState; at: number; path: Step[] }>();
     for (const f of frontier) {
       for (const s of nextSteps(f.state)) {
-        if (s.from !== f.at) continue;
+        if (s.from !== f.at || out.has(s.to)) continue;
         const path = [...f.path, s];
-        if (!out.has(s.to)) {
-          out.set(s.to, path);
-          const after = playStep(f.state, s);
-          if (s.to !== OFF && after.phase === 'move') next.push({ state: after, at: s.to, path });
-        }
+        const prev = level.get(s.to);
+        if (prev && hits(prev.path) <= hits(path)) continue;
+        level.set(s.to, { state: playStep(f.state, s), at: s.to, path });
       }
+    }
+    const next: typeof frontier = [];
+    for (const [to, entry] of level) {
+      out.set(to, entry.path);
+      if (to !== OFF && entry.state.phase === 'move') next.push(entry);
     }
     frontier = next;
   }

@@ -499,7 +499,8 @@ export default function Game() {
     const [a, b] = game.opening;
     const who = names[game.turn];
     message = `先手決め：${names[0]} ${a}・${names[1]} ${b} → ${who}の先手。`;
-    message += cpuTurn ? '「スタート」で始めます' : '「振る」でこの2つの目で指します';
+    // 320px 幅でも2行に収まる長さにする（.result-row は2行固定）
+    message += cpuTurn ? '「スタート」で始めます' : '「振る」で始めます';
   } else if (game.phase === 'roll') {
     message = cpuTurn ? 'CPUが振ります…' : `${names[game.turn]}の番です。「振る」を押してください`;
   } else if (game.phase === 'move') {

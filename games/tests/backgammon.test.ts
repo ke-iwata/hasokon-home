@@ -209,6 +209,22 @@ describe('同じ局面になる手は1つにまとめる', () => {
     expect(d.get(17)).toHaveLength(2);
   });
 
+  it('同じ行き先に打つ道と打たない道があれば、打たない道を採る', () => {
+    // 6-1、自分の 13 に駒・自分の 12 に相手のブロット・7 は空き。
+    // 13→12（打つ）→6 と 13→7→6（打たない）は別の局面。候補の「6」は打たない道
+    const me = mk({ 13: 1, 6: 2, [OFF]: 12 });
+    const opp = mk({ [25 - 12]: 1, [OFF]: 14 });
+    const state = rolled(me, opp, [6, 1]);
+    const d = destinations(state, 13);
+    expect(d.get(12)?.[0].hit).toBe(true);
+    const to6 = d.get(6)!;
+    expect(to6.map((s) => s.to)).toEqual([7, 6]);
+    expect(to6.some((s) => s.hit)).toBe(false);
+    // 2本は別の局面として合法手に残っている
+    const both = legalMoves(me, opp, [6, 1]).filter((m) => m.me[6] === 3 && m.me[13] === 0);
+    expect(both).toHaveLength(2);
+  });
+
   it('途中で止まれない合わせ技は候補に出ない', () => {
     // 24 から 6-5：18 も 19 もふさがっていれば 13 には届かない
     const opp = initialCheckers();
