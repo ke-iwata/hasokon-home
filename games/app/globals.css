@@ -9420,3 +9420,260 @@ button.hf-card {
     font-size: 0.8rem;
   }
 }
+
+/* ---- バックギャモン（app/backgammon/Game.tsx。docs/features/game-backgammon.md） ----
+
+   盤は SVG 1枚（343×262 の座標を幅に合わせて伸ばす）。
+   **盤・サイコロとピップの行・ボタンの行は `height` で固定**し、サイコロの有無や
+   ピップの桁が変わっても盤より下が動かないようにする（cpu-speed.md の約束）。
+   ドラッグとスクロールを取り合わないよう、盤の上だけ `touch-action: none`。
+   パソコンでは盤の右にサイコロ・ピップ・ボタンを縦に並べる */
+.bg-game {
+  --chrome: 330px;
+  --board-max: 600px;
+}
+
+.bg-play {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'info' 'board' 'actions';
+  gap: 8px;
+}
+
+.bg-info {
+  grid-area: info;
+  height: 34px;
+  line-height: 1.2;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.bg-pip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-pip b {
+  color: var(--text);
+  display: inline-block;
+  min-width: 2.2em;
+}
+
+.bg-chip {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+}
+
+.bg-chip.side0 {
+  background: var(--text);
+  border: 1px solid var(--text);
+}
+
+.bg-chip.side1 {
+  background: var(--surface);
+  border: 3px solid var(--text);
+}
+
+.bg-dice {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 28px;
+}
+
+.bg-die-face {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.bg-die-pip {
+  fill: var(--text);
+}
+
+.bg-die.used {
+  opacity: 0.3;
+}
+
+.bg-board-wrap {
+  grid-area: board;
+}
+
+.bg-board {
+  display: block;
+  width: 100%;
+  /* 横長の盤（343:262）なので、高さの上限から幅を出すときは比を掛ける */
+  max-width: min(var(--board-max), max(300px, calc((100dvh - var(--chrome)) * 1.309)));
+  height: auto;
+  aspect-ratio: 343 / 262;
+  margin: 0 auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.bg-diagram {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+  margin: 8px auto 12px;
+}
+
+.bg-felt {
+  fill: var(--surface-2);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.bg-barcol {
+  fill: color-mix(in srgb, var(--text) 14%, var(--surface-2));
+}
+
+.bg-tray {
+  fill: color-mix(in srgb, var(--text) 8%, var(--surface-2));
+}
+
+.bg-tri.a {
+  fill: color-mix(in srgb, var(--accent) 55%, var(--surface-2));
+}
+
+.bg-tri.b {
+  fill: color-mix(in srgb, var(--muted) 45%, var(--surface-2));
+}
+
+.bg-col {
+  fill: transparent;
+}
+
+/* 動かせる駒の列・選んだ列・行き先の列。色だけに頼らないよう、行き先は枠線も付ける */
+.bg-col.src {
+  fill: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.bg-col.sel {
+  fill: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.bg-col.dst {
+  fill: color-mix(in srgb, var(--accent) 26%, transparent);
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 4 2;
+}
+
+.bg-label {
+  font-size: 8px;
+  fill: var(--muted);
+  pointer-events: none;
+}
+
+/* 駒は2色＋縁取り。片方は塗り、片方は白地に太い縁（色だけに頼らない） */
+.bg-checker {
+  pointer-events: none;
+}
+
+.bg-checker.side0 {
+  fill: var(--text);
+  stroke: var(--text);
+  stroke-width: 1;
+}
+
+.bg-checker.side1 {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 3;
+}
+
+.bg-checker.ghost {
+  opacity: 0.75;
+}
+
+.bg-count {
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.bg-count.side0 {
+  fill: var(--surface);
+}
+
+.bg-count.side1 {
+  fill: var(--text);
+}
+
+.bg-actions {
+  grid-area: actions;
+  height: 48px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-actions .btn {
+  min-height: 44px;
+  padding-inline: 14px;
+  white-space: nowrap;
+}
+
+/* パソコン：盤を大きく、右にサイコロ・ピップ・ボタン */
+@media (min-width: 720px) {
+  .bg-play {
+    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-areas: 'board info' 'board actions';
+    grid-template-rows: 150px 1fr;
+    column-gap: 12px;
+  }
+
+  .bg-info {
+    height: 150px;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: stretch;
+  }
+
+  .bg-dice {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    height: 60px;
+  }
+
+  .bg-actions {
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 600px) {
+  .bg-game {
+    --chrome: 300px;
+  }
+
+  .bg-game .seg button {
+    padding-inline: 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .bg-actions .btn {
+    padding-inline: 10px;
+    font-size: 0.85rem;
+  }
+}
