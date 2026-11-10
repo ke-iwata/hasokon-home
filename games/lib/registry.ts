@@ -345,6 +345,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-11-03',
   },
   {
+    // バックギャモン（docs/features/game-backgammon.md）。数千年前からある盤上遊戯の一般名で、ルールに権利は無い。
+    // **名称と slug の J-PlatPat 確認（第9類・第28類・第41類）は運営者のタスク**で、済むまで `wip`
+    // （支障があれば name を「すごろく（盤双六）」、slug を `ban-sugoroku` にする。`wip` のうちに確定させる）。
+    // 他社のアプリ名・サイト名は表示名にも本文にも使わない。評価関数は自前（GPL のコード・重みは移植しない）。
+    // カードの絵（GamePreview・GameIcon の BOARD）は `public` にするPRで描く
+    slug: 'backgammon',
+    icon: 'Backgammon',
+    name: 'バックギャモン',
+    description:
+      'サイコロ2個の目で15個の駒を回し、先に全部上げきったほうが勝つ古典ボードゲーム。CPUは かんたん・ふつう・つよい の3段階、2人で対戦も。動かせる駒と行き先が光ります。',
+    keywords: ['ピップカウント', 'ベアオフ', 'ヒット', 'エンター', 'ギャモン', 'ゾロ目', 'ブロット'],
+    stage: 'wip',
+    updatedAt: '2026-11-10',
+  },
+  {
     // 「大富豪（大貧民）」は日本の伝統的なトランプ遊びの一般名称で、ルールも名称も
     // パブリックドメイン。商標の問題は無い
     // （docs/features/game-daifugo.md の「権利面が完全にクリーン」）

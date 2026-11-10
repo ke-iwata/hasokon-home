@@ -11,6 +11,7 @@ import {
   DotsNineIcon,
   DotsSixIcon,
   DiceFiveIcon,
+  DiceTwoIcon,
   GraphIcon,
   GridFourIcon,
   GridNineIcon,
@@ -1248,6 +1249,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   Hanoi: StackIcon,
   // 四目並べ。市販品の青い枠・赤と黄のコマはまねず、4 つの丸で表す（盤面の絵は `public` にするPRで描く）
   YonmokuNarabe: CirclesFourIcon,
+  // バックギャモン。市販の盤の意匠はまねず、2個のサイコロで表す（盤面の絵は `public` にするPRで描く）
+  Backgammon: DiceTwoIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
