@@ -839,6 +839,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/bmi-tekisei-taiju.md
+    // 公開条件：テスト環境で係数表と判定の境目（帯の 375px・360px の見え方も）を確かめたら public に
+    // （2027-01 第2週までに本番へ）。public にする PR でホームのカードと ToolPreview・ToolArt の絵を足す
+    slug: 'bmi',
+    icon: 'PersonSimple',
+    name: 'BMI・適正体重 計算機',
+    description:
+      '身長と体重から BMI と日本肥満学会の判定、標準体重（BMI 22）と普通体重に入る体重の幅を計算。年齢を入れると食事摂取基準（2025年版）の年代別の目標 BMI で見直し、5〜17歳は学校健診の肥満度で判定します。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-10',
+  },
+  {
     slug: 'sleep-cycle',
     icon: 'MoonStars',
     name: '睡眠サイクル計算機',
