@@ -253,6 +253,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-16',
   },
   {
+    // 仕様: docs/features/inshi-zei-keisan.md
+    // 公開条件：テスト環境で境目（5万円・10万円・100万円・2027-04-01）を確かめたら public に
+    // （2026-12 第3週の令和9年度税制改正大綱までに本番へ）。public にする PR でホームのカードと ToolPreview・ToolArt の絵を足す
+    slug: 'inshi-zei',
+    // 文書に貼る収入印紙なので Stamp
+    icon: 'Stamp',
+    name: '収入印紙（印紙税）計算機',
+    description:
+      '領収書・不動産の売買契約書・工事の請負契約書・請負契約書に貼る印紙の額を、金額・作成日・通数から計算。2027年3月31日で切れる軽減措置を作成日で出し分け、税抜で判定できる書き方・電子契約は不要なこと・貼り忘れの過怠税まで答えます。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-11-11',
+  },
+  {
     // 仕様: docs/features/shokyaku-shisanzei.md
     slug: 'shokyaku-shisanzei',
     // 事業で持っている物（資産）にかかる税なので Package
