@@ -270,7 +270,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール88本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo` が `wip`。ほかの71本は `public`。
+- **ツール89本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo`・`base64` が `wip`。ほかの71本は `public`。
   `gensen-choshuhyo`（源泉徴収票の見方と検算）は運営者がテスト環境で検算ケースを確かめたら、遅くとも 12-20 までに `public` にする。
   `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。

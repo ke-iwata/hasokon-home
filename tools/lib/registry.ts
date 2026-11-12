@@ -1053,6 +1053,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-07',
   },
   {
+    // 仕様: docs/features/base64-henkan.md
+    slug: 'base64',
+    icon: 'Binary',
+    name: 'Base64 エンコード・デコード',
+    description:
+      'Base64を貼るだけで向きを自動判定し、日本語も文字化けさせずに戻します。UTF-8・Shift_JIS・ISO-2022-JPを自動判別、メール件名の=?ISO-2022-JP?B?…?=、base64url、data:画像のプレビューとファイル化まで。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-12',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
