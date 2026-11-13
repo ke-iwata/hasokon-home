@@ -74,6 +74,7 @@
 
   ```ts
   // 出典: 資源エネルギー庁「電気・ガス料金支援」https://denkigas-gekihenkanwa.go.jp/（2026-11-13 確認）
+  // ↑ 実装の時点で公式ページをもう一度開いて単価を確かめ、確かめた日に書き換える
   export const SHIEN_PERIODS = [
     { usageMonth: '2026-12', lowVoltageYenPerKwh: 1.0, cityGasYenPerM3: 4.0 },
     { usageMonth: '2027-01', lowVoltageYenPerKwh: 4.5, cityGasYenPerM3: 18.0 },
