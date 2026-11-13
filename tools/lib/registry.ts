@@ -320,6 +320,16 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-05',
   },
   {
+    slug: 'hoshu-kyugen-tokurei',
+    icon: 'TrendDown',
+    name: '報酬急減の特例改定 判定・保険料計算機',
+    description:
+      '療養・育児・介護のための時短や残業の抑制で給料が下がったら、2027年1月から翌月に標準報酬月額を下げられる特例に当たるかを判定。保険料が月いくら・何か月早く下がるかと、引き換えに減る年金・傷病手当金・出産手当金（3歳未満の子は養育特例で年金を守れる）を出します。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-11-13',
+  },
+  {
     slug: 'kosei-nenkin-jogen',
     icon: 'TrendUp',
     name: '厚生年金 上限引き上げ 計算機',
