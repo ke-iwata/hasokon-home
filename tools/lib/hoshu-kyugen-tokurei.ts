@@ -667,5 +667,16 @@ export function ymJa(ym: YearMonth): string {
   return `${y}年${m}月`;
 }
 
+/**
+ * 計算機の「報酬減となった初月」の既定：今月 `thisMonth` の翌月。ただし特例の適用（2027-01）より前なら 2027-01。
+ * 公開直後（2026-12）に開いた人の最初の判定が「対象外」にならないように（#500 レビュー）。
+ * 2026-12 以前を選び直したときは、`evaluate` が適用期日の注記を出す
+ */
+export function defaultFirstMonth(thisMonth: YearMonth): YearMonth {
+  const next = addMonthsYm(thisMonth, 1);
+  const effective = TOKUREI_EFFECTIVE_FROM.slice(0, 7);
+  return next < effective ? effective : next;
+}
+
 /** 翌月徴収のとき、その月分の保険料が引かれる給与の月 */
 export const deductedIn = (ym: YearMonth): YearMonth => addMonthsYm(ym, 1);

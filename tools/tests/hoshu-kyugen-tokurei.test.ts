@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   acceleration,
+  defaultFirstMonth,
   evaluate,
   gradeDrop,
   healthGrades,
@@ -148,6 +149,16 @@ describe('判定（仕様「確かめること」）', () => {
       'grade-drop',
       'retire',
     ]);
+  });
+});
+
+describe('初月の既定', () => {
+  it('今日の翌月。ただし2027-01より前なら2027-01（公開直後の最初の判定を「対象外」にしない）', () => {
+    expect(defaultFirstMonth('2026-11')).toBe('2027-01');
+    expect(defaultFirstMonth('2026-12')).toBe('2027-01');
+    expect(defaultFirstMonth('2027-01')).toBe('2027-02');
+    expect(defaultFirstMonth('2027-12')).toBe('2028-01');
+    expect(evaluate({ ...base, firstMonth: defaultFirstMonth('2026-12') }).eligible).toBe(true);
   });
 });
 

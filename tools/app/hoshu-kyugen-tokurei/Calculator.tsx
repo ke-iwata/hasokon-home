@@ -16,6 +16,7 @@ import {
   REASON_LABELS,
   rowOfStandard,
   specialThresholds,
+  defaultFirstMonth,
   ymJa,
   type Adjustment,
   type Premiums,
@@ -26,7 +27,7 @@ import {
 const yen = (n: number) => `${Math.round(n).toLocaleString('ja-JP')}円`;
 const num = (s: string) => Math.max(0, Number(s) || 0);
 const pad = (n: number) => String(n).padStart(2, '0');
-const nextMonthOf = (d: Date) => addMonthsYm(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`, 1);
+const thisMonthOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
 
 const SLUG = 'hoshu-kyugen-tokurei';
 const TOP_THRESHOLD = specialThresholds(healthGrades()).top;
@@ -49,7 +50,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const [formerText, setFormerText] = useState('300000');
   const [formerTop, setFormerTop] = useState(false);
   const [payText, setPayText] = useState('220000');
-  const [firstMonth, setFirstMonth] = useState(() => nextMonthOf(new Date(buildDate)));
+  const [firstMonth, setFirstMonth] = useState(() => defaultFirstMonth(thisMonthOf(new Date(buildDate))));
   const [adjustment, setAdjustment] = useState<Adjustment>('zangyo');
   const [baseDaysText, setBaseDaysText] = useState('20');
   const [shortTime, setShortTime] = useState(false);
@@ -63,7 +64,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const [ikujiBaseText, setIkujiBaseText] = useState('');
 
   useEffect(() => {
-    setFirstMonth(nextMonthOf(new Date()));
+    setFirstMonth(defaultFirstMonth(thisMonthOf(new Date())));
   }, []);
 
   const formerInput = num(formerText);
@@ -354,7 +355,7 @@ function PremiumTable({ before, after }: { before: Premiums; after: Premiums }) 
   const rows: [string, number, number][] = [
     ['健康保険', before.health, after.health],
     ['介護保険', before.kaigo, after.kaigo],
-    ['子ども・子育て支援金', before.shienkin, after.shienkin],
+    ['支援金', before.shienkin, after.shienkin],
     ['厚生年金', before.pension, after.pension],
     ['合計', before.total, after.total],
   ];
@@ -384,6 +385,7 @@ function PremiumTable({ before, after }: { before: Premiums; after: Premiums }) 
             ))}
         </tbody>
       </table>
+      <p className="hint" style={{ marginTop: 4 }}>支援金＝子ども・子育て支援金</p>
     </div>
   );
 }
