@@ -879,10 +879,13 @@ export const tools: ToolDef[] = [
     slug: 'aircon-denkidai',
     icon: 'Snowflake',
     name: 'エアコン電気代 計算機',
-    description: 'エアコンの消費電力と使用時間から、1日・1ヶ月の電気代を計算。',
+    // 仕様: docs/features/aircon-denkidai-fuyu-hojo.md
+    // 2027-05-01 の後の再リリースで、説明文から「電気代の補助」を外す（暖房の語は残す）
+    description:
+      'エアコンの消費電力と使用時間から、冷房・暖房の1日・1ヶ月の電気代を計算。2026年12月〜2027年2月使用分の電気代の補助（電気・ガス料金支援）の値引き後の額と、検針票の使用量からの値引き額も。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-11-13',
   },
   {
     // 仕様: docs/features/gasoline-dai-keisan.md
