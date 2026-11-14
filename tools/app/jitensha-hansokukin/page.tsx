@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import { SYSTEM, VIOLATION_COUNT } from '@/lib/jitensha-hansokukin';
 import Calculator from './Calculator';
 
@@ -205,6 +206,12 @@ export default function Page() {
         <Link href="/interval-timer/">インターバルタイマー</Link>／
         <Link href="/aircon-denkidai/">エアコン電気代 計算機</Link>
       </p>
+
+      <PublicToolLink slug="menkyo-koshin">
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          免許の更新期間・年末年始の延長を日付で：<ToolLink slug="menkyo-koshin">運転免許の更新期間 計算機</ToolLink>
+        </p>
+      </PublicToolLink>
 
       <ToolMeta slug="jitensha-hansokukin" ymyl="legal">
         出典：警察庁「
