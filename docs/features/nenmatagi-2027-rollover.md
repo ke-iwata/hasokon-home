@@ -78,6 +78,7 @@ FAQ は `FAQPage` の JSON-LD にも出ている。2027 年に「令和9年は�
 | `seimei-hokenryo-kojo.ts` `DEFAULT_YEAR` | 2026 | 上げない | 1〜3月は令和8年分の確定申告で使う |
 | `nenkin-gensen.ts` `SETTLEMENT_YEAR` | 2026 | 上げない | 令和8年分の精算の説明 |
 | `toshi-iwai.ts` `SHICHIGOSAN_YEAR`・`YAKUDOSHI_YEAR` | 2026・2027 | 上げない | 「今年か翌年」で見張り済み。七五三は 2027-11-16 以降に 2027→2028 |
+| `hinode.ts` `HATSUHINODE_YEAR` | 2027 | 上げない（**毎年 11-15** に翌年へ） | 日の出・日の入り 計算機の初日の出の年。元日は山の真っ最中なので据え置き、次の初日の出の6週前（11-15）に上げる。元日に落ちる検査は入れていない（[hinode-hinoiri-keisan.md](./hinode-hinoiri-keisan.md)） |
 | `boei-tokubetsu-shotokuzei.ts` `DEFENSE_START_YEAR` | 2027 | 上げない | 施行年そのもの。ページの文面は [r8-12gatsu-1gatsu-shikogo-copy.md](./r8-12gatsu-1gatsu-shikogo-copy.md) と同じ「施行後の文面」の扱いで要確認 |
 
 **表の対象外**：同じ grep に引っかかる `zoyozei-keisan.ts` の `HAYAMI_YEARS`・`jutaku-loan-kojo.ts` の `MOVE_IN_YEARS`・`invoice-nozeigaku.ts` の `NIWARI_YEARS` のような

@@ -890,6 +890,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-10',
   },
   {
+    slug: 'hinode-hinoiri',
+    // 地平線から昇る太陽の絵で SunHorizon
+    icon: 'SunHorizon',
+    name: '日の出・日の入り 計算機',
+    // 年は書かない（page.tsx の title・description は HATSUHINODE_YEAR から組み立てる）
+    description:
+      '都道府県庁所在地（47地点）か緯度・経度と日付から、日の出・南中・日の入り・昼の長さ・方位を分単位で計算。1か月の表、冬至・初日の出・夏至のボタン、初日の出の時刻を47都道府県で早い順に並べた一覧も。位置情報は使いません。',
+    category: '生活・健康',
+    // 2026-12-12 までに本番へ（仕様書の「状態」。初日の出・冬至の検索は12月第2週から立つ）。
+    // テスト環境で仕様書の「確かめること」を通してから、`public` にする PR で
+    // home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'wip',
+    updatedAt: '2026-11-14',
+  },
+  {
     slug: 'sleep-cycle',
     icon: 'MoonStars',
     name: '睡眠サイクル計算機',
