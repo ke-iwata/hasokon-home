@@ -57,7 +57,10 @@ export const LAPSE_UNAVOIDABLE_YEARS = 3;
  * 次の有効期間の誕生日の回数（第95条の6第1項の表）。
  * 優良・一般運転者は更新日等の年齢で 5・4・3、違反運転者等（継続5年未満の初回更新を含む）は3
  */
-export const BIRTHDAYS_BY_AGE: ReadonlyArray<{ maxAge: number; birthdays: number }> = [
+export const BIRTHDAYS_BY_AGE: ReadonlyArray<{
+  maxAge: number;
+  birthdays: number;
+}> = [
   { maxAge: 69, birthdays: 5 },
   { maxAge: 70, birthdays: 4 },
   { maxAge: Infinity, birthdays: 3 },
@@ -105,7 +108,10 @@ function nthBirthdayAfter(birth: DateParts, date: DateParts, n: number): DatePar
 
 /** 12/29〜1/3 か（施行令第33条の8第3号） */
 export function isYearEndHoliday(p: DateParts): boolean {
-  return (p.month === YEAR_END_FROM.month && p.day >= YEAR_END_FROM.day) || (p.month === YEAR_END_TO.month && p.day <= YEAR_END_TO.day);
+  return (
+    (p.month === YEAR_END_FROM.month && p.day >= YEAR_END_FROM.day) ||
+    (p.month === YEAR_END_TO.month && p.day <= YEAR_END_TO.day)
+  );
 }
 
 /** 末日が延びる理由（'土曜' '日曜' '年末年始' '憲法記念日' など）。延びない日なら null */
@@ -190,6 +196,17 @@ export function estimatedExpiry(birth: DateParts, renewalYear: number): DatePart
   return addMonths(licenseBirthday(birth, renewalYear), EXPIRY_MONTHS_AFTER_BIRTHDAY);
 }
 
+/**
+ * 今日以降で最初に来る「誕生日の1か月後」の日。画面を開いた瞬間の例に使う
+ * （既定値を固定の日付にすると、日がたつと「期限を過ぎています」が出てしまう。#503 レビュー必須1）
+ */
+export function upcomingExpiry(birth: DateParts, today: DateParts): DateParts {
+  for (let year = today.year - 1; ; year++) {
+    const e = estimatedExpiry(birth, year);
+    if (compareDate(e, today) >= 0) return e;
+  }
+}
+
 /** 券面の有効期限が「誕生日の1か月後」の形になっているか（なっていなければ確かめてもらう） */
 export function isRegularExpiry(birth: DateParts, expiry: DateParts): boolean {
   const birthday = birthdayBefore(birth, expiry);
@@ -255,7 +272,9 @@ export function nextExpiry(birth: DateParts, expiry: DateParts, renewalDate: Dat
   const ageBase = !early && compareDate(renewalDate, w.birthday) >= 0 ? addDays(w.birthday, -1) : renewalDate;
   const age = ageAt(birth, ageBase);
   const birthdays =
-    term === 'three' ? BIRTHDAYS_THREE_YEAR : (BIRTHDAYS_BY_AGE.find((r) => age <= r.maxAge) as { birthdays: number }).birthdays;
+    term === 'three'
+      ? BIRTHDAYS_THREE_YEAR
+      : (BIRTHDAYS_BY_AGE.find((r) => age <= r.maxAge) as { birthdays: number }).birthdays;
   const base = early ? renewalDate : expiry;
   const nth = nthBirthdayAfter(birth, base, birthdays);
   return {
@@ -273,22 +292,45 @@ export interface LapseDeadline {
   lapsedOn: DateParts;
   /** 試験の免除を受けられる最後の日（失効した日から起算して6月を経過しない日） */
   deadline: DateParts;
+  /** やむを得ない理由があったときの上限（失効した日から起算して3年を経過しない日） */
+  unavoidableDeadline: DateParts;
+}
+
+/** from を初日に数えて months か月を経過しない最後の日（応当日の前日。応当日が無ければその月の末日。民法143条2項） */
+function lastDayWithinMonths(from: DateParts, months: number): DateParts {
+  const total = from.year * 12 + (from.month - 1) + months;
+  const year = Math.floor(total / 12);
+  const month = (total % 12) + 1;
+  return from.day > daysInMonth(year, month)
+    ? { year, month, day: daysInMonth(year, month) }
+    : addDays({ year, month, day: from.day }, -1);
 }
 
 /**
  * 失効したときの試験免除の期限（第97条の2第1項第3号）。
- * 失効した日を初日に数え、6か月の応当日の前日まで（応当日が無ければその月の末日。民法143条2項）。
+ * 失効した日を初日に数え、6か月（やむを得ない理由は3年）の応当日の前日まで。
  */
 export function lapseDeadline(legalEnd: DateParts): LapseDeadline {
   const lapsedOn = addDays(legalEnd, 1);
-  const total = lapsedOn.year * 12 + (lapsedOn.month - 1) + LAPSE_MONTHS;
-  const year = Math.floor(total / 12);
-  const month = (total % 12) + 1;
-  const deadline =
-    lapsedOn.day > daysInMonth(year, month)
-      ? { year, month, day: daysInMonth(year, month) }
-      : addDays({ year, month, day: lapsedOn.day }, -1);
-  return { lapsedOn, deadline };
+  return {
+    lapsedOn,
+    deadline: lastDayWithinMonths(lapsedOn, LAPSE_MONTHS),
+    unavoidableDeadline: lastDayWithinMonths(lapsedOn, LAPSE_UNAVOIDABLE_YEARS * 12),
+  };
+}
+
+/**
+ * 今日から見た失効後の状態（#503 レビュー必須2）。
+ * - 'within6m'：6か月の免除期限の当日まで
+ * - 'within3y'：6か月は過ぎたが、やむを得ない理由があれば3年の上限の当日まで
+ * - 'over3y'：3年も過ぎた（新たに取り直す）
+ */
+export type LapseStatus = 'within6m' | 'within3y' | 'over3y';
+
+export function lapseStatus(lapse: LapseDeadline, today: DateParts): LapseStatus {
+  if (compareDate(today, lapse.deadline) <= 0) return 'within6m';
+  if (compareDate(today, lapse.unavoidableDeadline) <= 0) return 'within3y';
+  return 'over3y';
 }
 
 // ---------------------------------------------------------------- 今日から見た状態
@@ -321,10 +363,24 @@ export function parseCardDate(text: string): DateParts | null {
     .replace(/まで$/, '');
   const west = /^(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?$/.exec(s);
   if (west) {
-    const p = { year: Number(west[1]), month: Number(west[2]), day: Number(west[3]) };
+    const p = {
+      year: Number(west[1]),
+      month: Number(west[2]),
+      day: Number(west[3]),
+    };
     return parseDate(formatDate(p));
   }
-  const ERA: Record<string, string> = { 令和: '令和', R: '令和', r: '令和', 平成: '平成', H: '平成', h: '平成', 昭和: '昭和', S: '昭和', s: '昭和' };
+  const ERA: Record<string, string> = {
+    令和: '令和',
+    R: '令和',
+    r: '令和',
+    平成: '平成',
+    H: '平成',
+    h: '平成',
+    昭和: '昭和',
+    S: '昭和',
+    s: '昭和',
+  };
   const wa = /^(令和|平成|昭和|[RrHhSs])(元|\d{1,2})[年.](\d{1,2})[月.](\d{1,2})日?$/.exec(s);
   if (!wa) return null;
   const r = fromWareki(ERA[wa[1]], wa[2] === '元' ? 1 : Number(wa[2]), Number(wa[3]), Number(wa[4]));

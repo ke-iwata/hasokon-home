@@ -10,6 +10,7 @@ import {
   extensionReason,
   isRegularExpiry,
   lapseDeadline,
+  lapseStatus,
   licenseBirthday,
   nextExpiry,
   nextExtendedDay,
@@ -18,6 +19,7 @@ import {
   renewalWindow,
   seniorWindow,
   validateInput,
+  upcomingExpiry,
   windowHeading,
 } from '@/lib/menkyo-koshin';
 
@@ -131,7 +133,11 @@ describe('seniorWindow（第101条の4。更新期間が満了する日の年齢
   });
 
   it('70歳の誕生日が更新期間に入る人：満了日は70歳で講習は要る', () => {
-    const r = calcMenkyo({ birth: '1957-03-10', expiry: '2027-04-10', term: 'five' })!;
+    const r = calcMenkyo({
+      birth: '1957-03-10',
+      expiry: '2027-04-10',
+      term: 'five',
+    })!;
     expect(f(r.window.legalEnd)).toBe('2027-04-12');
     expect(r.senior.ageAtEnd).toBe(70);
     expect(r.senior.lecture).toBe(true);
@@ -159,7 +165,7 @@ describe('nextExpiry（第95条の6の表。生年月日と更新日から出す
     const birth = d('1957-03-10');
     const expiry = d('2027-04-10');
     const results = ['2027-02-10', '2027-03-09', '2027-03-10', '2027-03-20', '2027-04-10'].map((r) =>
-      f(nextExpiry(birth, expiry, d(r), 'five').date),
+      f(nextExpiry(birth, expiry, d(r), 'five').date)
     );
     expect(new Set(results)).toEqual(new Set(['2032-04-10']));
   });
@@ -216,13 +222,82 @@ describe('lapseDeadline（第97条の2第1項第3号）', () => {
   });
 });
 
+describe('lapseStatus（失効後の期限を過ぎたら文言を分ける。#503 レビュー必須2）', () => {
+  // 2026-10-27 が末日 → 2026-10-28 失効・6か月は 2027-04-27 まで・3年は 2029-10-27 まで
+  const l = lapseDeadline(d('2026-10-27'));
+  it('3年の上限（失効した日から起算して3年を経過しない日）', () => {
+    expect(f(l.unavoidableDeadline)).toBe('2029-10-27');
+  });
+  it('6か月の期限の当日までは within6m、翌日から within3y', () => {
+    expect(lapseStatus(l, d('2026-10-28'))).toBe('within6m');
+    expect(lapseStatus(l, d('2027-04-27'))).toBe('within6m');
+    expect(lapseStatus(l, d('2027-04-28'))).toBe('within3y');
+  });
+  it('3年の上限の当日までは within3y、翌日から over3y', () => {
+    expect(lapseStatus(l, d('2029-10-27'))).toBe('within3y');
+    expect(lapseStatus(l, d('2029-10-28'))).toBe('over3y');
+  });
+  it('レビューの例（1980-01-10・期限 2020-02-10）は 2026-11-14 には over3y', () => {
+    const r = calcMenkyo({
+      birth: '1980-01-10',
+      expiry: '2020-02-10',
+      term: 'five',
+    })!;
+    expect(lapseStatus(r.lapse, d('2026-11-14'))).toBe('over3y');
+  });
+});
+
+describe('upcomingExpiry（開いた瞬間の例が失効にならない。#503 レビュー必須1）', () => {
+  const birth = d('1980-09-27');
+  it('今日以降で最初の誕生日の1か月後', () => {
+    expect(f(upcomingExpiry(birth, d('2026-11-14')))).toBe('2027-10-27');
+    expect(f(upcomingExpiry(birth, d('2026-10-27')))).toBe('2026-10-27');
+    expect(f(upcomingExpiry(birth, d('2026-01-05')))).toBe('2026-10-27');
+  });
+  it('どの日に開いても、既定の例は「期限を過ぎています」にならない', () => {
+    for (
+      let day = d('2026-01-01');
+      day.year < 2031;
+      day = {
+        ...day,
+        month: day.month === 12 ? 1 : day.month + 1,
+        year: day.month === 12 ? day.year + 1 : day.year,
+      }
+    ) {
+      const r = calcMenkyo({
+        birth: '1980-09-27',
+        expiry: f(upcomingExpiry(birth, day)),
+        term: 'five',
+      })!;
+      expect(renewalStatus(r.window, day).kind).not.toBe('expired');
+    }
+  });
+  it('画面は固定の既定値を upcomingExpiry で置き換えている', () => {
+    const src = readFileSync(fileURLToPath(new URL('../app/menkyo-koshin/Calculator.tsx', import.meta.url)), 'utf8');
+    expect(src).toContain('upcomingExpiry(');
+    expect(src).toContain('lapseStatus(');
+  });
+});
+
 describe('renewalStatus（今日から見た状態）', () => {
   const w = renewalWindow(d('1980-09-27'), d('2026-10-27'));
   it('更新期間の前・中・後', () => {
-    expect(renewalStatus(w, d('2026-08-20'))).toEqual({ kind: 'before', daysUntilStart: 7 });
-    expect(renewalStatus(w, d('2026-08-27'))).toEqual({ kind: 'during', daysLeft: 61 });
-    expect(renewalStatus(w, d('2026-10-27'))).toEqual({ kind: 'during', daysLeft: 0 });
-    expect(renewalStatus(w, d('2026-10-28'))).toEqual({ kind: 'expired', daysSinceLapse: 1 });
+    expect(renewalStatus(w, d('2026-08-20'))).toEqual({
+      kind: 'before',
+      daysUntilStart: 7,
+    });
+    expect(renewalStatus(w, d('2026-08-27'))).toEqual({
+      kind: 'during',
+      daysLeft: 61,
+    });
+    expect(renewalStatus(w, d('2026-10-27'))).toEqual({
+      kind: 'during',
+      daysLeft: 0,
+    });
+    expect(renewalStatus(w, d('2026-10-28'))).toEqual({
+      kind: 'expired',
+      daysSinceLapse: 1,
+    });
   });
 
   it('延長された日までは更新期間中', () => {
@@ -236,8 +311,16 @@ describe('入力', () => {
   it('和暦（令和8年12月29日）は西暦と同じ結果になる', () => {
     const wa = parseCardDate('令和8年12月29日');
     expect(wa && f(wa)).toBe('2026-12-29');
-    const a = calcMenkyo({ birth: '1975-11-29', expiry: f(wa!), term: 'five' })!;
-    const b = calcMenkyo({ birth: '1975-11-29', expiry: '2026-12-29', term: 'five' })!;
+    const a = calcMenkyo({
+      birth: '1975-11-29',
+      expiry: f(wa!),
+      term: 'five',
+    })!;
+    const b = calcMenkyo({
+      birth: '1975-11-29',
+      expiry: '2026-12-29',
+      term: 'five',
+    })!;
     expect(a).toEqual(b);
   });
 
@@ -258,7 +341,11 @@ describe('入力', () => {
   it('代替入力（更新の年だけ）は誕生日の1か月後を有効期限とみなし、見出しに「推定」', () => {
     expect(f(estimatedExpiry(d('1980-09-27'), 2026))).toBe('2026-10-27');
     expect(f(estimatedExpiry(d('1984-02-29'), 2026))).toBe('2026-03-28');
-    const r = calcMenkyo({ birth: '1980-09-27', renewalYear: 2026, term: 'five' })!;
+    const r = calcMenkyo({
+      birth: '1980-09-27',
+      renewalYear: 2026,
+      term: 'five',
+    })!;
     expect(r.estimated).toBe(true);
     expect(f(r.window.expiry)).toBe('2026-10-27');
     expect(windowHeading(r.estimated)).toContain('推定');
@@ -268,7 +355,11 @@ describe('入力', () => {
   it('券面の日付が誕生日の1か月後でなければ irregularExpiry（計算は券面を正として続ける）', () => {
     expect(isRegularExpiry(d('1980-09-27'), d('2026-10-27'))).toBe(true);
     expect(isRegularExpiry(d('1984-02-29'), d('2026-03-28'))).toBe(true);
-    const r = calcMenkyo({ birth: '1980-09-27', expiry: '2026-10-28', term: 'five' })!;
+    const r = calcMenkyo({
+      birth: '1980-09-27',
+      expiry: '2026-10-28',
+      term: 'five',
+    })!;
     expect(r.irregularExpiry).toBe(true);
     expect(f(r.window.legalEnd)).toBe('2026-10-28');
   });
@@ -301,6 +392,7 @@ describe('画面の約束', () => {
 
   it('計算と70歳以上の欄が出たことを分けて tool_use を送る', () => {
     expect(calcSrc).toContain("trackToolUse('menkyo-koshin', 'calc')");
+    expect(calcSrc).not.toContain("onBlur={() => trackToolUse('menkyo-koshin', 'calc')}");
     expect(calcSrc).toContain("trackToolUse('menkyo-koshin', 'senior-shown')");
   });
 

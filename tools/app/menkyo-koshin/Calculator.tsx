@@ -10,18 +10,24 @@ import {
   calcMenkyo,
   formatDate,
   formatJaWithWeekday,
+  lapseStatus,
   parseCardDate,
   parseDate,
   renewalStatus,
   validateInput,
+  upcomingExpiry,
   windowHeading,
   type LicenseTerm,
   type MenkyoResult,
 } from '@/lib/menkyo-koshin';
 
-/** 既定値（仕様書の例：警察の案内「9/27 生まれ → 8/27〜10/27」）。開いた瞬間に結果を出す */
+/**
+ * 既定値（仕様書の例：警察の案内「9/27 生まれ → 8/27〜10/27」）。開いた瞬間に結果を出す。
+ * 有効期限はマウント後に「今日以降で最初の 10/27」に置き換える（固定の日付だと、日がたつと
+ * 開いた瞬間に「期限を過ぎています」が出る。#503 レビュー必須1）。下の値は静的書き出し用
+ */
 const DEFAULT_BIRTH = '1980-09-27';
-const DEFAULT_EXPIRY = '2026-10-27';
+const DEFAULT_EXPIRY = '2027-10-27';
 
 const row = { margin: '4px 0 0', fontSize: 'var(--fs-sm)' };
 
@@ -30,20 +36,23 @@ function StatusLine({ r, today }: { r: MenkyoResult; today: string }) {
   if (s.kind === 'before') {
     return (
       <p style={row}>
-        更新期間まで<strong>あと{s.daysUntilStart.toLocaleString('ja-JP')}日</strong>
+        更新期間まで
+        <strong>あと{s.daysUntilStart.toLocaleString('ja-JP')}日</strong>
       </p>
     );
   }
   if (s.kind === 'during') {
     return (
       <p style={row}>
-        <strong>いま更新期間中です</strong>（{s.daysLeft === 0 ? '今日が最終日' : `残り${s.daysLeft.toLocaleString('ja-JP')}日`}）
+        <strong>いま更新期間中です</strong>（
+        {s.daysLeft === 0 ? '今日が最終日' : `残り${s.daysLeft.toLocaleString('ja-JP')}日`}）
       </p>
     );
   }
   return (
     <p style={{ ...row, color: 'var(--danger-fg)' }}>
-      <strong>期限を過ぎています</strong>（失効から{s.daysSinceLapse.toLocaleString('ja-JP')}日）
+      <strong>期限を過ぎています</strong>（失効から
+      {s.daysSinceLapse.toLocaleString('ja-JP')}日）
     </p>
   );
 }
@@ -62,11 +71,26 @@ export default function Calculator() {
   const [term, setTerm] = useState<LicenseTerm>('five');
   const [today, setToday] = useState<string | null>(null);
   const seniorSent = useRef(false);
+  const calcSent = useRef(false);
+
+  /** 計算した、は1回の訪問で1回だけ数える（欄を移るたびに数えない） */
+  const trackCalc = () => {
+    if (calcSent.current) return;
+    calcSent.current = true;
+    trackToolUse('menkyo-koshin', 'calc');
+  };
 
   /** 「今日」は開いた日。静的書き出しなのでビルド時刻で固定せず、マウント後に入れる */
   useEffect(() => {
     const now = new Date();
-    setToday(formatDate({ year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() }));
+    const t = {
+      year: now.getFullYear(),
+      month: now.getMonth() + 1,
+      day: now.getDate(),
+    };
+    setToday(formatDate(t));
+    // まだ触られていない既定値だけを、今日以降の例に置き換える
+    setExpiry((cur) => (cur === DEFAULT_EXPIRY ? formatDate(upcomingExpiry(parseDate(DEFAULT_BIRTH)!, t)) : cur));
   }, []);
 
   const birthParts = parseDate(birth);
@@ -94,6 +118,7 @@ export default function Calculator() {
 
   const expiryWareki = expiryParts ? toWareki(expiryParts)?.label : null;
   const expired = ok && today ? renewalStatus(ok.window, parseDate(today)!).kind === 'expired' : false;
+  const lapse = ok && today && expired ? lapseStatus(ok.lapse, parseDate(today)!) : null;
 
   return (
     <div className="card">
@@ -105,7 +130,7 @@ export default function Calculator() {
           value={birth}
           max="2100-12-31"
           onChange={(e) => setBirth(e.target.value)}
-          onBlur={() => trackToolUse('menkyo-koshin', 'calc')}
+          onBlur={trackCalc}
         />
       </div>
       <div className="field">
@@ -119,9 +144,13 @@ export default function Calculator() {
             setExpiry(e.target.value);
             setWareki('');
           }}
-          onBlur={() => trackToolUse('menkyo-koshin', 'calc')}
+          onBlur={trackCalc}
         />
-        {expiryWareki && <p className="hint" style={{ margin: '4px 0 0' }}>＝{expiryWareki}まで</p>}
+        {expiryWareki && (
+          <p className="hint" style={{ margin: '4px 0 0' }}>
+            ＝{expiryWareki}まで
+          </p>
+        )}
       </div>
       <div className="field">
         <label htmlFor="menkyo-wareki">券面の和暦のまま入れる（任意）</label>
@@ -136,7 +165,7 @@ export default function Calculator() {
             const p = parseCardDate(e.target.value);
             if (p) setExpiry(formatDate(p));
           }}
-          onBlur={() => trackToolUse('menkyo-koshin', 'calc')}
+          onBlur={trackCalc}
         />
         {wareki && !parseCardDate(wareki) && (
           <p className="hint" style={{ margin: '4px 0 0' }}>
@@ -148,7 +177,17 @@ export default function Calculator() {
         マイナ免許証だけの人は、マイナポータルの「運転免許情報」や免許情報の読み取りアプリに出る有効期限の日付を入れてください（数え方は免許証と同じです）。
       </p>
 
-      <details className="field" open={(!expiryParts && renewalYear !== '') || undefined}>
+      <details
+        className="field"
+        open={(!expiryParts && renewalYear !== '') || undefined}
+        onToggle={(e) => {
+          // 開いたら有効期限の欄を空にして、更新の年だけで推定できるようにする
+          if (e.currentTarget.open) {
+            setExpiry('');
+            setWareki('');
+          }
+        }}
+      >
         <summary style={{ cursor: 'pointer' }}>券面の日付が分からない人（更新の年だけで推定）</summary>
         <div className="field" style={{ marginTop: 8 }}>
           <label htmlFor="menkyo-year">次の誕生日の年（＝更新の年）</label>
@@ -164,12 +203,14 @@ export default function Calculator() {
           />
         </div>
         <p className="hint">
-          使うときは上の有効期限の欄を空にしてください。誕生日の翌月の同じ日を有効期限とみなします。券面の日付と違ったら券面を入れてください。
+          ここを開くと上の有効期限の欄は空になります。誕生日の翌月の同じ日を有効期限とみなします。券面の日付と違ったら券面を入れてください。
         </p>
       </details>
 
       <fieldset className="field" style={{ border: 0, padding: 0 }}>
-        <legend style={{ fontWeight: 700, marginBottom: 6 }}>いまの免許の有効期間（次の期限の見込みにだけ使います）</legend>
+        <legend style={{ fontWeight: 700, marginBottom: 6 }}>
+          いまの免許の有効期間（次の期限の見込みにだけ使います）
+        </legend>
         <div style={{ display: 'grid', gap: 4, fontSize: 'var(--fs-sm)' }}>
           {(
             [
@@ -177,7 +218,15 @@ export default function Calculator() {
               ['three', '3年（ブルー3年・グリーン＝初回）'],
             ] as const
           ).map(([v, label]) => (
-            <label key={v} style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
+            <label
+              key={v}
+              style={{
+                fontWeight: 400,
+                display: 'flex',
+                gap: 6,
+                alignItems: 'center',
+              }}
+            >
               <input
                 type="radio"
                 name="menkyo-term"
@@ -234,10 +283,15 @@ export default function Calculator() {
           {ok.senior.lecture && (
             <div className="panel">
               <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
-                {ok.senior.cognitive ? '高齢者講習・認知機能検査' : '高齢者講習'}（満了日に{ok.senior.ageAtEnd}歳）
+                {ok.senior.cognitive ? '高齢者講習・認知機能検査' : '高齢者講習'}
+                （満了日に{ok.senior.ageAtEnd}歳）
               </div>
               <p style={row}>
-                受けられる期間：<strong>{formatJaWithWeekday(ok.senior.from)}ごろ〜{formatJaWithWeekday(ok.senior.to)}</strong>
+                受けられる期間：
+                <strong>
+                  {formatJaWithWeekday(ok.senior.from)}ごろ〜
+                  {formatJaWithWeekday(ok.senior.to)}
+                </strong>
                 （更新期間が満了する日前6か月以内）
               </p>
               {ok.senior.cognitive && (
@@ -250,30 +304,53 @@ export default function Calculator() {
             </div>
           )}
 
-          <div className="panel quiet">
-            <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>次の有効期限の見込み（この期間内に更新したとき）</div>
-            <div className="metric">
-              <span className="value" style={{ fontSize: 'clamp(1.05rem, 5vw, 1.4rem)' }}>
-                {formatJaWithWeekday(ok.next.date)}
-              </span>
-              <span className="label">まで（{ok.next.birthdays}回目の誕生日の1か月後）</span>
+          {!expired && (
+            <div className="panel quiet">
+              <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>
+                次の有効期限の見込み（この期間内に更新したとき）
+              </div>
+              <div className="metric">
+                <span className="value" style={{ fontSize: 'clamp(1.05rem, 5vw, 1.4rem)' }}>
+                  {formatJaWithWeekday(ok.next.date)}
+                </span>
+                <span className="label">まで（{ok.next.birthdays}回目の誕生日の1か月後）</span>
+              </div>
+              <p className="hint" style={{ margin: '4px 0 0' }}>
+                更新日の年齢は誕生日の前日で数えるので（{ok.next.ageAtRenewal}
+                歳）、誕生日の前に更新しても後に更新しても同じ日です。
+                その日が土日・祝日・年末年始なら翌日まで延びます（祝日はその年に決まってから確定）。
+                {term === 'three' && '初回更新の人は、次の更新までに違反がなければ次は5年になります。'}
+                ゴールドになるかは更新時点の違反歴で決まります。
+              </p>
             </div>
-            <p className="hint" style={{ margin: '4px 0 0' }}>
-              更新日の年齢は誕生日の前日で数えるので（{ok.next.ageAtRenewal}歳）、誕生日の前に更新しても後に更新しても同じ日です。
-              その日が土日・祝日・年末年始なら翌日まで延びます（祝日はその年に決まってから確定）。
-              {term === 'three' && '初回更新の人は、次の更新までに違反がなければ次は5年になります。'}
-              ゴールドになるかは更新時点の違反歴で決まります。
-            </p>
-          </div>
+          )}
 
-          {expired && (
+          {lapse && (
             <p className="note" role="alert">
               <strong>失効中に運転すると無免許運転です。</strong>
               {formatJaWithWeekday(ok.lapse.lapsedOn)}に失効しています。
-              <strong>{formatJaWithWeekday(ok.lapse.deadline)}まで</strong>
-              （失効から6か月）なら、学科・技能試験の免除を受けて取り直せます。
-              海外旅行・災害・入院などやむを得ない理由があったときは、失効から{LAPSE_UNAVOIDABLE_YEARS}
-              年以内で、その事情がやんでから1か月以内です。住所地の運転免許センターへ。
+              {lapse === 'within6m' ? (
+                <>
+                  <strong>{formatJaWithWeekday(ok.lapse.deadline)}まで</strong>
+                  （失効から6か月）なら、学科・技能試験の免除を受けて取り直せます。住所地の運転免許センターへ。
+                </>
+              ) : lapse === 'within3y' ? (
+                <>
+                  6か月の免除期限（{formatJaWithWeekday(ok.lapse.deadline)}
+                  ）を過ぎています。 海外旅行・災害・入院などやむを得ない理由があった場合に限り、
+                  {formatJaWithWeekday(ok.lapse.unavoidableDeadline)}
+                  まで（失効から{LAPSE_UNAVOIDABLE_YEARS}
+                  年以内）で、その事情がやんでから1か月以内なら免除を受けられます。それ以外は新たに免許を取り直す必要があります。住所地の運転免許センターへ。
+                </>
+              ) : (
+                <>
+                  6か月の免除期限（{formatJaWithWeekday(ok.lapse.deadline)}
+                  ）も、やむを得ない理由があった場合の
+                  {LAPSE_UNAVOIDABLE_YEARS}年の上限（
+                  {formatJaWithWeekday(ok.lapse.unavoidableDeadline)}
+                  ）も過ぎています。新たに免許を取り直す必要があります。住所地の運転免許センターへ。
+                </>
+              )}
             </p>
           )}
 
@@ -283,7 +360,9 @@ export default function Calculator() {
             </p>
           )}
           {ok.leapDayBirth && (
-            <p className="hint">2月29日生まれの方は、うるう年でない年は2月28日を誕生日とみなします（道路交通法第101条2項）。</p>
+            <p className="hint">
+              2月29日生まれの方は、うるう年でない年は2月28日を誕生日とみなします（道路交通法第101条2項）。
+            </p>
           )}
           <p className="hint">
             海外赴任・出産・入院などで期間内に行けないときは、更新期間の前でも更新できます（特例更新）。その場合、次の期限は短くなることがあります。
