@@ -211,6 +211,12 @@ export default function Page() {
         </p>
       </PublicToolLink>
 
+      <PublicToolLink slug="menkyo-koshin">
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          運転免許の更新期間（同じ誕生日基準の期限）：<ToolLink slug="menkyo-koshin">運転免許の更新期間 計算機</ToolLink>
+        </p>
+      </PublicToolLink>
+
       <ToolMeta slug="mynumber-kigen" ymyl="legal">
         出典：
         {SOURCES.map(([href, label], i) => (

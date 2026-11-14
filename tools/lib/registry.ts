@@ -671,6 +671,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-04',
   },
   {
+    // 仕様: docs/features/menkyo-koshin-kikan.md
+    // テスト環境で仕様書「確かめること」を通してから public（2026-12-15 までに本番へ）。
+    // public にする PR で home/index.html・home/404.html のカードと ToolPreview / ToolArt の絵を足す
+    slug: 'menkyo-koshin',
+    // ハンドルなので SteeringWheel。Car は速度違反・自動車税・通勤手当で使用中
+    icon: 'SteeringWheel',
+    name: '運転免許の更新期間 計算機',
+    description:
+      '生年月日と免許証の有効期限から、更新できる期間（誕生日の1か月前〜）、土日祝・年末年始（12/29〜1/3は1/4まで）で延びる最終日、70歳以上の高齢者講習・75歳以上の認知機能検査を受けられる期間、次の有効期限、失効したときの6か月の期限を道路交通法の条文どおりに日付で出します。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-14',
+  },
+  {
     // 仕様: docs/features/mynumber-card-yuko-kigen.md
     slug: 'mynumber-kigen',
     // カードの期限なので IdentificationCard。ほかで使っていない
