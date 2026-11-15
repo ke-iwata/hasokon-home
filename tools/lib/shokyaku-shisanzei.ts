@@ -14,14 +14,18 @@
  *   附則14条2項で**令和九年度以後の年度分**から適用（施行は2027-04-01だが、賦課期日2027-01-01の資産から180万円）
  * - 351条は「満たない場合」なので**ちょうど免税点の額は課税**
  * - 地方税法施行令49条：所得税法施行令138条（10万円未満）・139条（一括償却）の資産を除く。
- *   租税特別措置法28条の2（40万円未満の特例）で全額経費にした物は除かれない
+ *   租税特別措置法28条の2（個人）・67条の5（法人）の少額減価償却資産の特例で全額経費にした物は除かれない。
+ *   特例の上限は 2026-04-01 以後の取得が40万円未満、それより前は30万円未満（`genka-shokyaku` の `tokureiLimit()`）
+ * - 1月1日に取得した物：東京都主税局「固定資産税（償却資産）」の計算例
+ *   「１月１日取得の資産については、その前年の１２月を取得年月とします」（2026-11-15 確認）。
+ *   賦課期日（359条）の1月1日に持っているので、その年度から対象になる
  * - 固定資産評価基準 別表第15（減価残存率）：自治体の転載（大分市「減価残存率表」）を 2026-10-26 に取得して写した。
  *   **小数3桁の表の値をそのまま使い、式（1 − r/2）で計算しない**（5年は 0.8155 ではなく 0.815）
  *
  * ■ まだ確かめていないこと（仕様書「まだ確かめていないこと」）
  * 1. 別表第15の本文（総務省）は未取得。自治体の転載の値を使っている
- * 2. 1月1日に取得した物の扱いは一次情報で確かめられていないので、取得は「年・月」までを受け付け、
- *    **1月の取得はその年の取得（＝その年度の対象外）**として扱い、画面に注記する
+ * 2. （2026-11-15 確認済み）1月1日に取得した物は前年12月の取得として扱う（`taxAcquired()`）。
+ *    取得は「年・月」までを受け付け、1月のときだけ「1月1日か」を別に聞く
  * 3. 課税標準の特例（わがまち特例・先端設備）は初版では扱わない
  *
  * 計算は円・千分率の整数で行い、浮動小数の掛け算を通さない。
@@ -30,7 +34,14 @@
  * TITLE_NENDO・COMPARE_UNTIL・DATA_CHECKED_AT）。
  */
 
-import { IKKATSU_LIMIT, SHOGAKU_LIMIT, TOKUREI_LIMIT_AFTER } from './genka-shokyaku';
+import {
+  IKKATSU_LIMIT,
+  SHOGAKU_LIMIT,
+  TOKUREI_LIMIT_AFTER,
+  TOKUREI_LIMIT_BEFORE,
+  TOKUREI_SWITCH_DATE,
+  tokureiLimit,
+} from './genka-shokyaku';
 import { addDays, formatDate, isWeekend, type DateParts } from './date-parts';
 import { isHoliday } from './nissu-keisan';
 
@@ -215,11 +226,21 @@ export interface Acquired {
 }
 
 /**
- * 取得した物が最初に対象になる年度。**1月の取得もその年の取得として翌年度から**
- * （1月1日取得の扱いは未確認。仕様書「まだ確かめていないこと」2）
+ * 取得した物が最初に対象になる年度：取得年の翌年度。
+ * 1月1日の取得は呼び出し側で `taxAcquired()` を通して前年12月にしてから渡す
  */
 export function firstNendoOf(acquired: Acquired): number {
   return acquired.year + 1;
+}
+
+/**
+ * 評価に使う取得年月。**1月1日に取得した物は前年の12月**とする
+ * （東京都主税局「１月１日取得の資産については、その前年の１２月を取得年月とします」）。
+ * jan1 は1月のときだけ効く（ほかの月で true でも無視する）
+ */
+export function taxAcquired(acquired: Acquired, jan1?: boolean): Acquired {
+  if (jan1 && acquired.month === 1) return { year: acquired.year - 1, month: 12 };
+  return acquired;
 }
 
 const permil = (rate: number) => Math.round(rate * 1000);
@@ -274,7 +295,7 @@ export const TREATMENT_LABEL: Record<Treatment, string> = {
   normal: '通常の減価償却',
   shogaku: '10万円未満で全額経費',
   ikkatsu: '一括償却（3年）',
-  tokurei: '40万円未満の特例で全額経費',
+  tokurei: '少額減価償却資産の特例（40万円未満）で全額経費',
 };
 
 /** 申告から外れるか（地方税法施行令49条）。**40万円未満の特例は false**（申告が要る） */
@@ -282,15 +303,27 @@ export function excluded(treatment: Treatment): boolean {
   return treatment === 'shogaku' || treatment === 'ikkatsu';
 }
 
-/** 取得価額がその扱いの上限（未満）に収まっているか */
-export function treatmentFits(treatment: Treatment, cost: number): boolean {
+/**
+ * 少額減価償却資産の特例の上限（未満）。取得「年月」の1日で `genka-shokyaku` の `tokureiLimit()` を引く
+ * （2026年3月以前 → 30万円、4月以後 → 40万円）。特例の期間の外は切り替え日だけで分ける
+ */
+export function tokureiLimitFor(acquired: Acquired): number {
+  const ymd = `${String(acquired.year).padStart(4, '0')}-${String(acquired.month).padStart(2, '0')}-01`;
+  return tokureiLimit(ymd) ?? (ymd >= TOKUREI_SWITCH_DATE ? TOKUREI_LIMIT_AFTER : TOKUREI_LIMIT_BEFORE);
+}
+
+/**
+ * 取得価額がその扱いの上限（未満）に収まっているか。
+ * 特例の上限は取得年月で変わる（acquired を省くと 40万円で判定する）
+ */
+export function treatmentFits(treatment: Treatment, cost: number, acquired?: Acquired): boolean {
   switch (treatment) {
     case 'shogaku':
       return cost < SHOGAKU_LIMIT;
     case 'ikkatsu':
       return cost < IKKATSU_LIMIT;
     case 'tokurei':
-      return cost < TOKUREI_LIMIT_AFTER;
+      return cost < (acquired ? tokureiLimitFor(acquired) : TOKUREI_LIMIT_AFTER);
     case 'normal':
       return true;
   }
@@ -303,6 +336,8 @@ export interface AssetRow {
   name?: string;
   cost: number;
   acquired: Acquired;
+  /** 1月に取得した物で、それが1月1日か（前年12月の取得として扱う） */
+  jan1?: boolean;
   life: number;
   treatment: Treatment;
 }
@@ -325,6 +360,8 @@ export interface RowResult {
   value: number;
   /** 取得価額が選んだ扱いの上限を超えている（扱いは無視して申告に載せる） */
   treatmentMismatch: boolean;
+  /** 評価に使った取得年月（1月1日の取得は前年12月。`taxAcquired()`） */
+  taxAcquired: Acquired;
 }
 
 export interface Assessment {
@@ -362,20 +399,22 @@ export function rowValid(row: AssetRow): boolean {
 /** 課税標準・税額・免税点の判定 */
 export function assess(rows: AssetRow[], nendo: number, ratePermil: number = STANDARD_RATE_PERMIL): Assessment {
   const results: RowResult[] = rows.map((row, index) => {
-    if (!rowValid(row)) return { index, row, status: 'invalid', value: 0, treatmentMismatch: false };
-    const fits = treatmentFits(row.treatment, row.cost);
+    const acq = taxAcquired(row.acquired, row.jan1);
+    if (!rowValid(row)) return { index, row, status: 'invalid', value: 0, treatmentMismatch: false, taxAcquired: acq };
+    const fits = treatmentFits(row.treatment, row.cost, row.acquired);
     if (fits && excluded(row.treatment)) {
-      return { index, row, status: 'excluded', value: 0, treatmentMismatch: false };
+      return { index, row, status: 'excluded', value: 0, treatmentMismatch: false, taxAcquired: acq };
     }
-    if (nendo < firstNendoOf(row.acquired)) {
-      return { index, row, status: 'notYet', value: 0, treatmentMismatch: !fits };
+    if (nendo < firstNendoOf(acq)) {
+      return { index, row, status: 'notYet', value: 0, treatmentMismatch: !fits, taxAcquired: acq };
     }
     return {
       index,
       row,
       status: 'included',
-      value: valuation(row.cost, row.acquired, row.life, nendo),
+      value: valuation(row.cost, acq, row.life, nendo),
       treatmentMismatch: !fits,
+      taxAcquired: acq,
     };
   });
   const totalValue = results.reduce((a, r) => a + r.value, 0);
@@ -466,9 +505,9 @@ export const SOURCES: Source[] = [
     checkedAt: DATA_CHECKED_AT,
   },
   {
-    label: '東京都主税局「償却資産（固定資産税）」',
+    label: '東京都主税局「償却資産（固定資産税）」（1月1日取得の資産の取得年月）',
     url: 'https://www.tax.metro.tokyo.lg.jp/shisan/shokyak_sis.html',
-    checkedAt: '2026-10-20',
+    checkedAt: '2026-11-15',
   },
   {
     label: '柏市「償却資産の評価額の計算方法」',

@@ -20,6 +20,7 @@ import {
   reiwa,
   schedule,
   selectableNendos,
+  tokureiLimitFor,
   showCompareOpen,
   solarLikelyTaxable,
   type Assessment,
@@ -43,6 +44,8 @@ interface RowInput {
   cost: string;
   /** 'YYYY-MM' */
   acquired: string;
+  /** 取得年月が1月のときだけ聞く「1月1日に取得した」 */
+  jan1: boolean;
   assetId: string;
   customYears: string;
   used: boolean;
@@ -56,6 +59,7 @@ const newRow = (acquired: string): RowInput => ({
   name: '',
   cost: '',
   acquired,
+  jan1: false,
   assetId: 'pc',
   customYears: '',
   used: false,
@@ -79,6 +83,7 @@ function toAssetRow(r: RowInput): AssetRow {
     name: r.name.trim() || undefined,
     cost: toInt(r.cost),
     acquired: { year: m ? Number(m[1]) : NaN, month: m ? Number(m[2]) : NaN },
+    jan1: r.jan1,
     life: lifeOf(r),
     treatment: r.treatment,
   };
@@ -329,9 +334,20 @@ function RowCard({
         取得年月
         <input type="month" value={r.acquired} onChange={(e) => onChange({ acquired: e.target.value })} />
         <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
-          1月に取得した物は、その年の取得（翌年度から対象）として計算します。1月1日に取得した物は市町村に確認してください
+          1月1日に取得した物は、前年12月の取得として計算します（東京都主税局の説明）
         </span>
       </label>
+      {/^\d{4}-01$/.test(r.acquired) && (
+        <label style={{ fontWeight: 400, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="checkbox"
+            checked={r.jan1}
+            onChange={(e) => onChange({ jan1: e.target.checked })}
+            style={{ width: 'auto' }}
+          />
+          1月1日に取得した
+        </label>
+      )}
       <label>
         種類（耐用年数）
         <select value={r.assetId} onChange={(e) => onChange({ assetId: e.target.value })}>
@@ -442,18 +458,24 @@ function AssetResult({ x, nendo }: { x: Assessment['rows'][number]; nendo: numbe
   if (x.status === 'excluded') {
     return <p className="hint">{label}：{TREATMENT_LABEL[x.row.treatment]}なので申告から外れます。</p>;
   }
-  const rows = schedule(x.row.cost, x.row.acquired, x.row.life, MAX_SCHEDULE_YEARS);
+  const rows = schedule(x.row.cost, x.taxAcquired, x.row.life, MAX_SCHEDULE_YEARS);
+  const jan1 = x.taxAcquired.year !== x.row.acquired.year;
   return (
     <div className="panel quiet">
       <div style={{ fontWeight: 700 }}>
         {label}：{x.status === 'notYet' ? `令和${reiwa(nendo)}年度はまだ対象外` : yen(x.value)}
       </div>
       <div className="hint" style={{ margin: 0 }}>
-        取得価額 {yen(x.row.cost)}・耐用年数 {x.row.life}年・{x.row.acquired.year}年{x.row.acquired.month}月取得
+        取得価額 {yen(x.row.cost)}・耐用年数 {x.row.life}年・
+        {jan1
+          ? `${x.row.acquired.year}年1月1日取得（${x.taxAcquired.year}年12月の取得として計算）`
+          : `${x.row.acquired.year}年${x.row.acquired.month}月取得`}
       </div>
       {x.treatmentMismatch && (
         <p className="hint" style={{ margin: '4px 0 0' }}>
-          取得価額が「{TREATMENT_LABEL[x.row.treatment]}」の上限を超えているので、申告に載る資産として計算しています。
+          {x.row.treatment === 'tokurei'
+            ? `少額減価償却資産の特例は、${x.row.acquired.year}年${x.row.acquired.month}月の取得なら${man(tokureiLimitFor(x.row.acquired))}未満が対象です（2026年3月以前の取得は30万円未満）。取得価額が上限を超えているので、申告に載る資産として計算しています。`
+            : `取得価額が「${TREATMENT_LABEL[x.row.treatment]}」の上限を超えているので、申告に載る資産として計算しています。`}
         </p>
       )}
       <details style={{ marginTop: 8 }}>
@@ -513,7 +535,7 @@ function ExcludedList({ a }: { a: Assessment }) {
       {tokurei.length > 0 && (
         <>
           <p style={{ fontSize: 'var(--fs-sm)', marginBottom: 4 }}>
-            <strong>経費にしたが外れない</strong>（40万円未満の特例。申告が要ります）
+            <strong>経費にしたが外れない</strong>（少額減価償却資産の特例。申告が要ります）
           </p>
           <ul style={{ fontSize: 'var(--fs-sm)', marginTop: 0 }}>
             {tokurei.map((x) => (

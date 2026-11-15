@@ -276,7 +276,7 @@ export const tools: ToolDef[] = [
       '事業用の資産の取得価額・取得年月・耐用年数から、1月1日時点の評価額・課税標準・税額（1.4%）を計算。令和9年度から免税点が150万円→180万円に上がる改正の前後で「かかる／かからない」を並べ、40万円未満の特例で経費にした資産の申告と申告期限も出します。',
     category: 'お金・社会保険',
     stage: 'preview',
-    updatedAt: '2026-10-26',
+    updatedAt: '2026-11-15',
   },
   {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
@@ -642,7 +642,7 @@ export const tools: ToolDef[] = [
     // 2026-11-13 までに preview、11-20 までに public（喪中はがきの検索の山の前。仕様書の「状態」）。
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
     stage: 'preview',
-    updatedAt: '2026-11-04',
+    updatedAt: '2026-11-15',
   },
   {
     // 仕様: docs/features/sozoku-toki-kigen.md
