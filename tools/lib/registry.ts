@@ -639,9 +639,8 @@ export const tools: ToolDef[] = [
     description:
       '亡くなった方の続柄と命日から、何親等か・喪中はがきを出す範囲と時期・寒中見舞いの期間・忌引きの日数（国家公務員の基準）・初七日や四十九日、一周忌・三回忌の日付と直前の土日を一度に表示。',
     category: '生活・健康',
-    // 2026-11-13 までに preview、11-20 までに public（喪中はがきの検索の山の前。仕様書の「状態」）。
-    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
+    // 2026-11-15 に public（喪中はがきの検索の山の前。docs/features/kokai-tool-seikaku-2026-11-15.md の E）
+    stage: 'public',
     updatedAt: '2026-11-15',
   },
   {

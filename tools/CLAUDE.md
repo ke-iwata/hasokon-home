@@ -272,9 +272,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール90本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`mochu-kibiki`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo`・`base64`・`hinode-hinoiri` が `wip`。ほかの71本は `public`。
+- **ツール90本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo`・`base64`・`hinode-hinoiri` が `wip`。ほかの72本は `public`。
   `gensen-choshuhyo`（源泉徴収票の見方と検算）は運営者がテスト環境で検算ケースを確かめたら、遅くとも 12-20 までに `public` にする。
-  `mochu-kibiki`（喪中・忌引き・法要 早見）は喪中はがきの検索の山の前、11-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
   `shukuhakuzei`（宿泊税）は東京 3% の端数処理・上限と沖縄の県＋市町村の内訳を確かめ、運営者の確認後 2027-01-15 までに、
@@ -287,7 +286,7 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
   `shohizei-keisan`・`zangyodai-keisan`・`ikuji-kyugyo-kyufu` — をまとめて公開した。
   2026-10-04に、公開条件のそろった8本 — `kokunen-ikuji-menjo`・`ikuji-jitan-kyufu`・`zoyozei-keisan`・
   `jutaku-shutoku-shikin`・`sozoku-toki-kigen`・`jusho-henko-toki`・`shoyo-tedori`・`tsukin-teate-hikazei` — を公開した。
-  2026-10-15に、運営者の確認だけが残っていた15本をまとめて公開した。2026-10-17に `genka-shokyaku`・`sokudo-ihan-hansokukin` を公開した。2026-11-03に `yubin-ryokin`・`taishokugo-kenko-hoken`・`shokuji-hojo-hikazei` を公開した。`docs/DECISIONS.md`）
+  2026-10-15に、運営者の確認だけが残っていた15本をまとめて公開した。2026-10-17に `genka-shokyaku`・`sokudo-ihan-hansokukin` を公開した。2026-11-03に `yubin-ryokin`・`taishokugo-kenko-hoken`・`shokuji-hojo-hikazei` を公開した。2026-11-15に `mochu-kibiki` を公開した（喪中はがきの検索の山の前。[kokai-tool-seikaku-2026-11-15.md](../docs/features/kokai-tool-seikaku-2026-11-15.md) の E）。`docs/DECISIONS.md`）
 - AdSenseは旧サイトから引き継いだアカウントで配信中（自動広告のみ）
 - GA4は計測中（`lib/analytics.ts` に測定ID設定済み。games と同じプロパティ）
 - 残り: Search Consoleでのサイトマップ送信、AdSense管理画面へのサイト追加、

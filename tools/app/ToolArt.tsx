@@ -723,6 +723,18 @@ const ART: Record<string, ReactNode> = {
     </>
   ),
 
+  // 黒い縁取りのはがき（喪中はがき）に蓮の花
+  'mochu-kibiki': (
+    <>
+      <rect x="12" y="6" width="40" height="52" rx="3" {...F} />
+      <rect x="12" y="6" width="40" height="52" rx="3" {...S} />
+      <rect x="17" y="11" width="30" height="42" rx="1.5" {...S} strokeWidth={1.6} />
+      <path d="M32 22 C27 28 27 34 32 40 C37 34 37 28 32 22 Z" {...SOLID} />
+      <path d="M32 40 C26 39 22 35 21 30 C26 30 30 34 32 40 Z M32 40 C38 39 42 35 43 30 C38 30 34 34 32 40 Z" {...SOLID} fillOpacity={0.6} />
+      <path d="M22 46 h20" {...S} strokeOpacity={0.55} />
+    </>
+  ),
+
   // ---- 計算・変換 ----
   // 値札と割合
   'waribiki-percent': (

@@ -886,6 +886,22 @@ const PREVIEW: Record<string, ReactNode> = {
       <T x={194} y={114} s={14} w={800} c="mark">あと［◯円］</T>
     </>
   ),
+  'mochu-kibiki': (
+    <>
+      <rect x="24" y="22" width="92" height="40" rx="8" {...INK} />
+      <T x={70} y={40} s={11} c="bg" a="middle">祖父母</T>
+      <T x={70} y={56} s={14} w={900} c="bg" a="middle">2親等</T>
+      <rect x="24" y="72" width="92" height="56" rx="6" {...TINT} stroke="currentColor" strokeWidth={2} />
+      <rect x="31" y="79" width="78" height="42" rx="3" fill="none" stroke="currentColor" strokeWidth={1.5} strokeOpacity={0.6} />
+      <T x={70} y={104} s={12} w={700} c="ink" a="middle">喪中はがき</T>
+      <T x={136} y={40} s={11} c="muted">出しどき</T>
+      <T x={204} y={42} s={14} w={800} c="mark">［◯月◯日］まで</T>
+      <T x={136} y={74} s={11} c="muted">忌引き</T>
+      <T x={204} y={76} s={14} w={800} c="ink">［◯］日</T>
+      <T x={136} y={108} s={11} c="muted">四十九日</T>
+      <T x={204} y={110} s={14} w={800} c="ink">［◯月◯日］</T>
+    </>
+  ),
   // ---- 計算・変換 ----
   'waribiki-percent': (
     <>
