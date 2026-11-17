@@ -247,6 +247,12 @@ export default function Page() {
         </p>
       </PublicToolLink>
 
+      <PublicToolLink slug="inshi-zei">
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          請求書・領収書の印紙を確かめる：<ToolLink slug="inshi-zei">収入印紙（印紙税）計算機</ToolLink>
+        </p>
+      </PublicToolLink>
+
       <ToolMeta slug="shiharai-kijitsu" ymyl="legal">
         出典：
         {SOURCES.map(([href, label], i) => (

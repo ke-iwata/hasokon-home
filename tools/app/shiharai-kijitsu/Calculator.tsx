@@ -437,6 +437,7 @@ export default function Calculator() {
               {dayCount(receivedDate, own) > LIMIT_DAYS ? '（60日を超えます）' : '（60日以内）'}。
             </p>
           )}
+          {own && <ClosedNote date={own} />}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 0 4px' }}>
             <label htmlFor="shiharai-year" style={{ fontWeight: 400 }}>
@@ -458,7 +459,7 @@ export default function Calculator() {
           <div role="table" aria-label="月ごとの最長日数" style={{ fontSize: 'var(--fs-sm)' }}>
             <div role="row" style={{ ...rowGrid, fontWeight: 700, borderBottom: '1px solid var(--border)' }}>
               <span role="columnheader">月</span>
-              <span role="columnheader">最長日数</span>
+              <span role="columnheader">最長</span>
               <span role="columnheader">判定</span>
             </div>
             {cases.map((c) => (
@@ -492,7 +493,9 @@ export default function Calculator() {
           <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>遅延利息（取適法第6条）</div>
           {!lateApplies ? (
             <p style={{ margin: '4px 0 0' }}>
-              適用の判定では取適法の対象外です。フリーランス法には遅延利息の規定がありません（契約上の遅延損害金は別です）。
+              {app.verdict === 'freelance'
+                ? '適用の判定では取適法の対象外です。フリーランス法には遅延利息の規定がありません（契約上の遅延損害金は別です）。'
+                : '適用の判定では取適法の対象外なので、取適法の遅延利息はかかりません（契約上・民法上の遅延損害金の扱いです）。'}
             </p>
           ) : late.days === 0 ? (
             <>
@@ -542,6 +545,11 @@ export default function Calculator() {
             {app.verdict === 'both' && (
               <li>
                 両方に当てはまります。遅延利息は取適法第6条の規定で出しています。どちらの法律で扱われるかは、所管の窓口で確かめてください
+              </li>
+            )}
+            {!app.freelance && contractorType !== 'corp' && toNum(contractorEmployees) === 0 && (
+              <li>
+                発注側が役員2人以上の法人なら、従業員がいなくてもフリーランス法第4条の60日がかかります
               </li>
             )}
             {app.verdict === 'none' && (
