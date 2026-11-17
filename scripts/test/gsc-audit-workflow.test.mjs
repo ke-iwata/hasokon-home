@@ -108,3 +108,31 @@ describe('Bing の検索パフォーマンス（相乗り）', () => {
     assert.match(artifact, /name: gsc-audit-\$\{\{ github\.run_id \}\}/);
   });
 });
+
+describe('リリースの遅れ（相乗り）', () => {
+  // 仕様: docs/features/honban-release-gap-2026-11-16.md の B
+  const start = yaml.indexOf('- name: リリースの遅れを数える');
+  const step = yaml.slice(start, yaml.indexOf('- name: 結果を artifact'));
+
+  it('チェックアウトを fetch-depth: 0 にする（shallow だとタグが取れない）', () => {
+    const checkout = yaml.slice(yaml.indexOf('actions/checkout@'), yaml.indexOf('actions/setup-node@'));
+    assert.match(checkout, /fetch-depth: 0/);
+  });
+
+  it('release-gap.mjs を呼び、Secret には頼らない', () => {
+    assert.ok(start > 0);
+    assert.match(step, /node scripts\/release-gap\.mjs/);
+    assert.doesNotMatch(step, /secrets\./);
+    assert.match(step, /if: \$\{\{ !cancelled\(\) \}\}/);
+  });
+
+  it('失敗にはしない（警告どまり）', () => {
+    assert.match(step, /\|\| code=\$\?/);
+    assert.match(step, /::warning::/);
+    assert.doesNotMatch(step, /exit "\$code"/);
+  });
+
+  it('自動リリースはしない', () => {
+    assert.doesNotMatch(yaml, /release\.yml|git tag|gh release/);
+  });
+});

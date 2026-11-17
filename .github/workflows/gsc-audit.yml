@@ -12,6 +12,10 @@ name: GSC audit
 # 仕様: docs/features/bing-search-performance-audit.md の「C」
 # Google のサービスアカウントとは無関係なので、GSC が飛ばされた週でも動く。
 #
+# あわせて、最後の v* タグ以降に main に入った修正が本番に届いていないものを数える
+# （「直したのに本番が古い」）。外部APIもSecretも使わず、git の履歴だけで数える。
+# 仕様: docs/features/honban-release-gap-2026-11-16.md の「B」
+#
 # 見るのは coverageState 別の内訳で、判定は「登録（Submitted and indexed）が
 # 4週連続で増えているか」。結果は Actions のログと artifact に残すだけで、
 # **リポジトリにはcommitしない**（生成物を履歴に混ぜないため）。
@@ -30,6 +34,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          # リリースの遅れを数えるのに、全履歴と v* タグが要る（既定の深さ 1・タグなしだと
+          # `git describe` が失敗する）。深さの見積もりを持たないよう 0 にする
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
@@ -98,6 +106,19 @@ jobs:
           node scripts/bing-search-stats.mjs --site https://hasokon.com/ --out "audit-out/bing-$(date -u +%Y-%m-%d).json" || code=$?
           if [ "$code" -ne 0 ]; then
             echo "::warning::Bing の計測に失敗しました（終了コード $code）。API キーの期限を確認してください。docs/features/bing-search-performance-audit.md を参照"
+          fi
+
+      - name: リリースの遅れを数える
+        # Secret を使わないので、GSC・Bing が飛ばされた週でも数える
+        if: ${{ !cancelled() }}
+        run: |
+          # public-fix が 3 日を超えて本番に届いていなければ ::warning::（スクリプトが出す）。
+          # **失敗にはしない**：リリースは運営者の判断で、監査の成否と混ぜない。
+          # 自動リリースもしない。本文は Job Summary に出る
+          code=0
+          node scripts/release-gap.mjs || code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::リリースの遅れを数えられませんでした（終了コード $code）。docs/features/honban-release-gap-2026-11-16.md を参照"
           fi
 
       - name: 結果を artifact に残す
