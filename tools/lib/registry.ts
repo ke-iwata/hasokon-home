@@ -98,6 +98,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/shiharai-kijitsu-toriteki.md
+    slug: 'shiharai-kijitsu',
+    // 事業者間の取引なので Handshake。ほかで使っていない
+    icon: 'Handshake',
+    name: '支払期日・遅延利息 計算機（取適法・フリーランス法の60日ルール）',
+    description:
+      '納品日（受領日）と「○日締め・翌月○日払い」から、取適法（旧下請法）・フリーランス法の支払期日（受領日から60日目）、その条件で最も遅く払われる日が60日を超えるか、遅れたときの遅延利息（年14.6%）を日付と金額で出します。',
+    category: 'お金・社会保険',
+    // テスト環境で仕様書の「確かめること」を通したら public（2026-12-20 まで）
+    stage: 'wip',
+    updatedAt: '2026-11-17',
+  },
+  {
     // 仕様: docs/features/bingo-chusenki.md
     slug: 'bingo',
     icon: 'GridFour',
