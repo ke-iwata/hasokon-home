@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { robotsFor, SITE_URL } from '@/lib/registry';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import AdUnit from '@/app/AdUnit';
 import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/lib/jsonld';
 import Breadcrumb from '@/app/Breadcrumb';
@@ -132,6 +133,13 @@ export default function Page() {
       <Calculator />
 
       <ShienSection />
+
+      {/* 暖房費 比較 計算機が public になったら出る（docs/features/danbohi-hikaku.md「導線」） */}
+      <PublicToolLink slug="danbohi-hikaku">
+        <p>
+          灯油・ガスファンヒーターと比べるなら <ToolLink slug="danbohi-hikaku">暖房費 比較 計算機</ToolLink>。
+        </p>
+      </PublicToolLink>
 
       <AdUnit position="below-tool" />
 
