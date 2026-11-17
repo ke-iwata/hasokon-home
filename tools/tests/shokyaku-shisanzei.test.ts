@@ -16,6 +16,9 @@ import {
   selectableNendos,
   showCompareOpen,
   solarLikelyTaxable,
+  taxAcquired,
+  tokureiLimitFor,
+  treatmentFits,
   valuation,
   type AssetRow,
 } from '@/lib/shokyaku-shisanzei';
@@ -195,7 +198,7 @@ describe('少額資産（地方税法施行令49条）', () => {
     expect(a.rows[0].treatmentMismatch).toBe(true);
   });
 
-  it('その年度の1月1日にまだ持っていない物（取得がその年以後。1月の取得を含む）は数えない', () => {
+  it('その年度の1月1日にまだ持っていない物（取得がその年以後。1月2日以後の1月の取得を含む）は数えない', () => {
     const a = assess([{ cost: 500_000, acquired: { year: 2027, month: 1 }, life: 4, treatment: 'normal' }], 2027);
     expect(a.rows[0].status).toBe('notYet');
     expect(a.totalValue).toBe(0);
@@ -266,5 +269,58 @@ describe('太陽光の案内（断定しない）', () => {
     expect(solarLikelyTaxable(5, 'jutaku')).toBe(false);
     expect(solarLikelyTaxable(10, 'jutaku')).toBe(true);
     expect(solarLikelyTaxable(5, 'jigyo')).toBe(true);
+  });
+});
+
+describe('1月1日に取得した物（東京都主税局「その前年の12月を取得年月とします」）', () => {
+  const base = { cost: 1_000_000, life: 5, treatment: 'normal' as const };
+
+  it('2026-01-01 取得・100万円・5年 → 令和8年度の対象、前年中取得の率 0.815 で 815,000 円', () => {
+    const a = assess([{ ...base, acquired: { year: 2026, month: 1 }, jan1: true }], 2026);
+    expect(a.rows[0].status).toBe('included');
+    expect(a.rows[0].value).toBe(815_000);
+    expect(a.rows[0].taxAcquired).toEqual({ year: 2025, month: 12 });
+  });
+
+  it('2026-01-02 取得（1月1日でない）なら令和8年度は対象外で、令和9年度が1年目', () => {
+    const rows = [{ ...base, acquired: { year: 2026, month: 1 }, jan1: false }];
+    expect(assess(rows, 2026).rows[0].status).toBe('notYet');
+    expect(assess(rows, 2027).rows[0].value).toBe(815_000);
+  });
+
+  it('1月1日の取得は令和9年度が2年目（815,000 × 0.631）', () => {
+    const a = assess([{ ...base, acquired: { year: 2026, month: 1 }, jan1: true }], 2027);
+    expect(a.rows[0].value).toBe(Math.floor((815_000 * 631) / 1000));
+  });
+
+  it('taxAcquired は1月のときだけ前年12月にする（ほかの月の jan1 は無視）', () => {
+    expect(taxAcquired({ year: 2026, month: 1 }, true)).toEqual({ year: 2025, month: 12 });
+    expect(taxAcquired({ year: 2026, month: 1 }, false)).toEqual({ year: 2026, month: 1 });
+    expect(taxAcquired({ year: 2026, month: 1 })).toEqual({ year: 2026, month: 1 });
+    expect(taxAcquired({ year: 2026, month: 2 }, true)).toEqual({ year: 2026, month: 2 });
+  });
+});
+
+describe('少額減価償却資産の特例の上限は取得年月で分ける（2026-04-01 から40万円）', () => {
+  it('2026年3月以前は30万円未満、4月以後は40万円未満', () => {
+    expect(tokureiLimitFor({ year: 2026, month: 3 })).toBe(300_000);
+    expect(tokureiLimitFor({ year: 2026, month: 4 })).toBe(400_000);
+    expect(tokureiLimitFor({ year: 2020, month: 6 })).toBe(300_000);
+    expect(tokureiLimitFor({ year: 2029, month: 3 })).toBe(400_000);
+  });
+
+  it('2026年3月取得の35万円は特例の上限を超える（注意を出す）。4月取得なら収まる', () => {
+    expect(treatmentFits('tokurei', 350_000, { year: 2026, month: 3 })).toBe(false);
+    expect(treatmentFits('tokurei', 350_000, { year: 2026, month: 4 })).toBe(true);
+    expect(treatmentFits('tokurei', 299_999, { year: 2026, month: 3 })).toBe(true);
+  });
+
+  it('上限を超えても申告に載る（税額は変わらない）。食い違いだけを知らせる', () => {
+    const march = assess([{ cost: 350_000, acquired: { year: 2026, month: 3 }, life: 4, treatment: 'tokurei' }], 2027);
+    const normal = assess([{ cost: 350_000, acquired: { year: 2026, month: 3 }, life: 4, treatment: 'normal' }], 2027);
+    expect(march.rows[0].status).toBe('included');
+    expect(march.rows[0].treatmentMismatch).toBe(true);
+    expect(march.tax).toBe(normal.tax);
+    expect(march.totalValue).toBe(normal.totalValue);
   });
 });

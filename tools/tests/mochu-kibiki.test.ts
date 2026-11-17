@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  acceptChangeNote,
   dashidoki,
   dashidokiFaqAnswer,
   dashidokiText,
@@ -363,5 +364,31 @@ describe('ページの文面', () => {
     const faq = dashidokiFaqAnswer(after);
     expect(faq).toMatch(/例年12月中旬/);
     expect(faq).not.toMatch(/2027年用|12月20日|12月19日/);
+  });
+});
+
+describe('受付開始が前の年から変わったときだけ「従前の…」の一文を出す', () => {
+  it('2027年用（12-20）は 2026年用（12-15）より遅いので出す', () => {
+    expect(acceptChangeNote(NENGA_2027)).toBe('従前の12月15日より遅くなりました。');
+    expect(dashidokiFaqAnswer('2026-11-04')).toMatch(/12月20日からで、従前の12月15日より遅くなりました。/);
+  });
+
+  it('翌年用が同じ 12-20 なら出さない', () => {
+    const n2028 = { year: 2028, saleFrom: '2027-11-01', acceptFrom: '2027-12-20', newYearBy: '2027-12-27', saleTo: '2028-01-14' };
+    const schedules = [NENGA_2027, n2028];
+    expect(acceptChangeNote(n2028, schedules)).toBe('');
+    const faq = dashidokiFaqAnswer('2027-11-04', schedules);
+    expect(faq).toMatch(/2028年用の年賀状の受付は12月20日からです。/);
+    expect(faq).not.toMatch(/従前/);
+  });
+
+  it('翌年用が早まったら「早くなりました」', () => {
+    const n2028 = { year: 2028, saleFrom: '2027-11-01', acceptFrom: '2027-12-15', newYearBy: '2027-12-25', saleTo: '2028-01-14' };
+    expect(acceptChangeNote(n2028, [NENGA_2027, n2028])).toBe('従前の12月20日より早くなりました。');
+  });
+
+  it('前の年が分からないときは出さない', () => {
+    const n2030 = { year: 2030, saleFrom: '2029-11-01', acceptFrom: '2029-12-20', newYearBy: '2029-12-27', saleTo: '2030-01-14' };
+    expect(acceptChangeNote(n2030, [n2030])).toBe('');
   });
 });
