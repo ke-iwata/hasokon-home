@@ -249,6 +249,45 @@ GOOGLE_SERVICE_ACCOUNT_JSON="$(cat sa.json)" \
 Search Console の表示回数がほぼゼロなのと食い違っており、Discover や
 アプリ内ブラウザが混ざっているとみられます。判断には Search Console の実数を使います。
 
+## release-gap.mjs
+
+「直したのに本番が古い」を数えます。最後の `v*` タグ（＝本番の最終リリース）以降に
+main に入った `feat:` を、本番で見えるものに効くかどうかで分けて出します。
+
+仕様: [docs/features/honban-release-gap-2026-11-16.md](../docs/features/honban-release-gap-2026-11-16.md) の B
+
+```bash
+# 全履歴とタグが要る（shallow だと数えずに警告だけ出す）
+git fetch --unshallow --tags origin main   # clone が浅いときだけ
+node scripts/release-gap.mjs
+node scripts/release-gap.mjs --max-days 7   # warning のしきい値を変える
+```
+
+| 区分 | 判定 |
+|---|---|
+| `public-fix` | 件名に「正確さ」「誤り」「ずれ」「条文」を含み、公開中のものに効く |
+| `public-update` | 件名は当たらないが、公開中のものに効く（`home/`・`learn/` の本文を含む） |
+| `deps` | `package.json` / `package-lock.json` だけ |
+| `unlisted` | `wip` / `preview` の slug だけ（本番に出しても一覧には出ない） |
+| `other` | どれにも効かない（`scripts/`・`docs/`・テストだけ など。0 本なら出さない） |
+
+「公開中のものに効く」はファイルの置き場所の字面だけで決めます（import はたどりません）。
+
+- `app/<slug>/` と、名前が slug で始まる `lib/<slug>*.ts`・`lib/<slug>/` は、その slug の `stage` に従う
+- slug に結びつかない `app/`・`lib/`・`public/` の**既存**ファイルは、安全側で公開中扱い
+- そのコミットで**新しく足した**共通ファイルと、台帳（`lib/registry.ts`・`ToolIcon.tsx` /
+  `GameIcon.tsx`・`globals.css`）は、同じコミットの他のファイルに従う。
+  公開前のものを足す PR はほぼ必ずここを触るので、これを安全側に倒すと `unlisted` が全部
+  `public-update` に化けるためです（台帳だけを触ったコミットは公開中扱い）
+
+`public-fix` が `--max-days`（既定 3 日、`scripts/lib/release-gap.mjs` の `DEFAULT_MAX_DAYS`）を
+超えて本番に届いていなければ `::warning::` を出します。**終了コードは 0 のまま**で、
+自動リリースもしません（リリースは運営者の判断。CLAUDE.md「リリースの約束」）。
+週1回の実行は `.github/workflows/gsc-audit.yml` に相乗りしていて、本文は Job Summary に出ます
+（チェックアウトは `fetch-depth: 0`）。定時の企画ルーチンも、起動時にこれを回せば同じ数字で知らせられます。
+
+終了コードは 0（数えた・shallow で数えられなかった）と 2（git や registry が読めなかった）です。
+
 ## bing-search-stats.mjs
 
 Bing の検索パフォーマンス（表示回数・クリック・検索語・ページ）を週1回残します。

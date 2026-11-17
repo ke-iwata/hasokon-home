@@ -6,6 +6,7 @@ import { breadcrumbFor, breadcrumbList, PUBLISHER_REF, toolUpdatedAt } from '@/l
 import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
+import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import {
   DATA_CHECKED_AT,
   FINE_BANDS,
@@ -290,6 +291,12 @@ export default function Page() {
       <AdUnit position="below-faq" />
 
       <RelatedTools current="sokudo-ihan-hansokukin" />
+
+      <PublicToolLink slug="menkyo-koshin">
+        <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>
+          免許の更新期間・年末年始の延長を日付で：<ToolLink slug="menkyo-koshin">運転免許の更新期間 計算機</ToolLink>
+        </p>
+      </PublicToolLink>
 
       <ToolMeta slug="sokudo-ihan-hansokukin" ymyl="legal">
         出典：

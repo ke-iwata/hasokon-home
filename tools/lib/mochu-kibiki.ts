@@ -487,6 +487,32 @@ export function pageDescription(asOf: Ymd, schedules: readonly NengaSchedule[] =
   );
 }
 
+/**
+ * 【データ更新箇所】2026年用の年賀状の引受開始（日本郵便。`NENGA_SCHEDULES` は2027年用からなので、
+ * 2027年用と比べるためだけにここに持つ）。前の年の `NENGA_{YYYY}` があればそちらを使う
+ */
+export const NENGA_2026_ACCEPT_FROM: Ymd = '2025-12-15';
+
+/** 前の年用の引受開始。`NENGA_SCHEDULES` に前の年が無ければ 2026年用だけ上の定数で補う */
+export function previousAcceptFrom(year: number, schedules: readonly NengaSchedule[] = NENGA_SCHEDULES): Ymd | undefined {
+  const prev = schedules.find((x) => x.year === year - 1);
+  if (prev) return prev.acceptFrom;
+  return year - 1 === 2026 ? NENGA_2026_ACCEPT_FROM : undefined;
+}
+
+/**
+ * 受付開始が前の年用から変わったときだけ出す一文。変わっていない・前の年が分からないなら空
+ * （2027年用：「従前の12月15日より遅くなりました。」）
+ */
+export function acceptChangeNote(s: NengaSchedule, schedules: readonly NengaSchedule[] = NENGA_SCHEDULES): string {
+  const prev = previousAcceptFrom(s.year, schedules);
+  if (!prev) return '';
+  const before = prev.slice(5);
+  const now = s.acceptFrom.slice(5);
+  if (before === now) return '';
+  return `従前の${monthDay(prev)}より${now > before ? '遅く' : '早く'}なりました。`;
+}
+
 /** FAQ「喪中はがきはいつまでに出す？」の答え。期間外は日付を書かない */
 export function dashidokiFaqAnswer(asOf: Ymd, schedules: readonly NengaSchedule[] = NENGA_SCHEDULES): string {
   const s = nengaScheduleFor(asOf, schedules);
@@ -494,9 +520,10 @@ export function dashidokiFaqAnswer(asOf: Ymd, schedules: readonly NengaSchedule[
   if (!s) {
     return common + '年賀状の受付開始（例年12月中旬）より前、11月中旬〜12月上旬に届くように出すのが一般的です。';
   }
+  const note = acceptChangeNote(s, schedules);
   return (
     common +
-    `${s.year}年用の年賀状の受付は${monthDay(s.acceptFrom)}からで、従前の12月15日より遅くなりました。` +
+    `${s.year}年用の年賀状の受付は${monthDay(s.acceptFrom)}から${note ? `で、${note}` : 'です。'}` +
     `遅くとも${monthDay(addDays(s.acceptFrom, -1))}（受付開始の前日）までに届くように、理想は12月上旬までに出します。` +
     '受付開始より後になったら、松の内が明けてから寒中見舞いで知らせるのが一般的です。'
   );

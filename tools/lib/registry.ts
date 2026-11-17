@@ -266,6 +266,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-10-16',
   },
   {
+    // 仕様: docs/features/inshi-zei-keisan.md
+    // 公開条件：テスト環境で境目（5万円・10万円・100万円・2027-04-01）を確かめたら public に
+    // （2026-12 第3週の令和9年度税制改正大綱までに本番へ）。public にする PR でホームのカードと ToolPreview・ToolArt の絵を足す
+    slug: 'inshi-zei',
+    // 文書に貼る収入印紙なので Stamp
+    icon: 'Stamp',
+    name: '収入印紙（印紙税）計算機',
+    description:
+      '領収書・不動産の売買契約書・工事の請負契約書・請負契約書に貼る印紙の額を、金額・作成日・通数から計算。2027年3月31日で切れる軽減措置を作成日で出し分け、税抜で判定できる書き方・電子契約は不要なこと・貼り忘れの過怠税まで答えます。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-11-11',
+  },
+  {
     // 仕様: docs/features/shokyaku-shisanzei.md
     slug: 'shokyaku-shisanzei',
     // 事業で持っている物（資産）にかかる税なので Package
@@ -275,7 +289,7 @@ export const tools: ToolDef[] = [
       '事業用の資産の取得価額・取得年月・耐用年数から、1月1日時点の評価額・課税標準・税額（1.4%）を計算。令和9年度から免税点が150万円→180万円に上がる改正の前後で「かかる／かからない」を並べ、40万円未満の特例で経費にした資産の申告と申告期限も出します。',
     category: 'お金・社会保険',
     stage: 'preview',
-    updatedAt: '2026-10-26',
+    updatedAt: '2026-11-15',
   },
   {
     // 仕様: docs/features/kyuyo-nenkin-kojo-280man.md
@@ -317,6 +331,16 @@ export const tools: ToolDef[] = [
     // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx の絵を足す
     stage: 'public',
     updatedAt: '2026-10-05',
+  },
+  {
+    slug: 'hoshu-kyugen-tokurei',
+    icon: 'TrendDown',
+    name: '報酬急減の特例改定 判定・保険料計算機',
+    description:
+      '療養・育児・介護のための時短や残業の抑制で給料が下がったら、2027年1月から翌月に標準報酬月額を下げられる特例に当たるかを判定。保険料が月いくら・何か月早く下がるかと、引き換えに減る年金・傷病手当金・出産手当金（3歳未満の子は養育特例で年金を守れる）を出します。',
+    category: 'お金・社会保険',
+    stage: 'wip',
+    updatedAt: '2026-11-13',
   },
   {
     slug: 'kosei-nenkin-jogen',
@@ -628,10 +652,9 @@ export const tools: ToolDef[] = [
     description:
       '亡くなった方の続柄と命日から、何親等か・喪中はがきを出す範囲と時期・寒中見舞いの期間・忌引きの日数（国家公務員の基準）・初七日や四十九日、一周忌・三回忌の日付と直前の土日を一度に表示。',
     category: '生活・健康',
-    // 2026-11-13 までに preview、11-20 までに public（喪中はがきの検索の山の前。仕様書の「状態」）。
-    // `public` にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
-    stage: 'preview',
-    updatedAt: '2026-11-04',
+    // 2026-11-15 に public（喪中はがきの検索の山の前。docs/features/kokai-tool-seikaku-2026-11-15.md の E）
+    stage: 'public',
+    updatedAt: '2026-11-15',
   },
   {
     // 仕様: docs/features/sozoku-toki-kigen.md
@@ -658,6 +681,20 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     stage: 'public',
     updatedAt: '2026-11-04',
+  },
+  {
+    // 仕様: docs/features/menkyo-koshin-kikan.md
+    // テスト環境で仕様書「確かめること」を通してから public（2026-12-15 までに本番へ）。
+    // public にする PR で home/index.html・home/404.html のカードと ToolPreview / ToolArt の絵を足す
+    slug: 'menkyo-koshin',
+    // ハンドルなので SteeringWheel。Car は速度違反・自動車税・通勤手当で使用中
+    icon: 'SteeringWheel',
+    name: '運転免許の更新期間 計算機',
+    description:
+      '生年月日と免許証の有効期限から、更新できる期間（誕生日の1か月前〜）、土日祝・年末年始（12/29〜1/3は1/4まで）で延びる最終日、70歳以上の高齢者講習・75歳以上の認知機能検査を受けられる期間、次の有効期限、失効したときの6か月の期限を道路交通法の条文どおりに日付で出します。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-14',
   },
   {
     // 仕様: docs/features/mynumber-card-yuko-kigen.md
@@ -852,6 +889,34 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/bmi-tekisei-taiju.md
+    // 公開条件：テスト環境で係数表と判定の境目（帯の 375px・360px の見え方も）を確かめたら public に
+    // （2027-01 第2週までに本番へ）。public にする PR でホームのカードと ToolPreview・ToolArt の絵を足す
+    slug: 'bmi',
+    icon: 'PersonSimple',
+    name: 'BMI・適正体重 計算機',
+    description:
+      '身長と体重から BMI と日本肥満学会の判定、標準体重（BMI 22）と普通体重に入る体重の幅を計算。年齢を入れると食事摂取基準（2025年版）の年代別の目標 BMI で見直し、5〜17歳は学校健診の肥満度で判定します。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-10',
+  },
+  {
+    slug: 'hinode-hinoiri',
+    // 地平線から昇る太陽の絵で SunHorizon
+    icon: 'SunHorizon',
+    name: '日の出・日の入り 計算機',
+    // 年は書かない（page.tsx の title・description は HATSUHINODE_YEAR から組み立てる）
+    description:
+      '都道府県庁所在地（47地点）か緯度・経度と日付から、日の出・南中・日の入り・昼の長さ・方位を分単位で計算。1か月の表、冬至・初日の出・夏至のボタン、初日の出の時刻を47都道府県で早い順に並べた一覧も。位置情報は使いません。',
+    category: '生活・健康',
+    // 2026-12-12 までに本番へ（仕様書の「状態」。初日の出・冬至の検索は12月第2週から立つ）。
+    // テスト環境で仕様書の「確かめること」を通してから、`public` にする PR で
+    // home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'wip',
+    updatedAt: '2026-11-14',
+  },
+  {
     slug: 'sleep-cycle',
     icon: 'MoonStars',
     name: '睡眠サイクル計算機',
@@ -865,10 +930,13 @@ export const tools: ToolDef[] = [
     slug: 'aircon-denkidai',
     icon: 'Snowflake',
     name: 'エアコン電気代 計算機',
-    description: 'エアコンの消費電力と使用時間から、1日・1ヶ月の電気代を計算。',
+    // 仕様: docs/features/aircon-denkidai-fuyu-hojo.md
+    // 2027-05-01 の後の再リリースで、説明文から「電気代の補助」を外す（暖房の語は残す）
+    description:
+      'エアコンの消費電力と使用時間から、冷房・暖房の1日・1ヶ月の電気代を計算。2026年12月〜2027年2月使用分の電気代の補助（電気・ガス料金支援）の値引き後の額と、検針票の使用量からの値引き額も。',
     category: '生活・健康',
     stage: 'public',
-    updatedAt: '2026-07-01',
+    updatedAt: '2026-11-13',
   },
   {
     // 仕様: docs/features/gasoline-dai-keisan.md
@@ -1037,6 +1105,17 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'wip',
     updatedAt: '2026-11-07',
+  },
+  {
+    // 仕様: docs/features/base64-henkan.md
+    slug: 'base64',
+    icon: 'Binary',
+    name: 'Base64 エンコード・デコード',
+    description:
+      'Base64を貼るだけで向きを自動判定し、日本語も文字化けさせずに戻します。UTF-8・Shift_JIS・ISO-2022-JPを自動判別、メール件名の=?ISO-2022-JP?B?…?=、base64url、data:画像のプレビューとファイル化まで。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-12',
   },
   {
     slug: 'hankaku-zenkaku',

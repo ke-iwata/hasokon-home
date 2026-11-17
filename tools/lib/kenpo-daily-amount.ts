@@ -52,10 +52,20 @@ export function kenpoDailyAmount(monthlyIncome: number, under12Months = false): 
   const capped = under12Months && graded > SHORT_TENURE_CAP;
   const std = capped ? SHORT_TENURE_CAP : graded;
 
+  return { ...dailyFromStandard(std), capped };
+}
+
+/**
+ * 「支給開始日以前12か月の各月の標準報酬月額の平均」から日額を出す。
+ *
+ * 月ごとの標準報酬月額が途中で変わる場合（報酬急減の特例改定など）は、呼ぶ側で
+ * 12か月の平均を作って渡す。平均は円未満が出うるが、÷30 の10円未満四捨五入で吸収される。
+ */
+export function dailyFromStandard(averageStandard: number): Omit<KenpoDailyAmount, 'capped'> {
+  const std = Math.max(0, averageStandard);
   // 標準報酬日額: ÷30 の10円未満四捨五入（=10円単位に丸め）
   const standardDaily = Math.round(std / 30 / 10) * 10;
   // 日額: ×2/3 の1円未満四捨五入
   const dailyAmount = Math.round((standardDaily * 2) / 3);
-
-  return { standardMonthly: std, capped, standardDaily, dailyAmount };
+  return { standardMonthly: std, standardDaily, dailyAmount };
 }
