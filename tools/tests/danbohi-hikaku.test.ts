@@ -6,6 +6,7 @@ import {
   LPG_MJ_PER_M3,
   airconWattEstimate,
   calcRow,
+  convertKeroseneUnit,
   defaultKerosene18L,
   gasM3PerHour,
   heatUnitTable,
@@ -60,6 +61,23 @@ describe('灯油（約束 1・3・7）', () => {
     expect(r.perMonth).not.toBe(Math.round(r.hourly.total * 8) * 30);
     expect(r.perHour).toBe(36);
     expect(r.perDay).toBe(287);
+  });
+
+  it('単位を切り替えると欄の値も換算する（2580 → 143.3 → 2579）', () => {
+    const perL = convertKeroseneUnit('2580', '18L', '1L');
+    expect(perL).toBe('143.3');
+    const back = convertKeroseneUnit(perL, '1L', '18L');
+    expect(back).toBe('2579');
+    // 換算後の額は切り替え前とほぼ同じ（18 倍にならない）。差は 1L の単価を小数第1位に丸めた分だけ
+    // （最大 0.05 円/L × 0.25 L/h × 240 時間 ＝ 3 円）
+    const before = ok(calcRow(keroseneRow, prices({ kerosenePerLiter: perLiterFrom18L(2580) }), usage()));
+    const after = ok(calcRow(keroseneRow, prices({ kerosenePerLiter: Number(perL) }), usage()));
+    expect(Math.abs(after.perMonth - before.perMonth)).toBeLessThanOrEqual(3);
+  });
+
+  it('単位の換算：空欄は空欄のまま、同じ単位なら変えない', () => {
+    expect(convertKeroseneUnit('', '18L', '1L')).toBe('');
+    expect(convertKeroseneUnit('2580', '18L', '18L')).toBe('2580');
   });
 
   it('18L の値を ÷ 18 して円/L', () => {

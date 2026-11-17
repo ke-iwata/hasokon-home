@@ -14,6 +14,7 @@ import {
   PRICE_LABELS,
   airconWattEstimate,
   calcRow,
+  convertKeroseneUnit,
   defaultKerosene18L,
   formatNum,
   formatYen,
@@ -28,6 +29,7 @@ import {
   type GasType,
   type HeaterKind,
   type HeaterRow,
+  type KeroseneUnit,
   type Prices,
 } from '@/lib/danbohi-hikaku';
 import { trackToolUse } from '@/lib/analytics';
@@ -94,7 +96,7 @@ export default function Calculator() {
   const [pref, setPref] = useState('');
   const [elec, setElec] = useState(String(DEFAULT_UNIT_PRICE));
   const [kerosene, setKerosene] = useState(String(defaultKerosene18L(null)));
-  const [keroseneUnit, setKeroseneUnit] = useState<'18L' | '1L'>('18L');
+  const [keroseneUnit, setKeroseneUnit] = useState<KeroseneUnit>('18L');
   const [cityGas, setCityGas] = useState('');
   const [lpg, setLpg] = useState('');
   const [cityGasMj, setCityGasMj] = useState(String(CITY_GAS_13A_MJ_PER_M3));
@@ -319,9 +321,9 @@ export default function Calculator() {
           <thead>
             <tr>
               <th style={{ textAlign: 'left' }}>機器</th>
-              <th>1時間</th>
-              <th>1日</th>
-              <th>1か月</th>
+              <th style={{ whiteSpace: 'nowrap' }}>1時間</th>
+              <th style={{ whiteSpace: 'nowrap' }}>1日</th>
+              <th style={{ whiteSpace: 'nowrap' }}>1か月</th>
             </tr>
           </thead>
           <tbody>
@@ -352,11 +354,11 @@ export default function Calculator() {
                     )}
                     {sh && <div style={small}>{sh}</div>}
                   </td>
-                  <td>{formatYen(res.hourlyAfter.total)}円</td>
-                  <td>{formatYen(res.hourlyAfter.total * usage.hoursPerDay)}円</td>
-                  <td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatYen(res.hourlyAfter.total)}円</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatYen(res.hourlyAfter.total * usage.hoursPerDay)}円</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
                     <strong>{formatYen(res.perMonthAfter)}円</strong>
-                    {res.discountMonth > 0 && <div style={small}>値引き前 {formatYen(res.perMonth)}円</div>}
+                    {res.discountMonth > 0 && res.shien === 'discounted' && <div style={small}>値引き前 {formatYen(res.perMonth)}円</div>}
                   </td>
                 </tr>
               );
@@ -394,7 +396,12 @@ export default function Calculator() {
             <input type="number" inputMode="decimal" min={0} step={1} value={kerosene} onChange={(e) => setKerosene(e.target.value)} style={{ flex: 1 }} />
             <select
               value={keroseneUnit}
-              onChange={(e) => setKeroseneUnit(e.target.value as '18L' | '1L')}
+              onChange={(e) => {
+                const to = e.target.value as KeroseneUnit;
+                // 欄の値も換算する（数値をそのまま残すと 18 倍の額になる）
+                setKerosene((v) => convertKeroseneUnit(v, keroseneUnit, to));
+                setKeroseneUnit(to);
+              }}
               aria-label="灯油の単価の単位"
               style={{ width: 'auto' }}
             >

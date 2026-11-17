@@ -170,6 +170,19 @@ export function perLiterFrom18L(yen18L: number): number {
   return yen18L / 18;
 }
 
+export type KeroseneUnit = '18L' | '1L';
+
+/**
+ * 灯油の単価の欄の値を、単位を切り替えたときに換算する（欄の数値をそのまま残すと 18 倍・18 分の 1 の額になる）。
+ * 18L→1L は ÷18 を小数第1位に、1L→18L は ×18 を整数に丸める。空欄・読めない値はそのまま返す
+ */
+export function convertKeroseneUnit(text: string, from: KeroseneUnit, to: KeroseneUnit): string {
+  if (from === to) return text;
+  const n = parsePrice(text);
+  if (n === null) return text;
+  return to === '1L' ? String(Math.round((n / 18) * 10) / 10) : String(Math.round(n * 18));
+}
+
 /** 灯油の既定の単価（18L・円）。都道府県を選んでいればその県、なければ全国平均 */
 export function defaultKerosene18L(pref: string | null): number {
   if (pref) {
