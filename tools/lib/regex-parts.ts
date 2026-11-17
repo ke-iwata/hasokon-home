@@ -131,6 +131,8 @@ export interface DialectRow {
   js: string;
   excel: string | null;
   sheets: string | null;
+  /** スプレッドシートで使えないときの書き換えの案（本文の表に添える） */
+  sheetsAlt?: string;
 }
 
 /** 使う先の違い（本文の表と、注意の判定の両方に使う） */
@@ -147,10 +149,11 @@ export const DIALECT_ROWS: readonly DialectRow[] = [
   },
   {
     id: 'script',
-    label: '\\p{Script=Hiragana}',
+    label: '\\p{Script=Hiragana}・\\p{L} などの Unicode の文字クラス',
     js: '○（u・v フラグ）',
     excel: '\\p{Hiragana}',
-    sheets: '\\p{Hiragana}（ヘルプは「Unicode 文字クラスのマッチング以外の RE2 を使用できます」と書いている。シートで確かめる）',
+    sheets: null,
+    sheetsAlt: 'Google のヘルプは Unicode 文字クラスのマッチングを除外。[ぁ-ゖ]・[ァ-ヺー] のような範囲で書く',
   },
   {
     id: 'flags',

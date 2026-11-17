@@ -42,7 +42,7 @@ const faq = [
   },
   {
     q: 'スプレッドシートで後読みが使えない',
-    a: 'Google スプレッドシートの REGEXMATCH・REGEXEXTRACT・REGEXREPLACE は RE2 という書き方で動き、後読み (?<=…)・先読み (?=…)・後方参照 \\1 を使えません（どれも時間が読めなくなる書き方なので、RE2 は持たない決まりです）。後読みで「円の前の数字」を取るような式は、(\\d+)円 のようにグループで囲んで REGEXEXTRACT で取り出す形に書き直します。',
+    a: 'Google スプレッドシートの REGEXMATCH・REGEXEXTRACT・REGEXREPLACE は RE2 という書き方で動き、後読み (?<=…)・先読み (?=…)・後方参照 \\1 を使えません（どれも時間が読めなくなる書き方なので、RE2 は持たない決まりです）。後読みで「円の前の数字」を取るような式は、(\\d+)円 のようにグループで囲んで REGEXEXTRACT で取り出す形に書き直します。また Google のヘルプは「Unicode 文字クラスのマッチング以外の RE2 を使用できます」としているので、\\p{Hiragana} のような書き方も避け、[ぁ-ゖ] のような文字の範囲で書きます。',
   },
   {
     q: 'メールアドレスを正規表現で厳密に判定できる？',
@@ -69,7 +69,7 @@ const jsonLd = {
 };
 
 const ext = { target: '_blank', rel: 'nofollow noopener noreferrer' } as const;
-const cell = (v: string | null) => (v === null ? '×（使えない）' : v);
+const cell = (v: string | null, alt?: string) => (v === null ? `×（使えない${alt ? `。${alt}` : ''}）` : v);
 
 export default function Page() {
   return (
@@ -141,7 +141,7 @@ export default function Page() {
                 <td style={{ textAlign: 'left' }}>{r.label}</td>
                 <td style={{ textAlign: 'left' }}>{r.js}</td>
                 <td style={{ textAlign: 'left' }}>{cell(r.excel)}</td>
-                <td style={{ textAlign: 'left' }}>{cell(r.sheets)}</td>
+                <td style={{ textAlign: 'left' }}>{cell(r.sheets, r.sheetsAlt)}</td>
               </tr>
             ))}
           </tbody>

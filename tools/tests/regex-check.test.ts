@@ -12,6 +12,7 @@ import {
   detectFeatures,
   displayPieces,
   expandReplacement,
+  hasUnicodeProperty,
   flagsToString,
   hasNestedQuantifier,
   invisibleNames,
@@ -350,13 +351,43 @@ describe('使う先の違い', () => {
     expect(ids('js')).toEqual([]);
   });
 
-  it('表は 6 行で、スプレッドシートで使えない（null）のは後読み・先読み・後方参照', () => {
+  it('表は 6 行で、スプレッドシートで使えない（null）のは後読み・先読み・後方参照・Unicode の文字クラス', () => {
     expect(DIALECT_ROWS).toHaveLength(6);
-    expect(DIALECT_ROWS.filter((r) => r.sheets === null).map((r) => r.id)).toEqual(['lookbehind', 'lookahead', 'backref']);
+    expect(DIALECT_ROWS.filter((r) => r.sheets === null).map((r) => r.id)).toEqual(['lookbehind', 'lookahead', 'backref', 'script']);
   });
 
-  it('\\p{Script=X} は Excel・スプレッドシート向けに \\p{X} へ直す', () => {
+  it('\\p{Script=X} は Excel 向けに \\p{X} へ直す', () => {
     expect(toSheetPattern('[\\p{Script=Katakana}ー]\\P{sc=Han}')).toBe('[\\p{Katakana}ー]\\P{Han}');
+  });
+
+  it('\\p{…}・\\P{…} を文字クラスの中でも見つける（\\\\p は文字の \\ と p なので数えない）', () => {
+    expect(hasUnicodeProperty('[\\p{Script=Katakana}ー]')).toBe(true);
+    expect(hasUnicodeProperty('\\P{L}')).toBe(true);
+    expect(hasUnicodeProperty('\\\\p{L}')).toBe(false);
+    expect(hasUnicodeProperty('[ぁ-ゖ]')).toBe(false);
+  });
+
+  it('スプレッドシートでは \\p{…} が使えない注意を出す（#518 必須 2。\\p{L} も同じ）', () => {
+    for (const pattern of ['\\p{Script=Hiragana}+', '\\p{L}+', '[\\p{Script=Katakana}ー]']) {
+      const ids = (target: 'js' | 'excel' | 'sheets') =>
+        warnings({ pattern, flags: DEFAULT_FLAGS, target, text: '', replacement: '' }).map((w) => w.id);
+      expect(ids('sheets')).toContain('unicode-property');
+      expect(ids('sheets')).not.toContain('script');
+      expect(ids('excel')).not.toContain('unicode-property');
+      expect(ids('js')).toEqual([]);
+    }
+    const msg = warnings({ pattern: '\\p{L}', flags: DEFAULT_FLAGS, target: 'sheets', text: '', replacement: '' })[0].message;
+    expect(msg).toMatch(/使えません/);
+    expect(msg).toMatch(/\[ぁ-ゖ\]/);
+  });
+
+  it('Excel では \\p{Script=X} の書き換えの注意だけ', () => {
+    const ids = warnings({ pattern: '\\p{Script=Han}', flags: DEFAULT_FLAGS, target: 'excel', text: '', replacement: '' }).map((w) => w.id);
+    expect(ids).toEqual(['script']);
+  });
+
+  it('[ぁ-ゖ] は ゔ・ゕ・ゖ まで入る（注意で勧める書き方）', () => {
+    expect(/^[ぁ-ゖ]+$/u.test('ゔゕゖあ')).toBe(true);
   });
 });
 
@@ -371,6 +402,12 @@ describe('そのまま貼れる形', () => {
     const f = pasteForms('"\\d+"', DEFAULT_FLAGS, '');
     expect(f.find((x) => x.label.startsWith('Excel'))!.code).toBe('=REGEXTEST(A1,"""\\d+""")');
     expect(f.find((x) => x.label.startsWith('スプレッドシート'))!.code).toBe('=REGEXMATCH(A1,"""\\d+""")');
+  });
+
+  it('\\p{…} を含む式は、スプレッドシート向けの形を出さない（貼っても動かないため）', () => {
+    const f = pasteForms('\\p{Script=Hiragana}+', DEFAULT_FLAGS, '$1');
+    expect(f.map((x) => x.target)).toEqual(['js', 'excel', 'excel']);
+    expect(f[1].code).toBe('=REGEXTEST(A1,"\\p{Hiragana}+")');
   });
 
   it('i フラグは Excel では引数、スプレッドシートでは (?i)', () => {
@@ -424,10 +461,10 @@ describe('安全の約束 3・4・判定の約束 10：送らない・保存し�
   it('URL を書き換えない', () => {
     expect(src).not.toMatch(/history\.(push|replace)State|location\.hash\s*=|useSearchParams|router\.(push|replace)/);
   });
-  it('照合は Worker で行い、1 秒で止めて作り直す', () => {
+  it('照合は Worker で行い、1 秒で止めて作り直す（止め方は tests/regex-runner.test.ts）', () => {
     expect(src).toMatch(/new Worker\(new URL\('\.\/regex\.worker\.ts'/);
+    expect(src).toMatch(/new MatchRunner/);
     expect(src).toMatch(/MATCH_TIMEOUT_MS/);
-    expect(src).toMatch(/\.terminate\(\)/);
   });
   it('入力のたびの再計算は 150ms 待つ', () => {
     expect(src).toMatch(/DEBOUNCE_MS/);

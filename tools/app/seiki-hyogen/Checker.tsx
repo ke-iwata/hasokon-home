@@ -25,6 +25,7 @@ import {
 } from '@/lib/regex-check';
 import { REGEX_PARTS, TARGETS, type RegexTarget } from '@/lib/regex-parts';
 import { trackToolUse } from '@/lib/analytics';
+import { MatchRunner, type WorkerLike } from '@/lib/regex-runner';
 import type { MatchRequest, MatchResponse } from './regex.worker';
 
 /**
@@ -90,7 +91,7 @@ const invisibleStyle: React.CSSProperties = {
   fontSize: '0.85em',
 };
 
-/** スマホで 2 行に収まるよう短く。くわしい意味は title とヒントの行に書く */
+/** スマホ（390 幅）で 3 行に収まるよう短く。くわしい意味は title とヒントの行に書く */
 const FLAG_LABELS: readonly { key: 'g' | 'i' | 'm' | 's'; label: string; title: string }[] = [
   { key: 'g', label: 'g 全部', title: 'すべての当たりを探す' },
   { key: 'i', label: 'i 大小', title: '大文字と小文字を区別しない' },
@@ -142,9 +143,7 @@ export default function Checker() {
   const [copied, setCopied] = useState<string | null>(null);
 
   const patternRef = useRef<HTMLInputElement>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const reqId = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const runnerRef = useRef<MatchRunner<Omit<MatchRequest, 'id'>, MatchResponse> | null>(null);
   const sent = useRef(new Set<string>());
   const pendingTarget = useRef<RegexTarget>('js');
   const pendingText = useRef('');
@@ -173,32 +172,32 @@ export default function Checker() {
     }
   };
 
-  const attachWorker = useCallback(() => {
-    const w = createWorker();
-    if (w) {
-      w.onmessage = (e: MessageEvent<MatchResponse>) => {
-        if (e.data.id !== reqId.current) return;
-        clearTimeout(timer.current);
-        const { result, replaced, error } = e.data;
-        if (error || !result) {
-          setOutcome({ kind: 'error', error: { kind: 'other', message: 'パターンの書き方に誤りがあります。' } });
-          return;
-        }
-        setOutcome({ kind: 'ok', result, replaced, text: pendingText.current });
-        trackOnce(checkAction(pendingTarget.current, result.total));
-      };
-    }
-    workerRef.current = w;
-  }, [trackOnce]);
-
+  // 照合の係。前の照合が返っていなければ Worker を作り直してから送る（lib/regex-runner.ts）
   useEffect(() => {
-    attachWorker();
+    const runner = new MatchRunner<Omit<MatchRequest, 'id'>, MatchResponse>(
+      () => createWorker() as unknown as WorkerLike | null,
+      {
+        onResult: ({ result, replaced, error }) => {
+          if (error || !result) {
+            setOutcome({ kind: 'error', error: { kind: 'other', message: 'パターンの書き方に誤りがあります。' } });
+            return;
+          }
+          setOutcome({ kind: 'ok', result, replaced, text: pendingText.current });
+          trackOnce(checkAction(pendingTarget.current, result.total));
+        },
+        onTimeout: () => {
+          setOutcome({ kind: 'timeout' });
+          trackOnce(timeoutAction(pendingTarget.current));
+        },
+      },
+      MATCH_TIMEOUT_MS,
+    );
+    runnerRef.current = runner;
     return () => {
-      workerRef.current?.terminate();
-      workerRef.current = null;
-      clearTimeout(timer.current);
+      runner.dispose();
+      runnerRef.current = null;
     };
-  }, [attachWorker]);
+  }, [trackOnce]);
 
   const prepared = useMemo(() => prepareText(text), [text]);
   const flagStr = flagsToString(flags);
@@ -206,19 +205,19 @@ export default function Checker() {
   // 入力が止まって 150ms 後に照合する（判定の約束 9）
   useEffect(() => {
     const t = setTimeout(() => {
-      const id = ++reqId.current;
-      clearTimeout(timer.current);
+      const runner = runnerRef.current;
       if (pattern === '') {
+        runner?.cancel();
         setOutcome({ kind: 'idle' });
         return;
       }
       const c = compile(pattern, flagStr);
       if ('error' in c) {
+        runner?.cancel();
         setOutcome({ kind: 'error', error: c.error });
         return;
       }
-      const w = workerRef.current;
-      if (!w) {
+      if (!runner?.available) {
         // Worker の無い環境：時間切れで止められないので、照合はしない
         setOutcome({ kind: 'error', error: { kind: 'other', message: 'このブラウザでは照合できません（Web Worker が使えません）。' } });
         return;
@@ -226,21 +225,12 @@ export default function Checker() {
       pendingTarget.current = target;
       pendingText.current = prepared.text;
       setOutcome({ kind: 'busy' });
-      const req: MatchRequest = { id, pattern, flags: flagStr, text: prepared.text, replacement: useReplace ? replacement : null };
-      w.postMessage(req);
-      timer.current = setTimeout(() => {
-        if (id !== reqId.current) return;
-        // 1 秒を超えたら止めて、新しい Worker を作り直す（安全の約束 1）
-        workerRef.current?.terminate();
-        attachWorker();
-        setOutcome({ kind: 'timeout' });
-        trackOnce(timeoutAction(target));
-      }, MATCH_TIMEOUT_MS);
+      runner.run({ pattern, flags: flagStr, text: prepared.text, replacement: useReplace ? replacement : null });
     }, DEBOUNCE_MS);
     return () => clearTimeout(t);
     // target は照合し直す理由にならない（計測の値に使うだけ）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pattern, flagStr, prepared.text, replacement, useReplace, attachWorker, trackOnce]);
+  }, [pattern, flagStr, prepared.text, replacement, useReplace]);
 
   const onPatternChange = (v: string) => {
     const split = splitSlashForm(v);

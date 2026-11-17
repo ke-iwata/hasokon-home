@@ -266,6 +266,17 @@ export function runMatch(re: RegExp, text: string, limit = HIGHLIGHT_LIMIT): Mat
 const segmenter: Intl.Segmenter | undefined =
   typeof Intl !== 'undefined' && 'Segmenter' in Intl ? new Intl.Segmenter('ja', { granularity: 'grapheme' }) : undefined;
 
+/** コードポイントごとに、UTF-16 の位置つきで区切る（Segmenter の無い環境の代わり） */
+function codePoints(text: string): { index: number; segment: string }[] {
+  const out: { index: number; segment: string }[] = [];
+  let index = 0;
+  for (const segment of text) {
+    out.push({ index, segment });
+    index += segment.length;
+  }
+  return out;
+}
+
 /**
  * UTF-16 の位置（昇順）を、行と書記素の列に直す（判定の約束 4）。
  * 位置が書記素の途中なら、その書記素の列にする
@@ -278,7 +289,7 @@ export function positions(text: string, indexes: readonly number[]): { line: num
   let column = 1;
   const iter: Iterable<{ index: number; segment: string }> = segmenter
     ? segmenter.segment(text)
-    : Array.from(text, (segment, i) => ({ segment, index: i })); // Segmenter の無い環境の代わり（位置はずれうる）
+    : codePoints(text); // Segmenter の無い環境の代わり（コードポイントごと。結合文字の列はずれうる）
   for (const { index, segment } of iter) {
     const segEnd = index + segment.length;
     while (k < indexes.length && indexes[k] < segEnd) {
@@ -469,7 +480,21 @@ function scan(pattern: string, visit: (i: number, inClass: boolean) => void): vo
   }
 }
 
-/** パターンの中で使われている書き方（文字クラスの中は見ない） */
+/**
+ * `\p{…}`・`\P{…}`（Unicode の文字クラス）を使っているか。文字クラスの中も数える。
+ * スプレッドシートは使えない（Google のヘルプ「Unicode 文字クラスのマッチング以外の RE2 を使用できます」）
+ */
+export function hasUnicodeProperty(pattern: string): boolean {
+  let found = false;
+  for (let i = 0; i < pattern.length && !found; i++) {
+    if (pattern[i] !== '\\') continue;
+    if ((pattern[i + 1] === 'p' || pattern[i + 1] === 'P') && pattern[i + 2] === '{') found = true;
+    i++;
+  }
+  return found;
+}
+
+/** パターンの中で使われている書き方（文字クラスの中は見ない。`unicode-property` だけは中も見る） */
 export function detectFeatures(pattern: string): Set<string> {
   const f = new Set<string>();
   scan(pattern, (i, inClass) => {
@@ -481,6 +506,7 @@ export function detectFeatures(pattern: string): Set<string> {
     else if (/^\\[1-9]/.test(rest) || /^\\k</.test(rest)) f.add('backref');
   });
   if (/\\[pP]\{(Script|sc|Script_Extensions|scx)=/.test(pattern)) f.add('script');
+  if (hasUnicodeProperty(pattern)) f.add('unicode-property');
   return f;
 }
 
@@ -551,13 +577,14 @@ export function warnings({ pattern, flags, target, text, replacement }: WarningI
       w.push({ id: 'named-group', message: `名前つきグループは${t}（RE2）では (?P<名前>…) と書くのが確実です。` });
   }
   if (target !== 'js') {
-    if (feats.has('script'))
+    if (target === 'sheets' && feats.has('unicode-property'))
       w.push({
-        id: 'script',
+        id: 'unicode-property',
         message:
-          `${t}では \\p{Script=Hiragana} ではなく \\p{Hiragana} と書きます（下の「そのまま貼れる形」は書き換え済み）。` +
-          (target === 'sheets' ? 'Google のヘルプは「Unicode 文字クラスのマッチング以外の RE2 を使用できます」と書いているので、シートで当たるか確かめてください。' : ''),
+          'スプレッドシートでは \\p{…} を使えません（Google のヘルプは「Unicode 文字クラスのマッチング以外の RE2 を使用できます」と書いています）。[ぁ-ゖ]・[ァ-ヺー] のような文字の範囲で書きます。この式はシート向けの「そのまま貼れる形」を出していません。',
       });
+    if (target === 'excel' && feats.has('script'))
+      w.push({ id: 'script', message: 'Excel では \\p{Script=Hiragana} ではなく \\p{Hiragana} と書きます（下の「そのまま貼れる形」は書き換え済み）。' });
     if (flags.i)
       w.push({
         id: 'flag-i',
@@ -613,7 +640,7 @@ function escapeSlash(pattern: string): string {
   return out;
 }
 
-/** Excel・スプレッドシート向けに \p{Script=X} を \p{X} に直す */
+/** Excel 向けに \p{Script=X} を \p{X} に直す（スプレッドシートは \p{…} そのものを使えない） */
 export function toSheetPattern(pattern: string): string {
   return pattern.replace(/\\([pP])\{(?:Script|sc)=([A-Za-z_]+)\}/g, '\\$1{$2}');
 }
@@ -643,6 +670,7 @@ export function pasteForms(pattern: string, flags: FlagState, replacement: strin
       code: `=REGEXMATCH(A1,${q((flags.i ? '(?i)' : '') + inline + sheetPat)})`,
     },
   ];
+  const sheetsOk = !hasUnicodeProperty(pattern);
   if (replacement !== '') {
     forms.push(
       {
@@ -657,7 +685,8 @@ export function pasteForms(pattern: string, flags: FlagState, replacement: strin
       },
     );
   }
-  return forms;
+  // スプレッドシートは \\p{…} を使えないので、貼っても動かない式は出さない
+  return sheetsOk ? forms : forms.filter((f) => f.target !== 'sheets');
 }
 
 // ---------------------------------------------------------------------------
