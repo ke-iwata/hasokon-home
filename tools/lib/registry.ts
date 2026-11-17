@@ -975,6 +975,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-06',
   },
   {
+    // 仕様: docs/features/hensachi-keisan.md
+    slug: 'hensachi',
+    icon: 'Exam',
+    name: '偏差値 計算機（点数を貼り付けて全員分も）',
+    description:
+      '点数・平均点・標準偏差から偏差値と上位何%（正規分布の目安）、目標の偏差値から必要な点数を計算。クラスや部活の点数を貼り付ければ、平均・母標準偏差・全員の偏差値と順位を一度に。点数は端末の外に送りません。',
+    category: '計算・変換',
+    // テスト環境で仕様書の「確かめること」を通したら public（2027-01-10 まで）
+    stage: 'wip',
+    updatedAt: '2026-11-17',
+  },
+  {
     slug: 'waribiki-percent',
     icon: 'Percent',
     name: '割引・パーセント計算',
