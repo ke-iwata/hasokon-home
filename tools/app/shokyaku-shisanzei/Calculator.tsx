@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ASSETS, assetById, usedLife } from '@/lib/genka-shokyaku';
+import { ASSETS, TOKUREI_LIMIT_AFTER, assetById, usedLife } from '@/lib/genka-shokyaku';
 import {
   KAISEI_AFTER_NENDO,
   KAISEI_BEFORE_NENDO,
@@ -474,7 +474,7 @@ function AssetResult({ x, nendo }: { x: Assessment['rows'][number]; nendo: numbe
       {x.treatmentMismatch && (
         <p className="hint" style={{ margin: '4px 0 0' }}>
           {x.row.treatment === 'tokurei'
-            ? `少額減価償却資産の特例は、${x.row.acquired.year}年${x.row.acquired.month}月の取得なら${man(tokureiLimitFor(x.row.acquired))}未満が対象です（2026年3月以前の取得は30万円未満）。取得価額が上限を超えているので、申告に載る資産として計算しています。`
+            ? `少額減価償却資産の特例は、${x.row.acquired.year}年${x.row.acquired.month}月の取得なら${man(tokureiLimitFor(x.row.acquired))}未満が対象です${tokureiLimitFor(x.row.acquired) === TOKUREI_LIMIT_AFTER ? '（2026年3月以前の取得は30万円未満）' : ''}。取得価額が上限を超えているので、申告に載る資産として計算しています。`
             : `取得価額が「${TREATMENT_LABEL[x.row.treatment]}」の上限を超えているので、申告に載る資産として計算しています。`}
         </p>
       )}
