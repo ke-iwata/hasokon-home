@@ -6,7 +6,7 @@ import Breadcrumb from '@/app/Breadcrumb';
 import RelatedTools from '@/app/RelatedTools';
 import ToolMeta from '@/app/ToolMeta';
 import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
-import { IKKATSU_LIMIT, SHOGAKU_LIMIT, TOKUREI_LIMIT_AFTER } from '@/lib/genka-shokyaku';
+import { IKKATSU_LIMIT, SHOGAKU_LIMIT, TOKUREI_LIMIT_AFTER, TOKUREI_LIMIT_BEFORE } from '@/lib/genka-shokyaku';
 import {
   KAISEI_AFTER_NENDO,
   KAISEI_BEFORE_NENDO,
@@ -57,7 +57,7 @@ const faq = [
   },
   {
     q: `${man(TOKUREI_LIMIT_AFTER)}未満の特例で全額経費にした物は申告しなくていい？`,
-    a: `申告が要ります。償却資産から外れるのは、${man(SHOGAKU_LIMIT)}未満で全額経費にした物と、${man(IKKATSU_LIMIT)}未満で一括償却（3年）にした物だけです（地方税法施行令49条）。中小事業者の少額減価償却資産の特例（租税特別措置法28条の2）で経費にした物は含まれません。`,
+    a: `申告が要ります。償却資産から外れるのは、${man(SHOGAKU_LIMIT)}未満で全額経費にした物と、${man(IKKATSU_LIMIT)}未満で一括償却（3年）にした物だけです（地方税法施行令49条）。少額減価償却資産の特例（租税特別措置法。個人は28条の2、法人は67条の5）で経費にした物は含まれません。特例の上限は2026年4月1日以後の取得が${man(TOKUREI_LIMIT_AFTER)}未満、それより前の取得は${man(TOKUREI_LIMIT_BEFORE)}未満です。`,
   },
   {
     q: `${R_AFTER}の申告期限は1月31日？`,
@@ -209,7 +209,8 @@ export default function Page() {
       <div className="note">
         この計算機は目安です。評価額は最終的に市町村が決め、納税通知書の額が正しい額です。
         市町村によっては条例で免税点未満にも課税する場合（351条ただし書）や、標準税率より高い税率の場合があります。
-        1月1日に取得した物の扱い、課税標準の特例（わがまち特例・先端設備）は扱っていません。土地・家屋は対象外です。
+        1月1日に取得した物は、前年12月の取得として計算します（東京都主税局の説明。その年度から対象になります）。
+        課税標準の特例（わがまち特例・先端設備）は扱っていません。土地・家屋は対象外です。
       </div>
 
       <h2>よくある質問</h2>
