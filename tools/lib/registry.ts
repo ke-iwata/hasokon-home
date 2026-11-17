@@ -952,6 +952,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-04',
   },
   {
+    // 仕様: docs/features/danbohi-hikaku.md
+    // 公開条件：テスト環境で「計算の約束」1〜9 と 1366×768・390×844 を確かめたら wip → public（2026-12-08 までに本番）。
+    // public にする PR で灯油の値（gasoline-dai.ts の kerosene18L・KEROSENE_BY_PREF）を最新の週に更新し、
+    // カードの絵（ToolPreview / ToolArt）とホームのカードを足す。2027-03-01 の後に支援の言い回しのため再リリース
+    slug: 'danbohi-hikaku',
+    icon: 'Fire',
+    name: '暖房費 比較 計算機',
+    description:
+      'エアコン・石油ファンヒーター・ガスファンヒーター（都市ガス／LPガス）・電気ストーブ・こたつの1時間・1日・1か月の暖房費を、カタログの値と自分の単価で並べて比較。灯油は都道府県の店頭価格（日付つき）、電気・都市ガスは2026年12月〜2027年2月使用分の値引きを使用月で反映。',
+    category: '生活・健康',
+    stage: 'wip',
+    updatedAt: '2026-11-17',
+  },
+  {
     slug: 'warikan',
     icon: 'Receipt',
     name: '割り勘計算機',
