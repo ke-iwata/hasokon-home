@@ -1,12 +1,12 @@
 # 本番が 13 日間 main に追いついていない（2026-11-16 時点）— 公開中ツールの誤りの修正 4 本（相続登記の免税の条文番号・19〜22歳の扶養 150 万円・割引の 1 円ずれ・ヘボン式）と冬の電気代支援・年齢早見の年またぎが、テスト環境にだけ出ている。v1.31.0 を出すことと、「直したのに本番が古い」を毎週数えて知らせる仕組み
 
-**状態**：提案（2026-11-16 起票。セッション `session_012RoU2HLB7JAQuHjbhcCiaR`）。
+**状態**：提案（2026-11-16 起票。セッション `session_012RoU2HLB7JAQuHjbhcCiaR`。**2026-11-17 に企画レビュー（#509）の必須 1 点を反映**：CI の shallow チェックアウトではタグが取れないので `fetch-depth: 0` にし、「タグが無い」と「履歴が shallow」を分ける。任意 3 点〈PR 番号の取り方・`lib/` は安全側で `public-*`・件名の判定が外れたとき〉も反映）。
 **このPRは仕様書だけで、コードは触っていない。**
 **優先度：高（公開中ページの正確さ）。** A は運営者の判断 1 回で済む。**期日は A が 2026-11-20、B が 2026-12-11**
 （12-01 から電気代支援の値引きが始まり、12-20 から年齢早見表の基準年の切り替え期間に入る。下「期日の根拠」）。
 **着手条件**：A は**運営者の「リリースして」**（CLAUDE.md「リリースの約束」。エージェントは自分からタグを打たない）。B は無し。
 **対象**：A＝運営作業のみ（`release.yml` の起動）。B＝`scripts/release-gap.mjs`（新規）・`scripts/lib/release-gap.mjs`（新規）・
-`scripts/test/release-gap.test.mjs`（新規）・`.github/workflows/gsc-audit.yml`（ステップを 1 つ足す）・`scripts/README.md`（節を 1 つ足す）
+`scripts/test/release-gap.test.mjs`（新規）・`.github/workflows/gsc-audit.yml`（ステップを 1 つ足し、**チェックアウトを `fetch-depth: 0` にする**。下 B-1 の 0）・`scripts/README.md`（節を 1 つ足す）
 **起票**：2026-11-16
 **関連**：[kokai-tool-seikaku-2026-11-04.md](./kokai-tool-seikaku-2026-11-04.md)（#458 で実装）・
 [kokai-tool-seikaku-2026-11-06.md](./kokai-tool-seikaku-2026-11-06.md)（#467 で実装）・
@@ -21,7 +21,7 @@
 
 ### 1. 本番の最後のリリースは v1.30.0（2026-11-03 12:39 JST）
 
-`git log v1.30.0..origin/main` は **50 コミット**（うち `feat:` 27 本）。本番の HTML の `last-modified` も
+`git log v1.30.0..origin/main` は **50 コミット**（11-16 時点。`git rev-list --count v1.30.0..bcfc843` で数えた値。数え方で 1 本前後する。うち `feat:` 27 本）。本番の HTML の `last-modified` も
 `Tue, 03 Nov 2026 03:45:35 GMT` のまま。そのあいだに**公開中（`public`）のツールの誤りを直した PR** が 2 本、
 **期日のある季節の更新**が 2 本、main に入ってテスト環境にだけ出ている。
 
@@ -105,18 +105,28 @@ llms.txt に出ず `noindex`**。URL を直接叩けば見える（秘密には�
 
 #### B-1. 数え方
 
+0. **前提：履歴とタグがそろっていること。** `gsc-audit.yml` は `actions/checkout` をオプションなしで使っていて、既定は `fetch-depth: 1`・タグなし。
+   このままだと手順 1 の `git describe` が `No tags can describe ...` で失敗する。**このステップのチェックアウトを `fetch-depth: 0` にする**
+   （`fetch-tags: true` ＋十分な深さでもよいが、深さの見積もりを持ちたくないので 0 にする）。
+   そのうえで、スクリプトは最初に `git rev-parse --is-shallow-repository` を見て、`true` なら**「リリース前」とは言わず**
+   `::warning::履歴が shallow のため、リリースの遅れを数えられません（checkout の fetch-depth を確認）` と出して数えずに終える
 1. 最新の `v*` タグ（`git describe --tags --abbrev=0 --match 'v*'`）と、その日時を取る
 2. `git log <tag>..origin/main --format=%H%x09%cI%x09%s` で、`feat:` で始まるコミットを並べる
 3. 各コミットの変更ファイル（`git show --name-only`）から、**本番で見えるものに効くか**を次の順で決める
 
 | 区分 | 判定 | 例 |
 |---|---|---|
-| `public-fix`（**最優先**） | 件名に「正確さ」「誤り」「ずれ」「条文」のどれかを含み、変更が `stage: 'public'` の slug の `app/<slug>/` か、その slug が import する `lib/` に入っている | #458・#467 |
-| `public-update` | 件名は上に当たらないが、`public` の slug の `app/<slug>/`・`lib/`、`home/`、`learn/` の本文に変更がある | #477・#499 |
+| `public-fix`（**最優先**） | 件名に「正確さ」「誤り」「ずれ」「条文」のどれかを含み、変更が `stage: 'public'` の slug の `app/<slug>/` か、**`public` の slug を 1 つでも持つアプリの `lib/`** に入っている（import はたどらない。安全側に倒す） | #458・#467 |
+| `public-update` | 件名は上に当たらないが、`public` の slug の `app/<slug>/`、`public` の slug を持つアプリの `lib/`、`home/`、`learn/` の本文に変更がある | #477・#499 |
 | `deps` | 変更が `package.json` / `package-lock.json` だけ | #484 |
 | `unlisted` | 変更が `wip` / `preview` の slug だけ | 新ツール・新ゲームの追加 |
 
-`public` の slug は `scripts/lib/registry.mjs`（既存。registry の字面を読む）で取る。**判定のための新しい読み取りを書かない。**
+`public` の slug は `scripts/lib/registry.mjs`（既存。registry の字面を読む）で取る。**判定のための新しい読み取りを書かない**
+（import をたどる解析もしない。`lib/` の変更は、そのアプリに `public` の slug があれば `public-*` に入れる）。
+
+- **件名のキーワード判定は書き方次第で外れる。** 外れても `public-update` に落ちて表には出るので致命的ではない
+  （warning の対象から漏れるだけ）。点検の実装 PR は件名に「正確さ」を入れる、という今の書き方が続く限りは当たる
+- **PR 番号**は squash の件名末尾の `(#NNN)` から取る。無いコミット（直 push）は短い SHA で出す
 
 #### B-2. 出力（Job Summary とコンソール）
 
@@ -146,7 +156,9 @@ main との差: feat 27 本
 
 - 件名と変更ファイルの組から区分を決める関数を純粋関数にし、上の表の 4 区分を 1 件ずつ固定する
 - `public` と `wip` の両方を触ったコミットは `public-*` に入る（安全側）
-- タグが 1 本も無いときは「リリース前」と出して落ちない
+- タグが 1 本も無いときは「リリース前」と出して落ちない（**shallow でないときだけ**）
+- **履歴が shallow のときは「リリース前」にせず `::warning::` を出して数えない**（`--is-shallow-repository` が `true` の固定ケースを 1 件）
+- 件名末尾の `(#NNN)` から PR 番号を取る／無ければ短い SHA
 - 日数の数え方は JST の暦日（`2026-11-05` に入って `2026-11-08` に数えたら 3 日）
 
 ### C. やらないこと
