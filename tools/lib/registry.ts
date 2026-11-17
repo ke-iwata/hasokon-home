@@ -1105,6 +1105,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-12',
   },
   {
+    // 仕様: docs/features/seiki-hyogen-checker.md
+    slug: 'seiki-hyogen',
+    icon: 'BracketsCurly',
+    name: '正規表現チェッカー',
+    description:
+      'パターンと文章を貼るだけで、当たった箇所の色分け・グループの中身・置換の結果をその場で。ひらがな・カタカナ・漢字・郵便番号の部品、Excel（REGEXTEST）・Googleスプレッドシート（REGEXMATCH）で動かない書き方の注意つき。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-17',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
