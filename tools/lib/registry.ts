@@ -108,7 +108,7 @@ export const tools: ToolDef[] = [
     category: 'お金・社会保険',
     // テスト環境で仕様書の「確かめること」を通したら public（2026-12-20 まで）
     stage: 'wip',
-    updatedAt: '2026-11-17',
+    updatedAt: '2026-11-18',
   },
   {
     // 仕様: docs/features/bingo-chusenki.md

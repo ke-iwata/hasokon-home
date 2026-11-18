@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { formatDate, parseDate, type DateParts } from '@/lib/date-parts';
 import { HOLIDAY_LAST_YEAR } from '@/lib/nissu-keisan';
@@ -6,12 +8,15 @@ import {
   closedReason,
   dayCount,
   daysForAfterN,
+  dueFor,
   freelanceApplies,
   holidayKnown,
   lateInterest,
   legalDueDate,
   longestCase,
   payDateFor,
+  reductionInterest,
+  saiitakuDueDate,
   toritekiClause,
   worstCaseDays,
   END_OF_MONTH,
@@ -268,5 +273,114 @@ describe('適用の判定', () => {
     expect(applicability({ ...base, ordererCapital: 5_000_000, ordererEmployees: 0, contractorType: 'individual' }).verdict).toBe(
       'none',
     );
+  });
+});
+
+/**
+ * 再委託の30日（フリーランス法第4条第3項）と減額の遅延利息（取適法第6条第2項）。
+ * 仕様: docs/features/shiharai-kijitsu-saiitaku-gengaku.md「確かめること」1〜7
+ */
+describe('再委託の支払期日（フリーランス法第4条第3項）', () => {
+  it('1 元委託支払期日 2027-02-28 → 2027-03-29（2/28 を1日目として30日目）', () => {
+    expect(iso(saiitakuDueDate(d('2027-02-28')))).toBe('2027-03-29');
+  });
+
+  it('2 受領 2027-01-10・元委託 2027-03-01（freelance）→ 60日の 3/10 より遅い 3/30', () => {
+    const r = dueFor(d('2027-01-10'), 'freelance', d('2027-03-01'));
+    expect(iso(r.limit60)).toBe('2027-03-10');
+    expect(iso(r.saiitakuDue!)).toBe('2027-03-30');
+    expect(iso(r.due)).toBe('2027-03-30');
+    expect(r.basis).toBe('saiitaku30');
+  });
+
+  it('3 再委託のチェックを外す（元委託支払期日なし）と受領日＋59日に戻る', () => {
+    const r = dueFor(d('2027-01-10'), 'freelance', null);
+    expect(iso(r.due)).toBe('2027-03-10');
+    expect(r.basis).toBe('received60');
+    expect(r.saiitakuDue).toBeNull();
+  });
+
+  it('4 both：見出しは早いほう（取適法の 3/10）、3/30 は補足', () => {
+    const r = dueFor(d('2027-01-10'), 'both', d('2027-03-01'));
+    expect(iso(r.due)).toBe('2027-03-10');
+    expect(r.basis).toBe('received60');
+    expect(iso(r.saiitakuDue!)).toBe('2027-03-30');
+  });
+
+  it('4 both：元委託 2027-01-20 なら再委託の 2/18 のほうが早く、見出しになる', () => {
+    const r = dueFor(d('2027-01-10'), 'both', d('2027-01-20'));
+    expect(iso(r.due)).toBe('2027-02-18');
+    expect(r.basis).toBe('saiitaku30');
+  });
+
+  it('取適法だけ・対象外では再委託の特則を使わない', () => {
+    expect(iso(dueFor(d('2027-01-10'), 'toriteki', d('2027-03-01')).due)).toBe('2027-03-10');
+    expect(dueFor(d('2027-01-10'), 'none', d('2027-03-01')).saiitakuDue).toBeNull();
+  });
+});
+
+describe('減額の遅延利息（取適法第6条第2項）', () => {
+  it('5 減額日が60日以内：起算は受領日＋60日（3/11）、21日・252円', () => {
+    const r = reductionInterest(30_000, d('2027-01-10'), d('2027-02-20'), d('2027-03-31'));
+    expect(iso(r.fromDate)).toBe('2027-03-11');
+    expect(r.days).toBe(21);
+    expect(r.interest).toBe(252);
+  });
+
+  it('6 減額日が60日経過後：起算は減額日（3/20）、12日・144円', () => {
+    const r = reductionInterest(30_000, d('2027-01-10'), d('2027-03-20'), d('2027-03-31'));
+    expect(iso(r.fromDate)).toBe('2027-03-20');
+    expect(r.days).toBe(12);
+    expect(r.interest).toBe(144);
+  });
+
+  it('減額日が受領日＋60日ちょうどなら第1項と同じ起算日', () => {
+    const r = reductionInterest(30_000, d('2027-01-10'), d('2027-03-11'), d('2027-03-31'));
+    expect(r).toEqual(lateInterest(30_000, d('2027-01-10'), d('2027-03-31')));
+  });
+
+  it('起算日より前に払えば0円', () => {
+    const r = reductionInterest(30_000, d('2027-01-10'), d('2027-03-20'), d('2027-03-19'));
+    expect(r.days).toBe(0);
+    expect(r.interest).toBe(0);
+  });
+});
+
+describe('7 文言：「第4条の60日」と言い切らない', () => {
+  const dir = fileURLToPath(new URL('../app/shiharai-kijitsu/', import.meta.url));
+  const page = readFileSync(`${dir}page.tsx`, 'utf8');
+  const calc = readFileSync(`${dir}Calculator.tsx`, 'utf8');
+  /** 句点・改行で文に分ける */
+  const sentences = (src: string) => src.split(/[。\n]/);
+
+  it('「第4条の60日」を含む文には、同じ文に「元委託」がある', () => {
+    for (const src of [page, calc]) {
+      const hits = sentences(src).filter((s) => /第4条の60日/.test(s));
+      expect(hits.length).toBeGreaterThan(0);
+      expect(hits.filter((s) => !/元委託/.test(s))).toEqual([]);
+    }
+  });
+
+  it('FAQ の「60日ルール（…）はかかります」にも再委託が添えてある', () => {
+    const hits = sentences(page).filter((s) => /60日ルール[^ん]*かかります/.test(s));
+    expect(hits.length).toBeGreaterThan(0);
+    expect(hits.filter((s) => !/再委託/.test(s))).toEqual([]);
+  });
+
+  it('FAQ「フリーランスへの発注は？」に再委託の30日がある', () => {
+    const faq = page.slice(page.indexOf("q: 'フリーランスへの発注は？'"));
+    const answer = faq.slice(0, faq.indexOf('},'));
+    expect(answer).toMatch(/元委託/);
+    expect(answer).toMatch(/30日/);
+  });
+
+  it('本文と Calculator の2か所に「元委託」「30日」がある', () => {
+    expect(page).toMatch(/第4条の60日ルール（再委託で元委託の支払期日などを明示されているときは、元委託の支払期日から30日）/);
+    expect(calc.match(/第4条の60日（再委託[^）]*元委託の支払期日から30日）/g)?.length).toBe(2);
+  });
+
+  it('減額の遅延利息の FAQ がある（「違法です」と断定しない）', () => {
+    expect(page).toMatch(/第6条第2項/);
+    expect(page).not.toMatch(/違法です/);
   });
 });
