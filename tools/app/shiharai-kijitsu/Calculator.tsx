@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { trackToolUse } from '@/lib/analytics';
-import { addDays, formatDate, formatJa, parseDate, weekdayLabel, type DateParts } from '@/lib/date-parts';
+import { addDays, compareDate, formatDate, formatJa, parseDate, weekdayLabel, type DateParts } from '@/lib/date-parts';
 import {
   CLOSING_DAYS,
   CONTRACTOR_TYPE_LABELS,
@@ -321,7 +321,7 @@ export default function Calculator() {
                 />
               </div>
               <div className="field">
-                <label htmlFor="shiharai-reduced-on">減額された日（支払いのときに差し引かれたならその日）</label>
+                <label htmlFor="shiharai-reduced-on">減額された日</label>
                 <input
                   id="shiharai-reduced-on"
                   type="date"
@@ -347,7 +347,7 @@ export default function Calculator() {
           )}
           <div className="field">
             <label htmlFor="shiharai-paid">
-              {reduction ? '減額された分を支払った（支払う）日' : '実際に支払った（支払う）日'}
+              {reduction ? '減額分を支払う日' : '実際に支払った（支払う）日'}
             </label>
             <input
               id="shiharai-paid"
@@ -359,6 +359,11 @@ export default function Calculator() {
             />
           </div>
         </div>
+      )}
+      {mode === 'late' && reduction && (
+        <p className="hint" style={{ marginTop: 0 }}>
+          減額された日は、支払いのときに差し引かれたならその支払日です。支払う日は、差し引かれた分をあとから払う（払った）日です。
+        </p>
       )}
 
       <details
@@ -452,7 +457,7 @@ export default function Calculator() {
       </details>
 
       {mode === 'due' && saiitakuAvailable && (
-        <details className="field" open={saiitaku || undefined}>
+        <details className="field">
           <summary style={{ cursor: 'pointer' }}>再委託のとき（フリーランス法第4条第3項）</summary>
           <div style={{ marginTop: 8 }}>
             <label style={{ fontWeight: 400 }}>
@@ -478,6 +483,11 @@ export default function Calculator() {
                   onChange={(e) => setMotoDue(e.target.value)}
                   onBlur={() => trackToolUse(SLUG, 'due-moto-due')}
                 />
+                {motoDueDate && receivedDate && compareDate(motoDueDate, receivedDate) < 0 && (
+                  <p className="hint" style={{ color: 'var(--danger-fg)' }}>
+                    元委託の支払期日が受領日より前です。日付を確かめてください。
+                  </p>
+                )}
               </div>
             )}
             <p className="hint">
