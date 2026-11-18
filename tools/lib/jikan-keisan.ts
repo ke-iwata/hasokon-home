@@ -112,6 +112,15 @@ export function parseBreak(input: string): number | null {
   return parseDuration(s);
 }
 
+/**
+ * 休憩を3〜4桁の数（`120` → 1:20）として `h:mm` で読んだか。
+ * 「120分」のつもりで打つと実働が多く出るので、画面で読み方を見せるために使う
+ */
+export function breakReadAsHm(input: string): boolean {
+  const s = normalize(input);
+  return /^\d{3,4}$/.test(s) && parseBreak(s) !== null;
+}
+
 /** `1.5` のような10進数の文字列を「×unit 秒」の整数に直す（二進小数を経由しない） */
 function decimalToSec(whole: string, frac: string | undefined, unit: number): number {
   const w = Number(whole) * unit;
@@ -504,7 +513,7 @@ export interface SumResult {
 export function sumDurations(text: string): SumResult {
   const terms: SumTerm[] = [];
   const errors: string[] = [];
-  const src = convertWidth(text, 'toHalf', { kana: false }).replace(/[−–—‐]/g, '-').replace(/＋/g, '+');
+  const src = convertWidth(text, 'toHalf', { kana: false }).replace(/[−–—‐ー]/g, '-').replace(/＋/g, '+');
   // 改行も区切りにして、記号の前で切る
   const re = /([+-]?)\s*([^+\-\n]+)/g;
   let mt: RegExpExecArray | null;

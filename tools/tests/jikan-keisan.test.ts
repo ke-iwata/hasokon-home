@@ -82,6 +82,13 @@ describe('parseBreak（休憩の入力）', () => {
     expect(parseBreak(input)).toBe(expected);
   });
 
+  it('3〜4桁を h:mm と読んだかを返す（120 → 1:20 の打ち間違いに気づけるように）', () => {
+    expect(lib.breakReadAsHm('120')).toBe(true);
+    expect(lib.breakReadAsHm('１２０')).toBe(true);
+    expect(lib.breakReadAsHm('60')).toBe(false);
+    expect(lib.breakReadAsHm('1:20')).toBe(false);
+    expect(lib.breakReadAsHm('160')).toBe(false);
+  });
   it('3桁で分が60以上は読めない', () => {
     expect(parseBreak('160')).toBeNull();
   });
@@ -211,6 +218,11 @@ describe('確かめること 6：時間の足し算・引き算', () => {
   });
   it('マイナスは符号つき', () => {
     expect(formatHm(sumDurations('0:10 - 0:35').totalSec)).toBe('−0:25');
+  });
+  it('日本語入力の「ー」（長音）も引き算として読む', () => {
+    const r = sumDurations('1:30\nー0:15');
+    expect(r.errors).toEqual([]);
+    expect(formatHm(r.totalSec)).toBe('1:15');
   });
   it('全角の式も読む', () => {
     expect(formatHm(sumDurations('１：３０＋０：５０').totalSec)).toBe('2:20');

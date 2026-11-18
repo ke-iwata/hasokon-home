@@ -5,6 +5,8 @@ import { trackToolUse } from '@/lib/analytics';
 import {
   EXCEL_FORMULAS,
   WORK_ERROR_TEXT,
+  breakReadAsHm,
+  normalize,
   calcWorkDay,
   decimalHoursToSec,
   formatDaysHm,
@@ -161,6 +163,11 @@ function WorkRow({ row, index, result, onChange, onRemove, canRemove }: {
     if (ok.overnight) badges.push('日またぎ');
     if (ok.nightMaxSec > 0) badges.push(`深夜 ${nightRange(ok.nightMinSec, ok.nightMaxSec)}`);
     if (ok.over8Sec > 0) badges.push(`8h超 ${formatHm(ok.over8Sec)}`);
+    // 3〜4桁の休憩は h:mm と読む（120 → 1:20）。「120分」のつもりの打ち間違いに気づけるよう読み方を見せる
+    if (breakReadAsHm(row.breakTime)) {
+      const typed = normalize(row.breakTime);
+      badges.push(`休憩 ${formatHm(ok.breakSec)} として計算（${typed}分のつもりなら ${formatHm(Number(typed) * 60)} と入力）`);
+    }
   }
   return (
     <li className="panel" style={{ margin: 0, padding: '8px 8px' }}>
@@ -336,6 +343,9 @@ function WorkTab({ track, copied, onCopy }: {
           type="button"
           style={buttonStyle()}
           onClick={() => {
+            // 20行を貼ったあとの押し間違いで取り戻せない（保存しない作り）ので、2行以上あるときだけ確かめる
+            const filled = rows.filter((r) => r.start || r.end || r.breakTime).length;
+            if (filled >= 2 && !window.confirm(`入力した${filled}行をすべて消します。よろしいですか？`)) return;
             setRows([newRow()]);
             setPasteMsg(null);
           }}
@@ -597,9 +607,11 @@ export default function Calculator() {
           </button>
         ))}
       </div>
-      {tab === 'work' && <WorkTab track={track} copied={copied} onCopy={onCopy} />}
-      {tab === 'sum' && <SumTab track={track} copied={copied} onCopy={onCopy} />}
-      {tab === 'convert' && <ConvertTab track={track} />}
+      {/* 3つのタブは常にマウントしたまま表示だけ切り替える（アンマウントすると入力が初期値に戻り、
+          保存しない作りなので貼った行を取り戻せない。#523 レビュー） */}
+      <div hidden={tab !== 'work'}><WorkTab track={track} copied={copied} onCopy={onCopy} /></div>
+      <div hidden={tab !== 'sum'}><SumTab track={track} copied={copied} onCopy={onCopy} /></div>
+      <div hidden={tab !== 'convert'}><ConvertTab track={track} /></div>
       <p className="hint" style={{ marginBottom: 0 }}>入力はこの画面の中だけで計算し、どこにも送りません。保存もしません（閉じると消えます）。</p>
     </div>
   );
