@@ -6,7 +6,7 @@ import {
   MAX_SCORES,
   SMALL_GROUP,
   countBucket,
-  decimalsOf,
+  RECORD_STEPS,
   estimatedRank,
   formatPercent,
   hensachi,
@@ -14,6 +14,7 @@ import {
   requiredScore,
   roundTo,
   rowName,
+  stepDecimals,
   summarize,
   toCsv,
   upperPercent,
@@ -112,6 +113,7 @@ export default function Calculator() {
   const [tMean, setTMean] = useState('55');
   const [tSd, setTSd] = useState('12');
   const [fullMark, setFullMark] = useState('100');
+  const [recordDecimals, setRecordDecimals] = useState(2);
 
   function switchMode(next: Mode) {
     setMode(next);
@@ -151,7 +153,7 @@ export default function Calculator() {
   const tmNum = toNum(tMean);
   const tsNum = toNum(tSd);
   const fmNum = toNum(fullMark);
-  const decimals = Math.max(decimalsOf(tMean), decimalsOf(fullMark));
+  const decimals = stepDecimals(fullMark, { lowerIsBetter, recordDecimals });
   const req =
     tgNum !== null && tmNum !== null && tsNum !== null
       ? requiredScore(tgNum, tmNum, tsNum, { ...opts, decimals, fullMark: fmNum })
@@ -387,7 +389,18 @@ export default function Calculator() {
               <label htmlFor="hensachi-tsd">標準偏差</label>
               <input id="hensachi-tsd" type="text" inputMode="decimal" value={tSd} onChange={(e) => setTSd(e.target.value)} />
             </div>
-            {!lowerIsBetter && (
+            {lowerIsBetter ? (
+              <div className="field">
+                <label htmlFor="hensachi-step">記録の刻み</label>
+                <select id="hensachi-step" value={recordDecimals} onChange={(e) => setRecordDecimals(Number(e.target.value))}>
+                  {RECORD_STEPS.map((st) => (
+                    <option key={st.decimals} value={st.decimals}>
+                      {st.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
               <div className="field">
                 <label htmlFor="hensachi-full">満点（任意）</label>
                 <input id="hensachi-full" type="text" inputMode="decimal" value={fullMark} onChange={(e) => setFullMark(e.target.value)} />

@@ -12,6 +12,7 @@ import {
   requiredScore,
   roundTo,
   rowName,
+  stepDecimals,
   summarize,
   toCsv,
   upperPercent,
@@ -190,6 +191,34 @@ describe('requiredScore（#4・#4b）', () => {
 
   it('標準偏差0は null', () => {
     expect(requiredScore(60, 50, 0)).toBeNull();
+  });
+});
+
+describe('必要な点数の刻み（stepDecimals。#519 のレビュー）', () => {
+  it('平均点が小数でも1点刻み：目標65・平均58.24・標準偏差20.4 → 89点（88.84点ではない）', () => {
+    const decimals = stepDecimals('100');
+    expect(decimals).toBe(0);
+    const r = requiredScore(65, 58.24, 20.4, { decimals, fullMark: 100 })!;
+    expect(r.raw).toBeCloseTo(88.84, 9);
+    expect(r.value).toBe(89);
+  });
+
+  it('満点が空なら1点刻み、満点が小数ならその桁', () => {
+    expect(stepDecimals('')).toBe(0);
+    expect(stepDecimals('10.0')).toBe(1);
+    expect(requiredScore(65, 6.24, 1.37, { decimals: stepDecimals('10.0') })!.value).toBe(8.3); // 8.295
+  });
+
+  it('小さいほど良い記録は選んだ刻み（既定 0.01）。満点の桁は見ない', () => {
+    expect(stepDecimals('100', { lowerIsBetter: true })).toBe(2);
+    expect(stepDecimals('100', { lowerIsBetter: true, recordDecimals: 1 })).toBe(1);
+    expect(stepDecimals('', { lowerIsBetter: true, recordDecimals: 0 })).toBe(0);
+  });
+
+  it('画面は刻みを平均点から取らない（stepDecimals を通す）', () => {
+    const src = readFileSync(fileURLToPath(new URL('../app/hensachi/Calculator.tsx', import.meta.url)), 'utf8');
+    expect(src).toContain('stepDecimals(');
+    expect(src).not.toMatch(/decimalsOf\(tMean\)/);
   });
 });
 

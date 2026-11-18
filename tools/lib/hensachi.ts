@@ -84,6 +84,25 @@ export function decimalsOf(s: string): number {
   return m ? m[1].length : 0;
 }
 
+/** 小さいほど良い記録（タイム）の刻みの選択肢。値は小数桁（0＝1、1＝0.1、2＝0.01） */
+export const RECORD_STEPS = [
+  { decimals: 0, label: '1' },
+  { decimals: 1, label: '0.1' },
+  { decimals: 2, label: '0.01' },
+] as const;
+
+/**
+ * 必要な点数を丸める刻み（小数桁）。
+ *
+ * **平均点からは取らない**（平均点は集計値で、得点の刻みを表さない。平均 58.24 で 88.84点 と出していた。#519 のレビュー）。
+ * - 高いほど良い：満点の小数桁（空なら 0＝1点刻み）。満点 100 → 1点、満点 10.0 → 0.1点
+ * - 小さいほど良い記録：利用者が選んだ刻み（recordDecimals。既定 2＝0.01秒）
+ */
+export function stepDecimals(fullMarkInput: string, opts: Options & { recordDecimals?: number } = {}): number {
+  if (opts.lowerIsBetter) return opts.recordDecimals ?? 2;
+  return decimalsOf(fullMarkInput);
+}
+
 export interface Required {
   /** 式どおりの値（丸める前） */
   raw: number;
