@@ -18,17 +18,21 @@ import {
   dayCount,
   dayLabel,
   daysForAfterN,
+  dueFor,
   holidayKnown,
   lateInterest,
-  legalDueDate,
   longestCase,
   payDateFor,
+  reductionInterest,
+  SAIITAKU_LIMIT_DAYS,
   worstCaseDays,
   type ContractorType,
   type DealKind,
 } from '@/lib/shiharai-kijitsu';
 
 type Mode = 'due' | 'check' | 'late';
+/** 遅延利息の対象：未払いの代金（第6条第1項）／減額された分（第6条第2項） */
+type LateKind = 'unpaid' | 'reduction';
 
 const SLUG = 'shiharai-kijitsu';
 
@@ -36,6 +40,8 @@ const SLUG = 'shiharai-kijitsu';
 const DEFAULT_RECEIVED = '2027-01-10';
 const DEFAULT_PAID = '2027-03-31';
 const DEFAULT_AMOUNT = '1000000';
+const DEFAULT_REDUCED_AMOUNT = '30000';
+const DEFAULT_REDUCED_ON = '2027-02-20';
 
 /** 締めなし（納品ごとに支払日を決める） */
 const NO_CLOSING = 0;
@@ -98,13 +104,19 @@ export default function Calculator() {
   const [kind, setKind] = useState<DealKind>('other');
   const [applyOpen, setApplyOpen] = useState(false);
 
+  const [saiitaku, setSaiitaku] = useState(false);
+  const [motoDue, setMotoDue] = useState('');
+
+  const [lateKind, setLateKind] = useState<LateKind>('unpaid');
+  const [reducedAmount, setReducedAmount] = useState(DEFAULT_REDUCED_AMOUNT);
+  const [reducedOn, setReducedOn] = useState(DEFAULT_REDUCED_ON);
+
   function switchMode(next: Mode) {
     setMode(next);
     trackToolUse(SLUG, next);
   }
 
   const receivedDate = parseDate(received);
-  const due = receivedDate ? legalDueDate(receivedDate) : null;
 
   const app = applicability({
     ordererCapital: toNum(ordererCapital) * 10_000,
@@ -116,6 +128,12 @@ export default function Calculator() {
   });
   // 判定を開かなければ「取適法の対象だとして」計算する（仕様書「入力」5）
   const lateApplies = !applyOpen || app.lateInterestApplies;
+
+  // ---- 再委託（フリーランス法第4条第3項）。フリーランス法がかかる判定のときだけ
+  const saiitakuAvailable = applyOpen && app.freelance;
+  const motoDueDate = saiitakuAvailable && saiitaku ? parseDate(motoDue) : null;
+  const dueRes = receivedDate ? dueFor(receivedDate, applyOpen ? app.verdict : 'toriteki', motoDueDate) : null;
+  const due = dueRes?.due ?? null;
 
   // ---- 支払条件のチェック
   const tableYear = year ?? receivedDate?.year ?? 2027;
@@ -130,6 +148,14 @@ export default function Calculator() {
   const paidDate = parseDate(paid);
   const amountYen = toYen(amount);
   const late = receivedDate && paidDate && amountYen !== null ? lateInterest(amountYen, receivedDate, paidDate) : null;
+  // 減額（第6条第2項）。取適法がかからないときは切り替えごと出さない（仕様書 B-4）
+  const reduction = lateApplies && lateKind === 'reduction';
+  const reducedYen = toYen(reducedAmount);
+  const reducedOnDate = parseDate(reducedOn);
+  const redLate =
+    receivedDate && paidDate && reducedOnDate && reducedYen !== null
+      ? reductionInterest(reducedYen, receivedDate, reducedOnDate, paidDate)
+      : null;
 
   return (
     <div className="card">
@@ -250,21 +276,79 @@ export default function Calculator() {
         </>
       )}
 
+      {mode === 'late' && lateApplies && (
+        <div className="field">
+          <span className="field-label">遅延利息の対象</span>
+          <div style={{ display: 'flex', gap: '6px 20px', flexWrap: 'wrap' }}>
+            {(
+              [
+                ['unpaid', '支払いが遅れた代金'],
+                ['reduction', '減額された分'],
+              ] as [LateKind, string][]
+            ).map(([value, label]) => (
+              <label key={value} style={{ fontWeight: lateKind === value ? 700 : 400 }}>
+                <input
+                  type="radio"
+                  name="shiharai-late-kind"
+                  value={value}
+                  checked={lateKind === value}
+                  onChange={() => {
+                    setLateKind(value);
+                    trackToolUse(SLUG, `late-${value}`);
+                  }}
+                  style={{ width: 'auto', marginRight: 6 }}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       {mode === 'late' && (
         <div className="field-row">
+          {reduction ? (
+            <>
+              <div className="field">
+                <label htmlFor="shiharai-reduced-amount">減額された額（円）</label>
+                <input
+                  id="shiharai-reduced-amount"
+                  type="text"
+                  inputMode="numeric"
+                  value={reducedAmount}
+                  onChange={(e) => setReducedAmount(e.target.value)}
+                  onBlur={() => trackToolUse(SLUG, 'late-reduced-amount')}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="shiharai-reduced-on">減額された日（支払いのときに差し引かれたならその日）</label>
+                <input
+                  id="shiharai-reduced-on"
+                  type="date"
+                  value={reducedOn}
+                  max="2100-12-31"
+                  onChange={(e) => setReducedOn(e.target.value)}
+                  onBlur={() => trackToolUse(SLUG, 'late-reduced-on')}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="field">
+              <label htmlFor="shiharai-amount">未払金額（円）</label>
+              <input
+                id="shiharai-amount"
+                type="text"
+                inputMode="numeric"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                onBlur={() => trackToolUse(SLUG, 'late-amount')}
+              />
+            </div>
+          )}
           <div className="field">
-            <label htmlFor="shiharai-amount">未払金額（円）</label>
-            <input
-              id="shiharai-amount"
-              type="text"
-              inputMode="numeric"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onBlur={() => trackToolUse(SLUG, 'late-amount')}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="shiharai-paid">実際に支払った（支払う）日</label>
+            <label htmlFor="shiharai-paid">
+              {reduction ? '減額された分を支払った（支払う）日' : '実際に支払った（支払う）日'}
+            </label>
             <input
               id="shiharai-paid"
               type="date"
@@ -367,9 +451,46 @@ export default function Calculator() {
         </div>
       </details>
 
+      {mode === 'due' && saiitakuAvailable && (
+        <details className="field" open={saiitaku || undefined}>
+          <summary style={{ cursor: 'pointer' }}>再委託のとき（フリーランス法第4条第3項）</summary>
+          <div style={{ marginTop: 8 }}>
+            <label style={{ fontWeight: 400 }}>
+              <input
+                type="checkbox"
+                checked={saiitaku}
+                onChange={(e) => {
+                  setSaiitaku(e.target.checked);
+                  if (e.target.checked) trackToolUse(SLUG, 'due-saiitaku');
+                }}
+                style={{ width: 'auto', marginRight: 6 }}
+              />
+              再委託で、発注書に元委託者の名前と元委託の支払期日が書いてある
+            </label>
+            {saiitaku && (
+              <div className="field" style={{ marginTop: 8 }}>
+                <label htmlFor="shiharai-moto-due">元委託の支払期日（元委託者から発注者への支払期日）</label>
+                <input
+                  id="shiharai-moto-due"
+                  type="date"
+                  value={motoDue}
+                  max="2100-12-31"
+                  onChange={(e) => setMotoDue(e.target.value)}
+                  onBlur={() => trackToolUse(SLUG, 'due-moto-due')}
+                />
+              </div>
+            )}
+            <p className="hint">
+              再委託である旨・元委託者・元委託の支払期日などを明示されているときは、受領日からではなく元委託の支払期日から{SAIITAKU_LIMIT_DAYS}日以内です。
+              明示が無い再委託はこの特則に当たらないので、チェックを外すと受領日から60日に戻ります。
+            </p>
+          </div>
+        </details>
+      )}
+
       {/* ---------------- 結果 ---------------- */}
 
-      {due && receivedDate ? (
+      {due && dueRes && receivedDate ? (
         <div className={mode === 'due' ? 'panel' : 'panel quiet'}>
           <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>法律上の支払期日</div>
           <div className="metric">
@@ -378,9 +499,28 @@ export default function Calculator() {
             </span>
             <span className="label">まで</span>
           </div>
-          <p className="hint" style={{ margin: '4px 0 0' }}>
-            受領日 {md(receivedDate)} を1日目として{LIMIT_DAYS}日目（取適法第3条・フリーランス法第4条）
-          </p>
+          {dueRes.basis === 'saiitaku30' && motoDueDate ? (
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              元委託支払期日 {md(motoDueDate)} を1日目として{SAIITAKU_LIMIT_DAYS}日目（フリーランス法第4条第3項）
+            </p>
+          ) : (
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              受領日 {md(receivedDate)} を1日目として{LIMIT_DAYS}日目
+              {app.verdict === 'both' && dueRes.saiitakuDue ? '（取適法第3条）' : '（取適法第3条・フリーランス法第4条）'}
+            </p>
+          )}
+          {app.verdict === 'freelance' && dueRes.saiitakuDue && (
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              再委託でなければ受領日から{LIMIT_DAYS}日目の {wd(dueRes.limit60)} まででした。
+            </p>
+          )}
+          {app.verdict === 'both' && dueRes.saiitakuDue && motoDueDate && (
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              {dueRes.basis === 'received60'
+                ? `フリーランス法だけで見れば元委託支払期日から${SAIITAKU_LIMIT_DAYS}日目＝${wd(dueRes.saiitakuDue)} まで（第4条第3項）。取適法には再委託の特則が無く、取適法の対象でもあるので、早いほうの ${md(due)} までに払えば両方を満たします。`
+                : `取適法だけで見れば受領日から${LIMIT_DAYS}日目＝${wd(dueRes.limit60)} まで（第3条）。早いほうの ${md(due)} までに払えば両方を満たします。`}
+            </p>
+          )}
           <ClosedNote date={due} />
         </div>
       ) : (
@@ -488,7 +628,46 @@ export default function Calculator() {
         </div>
       )}
 
-      {mode === 'late' && late && receivedDate && paidDate && amountYen !== null && (
+      {mode === 'late' && reduction && (
+        <div className="panel">
+          <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>減額された分の遅延利息（取適法第6条第2項）</div>
+          {!redLate || !paidDate || reducedYen === null ? (
+            <p className="hint" style={{ margin: '4px 0 0' }}>
+              受領日・減額された額・減額された日・支払う日を入れると、遅延利息が出ます。
+            </p>
+          ) : redLate.days === 0 ? (
+            <>
+              <div className="metric">
+                <span className="value">0</span>
+                <span className="unit">円</span>
+              </div>
+              <p className="hint" style={{ margin: '4px 0 0' }}>
+                遅延利息は {wd(redLate.fromDate)} から数えます。それより前に減額分を払えば遅延利息は生じません。
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="metric">
+                <span className="value">{yen(redLate.interest)}</span>
+                <span className="unit">円</span>
+              </div>
+              <p style={{ margin: '4px 0 0', fontSize: 'var(--fs-sm)' }}>
+                {md(redLate.fromDate)} から減額分を払う日（{md(paidDate)}）まで
+                <br />
+                <strong>
+                  {redLate.days}日 × {LATE_RATE_LABEL} × {yen(reducedYen)}円 ÷ {DAYS_PER_YEAR} ＝ {yen(redLate.interest)}円
+                </strong>
+              </p>
+              <p className="hint" style={{ margin: '4px 0 0' }}>
+                起算日は「減額された日」と「受領日から60日を経過した日」のいずれか遅い日です（第6条第2項）。円未満は切り捨て。
+                中小受託事業者の責めに帰すべき理由が無い減額が対象で、減額に当たるかどうかの判断はしていません。
+              </p>
+            </>
+          )}
+        </div>
+      )}
+
+      {mode === 'late' && !reduction && late && receivedDate && paidDate && amountYen !== null && (
         <div className="panel">
           <div style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>遅延利息（取適法第6条）</div>
           {!lateApplies ? (
@@ -541,7 +720,11 @@ export default function Calculator() {
                 {app.toritekiClause >= 5 ? '（従業員基準）' : '（資本金基準）'}に当たる取引。支払期日は第3条、遅延利息は第6条（{LATE_RATE_LABEL}）
               </li>
             )}
-            {app.freelance && <li>フリーランス法：第4条の60日がかかります。遅延利息の規定はありません</li>}
+            {app.freelance && (
+              <li>
+                フリーランス法：第4条の60日（再委託で元委託の支払期日などを明示されているときは、元委託の支払期日から30日）がかかります。遅延利息の規定はありません
+              </li>
+            )}
             {app.verdict === 'both' && (
               <li>
                 両方に当てはまります。遅延利息は取適法第6条の規定で出しています。どちらの法律で扱われるかは、所管の窓口で確かめてください
@@ -549,7 +732,7 @@ export default function Calculator() {
             )}
             {!app.freelance && contractorType !== 'corp' && toNum(contractorEmployees) === 0 && (
               <li>
-                発注側が役員2人以上の法人なら、従業員がいなくてもフリーランス法第4条の60日がかかります
+                発注側が役員2人以上の法人なら、従業員がいなくてもフリーランス法第4条の60日（再委託は元委託の支払期日から30日）がかかります
               </li>
             )}
             {app.verdict === 'none' && (

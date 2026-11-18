@@ -13,6 +13,12 @@
  *   - 令和7年公正取引委員会規則第9号：率は年14.6%
  * - フリーランス法（特定受託事業者に係る取引の適正化等に関する法律。令和5年法律第25号）
  *   - 第4条第1項：60日の期間内に報酬の支払期日を定める。**遅延利息の規定は無い**
+ *   - 第4条第3項・第4項：再委託で、再委託である旨・元委託者・元委託支払期日などを明示したときは、
+ *     **元委託支払期日から起算して30日**の期間内（30日を超えて定めたら30日目がみなし期日）
+ *     → 元委託支払期日を1日目として **30日目（元委託支払期日＋29日）**。取適法には再委託の特則は無い
+ * - 取適法 第6条第2項：不当な減額にも遅延利息。減じた日と「受領日から60日を経過した日」の**遅い方**から、
+ *   減じた額を払う日まで、第1項と同じ率
+ *   （仕様: docs/features/shiharai-kijitsu-saiitaku-gengaku.md）
  *
  * 運営者と決めることのうち、一次資料で確かめられなかったものは仕様書の既定どおりにしている：
  * - 決めること 1（月単位の締切の「2か月」読み替え）：条文の60日だけで判定し、運用は公取委に確認を、と注記
@@ -31,6 +37,9 @@ import { HOLIDAY_FIRST_YEAR, HOLIDAY_LAST_YEAR, nonBusinessReason } from './niss
 /** 支払期日の上限（受領日を1日目とする日数）。取適法第3条・フリーランス法第4条 */
 export const LIMIT_DAYS = 60;
 
+/** 再委託のときの支払期日の上限（元委託支払期日を1日目とする日数）。フリーランス法第4条第3項 */
+export const SAIITAKU_LIMIT_DAYS = 30;
+
 /** 遅延利息の率（年14.6%）。令和7年公正取引委員会規則第9号。整数で持つため 1/1000 % 単位 */
 export const LATE_RATE_PER_MILLE_PERCENT = 14_600;
 
@@ -44,7 +53,7 @@ export const DAYS_PER_YEAR = 365;
 export const TORITEKI_EFFECTIVE = '2026-01-01';
 
 /** 一次情報の最終確認日 */
-export const DATA_CHECKED_AT = '2026-11-15';
+export const DATA_CHECKED_AT = '2026-11-18';
 
 /** 資本金の区分（円） */
 export const CAPITAL_10M = 10_000_000;
@@ -60,6 +69,44 @@ export const EMPLOYEES_B = 100;
 /** 法律上の最も遅い支払期日（受領日を1日目として60日目＝受領日＋59日） */
 export function legalDueDate(received: DateParts): DateParts {
   return addDays(received, LIMIT_DAYS - 1);
+}
+
+/** 再委託（明示あり）のときの最も遅い支払期日（元委託支払期日を1日目として30日目＝＋29日）。フリーランス法第4条第3項 */
+export function saiitakuDueDate(motoDue: DateParts): DateParts {
+  return addDays(motoDue, SAIITAKU_LIMIT_DAYS - 1);
+}
+
+export interface DueResult {
+  /** 見出しに出す支払期日（これまでに払えば、かかる法律をすべて満たす日） */
+  due: DateParts;
+  /** 見出しの根拠。received60 = 受領日から60日目、saiitaku30 = 元委託支払期日から30日目 */
+  basis: 'received60' | 'saiitaku30';
+  /** 受領日から60日目（取適法第3条・フリーランス法第4条第1項） */
+  limit60: DateParts;
+  /** 再委託の30日目（フリーランス法第4条第3項）。再委託の入力が無い・フリーランス法がかからないなら null */
+  saiitakuDue: DateParts | null;
+}
+
+/**
+ * 支払期日（見出し）を出す。
+ *
+ * - 再委託（明示あり）の元委託支払期日 `motoDue` が無い、またはフリーランス法がかからない → 受領日から60日目
+ * - `verdict: 'freelance'` → 元委託支払期日から30日目（受領日から60日より遅くも早くもなりうる）
+ * - `verdict: 'both'` → 取適法には再委託の特則が無いので、60日目と30日目の**早いほう**
+ */
+export function dueFor(
+  received: DateParts,
+  verdict: ApplicabilityVerdict,
+  motoDue: DateParts | null,
+): DueResult {
+  const limit60 = legalDueDate(received);
+  const freelance = verdict === 'freelance' || verdict === 'both';
+  const saiitakuDue = motoDue && freelance ? saiitakuDueDate(motoDue) : null;
+  if (!saiitakuDue) return { due: limit60, basis: 'received60', limit60, saiitakuDue: null };
+  if (verdict === 'freelance') return { due: saiitakuDue, basis: 'saiitaku30', limit60, saiitakuDue };
+  return compareDate(saiitakuDue, limit60) < 0
+    ? { due: saiitakuDue, basis: 'saiitaku30', limit60, saiitakuDue }
+    : { due: limit60, basis: 'received60', limit60, saiitakuDue };
 }
 
 /** 受領日から支払日まで、受領日を1日目として何日目か（初日算入） */
@@ -188,14 +235,10 @@ export interface LateInterest {
 }
 
 /**
- * 取適法第6条第1項の遅延利息。
- *
- * 受領日から起算して60日を経過した日（受領日＋60日）から支払をする日までの日数 ×
- * 未払金額 × 年14.6% ÷ 365。円未満切り捨て。
- * `paidOn` が受領日＋59日（60日目）以前なら 0。
+ * 起算日から支払日まで（両端を含む）の日数 × 元本 × 年14.6% ÷ 365。円未満切り捨て。
+ * 第6条第1項（支払遅延）と第2項（減額）で同じ部品を使う。
  */
-export function lateInterest(amount: number, received: DateParts, paidOn: DateParts): LateInterest {
-  const fromDate = addDays(received, LIMIT_DAYS);
+function interestFrom(amount: number, fromDate: DateParts, paidOn: DateParts): LateInterest {
   const days = compareDate(paidOn, fromDate) >= 0 ? daysBetween(fromDate, paidOn) + 1 : 0;
   const yen = Math.max(0, Math.floor(amount));
   // 大きな額でも誤差が出ないよう BigInt で掛けてから割る（14.6% = 14600 / 100000）
@@ -207,6 +250,34 @@ export function lateInterest(amount: number, received: DateParts, paidOn: DatePa
             (BigInt(100_000) * BigInt(DAYS_PER_YEAR)),
         );
   return { fromDate, days, interest };
+}
+
+/**
+ * 取適法第6条第1項の遅延利息。
+ *
+ * 受領日から起算して60日を経過した日（受領日＋60日）から支払をする日までの日数 ×
+ * 未払金額 × 年14.6% ÷ 365。円未満切り捨て。
+ * `paidOn` が受領日＋59日（60日目）以前なら 0。
+ */
+export function lateInterest(amount: number, received: DateParts, paidOn: DateParts): LateInterest {
+  return interestFrom(amount, addDays(received, LIMIT_DAYS), paidOn);
+}
+
+/**
+ * 取適法第6条第2項の遅延利息（不当な減額）。
+ *
+ * 起算日は「減じた日」と「受領日から起算して60日を経過した日（受領日＋60日）」の**遅い方**。
+ * そこから減じた額を払う日 `paidOn` までの日数 × 減じた額 × 年14.6% ÷ 365。円未満切り捨て。
+ */
+export function reductionInterest(
+  reducedAmount: number,
+  received: DateParts,
+  reducedOn: DateParts,
+  paidOn: DateParts,
+): LateInterest {
+  const after60 = addDays(received, LIMIT_DAYS);
+  const fromDate = compareDate(reducedOn, after60) > 0 ? reducedOn : after60;
+  return interestFrom(reducedAmount, fromDate, paidOn);
 }
 
 // ---------------------------------------------------------------- 適用の判定

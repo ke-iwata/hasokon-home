@@ -1,6 +1,6 @@
 # 支払期日・遅延利息 計算機の条文の抜け（`public` の前に直す）— フリーランス法の「再委託なら元委託の支払期日から30日」（第4条第3項〜第5項）が画面にも計算にも無く、FAQ が「受領日から60日」と言い切っている。取適法の「不当な減額にも同じ14.6%の遅延利息」（第6条第2項）も画面に無い
 
-**状態**：提案（2026-11-18 起票。セッション `session_012RoU2EXX9RMVjPpZcE9K1y`。定期の企画ルーティン。**同日の企画レビュー（#521、`session_012RoU2G9kGd38ZcpdRRtnJB`）の2点を反映**：`both` のときの見出しは早いほう（取適法の60日目）／FAQ 以外の「第4条の60日」の3か所も直す対象）
+**状態**：実装済み（2026-11-18、セッション `session_012RoU2GtCfJonFiZdpKVofH` の PR。`shiharai-kijitsu` は `wip` のまま。`public` は別PR）／提案（2026-11-18 起票。セッション `session_012RoU2EXX9RMVjPpZcE9K1y`。定期の企画ルーティン。**同日の企画レビュー（#521、`session_012RoU2G9kGd38ZcpdRRtnJB`）の2点を反映**：`both` のときの見出しは早いほう（取適法の60日目）／FAQ 以外の「第4条の60日」の3か所も直す対象）
 **優先度：中（`shiharai-kijitsu` を `public` にする PR より前に直す）。** いまは `wip` で検索に出ていないので実害はまだ無いが、
 FAQ の答えは**再委託を受けたフリーランスに対しては誤り**（期日を遅く見積もらせる方向）になる
 **期日**：`shiharai-kijitsu` の `public`（[shiharai-kijitsu-toriteki.md](./shiharai-kijitsu-toriteki.md) の予定は 2026-12-20 まで）より前
