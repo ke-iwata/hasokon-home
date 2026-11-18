@@ -1111,6 +1111,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-05',
   },
   {
+    // 仕様: docs/features/jikan-keisan.md
+    slug: 'jikan-keisan',
+    icon: 'ClockUser',
+    name: '時間計算（勤務時間・時間の足し算・10進数変換）',
+    description:
+      '出勤・退勤・休憩から実働時間を計算。日またぎ（夜勤）・深夜22〜5時・8時間超・休憩の不足の印つきで、Excelの列を貼れば月の合計も。1:30＋0:50のような時間の足し算、7:45⇔7.75時間の換算も。入力は送信しません。',
+    category: '計算・変換',
+    // テスト環境で仕様書の「確かめること」を通したら public（2026-12-20 まで）
+    stage: 'wip',
+    updatedAt: '2026-11-18',
+  },
+  {
     // 仕様: docs/features/text-hikaku.md
     slug: 'text-hikaku',
     icon: 'GitDiff',
