@@ -109,7 +109,12 @@ export default function Page() {
       <h1>大富豪</h1>
       <p className="lead">
         CPU3人と<strong>5回戦を戦って通算点で階級を決める</strong>
-        定番のトランプゲーム。8切り・革命・縛りは標準で有効、都落ち・11バック・スペ3返しは設定で切り替えられます。
+        定番のトランプゲーム。
+        {/* スマホでは後ろの文を畳んで1行ぶんにする。手札と「スタート」を最初の画面に入れるため
+            （docs/features/daifugo-first-view.md の B-5）。検索の要約は metadata.description が持つので変えない */}
+        <span className="df-lead-rest">
+          8切り・革命・縛りは標準で有効、都落ち・11バック・スペ3返しは設定で切り替えられます。
+        </span>
       </p>
 
       <Game />

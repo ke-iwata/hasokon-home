@@ -722,6 +722,20 @@ ol {
   border-radius: var(--radius);
   /* 盤を透かす。配られた札や初期配置を見てから始められるように */
   background: color-mix(in srgb, var(--bg) 62%, transparent);
+  /* 案内の1行（note）を添えるときはボタンの上に縦に積む */
+  flex-direction: column;
+  gap: 8px;
+  padding: 6px 10px;
+}
+
+/* 幕に添える1行の案内（StartGate の note）。盤の文字の上にボタンを重ねないため */
+.start-gate-note {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  font-weight: 600;
+  color: var(--text);
 }
 
 /* 盤面の上に置く可変メッセージ行。文言の切り替わりで盤面が上下に
@@ -4926,6 +4940,77 @@ ol {
   }
 }
 
+/* ---- 大富豪の最初の画面（docs/features/daifugo-first-view.md） ----
+   .df-* の器はダウト・ハーツ・七並べ・はさみ将棋も借りているので、
+   ここでの変更は大富豪の外枠（.df-daifugo）の内側に閉じる */
+
+/* B-2. ローカルルールは強さ・速さの行の右端に置く。開いた中身は下に重ねて出し、
+   行は伸ばさない（伸ばすと盤が押し下がる。games/CLAUDE.md の約束 1） */
+.df-daifugo .df-rules-pop {
+  position: relative;
+  margin-left: auto;
+}
+
+.df-daifugo .df-rules-pop summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+}
+
+.df-daifugo .df-rules-body {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 5;
+  width: min(380px, calc(100vw - 32px));
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.df-daifugo .df-rules-body > .df-rule-note {
+  margin: 0 0 6px;
+}
+
+.df-daifugo .df-rules-body ul {
+  margin-top: 0;
+}
+
+/* B-3. 席を薄くする。名前と枚数を1行に並べる（裏向きの札の帯はそのまま） */
+.df-daifugo .df-seat {
+  padding: 4px 6px;
+}
+
+.df-daifugo .df-seat-head {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.df-daifugo .df-seat-name,
+.df-daifugo .df-seat-count {
+  display: inline;
+}
+
+.df-daifugo .df-seats {
+  margin: 8px 0;
+}
+
+/* 「♦3を持っています（先に出します）」。席の状態は2行ぶんで固定してある */
+.df-daifugo .df-seat-state {
+  height: 2.7em;
+}
+
+/* 手札と「出す／パス」をまとめた箱。パソコンでは貼り付けない（ただの入れ物） */
+.df-daifugo .df-actions {
+  margin: 12px 0 0;
+  justify-content: center;
+}
+
 /* ---- 七並べ（docs/features/game-shichinarabe.md） ---- */
 
 /* 場は「4スート × 13マス」の表。13列を本物のカードの絵（.playing-card）で
@@ -7720,6 +7805,79 @@ button.hf-card {
 
   .df-note {
     font-size: 0.75rem;
+  }
+
+  /* ---- 大富豪の最初の画面（docs/features/daifugo-first-view.md） ---- */
+
+  /* 席の幅が3分の1しかないので「（先に出します）」は落とし、1行に収める */
+  .df-daifugo .df-seat-sub {
+    display: none;
+  }
+
+  .df-daifugo .df-seat-state {
+    height: 1.4em;
+    font-size: 0.7rem;
+    white-space: nowrap;
+  }
+
+  /* B-5. ページ冒頭の説明文の後ろの文を畳む（metadata.description は変えない） */
+  .df-lead-rest {
+    display: none;
+  }
+
+  /* 幕の1行。2行に折り返すと場の枠が伸びて手札の箱に潜る */
+  .df-daifugo .start-gate-note {
+    font-size: 0.7rem;
+  }
+
+  .df-daifugo .start-gate-veil {
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .df-daifugo .df-seat {
+    padding: 3px 4px;
+  }
+
+  /* B-4. 手札と「出す／パス」の行をひとまとめにして画面の下に貼り付ける。
+     大富豪は「手札から選ぶ」がすべての操作なので、場を見ながら手札に指が届く形にする。
+     高さは画面の40%まで。収まらない札は帯の中で横に送り、縦には伸ばさない */
+  .df-daifugo .df-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    max-height: 40vh;
+    margin: 4px 0 0;
+    padding: 0 4px max(6px, env(safe-area-inset-bottom));
+    /* 透けさせない。既存の貼り付け（.hb-log th）と同じ地色 */
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
+
+  .df-daifugo .df-hand {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    /* 選んだ札は10px持ち上がるので、その分を上に空けておく（横送りの箱で切れないように） */
+    padding: 12px 2px 2px;
+    margin-top: 0;
+    min-height: 0;
+  }
+
+  /* 中央寄せは横に送れる箱だと左端が切れて戻れなくなる。両端の auto で寄せる */
+  .df-daifugo .df-hand > :first-child {
+    margin-left: auto;
+  }
+
+  .df-daifugo .df-hand > :last-child {
+    margin-right: auto;
+  }
+
+  .df-daifugo .df-actions {
+    margin: 2px 0 0;
   }
 
   /* ---- 花札 ----
