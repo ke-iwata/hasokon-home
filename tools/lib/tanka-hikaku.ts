@@ -295,6 +295,8 @@ export interface RankedItem {
   diffPercent?: number;
   /** 差が 0.1% 未満（「ほぼ同じ」） */
   nearlySame?: boolean;
+  /** いちばん安い行と単価がまったく同じ（「同じ」） */
+  sameAsCheapest?: boolean;
   /** この行の支払額で、いちばん安い行なら基準の単位でどれだけ買えるか */
   sameMoneyQty?: number;
 }
@@ -309,7 +311,7 @@ export function defaultName(index: number): string {
 
 const PRICE_MESSAGES: Record<PriceError, string> = {
   price: '値段を入れてください',
-  'yen-off': '円引きは値段より小さくしてください',
+  'yen-off': '円引きは0以上で、値段より小さくしてください',
   'percent-off': '%引きは0以上100未満で入れてください',
   point: 'ポイントは0以上100未満で入れてください',
 };
@@ -371,7 +373,8 @@ export function rank(items: ItemInput[], per: PerScale): RankedItem[] {
     const u = r.effectiveUnitPrice as number;
     r.diffYen = u - min;
     r.diffPercent = min > 0 ? ((u - min) / min) * 100 : 0;
-    r.nearlySame = i > 0 && r.diffPercent < NEARLY_SAME_PERCENT;
+    r.sameAsCheapest = i > 0 && r.diffYen === 0;
+    r.nearlySame = i > 0 && !r.sameAsCheapest && r.diffPercent < NEARLY_SAME_PERCENT;
     if (i > 0 && best.price && best.quantity && best.price.effective > 0 && r.price) {
       // この行の実質の値段を、いちばん安い行の単価で割ると、同じお金で買える量
       r.sameMoneyQty = (r.price.effective / best.price.effective) * best.quantity.base;
@@ -440,8 +443,10 @@ export function parseLooseNumber(input: string): number {
   const half = convertWidth(input, 'toHalf', { kana: false, space: true })
     .replace(/[，,、]/g, '')
     .replace(/。/g, '.');
-  const m = /\d+(?:\.\d+)?|\.\d+/.exec(half);
-  return m ? Number(m[0]) : Number.NaN;
+  const m = /(-|−|ー|‐)?\s*(\d+(?:\.\d+)?|\.\d+)/.exec(half);
+  // マイナスは受け付けない（「-5」を 5 と読んで円引き・値段に正の数として効かせないため。#526 レビュー）
+  if (!m || m[1]) return Number.NaN;
+  return Number(m[2]);
 }
 
 /** 入り数の欄（空欄は「入れていない」）。空なら null、読めなければ NaN */

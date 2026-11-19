@@ -256,6 +256,27 @@ describe('rank（確かめること2）', () => {
     expect(r2[1].nearlySame).toBe(false);
   });
 
+  it('値段も内容量も入っているのに範囲外の行は、理由の message を付けて外す（#526 レビュー）', () => {
+    const rows = rank(
+      [
+        item({ price: 300, qty: 400 }),
+        item({ price: 300, qty: 400, discounts: { percentOff: 100 } }),
+        item({ price: 300, qty: 400, discounts: { yenOff: 300 } }),
+        item({ price: 300, qty: 400, discounts: { percentOff: Number.NaN } }),
+      ],
+      'small',
+    );
+    expect(rows[1]).toMatchObject({ status: 'invalid', message: '%引きは0以上100未満で入れてください' });
+    expect(rows[2]).toMatchObject({ status: 'invalid', message: '円引きは0以上で、値段より小さくしてください' });
+    expect(rows[3]).toMatchObject({ status: 'invalid', message: '%引きは0以上100未満で入れてください' });
+    expect(rankedOnly(rows).map((r) => r.index)).toEqual([0]);
+  });
+
+  it('単価がまったく同じなら「同じ」（「ほぼ同じ」ではない）', () => {
+    const r = rankedOnly(rank([item({ price: 200, qty: 200 }), item({ price: 100, qty: 100 })], 'small'));
+    expect(r[1]).toMatchObject({ sameAsCheapest: true, nearlySame: false });
+  });
+
   it('同じ単価なら入力の並び順', () => {
     const r = rankedOnly(rank([item({ name: 'X', price: 200, qty: 200 }), item({ name: 'Y', price: 100, qty: 100 })], 'small'));
     expect(r.map((x) => x.name)).toEqual(['X', 'Y']);
@@ -310,6 +331,13 @@ describe('入力の読み取りと表示', () => {
     expect(parseLooseNumber('１．５')).toBe(1.5);
     expect(parseLooseNumber('')).toBeNaN();
     expect(parseLooseNumber('円')).toBeNaN();
+  });
+
+  it('マイナスは NaN（-5 を 5 と読まない。#526 レビュー）', () => {
+    expect(parseLooseNumber('-5')).toBeNaN();
+    expect(parseLooseNumber('－３０')).toBeNaN();
+    expect(parseLooseNumber('− 30円')).toBeNaN();
+    expect(parseLooseNumber('30')).toBe(30);
   });
 
   it('入り数の空欄は null（入れていない）', () => {

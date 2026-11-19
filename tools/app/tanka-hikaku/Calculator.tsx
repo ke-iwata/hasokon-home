@@ -20,6 +20,7 @@ import {
   taxChoices,
   type ItemInput,
   type PerScale,
+  type RankedItem,
   type TaxChoice,
   type UnitId,
 } from '@/lib/tanka-hikaku';
@@ -205,8 +206,6 @@ function ItemCard({
     if (packs.length === 0 || !(qty > 0) || !packs.every((p) => p > 0)) return null;
     return Number(packs.reduce((a, p) => a * p, qty).toPrecision(12));
   }, [row.qty, row.pack1, row.pack2]);
-  const hasDiscount = row.yenOff.trim() !== '' || row.percentOff.trim() !== '' || row.pointPercent.trim() !== '';
-  const hasPack = row.pack1.trim() !== '' || row.pack2.trim() !== '';
 
   return (
     <div className="card" style={{ padding: 14, margin: 0, minWidth: 0 }}>
@@ -268,7 +267,7 @@ function ItemCard({
       </div>
 
       {/* 入り数（折りたたみ） */}
-      <details style={{ marginTop: 10 }} open={hasPack || undefined}>
+      <details style={{ marginTop: 10 }}>
         <summary style={{ cursor: 'pointer' }}>入り数（「×6缶×2パック」のとき）</summary>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 8, marginTop: 8 }}>
           <NumberField label="× 入り数" value={row.pack1} onChange={(v) => onChange({ pack1: v })} placeholder="6" />
@@ -283,7 +282,7 @@ function ItemCard({
       </details>
 
       {/* 割引（折りたたみ） */}
-      <details style={{ marginTop: 8 }} open={hasDiscount || undefined}>
+      <details style={{ marginTop: 8 }}>
         <summary style={{ cursor: 'pointer' }}>割引・ポイント</summary>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 8, marginTop: 8 }}>
           <NumberField label="◯円引き" value={row.yenOff} onChange={(v) => onChange({ yenOff: v })} suffix="円" placeholder="30" />
@@ -303,6 +302,18 @@ function ItemCard({
       )}
     </div>
   );
+}
+
+/**
+ * カードに出す説明。単位の違いと、入力が範囲外で順位から外した理由（円引き ≥ 値段など）。
+ * 品を足した直後の空のカードには出さない（値段か内容量のどちらかが入ってから）。#526 レビュー
+ */
+function rowMessage(row: Row, r: RankedItem): string | undefined {
+  if (r.status === 'mismatch') return r.message;
+  if (r.status === 'invalid' && (row.price.trim() !== '' || row.qty.trim() !== '')) {
+    return `${r.message}（この品は安い順に入っていません）`;
+  }
+  return undefined;
 }
 
 function CompareTab({ track, taxOptions }: { track: (a: string) => void; taxOptions: { id: TaxChoice; label: string }[] }) {
@@ -384,7 +395,7 @@ function CompareTab({ track, taxOptions }: { track: (a: string) => void; taxOpti
               index={i}
               canRemove={rows.length > 2}
               taxOptions={taxOptions}
-              message={r.status === 'mismatch' ? r.message : undefined}
+              message={rowMessage(row, r)}
               onChange={(next) => update(row.id, next)}
               onRemove={() => remove(row.id)}
             />
@@ -424,6 +435,8 @@ function CompareTab({ track, taxOptions }: { track: (a: string) => void; taxOpti
                   <span className="chip" style={{ color: 'var(--accent-strong)', borderColor: 'var(--accent)' }}>
                     いちばん安い
                   </span>
+                ) : r.sameAsCheapest ? (
+                  <span className="chip">同じ</span>
                 ) : r.nearlySame ? (
                   <span className="chip">ほぼ同じ（差 0.1% 未満）</span>
                 ) : (
