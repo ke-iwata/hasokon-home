@@ -1123,6 +1123,18 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-18',
   },
   {
+    // 仕様: docs/features/tanka-hikaku.md
+    slug: 'tanka-hikaku',
+    icon: 'Basket',
+    name: '単価比較 計算機（どっちが安い？）',
+    description:
+      '値段と内容量から100g・100ml・1個あたりの単価を出して、何品でも安い順に。gとkg・mlとLの混在、「350ml×6缶×2」、税込・税抜、◯%引き・◯円引き・ポイントもそろえて比較。実質値上げ率も。入力は送信しません。',
+    category: '計算・変換',
+    // テスト環境で仕様書の「確かめること」を通したら public（2026-12-20 まで）
+    stage: 'wip',
+    updatedAt: '2026-11-19',
+  },
+  {
     // 仕様: docs/features/text-hikaku.md
     slug: 'text-hikaku',
     icon: 'GitDiff',
