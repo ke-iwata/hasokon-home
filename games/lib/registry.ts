@@ -380,7 +380,7 @@ export const games: GameDef[] = [
       '都落ち',
     ],
     stage: 'public',
-    updatedAt: '2026-08-14',
+    updatedAt: '2026-11-19',
   },
   {
     // 「七並べ」（Sevens / Fan Tan）は伝統的トランプゲームの一般名称で、ルールも名称も

@@ -22,11 +22,18 @@
 export function StartGate({
   show,
   onStart,
+  note,
   children,
 }: {
   /** スタート待ちか（false なら幕は出ない） */
   show: boolean;
   onStart: () => void;
+  /**
+   * ボタンの上に添える1行の案内（任意）。盤の中身が文字のゲーム（大富豪の場）では、
+   * 文字の上にボタンを重ねると読みかけの文に見えるので、盤側の文言を消してこちらに書く
+   * （docs/features/daifugo-first-view.md の C）
+   */
+  note?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -34,6 +41,7 @@ export function StartGate({
       {children}
       {show && (
         <div className="start-gate-veil">
+          {note && <p className="start-gate-note">{note}</p>}
           <button type="button" className="btn btn-primary" onClick={onStart}>
             スタート
           </button>

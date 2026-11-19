@@ -155,6 +155,14 @@ export default function Game() {
   const [begun, setBegun] = useState(false);
   const records = useRecords('daifugo');
   const entry = records.entry(level);
+  /**
+   * 1試合でも遊び終えたか（強さを問わない）。初めての人には戦績の帯が全部0で
+   * 情報がないので出さない（docs/features/daifugo-first-view.md の B-1）。
+   * 強さごとではなく全体で見るのは、強さを切り替えるたびに帯が出たり消えたりしないため
+   */
+  const hasPlayed = Object.values(records.records).some(
+    (e) => (e.wins ?? 0) + (e.losses ?? 0) > 0,
+  );
   // 1試合につき1回だけ数える
   const started = useRef(false);
   const recorded = useRef(false);
@@ -295,8 +303,8 @@ export default function Game() {
   const events = state.events;
 
   return (
-    <div className="card cardgame df-game">
-      <div className="btn-row">
+    <div className="card cardgame df-game df-daifugo">
+      <div className="btn-row df-toolbar">
         <div className="seg" role="group" aria-label="CPUの強さ">
           {(Object.keys(LEVELS) as Level[]).map((l) => (
             <button
@@ -318,27 +326,32 @@ export default function Game() {
             writeCpuSpeed('daifugo', next);
           }}
         />
-      </div>
 
-      <details className="df-rules">
-        <summary>ローカルルール</summary>
-        <ul>
-          {RULE_LABELS.map(({ key, label, note }) => (
-            <li key={key}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={rules[key]}
-                  onChange={(e) => changeRule(key, e.currentTarget.checked)}
-                />
-                <span className="df-rule-name">{label}</span>
-                <span className="df-rule-note">{note}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-        <p className="df-rule-note">切り替えると試合を最初からやり直します。</p>
-      </details>
+        {/* 独立した1行にせず、強さ・速さの行の右端に寄せる。開いた中身は下に重ねて出す
+            （行が伸びて盤が押し下がらないように）。daifugo-first-view.md の B-2 */}
+        <details className="df-rules df-rules-pop">
+          <summary>ローカルルール</summary>
+          <div className="df-rules-body">
+            {/* 先頭に置く。6項目の説明が長く、末尾だと開いても画面の外にある */}
+            <p className="df-rule-note">切り替えると試合を最初からやり直します。</p>
+            <ul>
+              {RULE_LABELS.map(({ key, label, note }) => (
+                <li key={key}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={rules[key]}
+                      onChange={(e) => changeRule(key, e.currentTarget.checked)}
+                    />
+                    <span className="df-rule-name">{label}</span>
+                    <span className="df-rule-note">{note}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </details>
+      </div>
 
       <div className="status-bar">
         <span>
@@ -349,16 +362,19 @@ export default function Game() {
         </span>
       </div>
 
-      {/* 1試合も終えていなくても出す。初戦の終わりに帯が現れると盤が押し下がるため */}
-      <RecordStrip
-        items={[
-          {
-            label: `${LEVELS[level].label}との対戦`,
-            value: `${entry.wins ?? 0}回 大富豪 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
-          },
-          { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
-        ]}
-      />
+      {/* 1試合以上遊び終えた人にだけ出す。初めての人には全部0で、手札を画面の外へ押し出すだけだった
+          （daifugo-first-view.md の B-1）。帯が現れるのは5回戦を終えた結果の画面なので、遊んでいる最中は動かない */}
+      {hasPlayed && (
+        <RecordStrip
+          items={[
+            {
+              label: `${LEVELS[level].label}との対戦`,
+              value: `${entry.wins ?? 0}回 大富豪 / ${(entry.wins ?? 0) + (entry.losses ?? 0)}試合`,
+            },
+            { label: '最高通算点', value: `${entry.bestScore ?? 0}点` },
+          ]}
+        />
+      )}
 
       <div className="df-seats">
         {Array.from({ length: PLAYER_COUNT }, (_, i) => i)
@@ -366,11 +382,18 @@ export default function Game() {
           .map((i) => {
             const place = order.indexOf(i);
             const isTurn = !state.finished && state.turn === i;
+            // スタート前は CPU が動かないので「考え中…」も枠の強調も出さない。
+            // 手番の席は ♦3 を持つ席なので、先に出すことだけ伝える（daifugo-first-view.md の A）
+            const thinking = begun && isTurn;
+            const holdsStart = !begun && isTurn;
             return (
-              <div key={i} className={`df-seat${isTurn ? ' active' : ''}`}>
-                <span className="df-seat-name">{SEAT_NAMES[i]}</span>
-                <span className="df-seat-count">
-                  {place >= 0 ? RANK_LABELS[place] : `${state.hands[i].length}枚`}
+              <div key={i} className={`df-seat${thinking ? ' active' : ''}`}>
+                {/* 名前と枚数は1行に並べる（席を薄くして手札を最初の画面に入れる。B-3） */}
+                <span className="df-seat-head">
+                  <span className="df-seat-name">{SEAT_NAMES[i]}</span>
+                  <span className="df-seat-count">
+                    {place >= 0 ? RANK_LABELS[place] : `${state.hands[i].length}枚`}
+                  </span>
                 </span>
                 {/* 残り枚数を裏向きの札で見せる。数字だけだと「あと何枚か」が
                     ひと目で入ってこないため。中身は伏せたままなので情報は増えない */}
@@ -386,9 +409,16 @@ export default function Game() {
                       ? `${place + 1}位で上がり`
                       : state.passed[i]
                         ? 'パス'
-                        : isTurn
+                        : thinking
                           ? '考え中…'
-                          : ''}
+                          : holdsStart
+                            ? (
+                                <>
+                                  ♦3を持っています
+                                  <span className="df-seat-sub">（先に出します）</span>
+                                </>
+                              )
+                            : ''}
                 </span>
               </div>
             );
@@ -405,7 +435,14 @@ export default function Game() {
         )}
       </div>
 
-      <StartGate show={!begun && !roundOver} onStart={() => setBegun(true)}>
+      {/* スタート前は場の文言を出さず、幕の中に1行の案内とボタンだけを置く
+          （文字の上にボタンを重ねない。daifugo-first-view.md の C）。
+          幕は場の上だけにかかるので、♦3を持つ人が手札から選んで「出す」のは塞がない */}
+      <StartGate
+        show={!begun && !roundOver}
+        onStart={() => setBegun(true)}
+        note={`あなたが大富豪を目指す${ROUNDS}回戦。最初に ♦3 を持つ人が出します`}
+      >
         <div className="df-field" aria-label="場">
           {state.field ? (
             <>
@@ -417,7 +454,9 @@ export default function Game() {
               </span>
             </>
           ) : (
-            <span className="df-field-empty">場は空です。好きな役を出せます</span>
+            <span className="df-field-empty">
+              {!begun && !roundOver ? '' : '場は空です。好きな役を出せます'}
+            </span>
           )}
         </div>
       </StartGate>
@@ -456,57 +495,61 @@ export default function Game() {
         </div>
       )}
 
-      <div className="df-hand" aria-label="あなたの手札">
-        {hand.length === 0 ? (
-          <span className="df-field-empty">手札はありません</span>
-        ) : (
-          hand.map((c) => (
-            <Card
-              key={c.id}
-              card={c}
-              selected={selected.includes(c.id)}
-              dim={humanTurn && !playableIds.has(c.id)}
-              onClick={() => toggle(c.id)}
-            />
-          ))
-        )}
-      </div>
-
-      <div className="btn-row" style={{ marginTop: 12, justifyContent: 'center' }}>
-        {roundOver ? (
-          match.finished ? (
-            <button type="button" className="btn btn-primary" onClick={() => start(level, rules)}>
-              もう一度あそぶ
-            </button>
+      {/* 手札と「出す／パス」の行はひとまとめ。スマホではこの箱ごと画面の下に貼り付ける
+          （ボタンだけがスクロールの先に取り残されないように。daifugo-first-view.md の B-4） */}
+      <div className="df-dock">
+        <div className="df-hand" aria-label="あなたの手札">
+          {hand.length === 0 ? (
+            <span className="df-field-empty">手札はありません</span>
           ) : (
-            <button type="button" className="btn btn-primary" onClick={nextRound}>
-              第{match.round + 1}回戦へ
-            </button>
-          )
-        ) : (
-          <>
-            <button type="button" className="btn btn-primary" onClick={play} disabled={!canPlay}>
-              出す
-              {selectedCards.length > 0 && classify(selectedCards) ? `（${selectedCards.length}枚）` : ''}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={pass}
-              disabled={!humanTurn || !state.field}
-            >
-              パス
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setSelected([])}
-              disabled={selected.length === 0}
-            >
-              選択解除
-            </button>
-          </>
-        )}
+            hand.map((c) => (
+              <Card
+                key={c.id}
+                card={c}
+                selected={selected.includes(c.id)}
+                dim={humanTurn && !playableIds.has(c.id)}
+                onClick={() => toggle(c.id)}
+              />
+            ))
+          )}
+        </div>
+
+        <div className="btn-row df-actions">
+          {roundOver ? (
+            match.finished ? (
+              <button type="button" className="btn btn-primary" onClick={() => start(level, rules)}>
+                もう一度あそぶ
+              </button>
+            ) : (
+              <button type="button" className="btn btn-primary" onClick={nextRound}>
+                第{match.round + 1}回戦へ
+              </button>
+            )
+          ) : (
+            <>
+              <button type="button" className="btn btn-primary" onClick={play} disabled={!canPlay}>
+                出す
+                {selectedCards.length > 0 && classify(selectedCards) ? `（${selectedCards.length}枚）` : ''}
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={pass}
+                disabled={!humanTurn || !state.field}
+              >
+                パス
+              </button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setSelected([])}
+                disabled={selected.length === 0}
+              >
+                選択解除
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <p className="df-note">
