@@ -340,12 +340,20 @@ export function DragGhost({
 export function EmptySlot({
   label = '',
   onClick,
+  className = '',
 }: {
   label?: string;
   onClick?: () => void;
+  /** ゲームごとの追加の状態（フリーセルのヒントの `hinted` など） */
+  className?: string;
 }) {
   return (
-    <button type="button" className="playing-card empty" onClick={onClick} aria-label="空き">
+    <button
+      type="button"
+      className={`playing-card empty${className ? ` ${className}` : ''}`}
+      onClick={onClick}
+      aria-label="空き"
+    >
       {label}
     </button>
   );

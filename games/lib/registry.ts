@@ -96,7 +96,7 @@ export const games: GameDef[] = [
     description: '全部の札が最初から見えている実力型のトランプパズル。まとめて移動にも対応。',
     keywords: ['表向き', 'まとめて移動', 'ドラッグ'],
     stage: 'public',
-    updatedAt: '2026-10-17',
+    updatedAt: '2026-11-20',
   },
   {
     // 「ピラミッド」は19世紀から遊ばれている伝統的なソリティアの一般名称で、

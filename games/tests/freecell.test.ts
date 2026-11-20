@@ -2,18 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { type Card, type Suit } from '@/lib/cards';
 import {
   autoMove,
+  autoPlay,
   canStack,
   canStackFoundation,
   deal,
+  findHint,
+  finishAll,
   FREE_COUNT,
   hasAnyMove,
   isMovableRun,
+  isSafeToFoundation,
+  isTriviallySolvable,
   isWon,
   maxMovable,
   move,
   newSeed,
   TABLEAU_COLS,
   type FreecellState,
+  type Source,
+  type Target,
 } from '@/lib/freecell';
 
 const card = (suit: Suit, rank: number): Card => ({
@@ -423,5 +430,275 @@ describe('hasAnyMove', () => {
   it('配った直後は必ず手がある', () => {
     expect(hasAnyMove(deal(1))).toBe(true);
     expect(hasAnyMove(deal(12345))).toBe(true);
+  });
+});
+
+// ---- 遊びやすさ（docs/features/freecell-asobiyasusa.md） ----
+
+/** A から n までのホーム */
+const home = (suit: Suit, n: number): Card[] => Array.from({ length: n }, (_, i) => card(suit, i + 1));
+
+/** 札が52枚そろっていて重複が無いか（自動送りのあとも崩れない） */
+function expectIntact(s: FreecellState) {
+  const all = [
+    ...s.free.filter((c): c is Card => c !== null),
+    ...Object.values(s.foundations).flat(),
+    ...s.tableau.flat(),
+  ];
+  expect(all).toHaveLength(52);
+  expect(new Set(all.map((c) => c.id)).size).toBe(52);
+}
+
+/** ヒントどおりに進めつつ自動送りをかける。動いた1枚ずつ（利用者の手＋自動送り）を記録する */
+function playWithHints(seed: number, limit = 150) {
+  let s = deal(seed);
+  let prev: FreecellState | null = null;
+  const prims: { from: Source; to: Target }[] = [];
+  for (let i = 0; i < limit && !isWon(s); i += 1) {
+    const h = findHint(s, prev);
+    if (!h) break;
+    const next = move(s, h.from, h.to);
+    expect(next).not.toBeNull();
+    prims.push(h);
+    const a = autoPlay(next!);
+    a.steps.forEach((st) => prims.push({ from: st.from, to: { kind: 'foundation' } }));
+    expectIntact(a.state);
+    prev = s;
+    s = a.state;
+  }
+  return { state: s, prims };
+}
+
+describe('isSafeToFoundation', () => {
+  it('A・2 はホームに置ければ常に安全', () => {
+    const s = empty();
+    expect(isSafeToFoundation(card('heart', 1), s)).toBe(true);
+    s.foundations.heart = home('heart', 1);
+    expect(isSafeToFoundation(card('heart', 2), s)).toBe(true);
+  });
+
+  it('ホームに置けない札は安全でない', () => {
+    expect(isSafeToFoundation(card('heart', 2), empty())).toBe(false);
+  });
+
+  it('赤の5は、黒の2スートのホームがどちらも4以上なら安全、片方が3なら安全でない', () => {
+    const s = empty();
+    s.foundations.heart = home('heart', 4);
+    s.foundations.spade = home('spade', 4);
+    s.foundations.club = home('club', 4);
+    expect(isSafeToFoundation(card('heart', 5), s)).toBe(true);
+    s.foundations.club = home('club', 3);
+    expect(isSafeToFoundation(card('heart', 5), s)).toBe(false);
+  });
+
+  it('同じ色のスートのホームは見ない', () => {
+    const s = empty();
+    s.foundations.spade = home('spade', 2);
+    s.foundations.heart = home('heart', 2);
+    s.foundations.diamond = home('diamond', 2);
+    // 黒の3：赤の2スートが2以上なので安全（クラブのホームが空でも関係ない）
+    expect(isSafeToFoundation(card('spade', 3), s)).toBe(true);
+  });
+});
+
+describe('autoPlay', () => {
+  it('安全な札を送れなくなるまで送り、1枚＝1手で数える', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 9), card('heart', 2), card('heart', 1)];
+    s.free[0] = card('spade', 1);
+    s.tableau[1] = [card('club', 5)];
+    const a = autoPlay(s);
+    expect(a.steps.map((st) => `${st.card.suit}${st.card.rank}`)).toEqual(['spade1', 'heart1', 'heart2']);
+    expect(a.state.moves).toBe(s.moves + 3);
+    expect(a.state.free[0]).toBeNull();
+    expect(a.state.tableau[0]).toEqual([card('spade', 9)]);
+    // 黒の5は送らない（赤のホームが4に届いていない）
+    expect(a.state.tableau[1]).toEqual([card('club', 5)]);
+  });
+
+  it('送る札が無ければそのまま', () => {
+    const s = deal(1);
+    const blocked = { ...s, tableau: s.tableau.map((p) => p.filter((c) => c.rank > 2)) };
+    const a = autoPlay(blocked);
+    expect(a.steps).toHaveLength(0);
+    expect(a.state).toBe(blocked);
+  });
+
+  it('自動送りのあとも札は52枚・重複なし', () => {
+    for (const seed of [1, 2, 3, 42]) playWithHints(seed);
+  });
+
+  it('「もどす」1回で、利用者の手＋自動送りの前に戻る（履歴には利用者の手の前だけを積む）', () => {
+    const s = empty();
+    s.tableau[0] = [card('heart', 1), card('spade', 8)];
+    s.tableau[1] = [card('diamond', 9)];
+    s.tableau[2] = [card('club', 1)];
+    s.tableau[3] = [card('club', 2)];
+    const history: FreecellState[] = [];
+    // 利用者の手：黒8を赤9へ。すると赤A が出て、自動で送られる
+    const next = move(s, { kind: 'tableau', col: 0, cardIndex: 1 }, { kind: 'tableau', col: 1 })!;
+    history.push(s);
+    const a = autoPlay(next);
+    expect(a.steps.length).toBeGreaterThan(0);
+    expect(a.state.foundations.heart).toHaveLength(1);
+    const undone = history.pop();
+    expect(undone).toBe(s);
+    expect(history).toHaveLength(0);
+  });
+
+  it('自動送りがオンでもオフでも、同じ手順ならクリア時の手数は同じ', () => {
+    for (const seed of [1, 7]) {
+      const on = playWithHints(seed);
+      // 同じ1枚ずつを手で運ぶ（自動送りなし）
+      let off = deal(seed);
+      for (const p of on.prims) {
+        const r = move(off, p.from, p.to);
+        expect(r).not.toBeNull();
+        off = r!;
+      }
+      expect(off).toEqual(on.state);
+      expect(off.moves).toBe(on.prims.length);
+    }
+    // 片づけまで含めた最後：一気の片づけも手で運んだのと同じ手数
+    const s = sortedLayout();
+    const f = finishAll(s);
+    expect(isWon(f.state)).toBe(true);
+    expect(f.state.moves).toBe(52);
+  });
+});
+
+/** 52枚を数字の大きい順に8列へ配った盤（どの列も奥から手前へ小さくなる。同じ数字も続く） */
+function sortedLayout(): FreecellState {
+  const s = empty();
+  const deck = deal(3).tableau.flat().sort((a, b) => b.rank - a.rank);
+  deck.forEach((c, i) => s.tableau[i % 8].push(c));
+  return s;
+}
+
+describe('isTriviallySolvable', () => {
+  it('同じ数字が続く列・数字が飛ぶ列でも真', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 8), card('heart', 8), card('club', 5)];
+    s.tableau[1] = [card('diamond', 13), card('spade', 2)];
+    expect(isTriviallySolvable(s)).toBe(true);
+  });
+
+  it('フリーセルに札があっても真', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 8), card('heart', 3)];
+    s.free[2] = card('club', 13);
+    expect(isTriviallySolvable(s)).toBe(true);
+  });
+
+  it('奥より手前が大きい列が1つでもあれば偽', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 8), card('heart', 3)];
+    s.tableau[5] = [card('club', 4), card('diamond', 5)];
+    expect(isTriviallySolvable(s)).toBe(false);
+    expect(isTriviallySolvable(deal(1))).toBe(false);
+  });
+
+  it('真の局面で全部送ると isWon', () => {
+    const s = sortedLayout();
+    expect(isTriviallySolvable(s)).toBe(true);
+    const f = finishAll(s);
+    expect(f.steps).toHaveLength(52);
+    expect(isWon(f.state)).toBe(true);
+    expectIntact(f.state);
+  });
+
+  it('フリーセルに札がある局面でも全部片づく', () => {
+    const s = sortedLayout();
+    // 一番手前の札を1枚フリーセルへ
+    const col = s.tableau.findIndex((p) => p.length > 0);
+    const c = s.tableau[col][s.tableau[col].length - 1];
+    s.tableau[col] = s.tableau[col].slice(0, -1);
+    s.free[0] = c;
+    const f = finishAll(s);
+    expect(isWon(f.state)).toBe(true);
+  });
+});
+
+describe('findHint', () => {
+  it('安全な札のホーム送りがあれば、それを選ぶ', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 7)];
+    s.tableau[1] = [card('heart', 6)];
+    s.tableau[2] = [card('heart', 1)];
+    expect(findHint(s)).toEqual({ from: { kind: 'tableau', col: 2, cardIndex: 0 }, to: { kind: 'foundation' } });
+  });
+
+  it('安全でないホーム送りは、列から列への手より後に選ぶ', () => {
+    const s = empty();
+    s.foundations.heart = home('heart', 4);
+    s.foundations.spade = home('spade', 2);
+    s.foundations.club = home('club', 2);
+    s.tableau[0] = [card('heart', 5)];
+    s.tableau[1] = [card('spade', 9)];
+    s.tableau[2] = [card('heart', 8)];
+    expect(findHint(s)).toEqual({ from: { kind: 'tableau', col: 2, cardIndex: 0 }, to: { kind: 'tableau', col: 1 } });
+    // 列から列への手が無ければ、空き列・フリーセルへ逃がすより先にホームへ
+    s.tableau[2] = [card('club', 9)];
+    expect(findHint(s)).toEqual({ from: { kind: 'tableau', col: 0, cardIndex: 0 }, to: { kind: 'foundation' } });
+  });
+
+  it('埋もれた A・2 を掘る手を、ただの列から列より先に選ぶ', () => {
+    const s = empty();
+    s.tableau[0] = [card('spade', 13), card('heart', 1), card('club', 6)];
+    s.tableau[1] = [card('diamond', 7)];
+    s.tableau[2] = [card('spade', 10)];
+    s.tableau[3] = [card('heart', 9)];
+    expect(findHint(s)).toEqual({ from: { kind: 'tableau', col: 0, cardIndex: 2 }, to: { kind: 'tableau', col: 1 } });
+  });
+
+  it('同じ順位なら動かす枚数が多い手', () => {
+    const s = empty();
+    s.tableau[0] = [card('club', 13), card('heart', 9), card('spade', 8)];
+    s.tableau[1] = [card('spade', 10)];
+    s.tableau[2] = [card('diamond', 13), card('club', 9)];
+    s.tableau[3] = [card('heart', 10)];
+    // 赤9・黒8 の2枚を黒10へ（1枚だけの 黒8→？ や 黒9→赤10 より先）
+    expect(findHint(s)).toEqual({ from: { kind: 'tableau', col: 0, cardIndex: 1 }, to: { kind: 'tableau', col: 1 } });
+  });
+
+  it('直前の手をそのまま戻すだけの手は選ばない', () => {
+    const before = empty();
+    before.tableau[0] = [card('spade', 13)];
+    before.tableau[1] = [card('heart', 12)];
+    const after = move(before, { kind: 'tableau', col: 1, cardIndex: 0 }, { kind: 'tableau', col: 0 })!;
+    const back = { from: { kind: 'tableau', col: 0, cardIndex: 1 }, to: { kind: 'tableau', col: 1 } };
+    const h = findHint(after, before);
+    expect(h).not.toBeNull();
+    expect(h).not.toEqual(back);
+  });
+
+  it('返す手は必ず move() で通る', () => {
+    for (const seed of [1, 2, 3, 4, 5, 99, 12345]) {
+      let s = deal(seed);
+      for (let i = 0; i < 40; i += 1) {
+        const h = findHint(s);
+        if (!h) break;
+        const r = move(s, h.from, h.to);
+        expect(r).not.toBeNull();
+        s = autoPlay(r!).state;
+      }
+    }
+  });
+
+  it('手が無い局面では null', () => {
+    const s = empty();
+    s.free = [card('spade', 9), card('heart', 9), card('diamond', 9), card('club', 9)];
+    s.tableau = [
+      [card('spade', 13)],
+      [card('heart', 13)],
+      [card('diamond', 13)],
+      [card('club', 13)],
+      [card('spade', 11)],
+      [card('heart', 11)],
+      [card('diamond', 11)],
+      [card('club', 11)],
+    ];
+    expect(hasAnyMove(s)).toBe(false);
+    expect(findHint(s)).toBeNull();
   });
 });
