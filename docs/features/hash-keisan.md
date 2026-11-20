@@ -1,11 +1,11 @@
 # 新ツール「ハッシュ値 計算（SHA-256・MD5）」— 文字列やファイルの SHA-256・SHA-1・MD5・SHA-384・SHA-512 をその場で出し、配布元が公開している値を貼ると一致を判定。「改行コード・末尾の改行・BOM・文字コードで値が変わった」を見つけて教える。何GBのファイルでも送信せずブラウザの中で
 
-**状態**：提案（2026-11-20 起票。セッション `session_012RoU2ETTZj3bsuykNpuM2h`。定期の企画ルーティン）。**このPRは仕様書だけで、コードは触っていない。**
+**状態**：提案（2026-11-20 起票。セッション `session_012RoU2ETTZj3bsuykNpuM2h`。定期の企画ルーティン。**同日の企画レビュー（#529、`session_012RoU2HPv5Vdvh5d31rM7jU`）の必須5点・任意3点を反映**：Shift_JIS の表は `url-decode.ts` の `reverseTable` を使う・表に無い文字の扱い／スマホでの見せ方／コマンドのファイル名の引用／計測に値・ファイル名を送らない／SHA-512 を BigInt なしで書くことと速さの目安／BSD 形式の受け付け・FAQ の言い方・原因探しの組み合わせを固定）。**このPRは仕様書だけで、コードは触っていない。**
 **いつ `public` にするか**：期日のない恒常需要。開発者向けの小道具（Base64・JSON 整形・正規表現・URL デコード・UNIX 時間）を `public` にする波に**同じ時期に並べる**のがよい
 **優先度：中。** 法改正ものの後ろでよい。開発者向けの品ぞろえの穴を埋める1本
 **対象**：`tools/`（`hasokon.com/tools/hash-keisan/` を想定。category は `計算・変換`。`tools/lib/hash/`（新規）・`tools/app/hash-keisan/`・`tools/tests/hash.test.ts`）
 **起票**：2026-11-20
-**関連**：[base64-henkan.md](./base64-henkan.md)（文字コードの判別 `charset-guess.ts` を共有。Base64 出力の相互リンク）・[seiki-hyogen-checker.md](./seiki-hyogen-checker.md)（Web Worker で重い処理を逃がす型）・
+**関連**：[base64-henkan.md](./base64-henkan.md)（Base64 出力の相互リンク。部品・配色をそろえる）・[url-decode-encode.md](./url-decode-encode.md)（Shift_JIS の逆引き表 `reverseTable('shift_jis')` を共有）・[seiki-hyogen-checker.md](./seiki-hyogen-checker.md)（Web Worker で重い処理を逃がす型）・
 [password-seisei.md](./password-seisei.md)（「パスワードの保存にハッシュをそのまま使わない」の相互リンク）・[json-seikei.md](./json-seikei.md)・[url-decode-encode.md](./url-decode-encode.md)・
 [thin-tool-content.md](./thin-tool-content.md)（本文の型）・[feature-flags.md](./feature-flags.md)・[tool-use-coverage.md](./tool-use-coverage.md)・[card-illustrations.md](./card-illustrations.md)
 
@@ -54,13 +54,28 @@
 - **SRI の行**：SHA-384 を Base64 にして `sha384-…` の形で（`<script integrity>` にそのまま貼れる）
 - MD5・SHA-1 の行には小さく「改ざん対策には使わない（衝突が見つかっている）。同じファイルかどうかの確認には使える」
 - **コマンドの欄**：選んだファイル名を入れた形で、Windows（`certutil -hashfile 名前 SHA256`／PowerShell `Get-FileHash 名前 -Algorithm SHA256`）・macOS（`shasum -a 256 名前`）・Linux（`sha256sum 名前`）
+  - **ファイル名は必ず引用する**：Windows（certutil・PowerShell）は `"…"` で囲む（`"` はファイル名に使えない）。macOS・Linux は `'…'` で囲み、中の `'` は `'\''` にする。空白・`&`・`$`・`;` を含む名前を貼っても壊れない・意図しない実行にならないため
+  - ファイル未選択のときは `ファイル名` のプレースホルダを入れて出す
+  - PowerShell は `Get-FileHash -LiteralPath "…"` にする（`[` `]` をワイルドカードと解釈させない）
+
+### スマホ（幅 375〜390px）での見せ方
+
+- 値は等幅フォントで `overflow-wrap: anywhere`（**横スクロールを出さない**。SHA-512 の 128 桁は 3〜4 行に折り返す）
+- コピーのボタンは行ごとに 44px 以上。押したら「コピーしました」を 1.5 秒
+- 「比べる値」で一致したアルゴリズムの行を**緑の枠で目立たせ、一番上へ**（どれを見ればいいか分からない人向け）
+- ファイルタブはスマホではドラッグ＆ドロップできないので、**「ファイルを選ぶ」ボタンを主役**にし、ドロップの案内はパソコンだけに出す
+- コマンドの欄はスマホでは `<details>` で畳んでおく
+- 部品・配色は既存の開発者向けツール（`base64`・`json-seikei`）と同じものを使う
 
 ### 一致の確認（「比べる値」欄）
 
 - 貼った値の**長さでアルゴリズムを自動判定**（32 桁＝MD5・40＝SHA-1・64＝SHA-256・96＝SHA-384・128＝SHA-512。Base64 の `sha384-…` も受ける）。大文字小文字・空白・`:` 区切りは無視
 - **`SHA256SUMS` 形式**（`値␣␣ファイル名` または `値␣*ファイル名` の行の並び）を貼ったら、ファイル名で突き合わせて**ファイルごとに ✓／✗**
+- BSD 形式（`SHA256 (file.iso) = 値`。`shasum --tag`・macOS の `sha256`・`openssl dgst` の出力）も受ける。アルゴリズムは行頭の名前で決める
 - 一致：緑で「一致しました（SHA-256）」。不一致：赤で「一致しません」**に加えて、文字列タブでは次を自動で試し、当たったものを教える**：
   - 末尾の改行を足す／外す・LF⇔CRLF・BOM の有無・Shift_JIS⇔UTF-8・前後の空白を外す
+  - 試す組み合わせは**有限の一覧で固定**する：末尾の改行（そのまま／LF を1つ足す／CRLF を1つ足す／末尾の改行を外す）× 改行コード（そのまま／LF／CRLF）× BOM（なし／あり。UTF-8 のときだけ）× 文字コード（UTF-8／Shift_JIS）× 前後の空白（そのまま／外す）＝最大 96 通り。
+    比べるのは「比べる値」の長さから決まった1つのアルゴリズムだけ。当たりが複数あれば、変える箇所が少ない順に1つだけ出す
   - 例：「**末尾に改行を1つ足すと一致します**（`echo` で作った値ではありませんか？ `echo -n` を使うと改行が入りません）」
 - ファイルタブで不一致なら「ダウンロードが途中で切れた・別の版を落とした可能性」と、ファイルの大きさ（バイト数）を並べて出す（配布元がサイズも載せていることが多い）
 
@@ -69,7 +84,10 @@
 - **MD5・SHA-1・SHA-256・SHA-512（SHA-384 は SHA-512 の初期値と切り詰め）を自前の逐次計算（`update(chunk)`／`digest()`）で書く**。依存パッケージは足さない
   - 理由：Web Crypto には逐次計算と MD5 が無く、大きなファイルでメモリが足りなくなるため。1 本のコードで文字列もファイルも同じ経路にする
 - ファイルは Web Worker で `File.slice()` 4MB ずつ読み、5つのアルゴリズムに同じ塊を流す。メインのスレッドは固めない
-- 文字列の Shift_JIS 化は既存の `tools/lib/charset-guess.ts`／Base64 の実装で使っている変換表を共有する（同じ表を2つ持たない）
+- **SHA-512・SHA-384 は 64bit の演算を 32bit の上位・下位の組で書く（BigInt は使わない）**。BigInt だと桁違いに遅く、5種を同時に流すとここが律速になるため
+- 文字列の Shift_JIS 化は、**`tools/lib/url-decode.ts` が export している `reverseTable('shift_jis')`**（WHATWG の encoder と同じ選び方・IBM 拡張を除く）を使う。同じ表を2つ持たない。
+  `charset-guess.ts`（バイト列 → 判別）と `base64.ts`（`TextEncoder`＝UTF-8 のみ）には文字 → Shift_JIS の表が無い。共有が重くなるなら `reverseTable` を `tools/lib/sjis-table.ts` に切り出し、`url-decode.ts` もそこから使う
+- **Shift_JIS に無い文字（絵文字・`𠮷` など）が入ったとき**は、Shift_JIS の値は出さず「Shift_JIS に無い文字があります（◯文字目）」と示す。不一致の原因探しの候補からも Shift_JIS を外す
 - 送信・保存はしない（`localStorage` にも残さない。入力が秘密の文字列のことがあるため）
 
 ### ページの構成（`thin-tool-content.md` の型）
@@ -79,11 +97,12 @@
 - FAQ（5問。`FAQPage` の JSON-LD）：
   - 「MD5 は元の文字列に戻せますか？」→ 戻せない（暗号化ではない）。短い文字列は総当たりや既知の表で推測されうる
   - 「パスワードの保存に SHA-256 を使ってよい？」→ そのままは不可。bcrypt・Argon2 などの遅いハッシュとソルトを使う（[password-seisei.md](./password-seisei.md) へ）
-  - 「ファイルはサーバーに送られますか？」→ 送らない。通信を切っても動く
+  - 「ファイルはサーバーに送られますか？」→ 送らない。ページを開いたあとは、通信を切っても動く
   - 「同じ文字列なのに他のサイトと値が違う」→ 改行・BOM・文字コード（上の自動判定へ）
-  - 「何GBまで計算できますか？」→ 上限は設けない。目安の速さ（実測値を実装時に書く）
+  - 「何GBまで計算できますか？」→ 上限は設けない。目安の速さは下「確かめること」の実測値で書く
 - `metadata.robots: robotsFor('hash-keisan')`、`RelatedTools` に base64・password・url-decode・json-seikei
-- 計測：`trackToolUse('hash-keisan', ...)` で `text`（初回の入力）／`file`（ファイル計算の完了）／`compare-match`／`compare-mismatch`／`compare-hint`（不一致の原因を当てた）
+- 計測：`trackToolUse('hash-keisan', ...)` で `text`（初回の入力）／`file-<区分>`（ファイル計算の完了。区分は `lt10mb`・`lt1gb`・`ge1gb` の3つ）／`compare-match-<アルゴリズム>`／`compare-mismatch`／`compare-hint-<種類>`（`trailing-newline`・`crlf`・`bom`・`sjis`・`trim` など、当てた原因）
+  - **送るのはアルゴリズム名・原因の種類・ファイルサイズの区分だけ。入力の文字列・ハッシュ値・ファイル名・正確なバイト数は送らない**（`base64` の `CHARSET_TRACK` と同じ考え方）
 
 ---
 
@@ -95,7 +114,12 @@
   - 塊の切り方を変えても（1 バイトずつ・7 バイトずつ・一括）値が同じ
   - 日本語：`テスト` の UTF-8／UTF-8 BOM／Shift_JIS で値が別になり、それぞれ `node:crypto` と一致
   - 一致の判定：長さでのアルゴリズム判定、`SHA256SUMS` 形式の読み取り（`␣␣` と `␣*`）、「末尾の改行を足すと一致」を当てる
-- テスト環境：1GB 程度のファイルでブラウザが落ちずに進み具合が動くこと、中止できること（パソコン Chrome・Edge と iPhone Safari）
+  - コマンドの組み立て：空白入り（`my file.iso`）・`'` 入り（`it's.zip`）・`&` 入りのファイル名で、Windows／macOS・Linux それぞれの引用が正しい
+  - Shift_JIS に無い文字（`😀`・`𠮷`）で Shift_JIS の値を出さず、原因探しの候補からも外れる
+  - BSD 形式（`SHA256 (a b.iso) = …`）の読み取り
+- テスト環境（速さの目安。実測値を FAQ に書く）：
+  - パソコン Chrome・Edge：**1GB のファイルで5種を同時に出して 60 秒以内**を目安。超えるなら SHA-512/384 をあと回し（SHA-256 が出たら先に表示）にする
+  - iPhone Safari：**1GB のファイルが落ちずに完走する**こと（時間は問わない）。進み具合が動くこと・中止できること
 
 ---
 
