@@ -1179,6 +1179,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-17',
   },
   {
+    // 仕様: docs/features/hash-keisan.md
+    slug: 'hash-keisan',
+    icon: 'Fingerprint',
+    name: 'ハッシュ値 計算（SHA-256・MD5）',
+    description:
+      '文字列やファイルの SHA-256・SHA-1・MD5・SHA-384・SHA-512 を同時に。配布元の値や SHA256SUMS を貼ると一致を判定し、合わないときは改行・BOM・文字コードのどれが原因かを教えます。何GBのファイルでも送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-20',
+  },
+  {
     slug: 'hankaku-zenkaku',
     icon: 'TextAa',
     name: '半角⇔全角 変換',
