@@ -1,6 +1,6 @@
 # 新ツール「ハッシュ値 計算（SHA-256・MD5）」— 文字列やファイルの SHA-256・SHA-1・MD5・SHA-384・SHA-512 をその場で出し、配布元が公開している値を貼ると一致を判定。「改行コード・末尾の改行・BOM・文字コードで値が変わった」を見つけて教える。何GBのファイルでも送信せずブラウザの中で
 
-**状態**：提案（2026-11-20 起票。セッション `session_012RoU2ETTZj3bsuykNpuM2h`。定期の企画ルーティン。**同日の企画レビュー（#529、`session_012RoU2HPv5Vdvh5d31rM7jU`）の必須5点・任意3点を反映**：Shift_JIS の表は `url-decode.ts` の `reverseTable` を使う・表に無い文字の扱い／スマホでの見せ方／コマンドのファイル名の引用／計測に値・ファイル名を送らない／SHA-512 を BigInt なしで書くことと速さの目安／BSD 形式の受け付け・FAQ の言い方・原因探しの組み合わせを固定）。**このPRは仕様書だけで、コードは触っていない。**
+**状態**：実装済み・`wip`（2026-11-20。`tools/lib/hash/`・`tools/app/hash-keisan/`・`tools/tests/hash.test.ts`。slug は推しの `hash-keisan`、名前に「MD5」を入れる案で実装。1GB の5種同時は headless Chromium で 53.6 秒。`public` にする PR でカードの絵を描く）。起票は提案（2026-11-20 起票。セッション `session_012RoU2ETTZj3bsuykNpuM2h`。定期の企画ルーティン。**同日の企画レビュー（#529、`session_012RoU2HPv5Vdvh5d31rM7jU`）の必須5点・任意3点を反映**：Shift_JIS の表は `url-decode.ts` の `reverseTable` を使う・表に無い文字の扱い／スマホでの見せ方／コマンドのファイル名の引用／計測に値・ファイル名を送らない／SHA-512 を BigInt なしで書くことと速さの目安／BSD 形式の受け付け・FAQ の言い方・原因探しの組み合わせを固定）。**このPRは仕様書だけで、コードは触っていない。**
 **いつ `public` にするか**：期日のない恒常需要。開発者向けの小道具（Base64・JSON 整形・正規表現・URL デコード・UNIX 時間）を `public` にする波に**同じ時期に並べる**のがよい
 **優先度：中。** 法改正ものの後ろでよい。開発者向けの品ぞろえの穴を埋める1本
 **対象**：`tools/`（`hasokon.com/tools/hash-keisan/` を想定。category は `計算・変換`。`tools/lib/hash/`（新規）・`tools/app/hash-keisan/`・`tools/tests/hash.test.ts`）
