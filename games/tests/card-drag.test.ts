@@ -204,6 +204,8 @@ function findRandom<S>(
 
 describe('フリーセル（app/freecell/Game.tsx）', async () => {
   const { default: Game } = await import('@/app/freecell/Game');
+    // ここでは運ぶ操作だけを見るので、自動でホームへ送るのは切っておく（送る側は下の describe）
+  beforeEach(() => localStorage.setItem('freecell:autoplay', 'off'));
   const dealWith = (r: number) => freecell.deal(freecell.newSeed(() => r));
   const topMove = (s: freecell.FreecellState) => {
     for (let a = 0; a < 8; a += 1) {
@@ -350,6 +352,100 @@ describe('フリーセル（app/freecell/Game.tsx）', async () => {
     fire(undoButton(), 'click');
     expect(movesText()).toBe('0');
     expect(undoButton().disabled).toBe(true); // 履歴は1つだけだった
+  });
+});
+
+describe('フリーセルの遊びやすさ（docs/features/freecell-asobiyasusa.md）', async () => {
+  const { default: Game } = await import('@/app/freecell/Game');
+  const dealWith = (r: number) => freecell.deal(freecell.newSeed(() => r));
+  /** 列の一番下をフリーセルへ逃がすと、安全な札が自動で送られる配り */
+  const findAuto = () => {
+    for (let i = 1; i < 100; i += 1) {
+      const r = i / 100;
+      const s = dealWith(r);
+      for (let col = 0; col < 8; col += 1) {
+        const next = freecell.move(s, { kind: 'tableau', col, cardIndex: s.tableau[col].length - 1 }, { kind: 'free', index: 0 });
+        if (!next) continue;
+        const a = freecell.autoPlay(next);
+        if (a.steps.length > 0) return { r, s, col, a };
+      }
+    }
+    throw new Error('自動送りが起きる配りが見つからない');
+  };
+  const wait = (ms: number) => act(() => new Promise((r) => setTimeout(r, ms)));
+  const homeCount = () => container.querySelectorAll('[data-fslot] button.playing-card:not(.empty)').length;
+  const button = (text: string) => [...container.querySelectorAll('button')].find((b) => b.textContent === text)!;
+
+  it('1手のあとに安全な札がホームへ送られ、1枚＝1手で数える。もどす1回でまとめて戻る', async () => {
+    const { r, s, col, a } = findAuto();
+    await render(Game, r);
+    const cards = cardsIn(`tableau:${col}`);
+    await dragCard(cards[cards.length - 1], pileEl('free:0'));
+    await wait(120 * (a.steps.length + 1) + 50);
+    for (let c = 0; c < 8; c += 1) expect(labelsIn(`tableau:${c}`)).toEqual(pileLabels(a.state.tableau[c]));
+    expect(homeCount()).toBe(Object.values(a.state.foundations).filter((p) => p.length > 0).length);
+    expect(movesText()).toBe(String(1 + a.steps.length));
+
+    fire(undoButton(), 'click');
+    for (let c = 0; c < 8; c += 1) expect(labelsIn(`tableau:${c}`)).toEqual(pileLabels(s.tableau[c]));
+    expect(homeCount()).toBe(0);
+    expect(movesText()).toBe('0');
+    expect(undoButton().disabled).toBe(true);
+  });
+
+  it('動きの途中で「もどす」を押しても札はずれない', async () => {
+    const { r, s, col } = findAuto();
+    await render(Game, r);
+    const cards = cardsIn(`tableau:${col}`);
+    await dragCard(cards[cards.length - 1], pileEl('free:0'));
+    fire(undoButton(), 'click'); // まだ動いている（1枚 120ms）
+    await wait(400);
+    for (let c = 0; c < 8; c += 1) expect(labelsIn(`tableau:${c}`)).toEqual(pileLabels(s.tableau[c]));
+    expect(homeCount()).toBe(0);
+    expect(labelsIn('free:0')).toEqual([]);
+  });
+
+  it('スイッチを切ると自動で送らず、切ったことを1回送る。選んだ値は覚える', async () => {
+    const { r, col, a } = findAuto();
+    await render(Game, r);
+    const box = container.querySelector<HTMLInputElement>('.fc-switch input')!;
+    expect(box.checked).toBe(true);
+    fire(box, 'click');
+    expect(box.checked).toBe(false);
+    expect(localStorage.getItem('freecell:autoplay')).toBe('off');
+    expect(track).toHaveBeenCalledWith('freecell', 'autoplay-off');
+    const cards = cardsIn(`tableau:${col}`);
+    await dragCard(cards[cards.length - 1], pileEl('free:0'));
+    await wait(120 * (a.steps.length + 1));
+    expect(homeCount()).toBe(0);
+    expect(movesText()).toBe('1');
+  });
+
+  it('1手目までは最初の案内と文中の［ヒント］。押すと移動元と行き先が光り、1.5秒で消える', async () => {
+    const r = 0.5;
+    await render(Game, r);
+    const row = container.querySelector('.hint-row')!;
+    expect(row.textContent).toContain('まずは A を右上のホームへ');
+    const inline = row.querySelector('button')!;
+    expect(inline.textContent).toBe('ヒント');
+    fire(inline, 'click');
+    expect(container.querySelectorAll('.hinted').length).toBeGreaterThanOrEqual(2);
+    expect(track).toHaveBeenCalledWith('freecell', 'hint');
+    // 盤の下にも同じボタン。2回目以降は送らない
+    fire(button('ヒント'), 'click');
+    expect(track.mock.calls.filter(([, act]) => act === 'hint')).toHaveLength(1);
+    await wait(1600);
+    expect(container.querySelectorAll('.hinted').length).toBe(0);
+  });
+
+  it('「ヒント」「自動でホームへ」は盤の下の行にあり、上の行には足していない', async () => {
+    await render(Game, 0.5);
+    const bars = container.querySelectorAll('.status-bar');
+    expect(bars).toHaveLength(2);
+    expect(bars[0].textContent).not.toContain('ヒント');
+    expect(bars[0].querySelector('input')).toBeNull();
+    expect(bars[1].textContent).toContain('ヒント');
+    expect(bars[1].textContent).toContain('自動でホームへ');
   });
 });
 

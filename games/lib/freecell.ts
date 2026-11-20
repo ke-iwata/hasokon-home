@@ -248,3 +248,177 @@ export function hasAnyMove(s: FreecellState): boolean {
   }
   return false;
 }
+
+// ---- 遊びやすさ（docs/features/freecell-asobiyasusa.md） ----
+
+/** ホームへ送った1枚。UIが動きを付けるのに使う（状態は先に確定している） */
+export interface AutoStep {
+  from: Source;
+  card: Card;
+}
+
+/**
+ * もう場に要らない札か（自動でホームへ送ってよいか）。
+ * ホームに置ける札であって、数字が2以下か、反対の色の2スートのホームが
+ * どちらも「その札の数字 − 1」以上。その札に重ねられる札（反対の色で1つ小さい札）は
+ * もう全部ホームにあるので、場に残す意味が無く、送って損をする局面が無い
+ */
+export function isSafeToFoundation(card: Card, s: FreecellState): boolean {
+  if (!canStackFoundation(card, s)) return false;
+  if (card.rank <= 2) return true;
+  const red = isRed(card.suit);
+  return SUITS.filter((suit) => isRed(suit) !== red).every(
+    (suit) => s.foundations[suit].length >= card.rank - 1,
+  );
+}
+
+/** ホームへ出せる札の移動元（フリーセル → 場札の一番下の順）。pred で絞る */
+function foundationSources(s: FreecellState, pred: (c: Card) => boolean): AutoStep[] {
+  const out: AutoStep[] = [];
+  s.free.forEach((c, index) => {
+    if (c && pred(c)) out.push({ from: { kind: 'free', index }, card: c });
+  });
+  s.tableau.forEach((pile, col) => {
+    const c = pile[pile.length - 1];
+    if (c && pred(c)) out.push({ from: { kind: 'tableau', col, cardIndex: pile.length - 1 }, card: c });
+  });
+  return out;
+}
+
+/**
+ * 安全な札を、送れる札が無くなるまでホームへ送る。
+ * 手数は手で運んだときと同じく1枚＝1手で数える（`move()` を通すので moves + 1）
+ */
+export function autoPlay(s: FreecellState): { state: FreecellState; steps: AutoStep[] } {
+  let state = s;
+  const steps: AutoStep[] = [];
+  for (;;) {
+    const [next] = foundationSources(state, (c) => isSafeToFoundation(c, state));
+    if (!next) break;
+    const r = move(state, next.from, { kind: 'foundation' });
+    if (!r) break;
+    steps.push(next);
+    state = r;
+  }
+  return { state, steps };
+}
+
+/**
+ * すべての列が、奥（上）から手前（下）へ数字が小さくなっていく並びか
+ * （1つずつでなくてよい・同じ数字が続いてもよい・色もスートも問わない。フリーセルは問わない）。
+ * こうなれば残りは小さい札から順にホームへ出せるので、それ以上の判断は要らない
+ */
+export function isTriviallySolvable(s: FreecellState): boolean {
+  return s.tableau.every((pile) => pile.every((c, i) => i === 0 || c.rank <= pile[i - 1].rank));
+}
+
+/** ホームへ出せる札を、小さい順に出せなくなるまで全部送る（`isTriviallySolvable` のときの片づけ） */
+export function finishAll(s: FreecellState): { state: FreecellState; steps: AutoStep[] } {
+  let state = s;
+  const steps: AutoStep[] = [];
+  for (;;) {
+    const cands = foundationSources(state, (c) => canStackFoundation(c, state));
+    if (cands.length === 0) break;
+    const next = cands.reduce((a, b) => (b.card.rank < a.card.rank ? b : a));
+    const r = move(state, next.from, { kind: 'foundation' });
+    if (!r) break;
+    steps.push(next);
+    state = r;
+  }
+  return { state, steps };
+}
+
+/** ヒントの1手 */
+export interface Hint {
+  from: Source;
+  to: Target;
+}
+
+/** 札の並びだけを比べるための鍵（手数・配り番号は見ない） */
+function layoutKey(s: FreecellState): string {
+  const id = (c: Card | null) => (c ? String(c.id) : '-');
+  return [
+    s.free.map(id).join(','),
+    SUITS.map((suit) => s.foundations[suit].length).join(','),
+    s.tableau.map((p) => p.map(id).join(',')).join('|'),
+  ].join('/');
+}
+
+/** A・2 の上に乗っている札の数（埋もれた低い札をどれだけ掘ればよいか） */
+function buriedLow(s: FreecellState): number {
+  let n = 0;
+  for (const pile of s.tableau) {
+    pile.forEach((c, i) => {
+      if (c.rank <= 2) n += pile.length - 1 - i;
+    });
+  }
+  return n;
+}
+
+/**
+ * ヒントの1手を選ぶ（探索はしない。軽い優先順）。
+ *  1. 安全な札のホーム送り
+ *  2. A・2 の上に乗っている札が減る手（ホーム送りを除く。札のある列 → 空き列 → フリーセルの順）
+ *  3. 列から列へ（空き列・フリーセルを使わない）
+ *  3'. 安全でないホーム送り（初心者を詰ませないよう、ここまで下げる）
+ *  4. フリーセルから列へ
+ *  5. 空き列へ
+ *  6. フリーセルへ
+ * 同じ順位なら動かす枚数が多い手。`prev`（直前の状態）へ戻すだけの手は選ばない。
+ * 返す手は必ず `move()` で通る。手が無ければ null
+ */
+export function findHint(s: FreecellState, prev?: FreecellState | null): Hint | null {
+  const prevKey = prev ? layoutKey(prev) : null;
+  const before = buriedLow(s);
+  let best: { hint: Hint; rank: number; size: number } | null = null;
+
+  const consider = (from: Source, to: Target, size: number) => {
+    const next = move(s, from, to);
+    if (!next) return;
+    if (prevKey !== null && layoutKey(next) === prevKey) return;
+    let rank: number;
+    if (to.kind === 'foundation') {
+      const c = from.kind === 'free' ? s.free[from.index]! : s.tableau[from.col][from.cardIndex];
+      rank = isSafeToFoundation(c, s) ? 1 : 3.5;
+    } else if (buriedLow(next) < before) {
+      // 掘る手のなかでも、札のある列へ置く手 → 空き列 → フリーセルの順（置き場を無駄にしない）
+      rank = to.kind === 'free' ? 2.2 : s.tableau[to.col].length === 0 ? 2.1 : 2;
+    } else if (to.kind === 'tableau' && s.tableau[to.col].length > 0) {
+      rank = from.kind === 'tableau' ? 3 : 4;
+    } else if (to.kind === 'tableau') {
+      rank = 5;
+    } else {
+      rank = 6;
+    }
+    if (!best || rank < best.rank || (rank === best.rank && size > best.size)) {
+      best = { hint: { from, to }, rank, size };
+    }
+  };
+
+  const emptyFree = s.free.findIndex((c) => c === null);
+  // フリーセルの札
+  s.free.forEach((c, index) => {
+    if (!c) return;
+    const from: Source = { kind: 'free', index };
+    consider(from, { kind: 'foundation' }, 1);
+    for (let col = 0; col < s.tableau.length; col += 1) consider(from, { kind: 'tableau', col }, 1);
+  });
+  // 場札の並び
+  s.tableau.forEach((pile, col) => {
+    for (let cardIndex = pile.length - 1; cardIndex >= 0; cardIndex -= 1) {
+      if (!isMovableRun(pile, cardIndex)) break;
+      const from: Source = { kind: 'tableau', col, cardIndex };
+      const size = pile.length - cardIndex;
+      if (size === 1) {
+        consider(from, { kind: 'foundation' }, 1);
+        if (emptyFree >= 0) consider(from, { kind: 'free', index: emptyFree }, 1);
+      }
+      for (let to = 0; to < s.tableau.length; to += 1) {
+        // 列をまるごと空き列へ移すだけの手は意味が無い
+        if (cardIndex === 0 && s.tableau[to].length === 0) continue;
+        consider(from, { kind: 'tableau', col: to }, size);
+      }
+    }
+  });
+  return (best as { hint: Hint } | null)?.hint ?? null;
+}
