@@ -258,6 +258,8 @@ export default function Calculator() {
   const [compare, setCompare] = useState('');
   const [jobs, setJobs] = useState<FileJob[]>([]);
   const [dragging, setDragging] = useState(false);
+  /** 隠した input[type=file] にキーボードでフォーカスが来たら、ボタンの見た目に枠を出す */
+  const [fileFocus, setFileFocus] = useState(false);
   const isDesktop = useMediaQuery('(hover: hover) and (pointer: fine)');
   const isWide = useMediaQuery('(min-width: 640px)');
 
@@ -296,6 +298,10 @@ export default function Calculator() {
 
   // ---- ファイル ----
   const workerRef = useRef<Worker | null>(null);
+  /** Worker を読み込めなかった（以後はこのスレッドで計算する） */
+  const workerBrokenRef = useRef(false);
+  /** いま Worker で計算中のファイルがあるとき、Worker が落ちたらどうするか */
+  const onWorkerFailRef = useRef<(() => void) | null>(null);
   const runningRef = useRef<number | null>(null);
   const cancelledRef = useRef(false);
   const nextId = useRef(1);
@@ -303,6 +309,36 @@ export default function Calculator() {
   const updateJob = useCallback((id: number, patch: Partial<FileJob>) => {
     setJobs((list) => list.map((j) => (j.id === id ? { ...j, ...patch } : j)));
   }, []);
+
+  /** Worker を捨てて、以後はこのスレッドで計算する */
+  const dropWorker = useCallback(() => {
+    workerRef.current?.terminate();
+    workerRef.current = null;
+    workerBrokenRef.current = true;
+  }, []);
+
+  /**
+   * Worker を作る（作ってあればそれを返す）。error はここで作った時点から拾う。
+   * ページを開いたあとに通信が切れると、Worker のスクリプトが読めずに error になる。
+   * 先に読んでおいた Worker でも、計算を頼んだあとでも、ここで拾ってこのスレッドの計算に切り替える
+   */
+  const ensureWorker = useCallback((): Worker | null => {
+    if (workerRef.current || workerBrokenRef.current) return workerRef.current;
+    const w = createWorker();
+    if (!w) {
+      workerBrokenRef.current = true;
+      return null;
+    }
+    w.onerror = (e) => {
+      e.preventDefault?.();
+      const onFail = onWorkerFailRef.current;
+      onWorkerFailRef.current = null;
+      if (onFail) onFail();
+      else dropWorker();
+    };
+    workerRef.current = w;
+    return w;
+  }, [dropWorker]);
 
   // 待っているファイルを1つずつ計算する
   useEffect(() => {
@@ -315,29 +351,44 @@ export default function Calculator() {
 
     const finish = (patch: Partial<FileJob>) => {
       runningRef.current = null;
+      onWorkerFailRef.current = null;
       updateJob(job.id, patch);
       if (patch.status === 'done') track(`file-${sizeBand(job.file.size)}`);
     };
 
-    if (!workerRef.current) workerRef.current = createWorker();
-    const worker = workerRef.current;
-    if (worker) {
-      worker.onmessage = (e: MessageEvent<HashResponse>) => {
-        const m = e.data;
-        if (m.id !== job.id) return;
-        if (m.type === 'progress') updateJob(job.id, { done: m.done });
-        else if (m.type === 'done') finish({ status: 'done', done: job.file.size, digests: m.digests });
-        else finish({ status: 'error', error: m.message });
-      };
-      worker.onerror = () => finish({ status: 'error', error: '計算中に問題が起きました' });
-      worker.postMessage({ id: job.id, file: job.file } satisfies HashRequest);
-    } else {
-      // Worker の無い環境：塊ごとに await しながらこのスレッドで計算する
+    // Worker の無い環境・Worker を読み込めなかったとき：塊ごとに await しながらこのスレッドで計算する
+    const runOnMainThread = () =>
       hashBlob(job.file, { onProgress: (done) => updateJob(job.id, { done }), isCancelled: () => cancelledRef.current })
         .then((digests) => (digests ? finish({ status: 'done', done: job.file.size, digests }) : finish({ status: 'cancelled' })))
         .catch((err) => finish({ status: 'error', error: String(err) }));
+
+    const worker = ensureWorker();
+    if (!worker) {
+      runOnMainThread();
+      return;
     }
-  }, [jobs, updateJob, track]);
+    let answered = false;
+    onWorkerFailRef.current = () => {
+      dropWorker();
+      // 何か返ってきたあとの失敗は計算中の問題。まだ何も返ってこないうちの失敗は読み込みの失敗なので計算し直す
+      if (answered) finish({ status: 'error', error: '計算中に問題が起きました' });
+      else runOnMainThread();
+    };
+    worker.onmessage = (e: MessageEvent<HashResponse>) => {
+      const m = e.data;
+      if (m.id !== job.id) return;
+      answered = true;
+      if (m.type === 'progress') updateJob(job.id, { done: m.done });
+      else if (m.type === 'done') finish({ status: 'done', done: job.file.size, digests: m.digests });
+      else finish({ status: 'error', error: m.message });
+    };
+    worker.postMessage({ id: job.id, file: job.file } satisfies HashRequest);
+  }, [jobs, updateJob, track, ensureWorker, dropWorker]);
+
+  // ファイルタブを開いた時点で Worker を先に読んでおく（あとで通信が切れても計算できるように）
+  useEffect(() => {
+    if (tab === 'file') ensureWorker();
+  }, [tab, ensureWorker]);
 
   useEffect(() => () => workerRef.current?.terminate(), []);
 
@@ -349,6 +400,7 @@ export default function Calculator() {
 
   const cancel = () => {
     cancelledRef.current = true;
+    onWorkerFailRef.current = null;
     if (workerRef.current) {
       workerRef.current.terminate();
       workerRef.current = null;
@@ -471,7 +523,16 @@ export default function Calculator() {
               background: dragging ? 'var(--accent-soft)' : undefined,
             }}
           >
-            <label style={{ ...buttonStyle(true), display: 'inline-flex', alignItems: 'center' }}>
+            <label
+              style={{
+                ...buttonStyle(true),
+                display: 'inline-flex',
+                alignItems: 'center',
+                position: 'relative',
+                outline: fileFocus ? '3px solid var(--accent)' : undefined,
+                outlineOffset: 2,
+              }}
+            >
               ファイルを選ぶ（複数可）
               <input
                 type="file"
@@ -480,6 +541,8 @@ export default function Calculator() {
                   addFiles(e.target.files);
                   e.target.value = '';
                 }}
+                onFocus={(e) => setFileFocus(e.currentTarget.matches(':focus-visible'))}
+                onBlur={() => setFileFocus(false)}
                 style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }}
               />
             </label>

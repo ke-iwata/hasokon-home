@@ -280,6 +280,21 @@ describe('一致の判定', () => {
     expect(parseSumsLine(`SHA512 (f.bin) = ${m}`)).toBeNull();
   });
 
+  it('MD5 の1行で、ファイル名が16進8文字（deadbeef）でも SHA-1 と読み違えない', () => {
+    const m = createHash('md5').update('a').digest('hex');
+    const parsed = parseExpected(`${m}  deadbeef`);
+    expect(parsed.kind).toBe('list');
+    if (parsed.kind !== 'list') return;
+    expect(parsed.entries).toHaveLength(1);
+    expect(parsed.entries[0]).toMatchObject({ algorithm: 'md5', filename: 'deadbeef' });
+  });
+
+  it('1行の「値␣␣ファイル名」は一覧として読み、区切りの空白1つの値は1つの値として読む', () => {
+    const h = createHash('sha256').update('a').digest('hex');
+    expect(parseExpected(`${h}  a.iso`).kind).toBe('list');
+    expect(parseExpected(`${h.slice(0, 32)} ${h.slice(32)}`)).toMatchObject({ kind: 'single', expected: { algorithm: 'sha256' } });
+  });
+
   it('読めない値は invalid・空は empty', () => {
     expect(parseExpected('').kind).toBe('empty');
     expect(parseExpected('hello').kind).toBe('invalid');

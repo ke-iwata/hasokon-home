@@ -105,6 +105,13 @@ export function parseSumsLine(line: string): SumsEntry | null {
 export function parseExpected(input: string): ParsedExpected {
   const trimmed = input.trim();
   if (!trimmed) return { kind: 'empty' };
+  // 1行で「値␣␣ファイル名」として読めるなら一覧の行を優先する。
+  // 先に1つの値として読むと、MD5 の行のファイル名が16進8文字（例: `<md5>  deadbeef`）のとき、
+  // 空白を除いてつないだ 40 桁を SHA-1 と読み違えるため
+  if (!/\r?\n/.test(trimmed)) {
+    const line = parseSumsLine(trimmed);
+    if (line) return { kind: 'list', entries: [line] };
+  }
   const single = parseSingleValue(trimmed);
   if (single) return { kind: 'single', expected: single };
   const lines = trimmed.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
