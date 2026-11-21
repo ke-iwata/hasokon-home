@@ -20,6 +20,7 @@ import {
   NumberCircleNineIcon,
   NumpadIcon,
   RacquetIcon,
+  SmileyIcon,
   SpadeIcon,
   SquaresFourIcon,
   StackIcon,
@@ -1251,6 +1252,8 @@ const ICONS: Record<string, ComponentType<IconProps>> = {
   YonmokuNarabe: CirclesFourIcon,
   // バックギャモン。市販の盤の意匠はまねず、2個のサイコロで表す（盤面の絵は `public` にするPRで描く）
   Backgammon: DiceTwoIcon,
+  // 福笑い。市販の福笑いの絵柄はまねず、笑った顔で表す（盤面の絵は `public` にするPRで描く）
+  Fukuwarai: SmileyIcon,
 };
 
 export default function GameIcon({ name, size = 26 }: { name: string; size?: number }) {
