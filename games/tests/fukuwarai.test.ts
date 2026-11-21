@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   aimHome,
+  canChangeSetup,
+  canRestart,
+  restartPhase,
+  SWAPPED_NOTE,
+  type Phase,
   DAILY_DIFFICULTY,
   DAILY_VARIANT,
   dailySetup,
@@ -367,5 +372,35 @@ describe('操作・家族モード・ひと言', () => {
 
   it('ひと言は5段階', () => {
     expect(new Set([100, 80, 60, 40, 0].map(verdict)).size).toBe(5);
+  });
+});
+
+describe('画面の局面（#536 のレビュー）', () => {
+  const ALL: Phase[] = ['ready', 'setup', 'handoff', 'preview', 'placing', 'result', 'family-done'];
+
+  it('家族モードでは、人数と名前を入れる画面でだけ顔・難易度を変えられる（途中で変えると前の人の顔が描き直される）', () => {
+    expect(ALL.filter((p) => canChangeSetup('family', p))).toEqual(['setup']);
+  });
+
+  it('今日のお題では顔・難易度を変えられない', () => {
+    expect(ALL.filter((p) => canChangeSetup('daily', p))).toEqual([]);
+  });
+
+  it('えらんで遊ぶでは、始める前と結果の画面でだけ変えられる（置いている途中は変えられない）', () => {
+    expect(ALL.filter((p) => canChangeSetup('free', p))).toEqual(['ready', 'result']);
+  });
+
+  it('「最初から」は見ている3秒と置いている途中に出る。家族モードはその人の番の手前に戻る', () => {
+    expect(ALL.filter(canRestart)).toEqual(['preview', 'placing']);
+    expect(restartPhase('family')).toBe('handoff');
+    expect(restartPhase('free')).toBe('ready');
+    expect(restartPhase('daily')).toBe('ready');
+  });
+
+  it('左右を入れ替えて採点したら、結果の画面に出す一言がある（点は下がらないと伝える）', () => {
+    const p = perfect(okame);
+    [p.eyeL, p.eyeR] = [p.eyeR, p.eyeL];
+    expect(scoreFace(okame, p).swapped.length).toBeGreaterThan(0);
+    expect(SWAPPED_NOTE).toContain('点は下がりません');
   });
 });

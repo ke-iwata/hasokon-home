@@ -27,6 +27,12 @@ import {
 } from 'react';
 import {
   aimHome,
+  canChangeSetup,
+  canRestart,
+  restartPhase,
+  SWAPPED_NOTE,
+  type Mode,
+  type Phase,
   DAILY_DIFFICULTY,
   DAILY_VARIANT,
   dailySetup,
@@ -71,8 +77,6 @@ import { bestScoreOf, type Improved } from '@/lib/records';
 import { trackToolUse } from '@/lib/analytics';
 import { BestBadge, RecordStrip, useRecords } from '@/app/_records/Records';
 
-type Mode = 'daily' | 'free' | 'family';
-type Phase = 'ready' | 'setup' | 'handoff' | 'preview' | 'placing' | 'result' | 'family-done';
 
 const MODE_LABEL: Record<Mode, string> = { daily: '今日のお題', free: 'えらんで遊ぶ', family: '家族で順番に' };
 const MODES: Mode[] = ['daily', 'free', 'family'];
@@ -478,7 +482,8 @@ export default function Game() {
   const statusText = (() => {
     if (phase === 'preview') return 'おぼえてね…（3秒で消えます）';
     if (phase === 'placing') return vis.count ? `${PART_KINDS.length}枚中 ${placedCount}枚` : '';
-    if (phase === 'result' && result) return `${result.score.total}点 ${verdict(result.score.total)}`;
+    // 点数は下の結果の欄に大きく出すので、ここはひと言だけ
+    if (phase === 'result' && result) return verdict(result.score.total);
     if (phase === 'handoff') return `${turn + 1}人目／${players.length}人`;
     return '';
   })();
@@ -510,7 +515,7 @@ export default function Game() {
           <span className="fw-visually-hidden">お題の顔</span>
           <select
             value={playFace}
-            disabled={mode === 'daily' || (phase !== 'ready' && phase !== 'setup' && phase !== 'result')}
+            disabled={!canChangeSetup(mode, phase)}
             onChange={(e) => {
               setFaceId(e.target.value as FaceId);
               if (mode !== 'family') reset('ready');
@@ -530,7 +535,7 @@ export default function Game() {
               type="button"
               className={d === playDifficulty ? 'active' : ''}
               aria-pressed={d === playDifficulty}
-              disabled={mode === 'daily' || (phase !== 'ready' && phase !== 'setup' && phase !== 'result')}
+              disabled={!canChangeSetup(mode, phase)}
               onClick={() => {
                 setDifficulty(d);
                 if (mode !== 'family') reset('ready');
@@ -598,6 +603,16 @@ export default function Game() {
           <div className="fw-status">
             <span className="fw-status-text">{statusText}</span>
             <span className="fw-rotate">
+              {/* 置き直しはできないが、やめる逃げ道はいつでも。枠は常に置いて行がずれないようにする */}
+              <button
+                type="button"
+                className="btn fw-restart"
+                style={{ visibility: canRestart(phase) ? 'visible' : 'hidden' }}
+                disabled={!canRestart(phase)}
+                onClick={() => reset(restartPhase(mode))}
+              >
+                最初から
+              </button>
               <button type="button" className="btn" aria-label="左に回す" disabled={phase !== 'placing' || !selectedTray} onClick={() => rotateSelected(-1)}>
                 ↺
               </button>
@@ -655,6 +670,7 @@ export default function Game() {
                   <strong>{result?.score.total ?? 0}</strong>点 <BestBadge improved={result?.improved ?? null} />
                   {result?.streak ? <span className="fw-sub">連続{result.streak}日</span> : null}
                 </p>
+                {result && result.score.swapped.length > 0 ? <p className="fw-swapped">{SWAPPED_NOTE}</p> : null}
                 <label className="fw-check">
                   <input type="checkbox" checked={overlay} onChange={(e) => setOverlay(e.target.checked)} /> 正解の顔を重ねる
                 </label>

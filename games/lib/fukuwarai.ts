@@ -366,6 +366,40 @@ export function recordVariant(faceId: FaceId, difficulty: Difficulty): string {
 }
 export const DAILY_VARIANT = 'daily';
 
+// ---------------------------------------------------------------- 画面の局面と設定の切り替え
+
+/** 遊び方（今日のお題・えらんで遊ぶ・家族で順番に） */
+export type Mode = 'daily' | 'free' | 'family';
+/** 画面の局面 */
+export type Phase = 'ready' | 'setup' | 'handoff' | 'preview' | 'placing' | 'result' | 'family-done';
+
+/**
+ * 顔・難易度を変えてよいか。
+ *
+ * - 今日のお題：変えられない（顔は日付で決まり、難易度は ふつう 固定）
+ * - 家族モード：**人数と名前を入れる画面（`setup`）だけ**。途中で変えると、前の人が置いた
+ *   パーツが別の顔に描き直され、違う顔・違う難易度の点数を並べて比べることになる（#536 のレビュー）
+ * - えらんで遊ぶ：遊んでいないあいだ（始める前・結果の画面）
+ */
+export function canChangeSetup(mode: Mode, phase: Phase): boolean {
+  if (mode === 'daily') return false;
+  if (mode === 'family') return phase === 'setup';
+  return phase === 'ready' || phase === 'result';
+}
+
+/** 「最初から」を出す局面（置いている途中でやめる逃げ道。置き直しはできないので、その人の番をやり直す） */
+export function canRestart(phase: Phase): boolean {
+  return phase === 'preview' || phase === 'placing';
+}
+
+/** 「最初から」で戻る局面。家族モードはその人の番の手前（スマホを渡す画面）へ */
+export function restartPhase(mode: Mode): Phase {
+  return mode === 'family' ? 'handoff' : 'ready';
+}
+
+/** 左右を入れ替えて採点したときに結果の画面へ出す一言 */
+export const SWAPPED_NOTE = '左右が逆でした（点は下がりません。見た目はちょっと変になります）';
+
 // ---------------------------------------------------------------- 家族モード
 
 export const MIN_PLAYERS = 2;

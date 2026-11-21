@@ -10052,6 +10052,18 @@ button.hf-card {
   font-size: 1.2rem;
 }
 
+.fw-rotate .fw-restart {
+  width: auto;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+
+.fw-swapped {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .fw-rotate .btn:disabled {
   opacity: 0.4;
   cursor: default;
