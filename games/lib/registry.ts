@@ -786,6 +786,22 @@ export const games: GameDef[] = [
     stage: 'wip',
     updatedAt: '2026-09-10',
   },
+  {
+    // 目かくしでまゆ・目・鼻・口を置いて顔を作る正月の遊び「福笑い」（docs/features/game-fukuwarai.md）。
+    // 遊び方は江戸時代から続く伝統的な正月遊びで、顔の絵（5種）はすべて自前の SVG（lib/fukuwarai-faces.ts）。
+    // **J-PlatPat の確認（第9類・第28類・第41類で「福笑い」「ふくわらい」）は運営者のタスク**で、
+    // 済むまで `wip`（登録が見つかったら「顔あわせ」・slug `kao-awase` に変える。slug は公開後に動かせない）。
+    // `preview` は確認が済み、テスト環境で 1366×768・390×844・320×568 とタッチ操作を確かめてから。
+    // **2026-12-20 までに `public`**（`public` にする PR で home のカード・GamePreview・GameIcon の BOARD も描く）
+    slug: 'fukuwarai',
+    icon: 'Fukuwarai',
+    name: '福笑い',
+    description:
+      '目かくしで、まゆ・目・鼻・口を置いて顔を作るお正月の遊び。めかくしをとると顔が現れて点数つき。家族で順番に遊べて、できた顔は画像で保存できます。',
+    keywords: ['家族で順番に', '画像で保存', '今日のお題', 'かんたん', 'むずかしい'],
+    stage: 'wip',
+    updatedAt: '2026-11-21',
+  },
 ];
 
 /**

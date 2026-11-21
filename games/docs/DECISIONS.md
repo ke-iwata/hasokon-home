@@ -8,6 +8,20 @@
 
 ---
 
+## 2026-11-21：福笑いを足した（`stage: 'wip'`）。名称確認待ち・採点は SVG 座標・見え方は表をそのまま設定に
+
+[docs/features/game-fukuwarai.md](../../docs/features/game-fukuwarai.md) の実装。セッション `session_012RoU2EM56GJr8HSkabw8kP`。
+ロジックは `lib/fukuwarai.ts`、顔5種の絵は `lib/fukuwarai-faces.ts`（すべて自前の SVG）、画面は `app/fukuwarai/`、テストは `tests/fukuwarai.test.ts`。
+
+- **名称（「福笑い」）と slug（`fukuwarai`）は運営者の J-PlatPat 確認待ちのまま `wip` で実装した**（登録が見つかったら「顔あわせ」・`kao-awase` に変える）
+- 仕様書の「難易度ごとの見え方」の表は `VISIBILITY[difficulty]` にそのまま写し、画面はこの値だけを見て出し分ける（テストが表とのずれを落とす）
+- **位置が顔幅の 25% 以上ずれたパーツは、角度が合っていても 0 点にした**。式 `0.8 × 位置 + 0.2 × 角度` のままだと 0.2 が残り、
+  仕様書の「確かめること」2（そのパーツは 0 点）と食い違うため。位置のスコアが 0 より大きいあいだは式どおり
+- 顔の選択は5つのボタンではなく選択欄にした（ボタンだとスマホで設定が3段になり、遊ぶ範囲が 720px を超えた。実測）
+- 由来の節は出典が取れていないので書いていない（仕様書の約束）。構造化データは既存のゲームと同じ型（`VideoGame` + `FAQPage` + `BreadcrumbList`）
+
+---
+
 ## 2026-11-07：囲碁（6路・9路）を足した（`stage: 'wip'`）。スマホは「指を離した交点に打つ」
 
 [docs/features/game-igo.md](../../docs/features/game-igo.md) の実装。セッション `session_012RoU2G8XqgGgZpK6VqnmSc`。
