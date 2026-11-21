@@ -1111,6 +1111,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-05',
   },
   {
+    // 仕様: docs/features/cron-shiki-checker.md
+    slug: 'cron-shiki',
+    // 繰り返し動く予定の絵。ClockCountdown・Timer は残業代・UNIX時間が使っている
+    icon: 'ClockClockwise',
+    name: 'cron 式 チェッカー（次回実行・日本時間）',
+    description:
+      'cron 式を貼ると意味を日本語で読み、次の実行日時を日本時間と UTC で10件。GitHub Actions の timezone・EventBridge の UTC 変換・Quartz と Spring の曜日の違い・祝日にかかる回まで。入力は送信しません。',
+    category: '計算・変換',
+    // 開発者向けの道具（Base64・JSON 整形・正規表現など）を public にする波に同じ時期に並べる
+    stage: 'wip',
+    updatedAt: '2026-11-21',
+  },
+  {
     // 仕様: docs/features/jikan-keisan.md
     slug: 'jikan-keisan',
     icon: 'ClockUser',
