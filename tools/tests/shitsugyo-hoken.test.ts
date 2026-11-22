@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
-  AGE_MAX,
+  KIHON_TEATE_AGE_MAX,
+  KOUREI_AGE_MIN,
+  KOUREI_DAYS_LONG,
+  KOUREI_DAYS_SHORT,
+  calcKoureiKyushokusha,
+  calcShitsugyoHoken,
+  koureiDaysUntilDeadline,
+  koureiRule,
   BENEFIT_DAILY_MIN,
   BENEFIT_RATE_RULES,
   CERTIFICATION_INTERVAL_DAYS,
@@ -203,9 +210,9 @@ describe('benefitRuleFor（年齢区分の境目）', () => {
     expect(benefitRuleFor(64).band).toBe('age60to64');
   });
 
-  it('65歳以上は上限の区分（60〜64歳）の表を当てる', () => {
-    expect(benefitRuleFor(65).band).toBe('age60to64');
-    expect(benefitRuleFor(70).band).toBe('age60to64');
+  it('65歳以上は60〜64歳の表に寄せず RangeError（高年齢求職者給付金は koureiRule）', () => {
+    expect(() => benefitRuleFor(65)).toThrow(RangeError);
+    expect(() => benefitRuleFor(70)).toThrow(RangeError);
   });
 });
 
@@ -562,16 +569,28 @@ describe('calcKihonTeate（全体）', () => {
     expect(formatDate(r.schedule!.applyDate)).toBe('2026-09-14');
   });
 
-  it('65歳以上は基本手当の対象外として印を付ける', () => {
-    const r = calcKihonTeate({
+  it('66歳は calcShitsugyoHoken が kind: kourei を返す', () => {
+    const r = calcShitsugyoHoken({
       totalWage6m: 300_000 * 6,
       age: 66,
       tenure: 'y20plus',
       category: 'ippan',
       reason: 'company',
     });
-    expect(r.age65OrOver).toBe(true);
-    expect(AGE_MAX).toBe(64);
+    expect(r.kind).toBe('kourei');
+    expect(KIHON_TEATE_AGE_MAX).toBe(64);
+  });
+
+  it('calcKihonTeate に66歳を渡すと RangeError（60〜64歳の算式に黙って寄せない）', () => {
+    expect(() =>
+      calcKihonTeate({
+        totalWage6m: 300_000 * 6,
+        age: 66,
+        tenure: 'y20plus',
+        category: 'ippan',
+        reason: 'company',
+      }),
+    ).toThrow(RangeError);
   });
 
   it('一般の離職者で被保険者であった期間が1年未満なら受給資格の注意を出す', () => {
@@ -728,5 +747,164 @@ describe('insuredMonthsRequired（受給資格に必要な被保険者期間）'
       expect(r.atBenefitMin).toBe(true);
       expect(r.total).toBe(BENEFIT_DAILY_MIN * 90);
     }
+  });
+});
+
+// ------------------------------------------------------ 高年齢求職者給付金
+
+/**
+ * 高年齢求職者給付金（雇用保険法37条の4）。
+ * 仕様: docs/features/kourei-kyushokusha-kyufukin.md の「4. テスト」
+ */
+describe('高年齢求職者給付金（65歳以上の離職）', () => {
+  const base = {
+    totalWage6m: 3_600_000, // 賃金日額 20,000円
+    age: 66,
+    tenure: 'y10to20' as TenureBand,
+    category: 'ippan' as const,
+    reason: 'company' as const,
+  };
+
+  it('1. 66歳・賃金日額20,000円・加入10年 → 7,450円 × 50日 = 372,500円（939,600円にならない）', () => {
+    const r = calcShitsugyoHoken(base);
+    expect(r.kind).toBe('kourei');
+    if (r.kind !== 'kourei') return;
+    expect(r.result.wage.value).toBe(14_900);
+    expect(r.result.wage.cap).toBe('max');
+    expect(r.result.benefitDaily).toBe(7_450);
+    expect(r.result.days).toBe(50);
+    expect(r.result.total).toBe(372_500);
+    expect(r.result.total).not.toBe(939_600);
+  });
+
+  it('2. 65歳ちょうどから高年齢求職者給付金、64歳は基本手当のまま', () => {
+    expect(KOUREI_AGE_MIN).toBe(65);
+    expect(calcShitsugyoHoken({ ...base, age: 65 }).kind).toBe('kourei');
+    const at64 = calcShitsugyoHoken({ ...base, age: 64 });
+    expect(at64.kind).toBe('kihon');
+    if (at64.kind === 'kihon') {
+      expect(at64.result.benefitDaily).toBe(7_830);
+      expect(at64.result.prescribed.days).toBe(120);
+    }
+  });
+
+  it('3. 加入1年未満は30日', () => {
+    const r = calcKoureiKyushokusha({ ...base, tenure: 'lt1' });
+    expect(KOUREI_DAYS_SHORT).toBe(30);
+    expect(r.baseDays).toBe(30);
+    expect(r.days).toBe(30);
+    expect(r.total).toBe(7_450 * 30);
+    // 1年以上はどの区分でも50日
+    for (const t of ['y1to5', 'y5to10', 'y10to20', 'y20plus'] as TenureBand[]) {
+      expect(calcKoureiKyushokusha({ ...base, tenure: t }).days).toBe(KOUREI_DAYS_LONG);
+    }
+  });
+
+  it('4. 賃金日額10,000円は30歳未満の行の逓減式', () => {
+    const w = 10_000;
+    const r = calcKoureiKyushokusha({ ...base, totalWage6m: w * 180 });
+    const expected = Math.floor(0.8 * w - 0.3 * ((w - 5_480) / (13_490 - 5_480)) * w);
+    expect(r.benefitDaily).toBe(expected);
+    expect(r.benefitDaily).toBe(6_307);
+    // 60〜64歳の算式（低いほうを採る2本）とは違う額になる
+    expect(r.benefitDaily).not.toBe(benefitDailyFrom(w, ruleOf('age60to64')));
+  });
+
+  it('5. 賃金日額3,000円は下限3,203円に引き上げ、日額2,562円', () => {
+    const r = calcKoureiKyushokusha({ ...base, totalWage6m: 3_000 * 180 });
+    expect(r.wage.value).toBe(WAGE_DAILY_MIN);
+    expect(r.wage.cap).toBe('min');
+    expect(r.benefitDaily).toBe(2_562);
+    expect(r.benefitDaily).toBe(BENEFIT_DAILY_MIN);
+  });
+
+  describe('6. 受給期限で日数を減らす（起点は見積もった認定日）', () => {
+    // 離職 2026-03-31 → 受給期限 2027-03-31
+    const leaveDate = ymd('2026-03-31');
+
+    it('受給期限は離職日の翌日から1年', () => {
+      const r = calcKoureiKyushokusha({ ...base, leaveDate });
+      expect(formatDate(r.deadline!)).toBe('2027-03-31');
+    });
+
+    it('早めに申し込めば50日のまま。認定日の見積もりは待期満了の翌日', () => {
+      const r = calcKoureiKyushokusha({ ...base, leaveDate, applyDate: ymd('2026-04-14') });
+      expect(formatDate(r.certificationEstimate!)).toBe('2026-04-21');
+      expect(r.days).toBe(50);
+    });
+
+    it('会社都合で認定日（申込日＋7日の翌日）から期限まで40日（両端を含む）→ 40日分', () => {
+      // 認定日 2027-02-20 〜 期限 2027-03-31 は 40日（2/20〜2/28 の9日 + 3月の31日）
+      const r = calcKoureiKyushokusha({ ...base, leaveDate, applyDate: ymd('2027-02-13') });
+      expect(formatDate(r.certificationEstimate!)).toBe('2027-02-20');
+      expect(r.days).toBe(40);
+      expect(r.baseDays).toBe(50);
+      expect(r.total).toBe(7_450 * 40);
+    });
+
+    it('自己都合（給付制限1か月）で同じ申込日なら、認定日が1か月後ろにずれてさらに減る', () => {
+      const r = calcKoureiKyushokusha({
+        ...base,
+        reason: 'self',
+        leaveDate,
+        applyDate: ymd('2027-02-13'),
+      });
+      expect(r.restriction.months).toBe(1);
+      // 待期満了 2/19 → 給付制限 2/20〜3/19 → 認定日の見積もり 3/20
+      expect(formatDate(r.certificationEstimate!)).toBe('2027-03-20');
+      expect(r.days).toBe(12);
+      // 申込日から数えると 47日になってしまう（それでは判定しない）
+      expect(koureiDaysUntilDeadline(ymd('2027-02-13'), r.deadline!)).toBe(47);
+      expect(r.days).not.toBe(47);
+    });
+
+    it('認定日の見積もりが期限を過ぎると0日', () => {
+      const r = calcKoureiKyushokusha({
+        ...base,
+        reason: 'self',
+        leaveDate,
+        applyDate: ymd('2027-03-20'),
+      });
+      expect(r.days).toBe(0);
+      expect(r.total).toBe(0);
+    });
+
+    it('離職日が無ければ日付は出さず、日数は減らさない', () => {
+      const r = calcKoureiKyushokusha(base);
+      expect(r.deadline).toBeNull();
+      expect(r.certificationEstimate).toBeNull();
+      expect(r.days).toBe(50);
+    });
+  });
+
+  it('7. 64歳は kind: kihon、65歳・66歳は kind: kourei。境目の向こうの関数は RangeError', () => {
+    expect(calcShitsugyoHoken({ ...base, age: 64 }).kind).toBe('kihon');
+    expect(calcShitsugyoHoken({ ...base, age: 65 }).kind).toBe('kourei');
+    expect(calcShitsugyoHoken({ ...base, age: 66 }).kind).toBe('kourei');
+    expect(() => calcKihonTeate({ ...base, age: 66 })).toThrow(RangeError);
+    expect(() => calcKoureiKyushokusha({ ...base, age: 64 })).toThrow(RangeError);
+  });
+
+  it('離職理由の区分（一般・特定受給資格者・就職困難者）で日数は変わらない', () => {
+    for (const category of ['ippan', 'tokutei', 'konnan'] as const) {
+      expect(calcKoureiKyushokusha({ ...base, category }).days).toBe(50);
+    }
+  });
+
+  it('8. 30歳未満の行を共有している（上限を変えると高年齢求職者給付金も一緒に変わる）', () => {
+    const under30 = ruleOf('under30');
+    expect(koureiRule()).toBe(under30);
+    const saved = { wageDailyMax: under30.wageDailyMax, benefitDailyMax: under30.benefitDailyMax };
+    const mutable = under30 as { wageDailyMax: number; benefitDailyMax: number };
+    try {
+      mutable.wageDailyMax = 15_000;
+      mutable.benefitDailyMax = 7_500;
+      const r = calcKoureiKyushokusha(base);
+      expect(r.wage.value).toBe(15_000);
+      expect(r.benefitDaily).toBe(7_500);
+    } finally {
+      Object.assign(mutable, saved);
+    }
+    expect(calcKoureiKyushokusha(base).benefitDaily).toBe(7_450);
   });
 });

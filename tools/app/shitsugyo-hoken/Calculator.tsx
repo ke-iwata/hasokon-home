@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { addDays, formatDate, formatJa, parseDate } from '@/lib/date-parts';
 import {
-  AGE_MAX,
   AGE_MIN,
   BENEFIT_DAILY_MIN,
   CERTIFICATION_INTERVAL_DAYS,
@@ -11,7 +10,10 @@ import {
   TENURE_BANDS,
   WAGE_DAILY_MIN,
   WAITING_DAYS,
-  calcKihonTeate,
+  KOUREI_AGE_MIN,
+  calcShitsugyoHoken,
+  type KihonTeateResult,
+  type KoureiKyushokushaResult,
   type LeaveCategory,
   type LeaveReason,
   type TenureBand,
@@ -112,7 +114,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   const leave = parseDate(leaveDate);
   const apply = parseDate(applyDate);
 
-  const r = calcKihonTeate({
+  const out = calcShitsugyoHoken({
     totalWage6m: (Number(monthly) || 0) * 6,
     age: ageNum,
     tenure,
@@ -128,7 +130,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
   });
 
   const isSelf = picked.reason === 'self';
-  const s = r.schedule;
+  const isKourei = out.kind === 'kourei';
 
   return (
     <div className="card">
@@ -153,13 +155,13 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
       <div className="field">
         <div className="field-row">
           <div>
-            <label htmlFor="sh-age">離職時の年齢</label>
+            <label htmlFor="sh-age">離職日の時点の年齢</label>
             <input
               id="sh-age"
               type="number"
               inputMode="numeric"
               min={AGE_MIN}
-              max={AGE_MAX}
+              max={99}
               step={1}
               value={age}
               onChange={(e) => setAge(e.target.value)}
@@ -181,6 +183,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </div>
         </div>
         <p className="hint">
+          年齢は離職日の時点で数えます（65歳の誕生日の前日から65歳の扱い）。
+          {KOUREI_AGE_MIN}歳以上は基本手当ではなく<strong>高年齢求職者給付金</strong>で計算します。
+        </p>
+        <p className="hint">
           期間は「被保険者であった期間（算定基礎期間）」です。転職しても、間が1年以内で
           失業給付を受けていなければ前の会社の分と通算されます。
         </p>
@@ -196,6 +202,11 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           ))}
         </select>
         {picked.hint && <p className="hint">{picked.hint}</p>}
+        {isKourei && (
+          <p className="hint">
+            65歳以上は離職理由で日数は変わりません（給付制限の判定にだけ使います）。
+          </p>
+        )}
       </div>
 
       {isSelf && (
@@ -254,7 +265,8 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           <span>
             就職困難者にあたる
             <span className="hint" style={{ display: 'block' }}>
-              障害者手帳をお持ちの方、保護観察中の方など。所定給付日数が長くなります。
+              障害者手帳をお持ちの方、保護観察中の方など。所定給付日数が長くなります
+              （65歳以上の高年齢求職者給付金では日数は変わりません）。
             </span>
           </span>
         </label>
@@ -286,20 +298,211 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         </p>
       </div>
 
+      {out.kind === 'kihon' ? (
+        <KihonResultView r={out.result} monthly={Number(monthly) || 0} leave={leave} />
+      ) : (
+        <KoureiResultView r={out.result} monthly={Number(monthly) || 0} leave={leave} />
+      )}
+
+      <div className="note">
+        本計算は目安です。賃金日額は実際には離職票の賃金額から算定され、
+        受給資格の有無・離職理由の区分（自己都合か会社都合か）・所定給付日数・認定日は
+        ハローワークが決定します。正確な金額は「雇用保険受給資格者証」
+        （65歳以上は「高年齢受給資格者証」）でご確認ください。
+      </div>
+    </div>
+  );
+}
+
+type ResultProps<R> = { r: R; monthly: number; leave: ReturnType<typeof parseDate> };
+
+/** 64歳までの離職：基本手当 */
+function KihonResultView({ r, monthly, leave }: ResultProps<KihonTeateResult>) {
+  const s = r.schedule;
+  return (
+    <>
+        <div className="panel">
+          <div className="metric">
+            <span className="label">基本手当日額（1日あたり）</span>
+            <span className="value">{fmtYen(r.benefitDaily)}</span>
+          </div>
+          <div className="metric" style={{ marginTop: 8 }}>
+            <span className="label">
+              総支給額の目安（{r.prescribed.days}日分）
+            </span>
+            <span className="value">{fmtYen(r.total)}</span>
+          </div>
+          <p className="hint" style={{ marginTop: 8 }}>
+            失業の認定は{CERTIFICATION_INTERVAL_DAYS}日ごとなので、1回の振込は
+            {fmtYen(r.perCertification)}前後が目安です（実際の振込は認定日から1週間ほど後）。
+          </p>
+        </div>
+
+        <dl className="kv" style={{ marginTop: 16 }}>
+          <div>
+            <dt>賃金日額（賃金総額 ÷ 180日）</dt>
+            <dd>
+              {fmtYen(r.wage.value)}
+              {r.wage.cap === 'max' && (
+                <span className="chip" style={{ marginLeft: 8 }}>
+                  上限適用
+                </span>
+              )}
+              {r.wage.cap === 'min' && (
+                <span className="chip" style={{ marginLeft: 8 }}>
+                  下限適用
+                </span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>適用された給付率</dt>
+            <dd>{(r.effectiveRate * 100).toFixed(1)}%</dd>
+          </div>
+          <div>
+            <dt>年齢区分（{r.rule.label}）の上限額</dt>
+            <dd>
+              賃金日額 {fmtYen(r.rule.wageDailyMax)} ／ 基本手当日額{' '}
+              {fmtYen(r.rule.benefitDailyMax)}
+            </dd>
+          </div>
+          <div>
+            <dt>所定給付日数</dt>
+            <dd>{r.prescribed.days}日</dd>
+          </div>
+          <div>
+            <dt>給付制限</dt>
+            <dd>{r.restriction.months === 0 ? 'なし' : `${r.restriction.months}ヶ月`}</dd>
+          </div>
+        </dl>
+
+        <p className="hint" style={{ marginTop: 10 }}>{r.restriction.text}</p>
+
+        {r.restriction.releasableByTraining && (
+          <div className="note">
+            <strong>教育訓練等を受けると、この給付制限は解除されます。</strong>
+            令和7年4月1日以降に受講を開始した教育訓練給付の対象講座・公共職業訓練などが対象です。
+            受講したら（する予定があれば）ハローワークに申し出てください。申し出には期限があります。
+          </div>
+        )}
+
+        {r.wage.cap === 'max' && (
+          <p className="hint">
+            賃金日額が年齢区分の上限額（{fmtYen(r.rule.wageDailyMax)}）を超えているため、
+            実際の月給（{fmtYen(monthly)}）ではなく上限額で計算しています。
+            給与が高いほど、額面に対する割合は小さくなります。
+          </p>
+        )}
+
+        {r.wage.cap === 'min' && (
+          <p className="hint">
+            賃金日額が下限額（{fmtYen(WAGE_DAILY_MIN)}）を下回るため、下限額で計算しています。
+            基本手当日額は{fmtYen(BENEFIT_DAILY_MIN)}が下限です。
+          </p>
+        )}
+
+        {r.prescribed.adjusted && (
+          <div className="note">
+            入力の年齢と加入期間の組み合わせは、法律の表に日数の定めがありません
+            （30歳未満で加入20年以上など）。日数が定められている区分まで下げて計算しています。
+          </div>
+        )}
+
+        {r.eligibilityCaution && (
+          <div className="note">
+            選んだ離職理由では、原則として
+            <strong>離職前2年間に被保険者期間が12ヶ月以上</strong>
+            必要です。加入期間が1年未満の場合、そもそも受給資格がないことがあります。
+            倒産・解雇・雇止めや、病気・家族の介護・配偶者の転勤などの
+            「正当な理由のある自己都合」にあたる場合は、離職前1年間に6ヶ月以上で受給できます。
+            離職理由の区分はハローワークが離職票をもとに決定するので、心当たりがあれば相談してください。
+          </div>
+        )}
+
+        {s && (
+          <>
+            <h3 style={{ fontSize: '1.05rem', marginTop: 24 }}>いつから振り込まれるか</h3>
+            <table>
+              <tbody>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>離職日</td>
+                  <td>{leave ? formatJa(leave) : '—'}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>求職の申込み（受給資格決定日）</td>
+                  <td>{formatJa(s.applyDate)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>待期{WAITING_DAYS}日の満了</td>
+                  <td>{formatJa(s.waitingEndDate)}</td>
+                </tr>
+                {s.restrictionStartDate && s.restrictionEndDate && (
+                  <tr>
+                    <td style={{ textAlign: 'left' }}>
+                      給付制限（{r.restriction.months}ヶ月）
+                    </td>
+                    <td>
+                      {formatJa(s.restrictionStartDate)}〜{formatJa(s.restrictionEndDate)}
+                    </td>
+                  </tr>
+                )}
+                <tr>
+                  <td style={{ textAlign: 'left' }}>
+                    <strong>基本手当の支給対象になる最初の日</strong>
+                  </td>
+                  <td>
+                    <strong>{formatJa(s.benefitStartDate)}</strong>
+                  </td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>
+                    {r.prescribed.days}日分を使い切る日（続けて受けた場合）
+                  </td>
+                  <td>{formatJa(s.benefitEndDate)}</td>
+                </tr>
+                <tr>
+                  <td style={{ textAlign: 'left' }}>受給期間の満了日（離職日の翌日から1年）</td>
+                  <td>{formatJa(s.eligibilityEndDate)}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {!s.fitsInEligibility && (
+              <div className="note">
+                <strong>受給期間（1年）内に所定給付日数を使い切れません（{s.overflowDays}日分がはみ出します）。</strong>
+                受給期間を過ぎると、残っている日数があっても支給は打ち切られます。離職後は早めに
+                ハローワークで手続きしてください（病気・出産・育児・介護などで働けない期間がある場合は、
+                受給期間を最大3年まで延長できる制度があります）。
+              </div>
+            )}
+          </>
+        )}
+    </>
+  );
+}
+
+/**
+ * 65歳以上の離職：高年齢求職者給付金（一時金）。
+ * 基本手当と同じ部品（panel / metric / kv / table / note）だけで組む。
+ * スマホでは「一時金の額 → 日額×日数 → 受け取り期限」が縦1列に並ぶ。
+ */
+function KoureiResultView({ r, monthly, leave }: ResultProps<KoureiKyushokushaResult>) {
+  const s = r.schedule;
+  const reduced = r.days < r.baseDays;
+  return (
+    <>
       <div className="panel">
         <div className="metric">
-          <span className="label">基本手当日額（1日あたり）</span>
-          <span className="value">{fmtYen(r.benefitDaily)}</span>
-        </div>
-        <div className="metric" style={{ marginTop: 8 }}>
-          <span className="label">
-            総支給額の目安（{r.prescribed.days}日分）
-          </span>
+          <span className="label">高年齢求職者給付金（一時金）</span>
           <span className="value">{fmtYen(r.total)}</span>
         </div>
         <p className="hint" style={{ marginTop: 8 }}>
-          失業の認定は{CERTIFICATION_INTERVAL_DAYS}日ごとなので、1回の振込は
-          {fmtYen(r.perCertification)}前後が目安です（実際の振込は認定日から1週間ほど後）。
+          日額 {fmtYen(r.benefitDaily)} × {r.days}日
+          {reduced && `（本来は${r.baseDays}日。受け取れる期限までの日数で減ります）`}
+        </p>
+        <p className="hint" style={{ marginTop: 4 }}>
+          失業の認定を受けた日に、まとめて1回で支給されます（振込は認定日から1週間ほど後）。
+          {r.deadline && <> 受け取れる期限は{formatJa(r.deadline)}です。</>}
         </p>
       </div>
 
@@ -321,19 +524,14 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           </dd>
         </div>
         <div>
-          <dt>適用された給付率</dt>
-          <dd>{(r.effectiveRate * 100).toFixed(1)}%</dd>
-        </div>
-        <div>
-          <dt>年齢区分（{r.rule.label}）の上限額</dt>
+          <dt>上限額（{r.rule.label}と同じ額）</dt>
           <dd>
-            賃金日額 {fmtYen(r.rule.wageDailyMax)} ／ 基本手当日額{' '}
-            {fmtYen(r.rule.benefitDailyMax)}
+            賃金日額 {fmtYen(r.rule.wageDailyMax)} ／ 日額 {fmtYen(r.rule.benefitDailyMax)}
           </dd>
         </div>
         <div>
-          <dt>所定給付日数</dt>
-          <dd>{r.prescribed.days}日</dd>
+          <dt>日数（加入1年以上は50日・1年未満は30日）</dt>
+          <dd>{r.baseDays}日</dd>
         </div>
         <div>
           <dt>給付制限</dt>
@@ -353,47 +551,26 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 
       {r.wage.cap === 'max' && (
         <p className="hint">
-          賃金日額が年齢区分の上限額（{fmtYen(r.rule.wageDailyMax)}）を超えているため、
-          実際の月給（{fmtYen(Number(monthly) || 0)}）ではなく上限額で計算しています。
-          給与が高いほど、額面に対する割合は小さくなります。
+          65歳以上は、賃金日額の上限に30歳未満と同じ額（{fmtYen(r.rule.wageDailyMax)}）を当てます
+          （雇用保険法37条の4第2項）。実際の月給（{fmtYen(monthly)}）ではなく上限額で計算しています。
         </p>
       )}
 
       {r.wage.cap === 'min' && (
         <p className="hint">
           賃金日額が下限額（{fmtYen(WAGE_DAILY_MIN)}）を下回るため、下限額で計算しています。
-          基本手当日額は{fmtYen(BENEFIT_DAILY_MIN)}が下限です。
+          日額は{fmtYen(BENEFIT_DAILY_MIN)}が下限です。
         </p>
       )}
 
-      {r.prescribed.adjusted && (
-        <div className="note">
-          入力の年齢と加入期間の組み合わせは、法律の表に日数の定めがありません
-          （30歳未満で加入20年以上など）。日数が定められている区分まで下げて計算しています。
-        </div>
-      )}
+      <div className="note">
+        受給資格は、原則として<strong>離職の日以前1年間に被保険者期間が通算6ヶ月以上</strong>
+        あることです。年金（老齢年金）と併せて受け取れます。
+      </div>
 
-      {r.eligibilityCaution && (
-        <div className="note">
-          選んだ離職理由では、原則として
-          <strong>離職前2年間に被保険者期間が12ヶ月以上</strong>
-          必要です。加入期間が1年未満の場合、そもそも受給資格がないことがあります。
-          倒産・解雇・雇止めや、病気・家族の介護・配偶者の転勤などの
-          「正当な理由のある自己都合」にあたる場合は、離職前1年間に6ヶ月以上で受給できます。
-          離職理由の区分はハローワークが離職票をもとに決定するので、心当たりがあれば相談してください。
-        </div>
-      )}
-
-      {r.age65OrOver && (
-        <div className="note">
-          65歳以上で離職した場合は基本手当ではなく<strong>高年齢求職者給付金</strong>
-          （基本手当日額の30日分または50日分の一時金）になります。この計算機の対象外です。
-        </div>
-      )}
-
-      {s && (
+      {s && r.certificationEstimate && r.deadline && (
         <>
-          <h3 style={{ fontSize: '1.05rem', marginTop: 24 }}>いつから振り込まれるか</h3>
+          <h3 style={{ fontSize: '1.05rem', marginTop: 24 }}>いつ受け取れるか</h3>
           <table>
             <tbody>
               <tr>
@@ -420,42 +597,34 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               )}
               <tr>
                 <td style={{ textAlign: 'left' }}>
-                  <strong>基本手当の支給対象になる最初の日</strong>
+                  <strong>認定日の目安（最も早い場合）。この日に一括で支給</strong>
                 </td>
                 <td>
-                  <strong>{formatJa(s.benefitStartDate)}</strong>
+                  <strong>{formatJa(r.certificationEstimate)}</strong>
                 </td>
               </tr>
               <tr>
-                <td style={{ textAlign: 'left' }}>
-                  {r.prescribed.days}日分を使い切る日（続けて受けた場合）
-                </td>
-                <td>{formatJa(s.benefitEndDate)}</td>
-              </tr>
-              <tr>
-                <td style={{ textAlign: 'left' }}>受給期間の満了日（離職日の翌日から1年）</td>
-                <td>{formatJa(s.eligibilityEndDate)}</td>
+                <td style={{ textAlign: 'left' }}>受け取れる期限（離職日の翌日から1年）</td>
+                <td>{formatJa(r.deadline)}</td>
               </tr>
             </tbody>
           </table>
+          <p className="hint">
+            実際の認定日はハローワークが指定します。
+          </p>
 
-          {!s.fitsInEligibility && (
+          {reduced && (
             <div className="note">
-              <strong>受給期間（1年）内に所定給付日数を使い切れません（{s.overflowDays}日分がはみ出します）。</strong>
-              受給期間を過ぎると、残っている日数があっても支給は打ち切られます。離職後は早めに
-              ハローワークで手続きしてください（病気・出産・育児・介護などで働けない期間がある場合は、
-              受給期間を最大3年まで延長できる制度があります）。
+              <strong>
+                認定日から受け取れる期限までが{r.days}日しかないため、{r.baseDays}日分ではなく
+                {r.days}日分になります。
+              </strong>
+              期限は認定日から数えます（雇用保険法37条の4第1項）。
             </div>
           )}
         </>
       )}
-
-      <div className="note">
-        本計算は目安です。賃金日額は実際には離職票の賃金額から算定され、
-        受給資格の有無・離職理由の区分（自己都合か会社都合か）・所定給付日数は
-        ハローワークが決定します。正確な金額は「雇用保険受給資格者証」でご確認ください。
-      </div>
-    </div>
+    </>
   );
 }
 
