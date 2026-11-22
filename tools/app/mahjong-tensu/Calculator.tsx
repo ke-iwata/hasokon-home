@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { trackToolUse } from '@/lib/analytics';
 import {
   DEFAULT_RULES,
@@ -346,6 +346,8 @@ function MeldRow({
 }
 
 function FuTab({
+  raw,
+  setRaw,
   rules,
   win,
   setWin,
@@ -365,8 +367,10 @@ function FuTab({
   setHanKey: (k: HanKey) => void;
   honba: number;
   kyotaku: number;
+  raw: FuInput;
+  setRaw: Dispatch<SetStateAction<FuInput>>;
 }) {
-  const [raw, setRaw] = useState<FuInput>(defaultFuInput);
+  // 入力は親（Calculator）が持つ。タブを切り替えても組んだ形が消えないように
   const input = applySpecialForm({ ...raw, win });
   const pinfu = input.special === 'pinfu';
   const chiitoi = input.special === 'chiitoi';
@@ -453,7 +457,7 @@ function FuTab({
             disabled={pinfu}
             onChange={(v) => update({ wait: v }, 'select-wait')}
           />
-          {askRon && <p className="hint">双碰待ちでロンしたときは、ロンで完成した刻子を「暗」の刻子の中から1つ選んでください。その刻子は明刻として数えます。</p>}
+          {askRon && <p className="hint">双碰待ちでロンしたときは、ロンで完成した刻子を「暗」の刻子の中から1つ選んでください（その刻子は「明」にせず「暗」のまま選びます）。選んだ刻子は明刻として数えます。</p>}
         </>
       )}
 
@@ -755,7 +759,7 @@ function saveRules(rules: MahjongRules) {
 
 function TabButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" role="tab" aria-selected={active} style={{ ...buttonStyle(active), flex: '1 1 0' }} onClick={onClick}>
+    <button type="button" role="tab" aria-selected={active} style={{ ...buttonStyle(active), flex: '1 1 0', padding: '8px 4px', whiteSpace: 'nowrap' }} onClick={onClick}>
       {children}
     </button>
   );
@@ -770,6 +774,7 @@ export default function Calculator() {
   const [hanKey, setHanKey] = useState<HanKey>('3');
   const [honba, setHonba] = useState(0);
   const [kyotaku, setKyotaku] = useState(0);
+  const [fuInput, setFuInput] = useState<FuInput>(defaultFuInput);
 
   // localStorage はマウント後に読む（サーバ描画とハイドレーションの食い違いを避ける）
   useEffect(() => {
@@ -853,6 +858,8 @@ export default function Calculator() {
 
       {tab === 'fu' && (
         <FuTab
+          raw={fuInput}
+          setRaw={setFuInput}
           rules={rules}
           win={win}
           setWin={setWin}
