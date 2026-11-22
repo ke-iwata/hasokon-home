@@ -39,7 +39,8 @@
  *
  * ■ このツールで計算しないもの（仕様書の「やらないこと」）
  * - 受給資格の有無の判定（被保険者期間12ヶ月・6ヶ月要件はハローワークの決定事項）
- * - 再就職手当・教育訓練給付・高年齢求職者給付金などの他の給付
+ * - 再就職手当・教育訓練給付などの他の給付
+ *   （高年齢求職者給付金は 2026-11 に追加した。docs/features/kourei-kyushokusha-kyufukin.md）
  * - 住民税・国民健康保険・年金の減免
  *
  * 【データ更新箇所】賃金日額・基本手当日額の上限下限と給付率の屈折点は
@@ -173,15 +174,29 @@ export const BENEFIT_RATE_RULES: readonly BenefitRateRule[] = [
 export const AGE_MIN = 15;
 
 /**
- * 画面で受け付ける年齢の上限。
- * 65歳以上の離職は基本手当ではなく高年齢求職者給付金（一時金）になるため、
- * このツールの対象外（`KihonTeateResult.age65OrOver` で注意を出す）。
+ * 基本手当の対象になる離職時の年齢の上限（64歳）。**画面の入力の上限ではない。**
+ *
+ * 65歳以上の離職は基本手当ではなく高年齢求職者給付金（雇用保険法37条の4。一時金）になる。
+ * 入口の `calcShitsugyoHoken()` がこの値で `calcKihonTeate()` と
+ * `calcKoureiKyushokusha()` に振り分ける。
+ * 仕様: docs/features/kourei-kyushokusha-kyufukin.md
  */
-export const AGE_MAX = 64;
+export const KIHON_TEATE_AGE_MAX = 64;
 
-/** 離職時の年齢から算式を引く。65歳以上は上限区分（60〜64歳）として扱う */
+/**
+ * 離職時の年齢から算式を引く（基本手当の対象＝64歳まで）。
+ *
+ * **65歳以上を渡すと `RangeError`。** 以前は60〜64歳の算式（45%・上限7,830円）に
+ * 黙って寄せていて、66歳に約2.5倍の額を出していた。65歳以上の算式は
+ * `koureiRule()`（30歳未満の行）を使う。
+ */
 export function benefitRuleFor(age: number): BenefitRateRule {
-  const a = Math.min(Math.max(Math.floor(age), 0), AGE_MAX);
+  const a = Math.max(Math.floor(age), 0);
+  if (a > KIHON_TEATE_AGE_MAX) {
+    throw new RangeError(
+      `基本手当の算式は${KIHON_TEATE_AGE_MAX}歳までです（${a}歳は高年齢求職者給付金。koureiRule() を使う）`,
+    );
+  }
   return BENEFIT_RATE_RULES.find((r) => a >= r.minAge && a <= r.maxAge) ?? BENEFIT_RATE_RULES[0];
 }
 
@@ -685,8 +700,6 @@ export interface KihonTeateResult {
   restriction: RestrictionResult;
   /** 申請からの流れ。離職日が渡されなかったときは null */
   schedule: Schedule | null;
-  /** 65歳以上の離職（基本手当ではなく高年齢求職者給付金になる） */
-  age65OrOver: boolean;
   /** 受給資格に必要な被保険者期間（月）。12（原則）か6（緩和） */
   insuredMonthsRequired: number;
   /**
@@ -704,12 +717,18 @@ export const DEFAULT_APPLY_AFTER_DAYS = 14;
 
 /**
  * 失業保険（基本手当）の日額・所定給付日数・総額とスケジュールを出す。
+ * **64歳までの離職専用**（65歳以上は `RangeError`）。画面は `calcShitsugyoHoken()` を呼ぶこと。
  *
  * 受給資格の有無は判定しない（ハローワークの決定事項）。
  * 「もらえる前提でいくらか」を出す道具として使う。
  */
 export function calcKihonTeate(input: KihonTeateInput): KihonTeateResult {
   const age = Math.floor(input.age);
+  if (age > KIHON_TEATE_AGE_MAX) {
+    throw new RangeError(
+      `calcKihonTeate は基本手当（${KIHON_TEATE_AGE_MAX}歳まで）専用です。${age}歳は calcShitsugyoHoken() を通してください`,
+    );
+  }
   const rule = benefitRuleFor(age);
   const wage = wageDailyFrom(input.totalWage6m, rule);
   const benefitDaily = benefitDailyFrom(wage.value, rule);
@@ -744,8 +763,159 @@ export function calcKihonTeate(input: KihonTeateInput): KihonTeateResult {
     perCertification: benefitDaily * CERTIFICATION_INTERVAL_DAYS,
     restriction,
     schedule,
-    age65OrOver: age > AGE_MAX,
     insuredMonthsRequired: required,
     eligibilityCaution: input.tenure === 'lt1' && required === INSURED_MONTHS_GENERAL,
   };
+}
+
+// ------------------------------------------------------ 高年齢求職者給付金
+
+/**
+ * 高年齢求職者給付金（65歳以上の離職）。
+ *
+ * 仕様: docs/features/kourei-kyushokusha-kyufukin.md
+ *
+ * ■ 一次情報：雇用保険法 第37条の4（e-Gov 法令API `349AC0000000116`、2026-11-22 取得）
+ * - 第1項：受給資格者とみなして第16〜18条（第17条第4項第2号を除く）を当てた基本手当の日額 ×
+ *   算定基礎期間1年以上は50日／1年未満は30日。ただし**第5項の認定があった日から
+ *   受給期限（離職の日の翌日から起算して1年を経過する日）までの日数**が足りなければその日数
+ * - 第2項：賃金日額の上限は第17条第4項第2号ニ（**離職の日に30歳未満**）の額
+ * - 第16条第2項の45%（60歳以上65歳未満）は当たらないので、算式は**30歳未満の行と同じ**
+ * - 第6項：第21条（待期）・第32条・第33条（給付制限）を準用する
+ *
+ * 離職理由の区分（一般・特定受給資格者・就職困難者）で日数は変わらない。
+ * 離職理由は給付制限の判定にだけ使う。
+ */
+
+/** 高年齢求職者給付金になる離職時の年齢の下限（65歳）。年齢は離職日の時点で、65歳の誕生日の前日に65歳になる */
+export const KOUREI_AGE_MIN = KIHON_TEATE_AGE_MAX + 1;
+
+/** 算定基礎期間が1年以上のときの日数 */
+export const KOUREI_DAYS_LONG = 50;
+
+/** 算定基礎期間が1年未満のときの日数 */
+export const KOUREI_DAYS_SHORT = 30;
+
+/**
+ * 高年齢求職者給付金に当てる算式。**`BENEFIT_RATE_RULES` の30歳未満の行そのもの**を返す
+ * （定数を二重に持たない。毎年8月の改定で一緒に動く）。
+ */
+export function koureiRule(): BenefitRateRule {
+  const rule = BENEFIT_RATE_RULES.find((r) => r.band === 'under30');
+  if (!rule) throw new Error('BENEFIT_RATE_RULES に30歳未満の行がありません');
+  return rule;
+}
+
+/** 高年齢求職者給付金の入力（基本手当と同じ形。`category`・`relaxedEligibility` は日数に効かない） */
+export type KoureiKyushokushaInput = Omit<KihonTeateInput, 'category' | 'relaxedEligibility'> &
+  Partial<Pick<KihonTeateInput, 'category' | 'relaxedEligibility'>>;
+
+/** 高年齢求職者給付金の結果 */
+export interface KoureiKyushokushaResult {
+  /** 使った算式（30歳未満の行） */
+  rule: BenefitRateRule;
+  /** 賃金日額（上限・下限の適用前後） */
+  wage: WageDailyResult;
+  /** 日額（基本手当の日額に相当する額。円） */
+  benefitDaily: number;
+  /** 日額が上限額に張り付いているか */
+  atBenefitMax: boolean;
+  /** 受給期限で減らす前の日数（30／50） */
+  baseDays: number;
+  /** 受給期限で減らしたあとの日数 */
+  days: number;
+  /** 一時金の額（日額 × days） */
+  total: number;
+  /** 給付制限（基本手当と同じ判定） */
+  restriction: RestrictionResult;
+  /** 受給期限（離職日の翌日から1年）。離職日が無ければ null */
+  deadline: DateParts | null;
+  /**
+   * 認定日の見積もり（最も早い場合）。待期の満了日、給付制限があればその満了日の**翌日**。
+   * 実際の認定日はハローワークが指定する。離職日が無ければ null
+   */
+  certificationEstimate: DateParts | null;
+  /** 待期・給付制限の日付（`buildSchedule()` の結果）。離職日が無ければ null */
+  schedule: Schedule | null;
+}
+
+/**
+ * 認定日から受給期限までの日数（**両端を含む**）。第37条の4第1項かっこ書きの
+ * 「認定のあつた日から…最後の日までの日数」。認定日が期限を過ぎていれば0。
+ */
+export function koureiDaysUntilDeadline(certification: DateParts, deadline: DateParts): number {
+  return Math.max(0, daysBetween(certification, deadline) + 1);
+}
+
+/**
+ * 高年齢求職者給付金（一時金）の額を出す。**65歳以上の離職専用**（64歳以下は `RangeError`）。
+ *
+ * 受給資格（離職前1年に被保険者期間6か月以上）は判定しない（ハローワークの決定事項）。
+ */
+export function calcKoureiKyushokusha(input: KoureiKyushokushaInput): KoureiKyushokushaResult {
+  const age = Math.floor(input.age);
+  if (age < KOUREI_AGE_MIN) {
+    throw new RangeError(
+      `calcKoureiKyushokusha は${KOUREI_AGE_MIN}歳以上の離職専用です（${age}歳は calcKihonTeate）`,
+    );
+  }
+  const rule = koureiRule();
+  const wage = wageDailyFrom(input.totalWage6m, rule);
+  const benefitDaily = benefitDailyFrom(wage.value, rule);
+  const baseDays = input.tenure === 'lt1' ? KOUREI_DAYS_SHORT : KOUREI_DAYS_LONG;
+
+  const restriction = restrictionFor({
+    reason: input.reason,
+    pastSelfLeaves: input.pastSelfLeaves,
+    training: input.training,
+    leaveDate: input.leaveDate ? formatDate(input.leaveDate) : undefined,
+  });
+
+  const schedule = input.leaveDate
+    ? buildSchedule({
+        leaveDate: input.leaveDate,
+        applyDate: input.applyDate ?? addDays(input.leaveDate, DEFAULT_APPLY_AFTER_DAYS),
+        restrictionMonths: restriction.months,
+        prescribedDays: baseDays,
+      })
+    : null;
+
+  // 認定日の見積もり＝待期（＋給付制限）の満了日の翌日＝ buildSchedule の benefitStartDate。
+  // 日数を減らす起点は認定日（申込日ではない）
+  const certificationEstimate = schedule ? schedule.benefitStartDate : null;
+  const deadline = schedule ? schedule.eligibilityEndDate : null;
+  const days =
+    certificationEstimate && deadline
+      ? Math.min(baseDays, koureiDaysUntilDeadline(certificationEstimate, deadline))
+      : baseDays;
+
+  return {
+    rule,
+    wage,
+    benefitDaily,
+    atBenefitMax: benefitDaily >= rule.benefitDailyMax,
+    baseDays,
+    days,
+    total: benefitDaily * days,
+    restriction,
+    deadline,
+    certificationEstimate,
+    schedule,
+  };
+}
+
+// ------------------------------------------------------------------ 入口
+
+/** 画面の入口の結果。`kind` で基本手当か高年齢求職者給付金かを出し分ける */
+export type ShitsugyoHokenResult =
+  | { kind: 'kihon'; result: KihonTeateResult }
+  | { kind: 'kourei'; result: KoureiKyushokushaResult };
+
+/**
+ * 画面の入口。離職時の年齢が65歳以上なら高年齢求職者給付金、それ以外は基本手当を計算する。
+ */
+export function calcShitsugyoHoken(input: KihonTeateInput): ShitsugyoHokenResult {
+  return Math.floor(input.age) >= KOUREI_AGE_MIN
+    ? { kind: 'kourei', result: calcKoureiKyushokusha(input) }
+    : { kind: 'kihon', result: calcKihonTeate(input) };
 }
