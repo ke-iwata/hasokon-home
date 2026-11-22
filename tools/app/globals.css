@@ -2215,3 +2215,69 @@ label {
     font-size: 13pt;
   }
 }
+
+/* ------------------------------------------------------------------
+   麻雀 点数計算の早見表（docs/features/mahjong-tensu-keisan.md）
+
+   画面では「翻を選ぶ → 〔符｜子｜親〕の3列」の表だけを出し、
+   印刷のときだけ子・親 × ロン・ツモの4表を A4 1枚に並べる。
+   印刷の仕組みそのものは上の data-print="sheet" の約束に乗る。
+   ------------------------------------------------------------------ */
+
+.mj-print {
+  display: none;
+}
+
+@media print {
+  .mj-print {
+    --text: #000000;
+    --muted: #000000;
+    --border: #000000;
+    display: block;
+    color: #000000;
+    background: #ffffff;
+    font-size: 8pt;
+  }
+
+  .mj-print h2 {
+    font-size: 13pt;
+    margin: 0 0 2mm;
+  }
+
+  .mj-print h3 {
+    font-size: 10pt;
+    margin: 2mm 0 1mm;
+  }
+
+  .mj-print .hint {
+    font-size: 7.5pt;
+    margin: 0 0 2mm;
+  }
+
+  .mj-print-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2mm 5mm;
+  }
+
+  .mj-print table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+  }
+
+  .mj-print th,
+  .mj-print td {
+    border: 0.3mm solid #000000;
+    padding: 0.6mm 1mm;
+    font-size: 7.5pt;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mj-print th:first-child,
+  .mj-print td:first-child {
+    text-align: left;
+  }
+}

@@ -272,7 +272,8 @@ node scripts/check-sources.mjs   # 最低賃金チェッカーの出典URLの生
 ## 現在の状態と次の一手
 
 - 公開済み: https://hasokon.com/tools/ （S3 + CloudFront。hasokon-home のバケットの tools/ 配下に同期）
-- **ツール93本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo`・`base64`・`hinode-hinoiri`・`seiki-hyogen`・`hash-keisan`・`cron-shiki` が `wip`。ほかの72本は `public`。
+- **ツール94本（`kosei-nenkin-jogen`・`kodomo-nisa`・`shukuhakuzei`・`yukyu-fuyo`・`shokyaku-shisanzei`・`jidosha-zei`・`gensen-choshuhyo` が `preview`、`jutaku-loan-kojo`・`shussan-yoteibi`・`otc-ruijiyaku`・`json-seikei`・`unix-jikan`・`gasoline-dai`・`text-hikaku`・`url-decode`・`bingo`・`base64`・`hinode-hinoiri`・`seiki-hyogen`・`hash-keisan`・`cron-shiki`・`mahjong-tensu` が `wip`。ほかの72本は `public`。
+  `mahjong-tensu`（麻雀 点数計算）は年末年始に卓を囲む時期の前、2026-12-20 までに `public` にする（カードの絵・`home/index.html` のカードも同じPRで）。
   `gensen-choshuhyo`（源泉徴収票の見方と検算）は運営者がテスト環境で検算ケースを確かめたら、遅くとも 12-20 までに `public` にする。
   `yukyu-fuyo`（有給休暇 付与日数）は年末の取得調整に間に合うよう 12-01 までに `public` にする。
   `yubin-ryokin`（郵便料金）は年賀状の受付開始 12-20 より前に Bing に拾わせるため、11 月中に `public` にする。
