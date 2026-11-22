@@ -122,6 +122,17 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-09',
   },
   {
+    // 仕様: docs/features/mahjong-tensu-keisan.md（2026-12-20 までに public）
+    slug: 'mahjong-tensu',
+    icon: 'Calculator',
+    name: '麻雀 点数計算（符計算・早見表）',
+    description:
+      '符と翻を選ぶだけで麻雀の点数が出る点数計算。面子・雀頭・待ちを選んで符を内訳つきで数え、子・親×ロン・ツモの早見表も印刷できます。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-22',
+  },
+  {
     slug: 'dice',
     icon: 'DiceFive',
     name: 'サイコロ',
