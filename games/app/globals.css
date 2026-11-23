@@ -10330,3 +10330,342 @@ button.hf-card {
     --chrome: 500px;
   }
 }
+
+/* ---- 熟語パズル（漢字の穴埋め） ---- */
+
+/* docs/features/game-jukugo-anaume.md。シニアの利用を前提に、盤の字は 40px 以上・ボタンは 48px 以上。
+   状態の行・答える場所・解説は `height` で行数ぶんを確保し、4択と読み入力の切り替えや
+   解説の表示で盤が動かないようにする（画面の約束 1） */
+.jk-game {
+  --jk-cell: 64px;
+  --jk-gap: 22px;
+}
+
+.jk-modes {
+  margin: 0 0 6px;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* 押す先は 44px を割らない（画面の約束 4） */
+.jk-modes .seg button {
+  min-height: 44px;
+}
+
+.jk-board {
+  display: grid;
+  grid-template-columns: var(--jk-cell) var(--jk-gap) var(--jk-cell) var(--jk-gap) var(--jk-cell);
+  grid-template-rows: var(--jk-cell) var(--jk-gap) var(--jk-cell) var(--jk-gap) var(--jk-cell);
+  justify-content: center;
+  margin: 4px auto 6px;
+}
+
+.jk-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.jk-top { grid-area: 1 / 3; }
+.jk-a-top { grid-area: 2 / 3; }
+.jk-left { grid-area: 3 / 1; }
+.jk-a-left { grid-area: 3 / 2; }
+.jk-center { grid-area: 3 / 3; }
+.jk-a-right { grid-area: 3 / 4; }
+.jk-right { grid-area: 3 / 5; }
+.jk-a-bottom { grid-area: 4 / 3; }
+.jk-bottom { grid-area: 5 / 3; }
+
+.jk-center {
+  border: 3px dashed var(--accent);
+  background: var(--accent-soft);
+  color: var(--muted);
+}
+
+.jk-center.jk-center-done {
+  border-style: solid;
+  color: var(--accent-strong);
+}
+
+.jk-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* 状態の行は2行ぶん（ヒントを2つ出したときの2行目まで） */
+.jk-status {
+  height: 2.8rem;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.4rem;
+}
+
+.jk-status p {
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jk-status .jk-hint-sub {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.jk-status-ok {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.jk-status-ng {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+/* 答える場所。4択（1行）と読み入力（入力欄と候補を横に1行）を同じ高さに収める */
+.jk-answer {
+  height: 64px;
+}
+
+.jk-choices {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  height: 100%;
+  align-content: center;
+}
+
+.jk-choice,
+.jk-candidate {
+  position: relative;
+  min-height: 56px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.jk-choice:focus-visible,
+.jk-candidate:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.jk-choice:disabled,
+.jk-candidate:disabled {
+  cursor: default;
+}
+
+/* 色だけで正誤を伝えない（○×の記号を併記する） */
+.jk-choice-ok {
+  border-color: var(--ok);
+  background: var(--accent-soft);
+}
+
+.jk-choice-ng {
+  border-color: var(--danger);
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.jk-choice-mark {
+  position: absolute;
+  top: 2px;
+  right: 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.jk-choice-ok .jk-choice-mark {
+  color: var(--ok);
+}
+
+.jk-choice-ng .jk-choice-mark {
+  color: var(--danger);
+}
+
+.jk-reading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+}
+
+.jk-reading-input {
+  flex: 0 0 7.5em;
+  min-width: 0;
+  height: 48px;
+  padding: 0 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+/* 候補は1行で横に流す（行数を増やさない） */
+.jk-candidates {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  height: 60px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-items: center;
+}
+
+.jk-candidate {
+  flex: 0 0 52px;
+  min-height: 52px;
+  height: 52px;
+  font-size: 28px;
+}
+
+.jk-candidates-empty {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 操作の行は1行ぶんの `height` で固定し、折り返さない（文言や局面で下がずれないように。画面の約束 1） */
+.jk-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  height: 48px;
+  margin-top: 8px;
+}
+
+.jk-actions .btn {
+  min-height: 48px;
+  padding: 8px 14px;
+  white-space: nowrap;
+}
+
+.jk-actions .seg button {
+  min-height: 48px;
+  white-space: nowrap;
+}
+
+/* 解説は4行ぶん＋別解の1行。あふれは中だけスクロール */
+.jk-explain {
+  height: 8.6rem;
+  overflow-y: auto;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.jk-explain ul {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.jk-explain p {
+  margin: 0;
+}
+
+.jk-explain-empty {
+  color: var(--muted);
+}
+
+.jk-alt {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+/* ページ本文の例題（静的に書く。検索の受け皿） */
+.jk-example {
+  display: grid;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(3, 52px);
+  gap: 6px;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+
+.jk-example span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.jk-ex-top { grid-area: 1 / 2; }
+.jk-ex-left { grid-area: 2 / 1; }
+.jk-ex-center { grid-area: 2 / 2; }
+
+.jk-example .jk-ex-center {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.jk-ex-right { grid-area: 2 / 3; }
+.jk-ex-bottom { grid-area: 3 / 2; }
+
+@media (max-width: 600px) {
+  .jk-game {
+    --jk-cell: 56px;
+    --jk-gap: 18px;
+  }
+
+  .jk-modes .seg button {
+    padding: 6px 7px;
+    font-size: 0.78rem;
+  }
+
+  .jk-cell {
+    font-size: 40px;
+  }
+
+  .jk-actions {
+    gap: 6px;
+  }
+
+  .jk-actions .btn,
+  .jk-actions .seg button {
+    padding: 8px 9px;
+    font-size: 0.85rem;
+  }
+
+  .jk-explain {
+    height: 7.6rem;
+  }
+}
+
+/* 背の低い画面（iPhone SE 1台目 320×568 など）は盤を詰める。字は 40px を割らない */
+@media (max-height: 700px) {
+  .jk-game {
+    --jk-cell: 50px;
+    --jk-gap: 14px;
+  }
+
+  .jk-explain {
+    height: 6rem;
+  }
+}
