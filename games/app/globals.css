@@ -10561,6 +10561,7 @@ button.hf-card {
 
 .jk-actions .seg button {
   min-height: 48px;
+  white-space: nowrap;
 }
 
 /* 解説は4行ぶん＋別解の1行。あふれは中だけスクロール */
