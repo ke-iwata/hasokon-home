@@ -1239,6 +1239,19 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-17',
   },
   {
+    // 仕様: docs/features/color-code-contrast.md
+    slug: 'color-code',
+    icon: 'Palette',
+    name: 'カラーコード変換・コントラスト比チェッカー',
+    description:
+      'HEX・RGB・HSL・CMYKを貼るだけで形式を自動判定して相互変換。文字色と背景色のコントラスト比をWCAG 2.2のAA／AAAで判定し、落ちたら色相を保って合格する一番近い色を出します。色の見え方の近似、JIS慣用色名・CSSの色名も。入力は送信しません。',
+    category: '計算・変換',
+    stage: 'wip',
+    updatedAt: '2026-11-23',
+    // デザイン系の既存ツールと相互につなぐ（仕様の「関連」）。base64 は data: の画像・CSS の色を扱う開発者向けの同じ波
+    related: ['aspect-ratio', 'gazo-resize', 'base64'],
+  },
+  {
     // 仕様: docs/features/hash-keisan.md
     slug: 'hash-keisan',
     icon: 'Fingerprint',

@@ -1,6 +1,6 @@
 # 新ツール「カラーコード変換・コントラスト比チェッカー」— HEX・RGB・HSL・CMYK を相互に変換し、文字色と背景色のコントラスト比を WCAG 2.2 の AA／AAA で判定。落ちたときは「色相を変えずに明るさだけ動かして合格する一番近い色」を出す。色の見え方（P型・D型・T型）の近似と、JIS 慣用色名・CSS の色名から近い名前も引く
 
-**状態**：提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン。**同日の企画レビュー（#542、`session_012RoU2HAvyiSS6181HE7c2f`）の6点を反映**：合格色が無いときの扱い（両方向の探索・届かなければ「背景色側を変えて」）／HSL は内部で丸めず表示は小数1桁／色名は JIS 慣用色名と CSS の色名だけに絞り、マンセル値の換算の出典を明記・画面は「近似」／幅 360px の並び／色の見え方の言葉づかい／クエリ名 `c`・canonical 固定・不正値は既定へ）。**このPRは仕様書だけで、コードは触っていない。**
+**状態**：実装済み・`wip`（2026-11-23。`tools/lib/color/`・`tools/app/color-code/`・`tools/tests/color.test.ts`・`tools/scripts/gen-jis-color-names.mjs`。セッション `session_012RoU2EKdXtApYZL9EVtJSi`。JIS 慣用色名は付表1の269色のうちマンセル値のない金色・銀色を除く267色。`public` にする PR でカードの絵を描く）。提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン。**同日の企画レビュー（#542、`session_012RoU2HAvyiSS6181HE7c2f`）の6点を反映**：合格色が無いときの扱い（両方向の探索・届かなければ「背景色側を変えて」）／HSL は内部で丸めず表示は小数1桁／色名は JIS 慣用色名と CSS の色名だけに絞り、マンセル値の換算の出典を明記・画面は「近似」／幅 360px の並び／色の見え方の言葉づかい／クエリ名 `c`・canonical 固定・不正値は既定へ）。
 **いつ `public` にするか**：期日のない恒常需要。開発者向けの小道具（Base64・JSON 整形・正規表現・ハッシュ値・URL デコード・UNIX 時間）を `public` にする波に**同じ時期に並べる**
 **優先度：中。** 法改正ものの後ろでよい。開発者・デザイナー・Web 担当（自治体・中小企業の広報）向けの品ぞろえの穴を埋める
 **対象**：`tools/`（`hasokon.com/tools/color-code/` を想定。category は `計算・変換`。`tools/lib/color/`（新規）・`tools/app/color-code/`・`tools/tests/color.test.ts`）
