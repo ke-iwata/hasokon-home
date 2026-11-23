@@ -802,6 +802,22 @@ export const games: GameDef[] = [
     stage: 'wip',
     updatedAt: '2026-11-21',
   },
+  {
+    // 真ん中の1字で上下左右に二字熟語を作る、新聞・パズル誌で定番の漢字パズル（docs/features/game-jukugo-anaume.md）。
+    // 遊びの形に権利は無く、熟語の表（lib/jukugo/words-v1.ts）・意味の1行は自前、字の表（lib/jukugo/kanji.ts）は告示から。
+    // 「和同開珎」の呼び名は name・slug・keywords に使わない。
+    // **J-PlatPat の確認（第9類・第28類・第41類で「熟語パズル」「漢字パズル」）は運営者のタスク**で、
+    // 済むまで `wip`（slug は公開後に動かせないので、`wip` のうちに確定させる。福笑いと同じ運用）。
+    // 年末年始（12/27〜1/4）に間に合えば年内に `public`（`public` にする PR で home のカード・GamePreview・GameIcon の BOARD も描く）
+    slug: 'jukugo-puzzle',
+    icon: 'JukugoCross',
+    name: '熟語パズル',
+    description:
+      '真ん中の空きマスに漢字を1字入れて、上下左右の字とそれぞれ二字熟語を作る漢字パズル。きょうの1問は小学生・中学生・おとなの3段。4択か読みで答え、解くと読みと意味が出ます。',
+    keywords: ['漢字パズル', '二字熟語', 'きょうの1問', '小学生', '中学生', 'おとな', '4択', '読み', '別解'],
+    stage: 'wip',
+    updatedAt: '2026-11-23',
+  },
 ];
 
 /**
