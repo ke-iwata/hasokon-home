@@ -44,6 +44,13 @@ export interface ToolDef {
    * 毎ビルド現在時刻にすると全ページが「更新された」ことになり lastmod が信用されなくなる。
    */
   updatedAt: string;
+  /**
+   * 「次に使うもの」。並べた順にページ下部の関連ツールの先頭へ出す（slug のみ。3〜5本）。
+   * 6本に満たないぶんは同カテゴリ → 他カテゴリの順で埋める（lib/related.ts）。
+   * 公開前（wip / preview）のものも書いてよい。出すときに publicTools で落とすので、
+   * 公開した日から自動で出る。仕様: docs/features/related-tools-topical.md
+   */
+  related?: string[];
 }
 
 // basePath込みのサイトURL。canonical・sitemap・JSON-LDはすべてここから作られる
@@ -149,6 +156,7 @@ export const tools: ToolDef[] = [
       '「独身税」とも呼ばれる子ども・子育て支援金の給与天引き額を計算。2026〜2028年度対応。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: ['yoikuhi-keisan', 'koko-jugyoryo', 'shussan-teate', 'ikuji-kyugyo-kyufu'],
     updatedAt: '2026-10-15',
   },
   {
@@ -159,6 +167,13 @@ export const tools: ToolDef[] = [
       '自己負担2,000円で寄付できる上限額と、所得税・住民税それぞれからいくら控除されるかを内訳まで計算。住宅ローン控除との併用にも対応。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: [
+      'nenmatsu-chosei',
+      'kakutei-shinkoku-hantei',
+      'iryohi-kojo',
+      'tedori-keisan',
+      'juminzei-hikazei',
+    ],
     updatedAt: '2026-10-14',
   },
   {
@@ -169,6 +184,13 @@ export const tools: ToolDef[] = [
       '年末調整でいくら戻るかを計算。給与明細の源泉徴収税額を入れるだけで差額が出ます。令和8年分の基礎控除104万円・給与所得控除74万円への引き上げで、令和7年分よりいくら軽くなったかも表示します。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: [
+      'furusato-nozei',
+      'seimei-hokenryo-kojo',
+      'kakutei-shinkoku-hantei',
+      'iryohi-kojo',
+      'nenshu-kabe',
+    ],
     updatedAt: '2026-10-17',
   },
   {
@@ -391,6 +413,13 @@ export const tools: ToolDef[] = [
       '裁判所の標準算定方式で養育費の月額の目安と算定表のレンジを計算。2026年4月施行の改正民法で新設された法定養育費（子1人あたり月2万円）と、先取特権の上限（子1人あたり月8万円）にも対応しています。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: [
+      'kosodate-shienkin',
+      'koko-jugyoryo',
+      'tedori-keisan',
+      'nenshu-kabe',
+      'nenrei-keisan',
+    ],
     updatedAt: '2026-10-06',
   },
   {
@@ -401,6 +430,7 @@ export const tools: ToolDef[] = [
       'たばこ税は2027年4月から毎年4月に1本0.5円ずつ、3回に分けて上がります（1箱20本で1回あたり税込11円）。銘柄の価格を入れると2029年4月までの想定価格が分かり、1日の本数から月間・年間の負担額と増える分、買わなくなった場合に浮く額まで計算できます。加熱式たばこは2026年10月から紙巻と同じ課税です。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: ['shuzei-kaisei', 'boei-tokubetsu-shotokuzei', 'shohizei-keisan'],
     updatedAt: '2026-10-02',
   },
   {
@@ -426,6 +456,7 @@ export const tools: ToolDef[] = [
       '2026年10月1日にビール系飲料の酒税が1klあたり155,000円に一本化されました。ビールは350mlで9.10円の減税、発泡酒・第三のビールは7.26円、チューハイ等は7.00円の増税。週に飲む本数を入れると、種類ごとに1本あたり・年間でいくら変わったかが分かります。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: ['boei-tokubetsu-shotokuzei', 'nenshu-kabe', 'tedori-keisan', 'tabako-zei-neage'],
     updatedAt: '2026-10-15',
   },
   {
@@ -448,6 +479,7 @@ export const tools: ToolDef[] = [
       '令和9年度（2026年の収入）から単身・給与だけの線は119万円に。給与・年金・扶養人数・級地から、住民税が均等割も所得割もかからないか・所得割だけかからないか・かかるかを判定。扶養1人・年金155万円・世帯全員の「非課税世帯」も。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: ['nenkin-shien-kyufukin', 'nenshu-kabe', 'furusato-nozei', 'kogaku-ryoyohi'],
     updatedAt: '2026-10-17',
   },
   {
@@ -525,6 +557,7 @@ export const tools: ToolDef[] = [
       '社会保険に加入すると手取りがいくら減り、いくら稼げば取り戻せるかを計算。働き損ゾーンと損益分岐点、増える厚生年金まで金額で出します。2026年10月の賃金要件撤廃と保険料調整制度（本人負担25〜48%）に対応。',
     category: 'お金・社会保険',
     stage: 'public',
+    related: ['nenshu-kabe', 'tedori-keisan', 'shoyo-tedori', 'juminzei-hikazei'],
     updatedAt: '2026-10-19',
   },
   {
@@ -1015,6 +1048,7 @@ export const tools: ToolDef[] = [
       '生年月日から満年齢と満何歳何ヶ月を計算。年齢早見表・「◯歳は何年生まれ」の逆引き、西暦⇔和暦（明治〜令和）の変換、誕生日までの日数・干支・学年の目安つき。',
     category: '計算・変換',
     stage: 'public',
+    related: ['shichigosan', 'yakudoshi', 'nissu-keisan', 'mynumber-kigen'],
     updatedAt: '2026-10-14',
   },
   {
@@ -1025,6 +1059,7 @@ export const tools: ToolDef[] = [
       '子どもの生年月日から、3歳・5歳・7歳の七五三の年を数え年・満年齢の両方で計算。11月15日の曜日と、早生まれの子が同じ学年と揃える年も表示。今年の早見表つき。',
     category: '計算・変換',
     stage: 'public',
+    related: ['nenrei-keisan', 'yakudoshi', 'shussan-teate', 'kosodate-shienkin'],
     updatedAt: '2026-10-07',
   },
   {
@@ -1087,6 +1122,7 @@ export const tools: ToolDef[] = [
       '安全なパスワードを10件まとめて作成。生成はブラウザ内で完結し、送信も保存もしません。強さの目安と、覚えやすいパスフレーズにも対応。',
     category: '計算・変換',
     stage: 'public',
+    related: ['qr-code', 'hankaku-zenkaku', 'mojisu-count', 'hash-keisan', 'base64'],
     updatedAt: '2026-08-18',
   },
   {
