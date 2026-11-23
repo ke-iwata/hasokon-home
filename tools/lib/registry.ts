@@ -1248,6 +1248,8 @@ export const tools: ToolDef[] = [
     category: '計算・変換',
     stage: 'wip',
     updatedAt: '2026-11-23',
+    // デザイン系の既存ツールと相互につなぐ（仕様の「関連」）
+    related: ['aspect-ratio', 'gazo-resize'],
   },
   {
     // 仕様: docs/features/hash-keisan.md
