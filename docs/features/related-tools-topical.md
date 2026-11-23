@@ -1,6 +1,6 @@
 # 関連ツールを「話題」でつなぐ — ページ下の「他のツール」が registry の並び順の先頭6本で、ふるさと納税のページに「青色申告特別控除」「減価償却」「在職老齢年金」が出ている。ツールごとに「次に使うもの」を registry に持たせ、クリックを `related_click` で測る
 
-**状態**：提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン）。**このPRは仕様書だけで、コードは触っていない。**
+**状態**：提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン。**同日の企画レビュー（#541、`session_012RoU2ESMqyydAoKPkENkuq`）の必須3点・推奨3点を反映**：パラメータ名を `from_tool`・`to_tool`・`link_source` に／`transport_type: 'beacon'`／見出しを「あわせて確認したいツール」に／`next/link` のまま `onClick` を足す／重複なしのテスト／本文リンクとの重なりは可）。**このPRは仕様書だけで、コードは触っていない。**
 **いつ `public` にするか**：フラグの対象外（既存ページの下部の差し替え）。**年末調整・確定申告の山（12月〜3月）の前**、12月上旬までに本番へ出したい
 **優先度：高。** 着地の上位ページがそのまま「1ページ見て帰る」になっている
 **対象**：`tools/`（`tools/app/RelatedTools.tsx`・`tools/lib/registry.ts` に `related?: string[]` を追加・`tools/lib/analytics.ts` に `related_click`・`tools/tests/related.test.ts`（新規））。games は対象外（後述）
@@ -80,17 +80,22 @@ related?: string[];
 
 ### 2. 見出しと並び
 
-- 見出しは `related` が1本でもあれば **「あわせて使われる計算」**、無ければいままでの「◯◯の他のツール」
+- 見出しは `related` が1本でもあれば **「あわせて確認したいツール」**、無ければいままでの「◯◯の他のツール」
+  - 「あわせて使われる計算」は利用実績があるように読める（中身は手で選んだもの）うえ、`password` → `qr-code` のように計算でないものもあるので使わない
 - `related` 由来のカードと、埋め草のカードの見た目は変えない（区別は計測で付ける）
 - 出す本数は6本のまま（`limit` の既定値を変えない）。モバイルで縦に長くなりすぎないため
+- **最終的な6本に同じ slug を2回出さない。** 埋め草（同カテゴリ・他カテゴリ）を作るときに、`related` で先に出したツールを除く
+- **ツール本文中の手書きリンク（ふるさと納税→年収の壁 など）と、下部の `related` が重なってもかまわない。** 本文は文脈の中の案内、下部は「次に使うもの」の一覧で、役割が違う。重複を消すための突き合わせはしない
 
 ### 3. クリックを測る（`related_click`）
 
-- `tools/lib/analytics.ts` に `trackRelatedClick(from, to, source)` を足し、`related_click` を送る
-  - `from`：今いるページの slug／`to`：押したカードの slug／`source`：`'related'`（手書き）か `'category'`（埋め草）
+- `tools/lib/analytics.ts` に `trackRelatedClick(fromTool, toTool, linkSource)` を足し、`related_click` を送る
+  - パラメータ名は **`from_tool`**（今いるページの slug）／**`to_tool`**（押したカードの slug）／**`link_source`**（`'related'`＝手書き か `'category'`＝埋め草）
+  - GA4 のカスタムディメンションはプロパティ全体で共有されるので、`from`・`to`・`source` のような汎用名は使わない（`source` は標準ディメンション「参照元」とも紛らわしい）。既存の `tool_use` の `tool`、`web_vitals` の `metric_*` と同じ流儀
+  - **`transport_type: 'beacon'` を付ける。** 押すと同時にページを離れるので、付けないと送信が落ちて `related_click` が実際より少なく出る（`web_vitals` と同じ理由。`tools/lib/analytics.ts` の `trackWebVital` を参照）
 - 送るのは slug だけ。入力値・計算結果は送らない（[measurement-hygiene.md](./measurement-hygiene.md)）
-- GA4 側でカスタムディメンションを3つ（`from`・`to`・`source`）登録する作業は**運営者の手作業**（管理画面）。登録前でもイベント数は取れる
-- `RelatedTools` はサーバーコンポーネントなので、クリックの送信は小さなクライアント部品（`RelatedToolLink`）に分ける。リンク自体は `<a href>` のまま（JS が無くても遷移する・クローラーが辿れる）
+- GA4 側でカスタムディメンションを3つ（イベントスコープ。`from_tool`・`to_tool`・`link_source`、表示名も同じ）登録する作業は**運営者の手作業**（管理画面）。登録前でもイベント数は取れる
+- `RelatedTools` はサーバーコンポーネントなので、クリックの送信は小さなクライアント部品（`RelatedToolLink`）に分ける。**リンクは `next/link`（`<a href>` として出力される）のまま、`onClick` で送信だけ足す。** 素の `<a>` に置き換えない（クライアント側の遷移が壊れる）。出力が `<a href>` なので、JS が無くても遷移し、クローラーも辿れる
 
 ### 4. テスト（`tools/tests/related.test.ts`）
 
@@ -98,6 +103,8 @@ related?: string[];
 - 自分自身を `related` に入れていない・重複が無い
 - `related` に書いた `wip` / `preview` のツールは出ない（`publicTools` を通す）
 - `related` の無いツールの出力が、いまの「同カテゴリ先頭から6本」と一致する（見え方を変えていないことの確認）
+- **最終的な一覧に同じ slug が2回出ない**（`related` のツールが同カテゴリの埋め草に再び現れるのが一番ありがちなバグ）
+- `trackRelatedClick` が `from_tool`・`to_tool`・`link_source`・`transport_type: 'beacon'` を送る
 - 着地上位7本（上の計測表）に `related` が書かれている
 
 ### やらないこと
@@ -128,7 +135,7 @@ related?: string[];
 
 ## 確認ポイント（テスト環境）
 
-1. `https://test.hasokon.com/tools/furusato-nozei/` の下部が「あわせて使われる計算」で、年末調整・確定申告が必要か・医療費控除…の順
+1. `https://test.hasokon.com/tools/furusato-nozei/` の下部が「あわせて確認したいツール」で、年末調整・確定申告が必要か・医療費控除…の順
 2. `related` の無いツール（例：`/tools/aspect-ratio/`）の下部が今と同じ
-3. カードを押すと GA4 の DebugView に `related_click`（from・to・source）が出る
+3. カードを押すと GA4 の DebugView に `related_click`（`from_tool`・`to_tool`・`link_source`）が出る
 4. `wip` のツール（例：`hash-keisan`）を `related` に書いたページで、そのカードが出ていない
