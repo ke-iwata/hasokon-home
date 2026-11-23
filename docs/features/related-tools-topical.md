@@ -1,6 +1,6 @@
 # 関連ツールを「話題」でつなぐ — ページ下の「他のツール」が registry の並び順の先頭6本で、ふるさと納税のページに「青色申告特別控除」「減価償却」「在職老齢年金」が出ている。ツールごとに「次に使うもの」を registry に持たせ、クリックを `related_click` で測る
 
-**状態**：提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン。**同日の企画レビュー（#541、`session_012RoU2ESMqyydAoKPkENkuq`）の必須3点・推奨3点を反映**：パラメータ名を `from_tool`・`to_tool`・`link_source` に／`transport_type: 'beacon'`／見出しを「あわせて確認したいツール」に／`next/link` のまま `onClick` を足す／重複なしのテスト／本文リンクとの重なりは可）。**このPRは仕様書だけで、コードは触っていない。**
+**状態**：実装済み（2026-11-23。セッション `session_012RoU2Hy5sQuuVGyn6fKoEz`。`tools/lib/related.ts` が並びを決め、`app/RelatedToolLink.tsx` が `related_click` を送る。`password` の `related` には wip の `hash-keisan`・`base64` を末尾に書いてあり、公開した日から出る。本番反映はタグリリース待ち）。以下は起票時の記録：提案（2026-11-23 起票。セッション `session_012RoU2FbbFK6VBzzN6VxcXm`。定期の企画ルーティン。**同日の企画レビュー（#541、`session_012RoU2ESMqyydAoKPkENkuq`）の必須3点・推奨3点を反映**：パラメータ名を `from_tool`・`to_tool`・`link_source` に／`transport_type: 'beacon'`／見出しを「あわせて確認したいツール」に／`next/link` のまま `onClick` を足す／重複なしのテスト／本文リンクとの重なりは可）。**このPRは仕様書だけで、コードは触っていない。**
 **いつ `public` にするか**：フラグの対象外（既存ページの下部の差し替え）。**年末調整・確定申告の山（12月〜3月）の前**、12月上旬までに本番へ出したい
 **優先度：高。** 着地の上位ページがそのまま「1ページ見て帰る」になっている
 **対象**：`tools/`（`tools/app/RelatedTools.tsx`・`tools/lib/registry.ts` に `related?: string[]` を追加・`tools/lib/analytics.ts` に `related_click`・`tools/tests/related.test.ts`（新規））。games は対象外（後述）
