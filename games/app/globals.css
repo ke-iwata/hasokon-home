@@ -10347,6 +10347,11 @@ button.hf-card {
   justify-content: center;
 }
 
+/* 押す先は 44px を割らない（画面の約束 4） */
+.jk-modes .seg button {
+  min-height: 44px;
+}
+
 .jk-board {
   display: grid;
   grid-template-columns: var(--jk-cell) var(--jk-gap) var(--jk-cell) var(--jk-gap) var(--jk-cell);
@@ -10538,17 +10543,20 @@ button.hf-card {
   color: var(--muted);
 }
 
+/* 操作の行は1行ぶんの `height` で固定し、折り返さない（文言や局面で下がずれないように。画面の約束 1） */
 .jk-actions {
   display: flex;
   justify-content: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
+  height: 48px;
   margin-top: 8px;
 }
 
 .jk-actions .btn {
   min-height: 48px;
   padding: 8px 14px;
+  white-space: nowrap;
 }
 
 .jk-actions .seg button {
@@ -10634,8 +10642,14 @@ button.hf-card {
     font-size: 40px;
   }
 
-  .jk-actions .btn {
-    padding: 8px 10px;
+  .jk-actions {
+    gap: 6px;
+  }
+
+  .jk-actions .btn,
+  .jk-actions .seg button {
+    padding: 8px 9px;
+    font-size: 0.85rem;
   }
 
   .jk-explain {

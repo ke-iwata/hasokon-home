@@ -399,7 +399,8 @@ export default function Game() {
         ) : (
           <>
             <button type="button" className="btn" onClick={showHint} disabled={!puzzle || attempt.hints >= MAX_HINTS}>
-              ヒント{attempt.hints > 0 ? `（${attempt.hints}/${MAX_HINTS}）` : ''}
+              {/* 文言の幅を変えない（押すたびに行が折り返して下がずれるのを防ぐ。#548 のレビュー） */}
+              ヒント{attempt.hints}/{MAX_HINTS}
             </button>
             <button type="button" className="btn" onClick={reveal} disabled={!puzzle}>
               答えを見る
