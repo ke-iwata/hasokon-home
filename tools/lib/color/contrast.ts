@@ -40,10 +40,24 @@ export function composite(top: Rgba, bottom: Rgb): Rgba {
 
 const WHITE: Rgb = { r: 255, g: 255, b: 255 };
 
-/** 背景色は白い地に、文字色は背景色に合成して、実際に見える2色にする */
+/**
+ * 画面に出す HEX（`#rrggbbaa`）と同じ 8bit の色にそろえる。RGB は 0〜255 の整数、不透明度は 1/255 刻み。
+ *
+ * `hsl(0 0% 46.5%)` のような小数を含む入力を浮動小数のまま測ると、画面の HEX（#777777・4.48 で不合格）と
+ * 判定（4.51 で合格）が食い違う。コピー・URL・ブラウザの描画はどれも 8bit なので、比もそれで出す
+ */
+export function quantize(c: Rgba): Rgba {
+  return { ...round8(c), a: Math.round(Math.min(1, Math.max(0, c.a)) * 255) / 255 };
+}
+
+/**
+ * 背景色は白い地に、文字色は背景色に合成して、実際に見える2色にする。
+ * 合成の前に、どちらも 8bit の色（`quantize`）にそろえる
+ */
 export function visiblePair(fg: Rgba, bg: Rgba): { fg: Rgba; bg: Rgba } {
-  const bgSeen = bg.a < 1 ? composite(bg, WHITE) : { ...bg, a: 1 };
-  const fgSeen = fg.a < 1 ? composite(fg, bgSeen) : { ...fg, a: 1 };
+  const [f, b] = [quantize(fg), quantize(bg)];
+  const bgSeen = b.a < 1 ? composite(b, WHITE) : { ...b, a: 1 };
+  const fgSeen = f.a < 1 ? composite(f, bgSeen) : { ...f, a: 1 };
   return { fg: fgSeen, bg: bgSeen };
 }
 
@@ -57,7 +71,7 @@ export function contrastRatio(a: Rgb | string, b: Rgb | string): number {
   return ratioOfLuminance(relativeLuminance(a), relativeLuminance(b));
 }
 
-/** 文字色（透明度つき可）と背景色のコントラスト比 */
+/** 文字色（透明度つき可）と背景色のコントラスト比。8bit にそろえた色で測る（画面の HEX と同じ色） */
 export function contrastOf(fg: Rgba, bg: Rgba): number {
   const v = visiblePair(fg, bg);
   return contrastRatio(v.fg, v.bg);
@@ -144,9 +158,10 @@ const ITERATIONS = 40;
  */
 export function nearestPassing(moving: Rgba, fixed: Rgba, target: number): Suggestion | null {
   const hsl = rgbToHsl(moving);
-  const fixedSeen = fixed.a < 1 ? composite(fixed, WHITE) : fixed;
+  const fixedQ = quantize(fixed);
+  const fixedSeen = fixedQ.a < 1 ? composite(fixedQ, WHITE) : fixedQ;
   const fixedLum = relativeLuminance(fixedSeen);
-  const colorAt = (l: number): Rgba => ({ ...round8({ ...hslToRgb({ h: hsl.h, s: hsl.s, l }), a: moving.a }) });
+  const colorAt = (l: number): Rgba => quantize({ ...hslToRgb({ h: hsl.h, s: hsl.s, l }), a: moving.a });
   const lumAt = (l: number): number => {
     const c = colorAt(l);
     return relativeLuminance(c.a < 1 ? composite(c, fixedSeen) : c);

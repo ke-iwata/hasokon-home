@@ -222,9 +222,9 @@ function useCopy(track: (a: string) => void) {
 }
 
 const TARGET_OPTIONS: { min: number; label: string }[] = [
-  { min: 4.5, label: '4.5（通常の文字の AA・大きな文字の AAA）' },
-  { min: 7, label: '7（通常の文字の AAA）' },
-  { min: 3, label: '3（大きな文字の AA・アイコンや枠）' },
+  { min: 4.5, label: '4.5（通常の文字 AA）' },
+  { min: 7, label: '7（通常の文字 AAA）' },
+  { min: 3, label: '3（大きな文字 AA・枠）' },
 ];
 
 function PassMark({ j }: { j: Judgement | undefined }) {

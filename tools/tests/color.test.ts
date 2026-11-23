@@ -93,13 +93,40 @@ describe('コントラスト比', () => {
   });
 
   it('透明度つきの文字色は背景に合成してから比を出す', () => {
-    // 白の上の 50% の赤 = rgb(255 127.5 127.5)
+    // 白の上の 50% の赤。不透明度は HEX と同じ 1/255 刻み（50% → 128/255）にそろえてから合成する
     const r = contrastOf(rgba('rgb(255 0 0 / 50%)'), DEFAULT_BG);
-    const expected = contrastRatio({ r: 255, g: 127.5, b: 127.5 }, { r: 255, g: 255, b: 255 });
+    const a = 128 / 255;
+    const g = 255 * (1 - a);
+    const expected = contrastRatio({ r: 255, g, b: g }, { r: 255, g: 255, b: 255 });
     expect(r).toBeCloseTo(expected, 12);
     expect(r).toBeLessThan(contrastRatio('#ff0000', '#ffffff'));
     // 透明度 0 の文字は背景と同じ色に見える
     expect(contrastOf(rgba('#00000000'), DEFAULT_BG)).toBe(1);
+  });
+});
+
+describe('小数を含む色は、画面の HEX と同じ 8bit の色で判定する（#547 のレビュー）', () => {
+  const aaNormal = (r: number) => judge(r).find((j) => j.target === 'normal' && j.level === 'AA')!.pass;
+
+  it.each(['hsl(0 0% 46.5%)', 'rgb(118.6 118.6 118.6)'])('%s（画面では #777777）は #777777 と同じ比で AA 不合格', (input) => {
+    const c = rgba(input);
+    expect(formatHex(c)).toBe('#777777');
+    const r = contrastOf(c, DEFAULT_BG);
+    expect(r).toBe(contrastOf(rgba('#777777'), DEFAULT_BG));
+    expect(formatRatio(r)).toBe('4.48');
+    expect(aaNormal(r)).toBe(false);
+  });
+
+  it('背景側・不透明度も 8bit にそろえる', () => {
+    expect(contrastOf(DEFAULT_FG, rgba('rgb(254.6 254.6 254.6)'))).toBe(contrastOf(DEFAULT_FG, DEFAULT_BG));
+    expect(contrastOf({ r: 0, g: 0, b: 0, a: 0.5 }, DEFAULT_BG)).toBe(contrastOf(rgba('#00000080'), DEFAULT_BG));
+  });
+
+  it('nearestPassing も 8bit の背景で確かめる（提案の比 = 画面で測り直した比）', () => {
+    const bg = rgba('hsl(0 0% 46.5%)');
+    const s = nearestPassing(rgba('#ffffff'), bg, 4.5);
+    if (s) expect(s.ratio).toBe(contrastOf(s.color, bg));
+    expect(nearestPassing(rgba('#ffffff'), bg, 7)).toBeNull();
   });
 });
 
