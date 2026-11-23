@@ -162,6 +162,42 @@ export function trackToolUse(tool: string, action: string): void {
   trackEvent('tool_use', { tool, action });
 }
 
+/** related_click イベントのパラメータ。名前は GA4 のカスタムディメンションの登録と揃えるので変えない */
+export interface RelatedClickParams {
+  /** 今いるページの slug */
+  from_tool: string;
+  /** 押したカードの slug */
+  to_tool: string;
+  /** 'related'＝registry の手書き / 'category'＝同カテゴリ・他カテゴリの埋め草 */
+  link_source: 'related' | 'category';
+  transport_type: 'beacon';
+}
+
+/**
+ * ページ下部の関連ツールが押されたことを記録する（docs/features/related-tools-topical.md の 3）。
+ *
+ * パラメータ名を `from`・`to`・`source` のような汎用名にしないのは、GA4 のカスタムディメンションが
+ * プロパティ全体で共有されるため（`source` は標準ディメンション「参照元」とも紛らわしい）。
+ * 押すと同時にページを離れるので `transport_type: 'beacon'` を付ける（付けないと送信が落ちる）。
+ * 送るのは slug だけで、入力値・計算結果は含まない。
+ */
+export function relatedClickParams(
+  fromTool: string,
+  toTool: string,
+  linkSource: RelatedClickParams['link_source'],
+): RelatedClickParams {
+  return { from_tool: fromTool, to_tool: toTool, link_source: linkSource, transport_type: 'beacon' };
+}
+
+/** 関連ツールのクリックを related_click として送る（本番ホスト以外では送らない） */
+export function trackRelatedClick(
+  fromTool: string,
+  toTool: string,
+  linkSource: RelatedClickParams['link_source'],
+): void {
+  trackEvent('related_click', { ...relatedClickParams(fromTool, toTool, linkSource) });
+}
+
 /** web_vitals イベントで送る指標。LCP・INP・CLS の3つ（Google の Core Web Vitals） */
 export type WebVitalName = 'LCP' | 'INP' | 'CLS';
 
