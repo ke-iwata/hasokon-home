@@ -254,6 +254,9 @@ export default function Game() {
   );
 
   const onTilePointerDown = (e: PointerEvent<HTMLButtonElement>, index: number) => {
+    // **指を置くたびに目印を戻す。** タッチで指を動かすとブラウザは click を出さないので、
+    // スワイプのあとに立てた目印が残り、次のタップが黙って捨てられていた（レビュー指摘）
+    swiped.current = false;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { index, pointerId: e.pointerId, x: e.clientX, y: e.clientY };
@@ -266,6 +269,7 @@ export default function Game() {
     drag.current = null;
     const dir = directionFromDelta(e.clientX - start.x, e.clientY - start.y);
     if (dir === null) return;
+    // マウスでドラッグしたときは、このあと click も来るので1回だけ無視する
     swiped.current = true;
     // 押した板が空きへ向かう向きなら、その板（とあいだの板）をすべらせる。
     // そうでなければ、その向きに動ける空きの隣の板を1枚動かす
@@ -464,6 +468,7 @@ export default function Game() {
             setState(restart);
             setHintAt(null);
             setResult(null);
+            setCopied(false);
             timer.reset();
             notified.current = false;
           }}
@@ -481,6 +486,7 @@ export default function Game() {
           type="button"
           className="btn"
           aria-pressed={peek}
+          aria-label="完成図を見る（押しているあいだ）"
           onPointerDown={() => setPeek(true)}
           onPointerUp={() => setPeek(false)}
           onPointerLeave={() => setPeek(false)}
@@ -492,7 +498,8 @@ export default function Game() {
           onBlur={() => setPeek(false)}
           onContextMenu={(e) => e.preventDefault()}
         >
-          完成図を見る
+          {/* 見える文字は短くする（360px幅で5つのボタンを1段・1行に収めるため） */}
+          完成図
         </button>
       </div>
 

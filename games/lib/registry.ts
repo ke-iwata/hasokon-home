@@ -21,6 +21,24 @@ export type Stage =
   /** 公開中 */
   | 'public';
 
+/**
+ * 一覧（`/games/`）の見出し。**見出し・ページ内リンクの `id`・並び順はここ1か所で持つ。**
+ *
+ * 仕様: [docs/features/games-ichiran-genre.md](../../docs/features/games-ichiran-genre.md)
+ *
+ * - `key` は一覧の `<section id>` と目次の `href="#…"` にそのまま使う。
+ *   日本語の見出しから作らず ASCII の固定値にする（変えるとページ内リンクが切れる）
+ * - 多いと見出しだけが並ぶので4つに絞る。5つ目は「ことば・クイズ」が3本を超えたら別の PR で足す
+ */
+export const GENRES = [
+  { key: 'trump', label: 'トランプ・花札' },
+  { key: 'board', label: 'ボード・テーブル' },
+  { key: 'puzzle', label: 'パズル・脳トレ' },
+  { key: 'action', label: 'アクション・腕だめし' },
+] as const;
+
+export type GameGenre = (typeof GENRES)[number]['key'];
+
 export interface GameDef {
   slug: string;
   name: string;
@@ -38,6 +56,11 @@ export interface GameDef {
    * 一覧カードや meta description には出ない。
    */
   keywords?: readonly string[];
+  /**
+   * 一覧の見出し（`GENRES` の `key`）。wip / preview でも必須
+   * （公開する PR でジャンルを考え直さないで済むように）
+   */
+  genre: GameGenre;
   /** 公開の段階。`public` 以外は一覧にも sitemap にも出さない */
   stage: Stage;
   /** 内容を最後に更新した日（sitemap の lastmod。ビルド日ではない） */
@@ -77,6 +100,7 @@ export const games: GameDef[] = [
     name: 'ソリティア',
     description: '定番のクロンダイク。ドラッグでもタップでも動かせて、2回タップで自動移動。もどす機能つき。',
     keywords: ['クロンダイク', 'ドラッグ', '自動で移動', 'もどす'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-10-17',
   },
@@ -86,6 +110,7 @@ export const games: GameDef[] = [
     name: 'スパイダーソリティア',
     description: '1スート〜4スートの3段階。KからAまで揃えて8組完成を目指します。',
     keywords: ['1スート', '2スート', '4スート', '8組', 'ドラッグ'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-10-17',
   },
@@ -95,6 +120,7 @@ export const games: GameDef[] = [
     name: 'フリーセル',
     description: '全部の札が最初から見えている実力型のトランプパズル。まとめて移動にも対応。',
     keywords: ['表向き', 'まとめて移動', 'ドラッグ'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-11-20',
   },
@@ -109,6 +135,7 @@ export const games: GameDef[] = [
     description:
       '足して13になる2枚を取り除いてピラミッドを崩すソリティア。Kは1枚で取れます。タップだけの簡単操作。',
     keywords: ['足して13', 'Kは1枚', '引き直し'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-17',
   },
@@ -123,6 +150,7 @@ export const games: GameDef[] = [
     description:
       '捨て札と1つ違いの札を取り除いて3つの山を崩すソリティア。AはKにも2にもつながります。連鎖を伸ばすほど高得点。',
     keywords: ['1つ違い', '連鎖', '引き直し'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-18',
   },
@@ -138,6 +166,7 @@ export const games: GameDef[] = [
     description:
       '捨て札と1つ違いの札を手前から取り除くソリティア。取り切れなくても「残り何枚か」が成績になります。KとAをつなぐルールにも切り替え可能。',
     keywords: ['1つ違い', 'KとA', '残り何枚'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-09-05',
   },
@@ -147,6 +176,7 @@ export const games: GameDef[] = [
     name: 'マインスイーパー',
     description: '数字をヒントに地雷を避ける定番パズル。初手は必ず安全。初級〜上級。',
     keywords: ['初級', '中級', '上級', '旗モード', '爆発しない'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -156,6 +186,7 @@ export const games: GameDef[] = [
     name: '2048',
     description: 'スワイプで同じ数字を合体させて2048を目指すパズル。ベストスコア保存。',
     keywords: ['スワイプ', '合体', 'ベストスコア'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -165,6 +196,7 @@ export const games: GameDef[] = [
     name: 'ナンプレ',
     description: '定番の数字パズル。かんたん・ふつう・むずかしいの3段階。答えは必ず1通りです。',
     keywords: ['かんたん', 'ふつう', 'むずかしい', '答えは必ず1通り'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -174,6 +206,7 @@ export const games: GameDef[] = [
     name: 'ノノグラム',
     description: '数字をヒントにマスを塗ると絵が出るパズル。5×5〜15×15の全30問。答えは必ず1通りです。',
     keywords: ['5×5', '10×10', '15×15', '全30問'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-11',
   },
@@ -193,6 +226,7 @@ export const games: GameDef[] = [
     name: '星置きパズル',
     description:
       '各行・各列・各ブロックに星を1つずつ。斜めも隣り合わない。5×5〜9×9の3段階と、毎日変わる今日の1問。',
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-09-19',
   },
@@ -211,6 +245,7 @@ export const games: GameDef[] = [
     description:
       '1から数字を順にたどり、全マスを1本の道で一筆書き。5×5〜7×7の3段階と、毎日変わる今日の1問。',
     keywords: ['一筆書き', '数字つなぎ', '今日の1問', '連続日数'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-09-27',
   },
@@ -228,6 +263,7 @@ export const games: GameDef[] = [
     name: '四角わけパズル',
     description: '数字の数だけのマスを長方形で囲んで、盤を切り分けるパズル。5×5〜9×9の3段階と、毎日変わる今日の1問。',
     keywords: ['長方形に区切る', '今日の1問', '答えは必ず1通り', '連続日数'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-10-16',
   },
@@ -245,6 +281,7 @@ export const games: GameDef[] = [
     name: '橋かけパズル',
     description: '数字の本数だけ橋を架けて、全部の島を1つにつなぐパズル。3段階と毎日変わる今日の1問。',
     keywords: ['橋', '島をつなぐ', '今日の1問', '答えは必ず1通り', '連続日数'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-10-17',
   },
@@ -261,6 +298,7 @@ export const games: GameDef[] = [
     description:
       '6つの数を四則演算でつないで目標の数をつくる計算パズル。やさしい〜むずかしいの3段階と、毎日変わる今日の3問。',
     keywords: ['計算パズル', '四則演算', '今日の1問', '連続日数'],
+    genre: 'puzzle',
     stage: 'preview',
     updatedAt: '2026-09-29',
   },
@@ -270,6 +308,7 @@ export const games: GameDef[] = [
     name: 'リバーシ',
     description: '挟んで裏返す定番の対戦ゲーム。CPUは かんたん・ふつう・つよい の3段階。先手・後手も選べます。',
     keywords: ['8×8', '先手', '後手', 'もどす'],
+    genre: 'board',
     stage: 'public',
     updatedAt: '2026-08-12',
   },
@@ -283,6 +322,7 @@ export const games: GameDef[] = [
     description:
       '13×13の盤に先に5つ並べたほうが勝ちの定番ボードゲーム。CPUは かんたん・ふつう・つよい の3段階。禁じ手なし。',
     keywords: ['13×13', '5つ並べ', '待った', '投了'],
+    genre: 'board',
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -298,6 +338,7 @@ export const games: GameDef[] = [
     description:
       '1手詰・3手詰の詰将棋を自動生成で何問でも。毎日変わる「今日の1問」は全員同じ3手詰で、解いた秒数と連続日数を記録。',
     keywords: ['1手詰', '3手詰', '今日の1問', '打ち歩詰め', '二歩', '合駒'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-10-02',
   },
@@ -312,6 +353,7 @@ export const games: GameDef[] = [
     description:
       '9×9の将棋盤で、縦横に動く駒で相手の駒をはさんで取る昔ながらの遊び。CPUは3段階、隅取りのあり／なしと勝ちの枚数も選べます。',
     keywords: ['隅取り', '5枚', '3枚差', '千日手', '待った', '投了'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-10-14',
   },
@@ -326,6 +368,7 @@ export const games: GameDef[] = [
     description:
       '6路の「石取り」から始める囲碁。9路盤の対局は地を数えて勝敗、死に石はCPUが推してタップで直せます。CPUは3段階、2人で対面も。',
     keywords: ['石取り', '9路盤', 'あげはま', 'コミ', 'コウ', '置き石', '死に石', 'アタリ'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-11-07',
   },
@@ -341,6 +384,7 @@ export const games: GameDef[] = [
     description:
       'CPUは かんたん・ふつう・つよい の3段階、白・黒を選べるチェス。駒をタップすると動ける先が光ります。日替わりの「今日の1手詰め」つき。',
     keywords: ['キャスリング', 'アンパッサン', 'プロモーション', 'ステイルメイト', '今日の1手詰め', '1手もどす', '投了'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-11-03',
   },
@@ -356,6 +400,7 @@ export const games: GameDef[] = [
     description:
       'サイコロ2個の目で15個の駒を回し、先に全部上げきったほうが勝つ古典ボードゲーム。CPUは かんたん・ふつう・つよい の3段階、2人で対戦も。動かせる駒と行き先が光ります。',
     keywords: ['ピップカウント', 'ベアオフ', 'ヒット', 'エンター', 'ギャモン', 'ゾロ目', 'ブロット'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-11-10',
   },
@@ -379,6 +424,7 @@ export const games: GameDef[] = [
       'スペ3返し',
       '都落ち',
     ],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-11-19',
   },
@@ -392,6 +438,7 @@ export const games: GameDef[] = [
     description:
       'CPU3人と5回戦を戦うトランプの定番。パスは3回まで、4回目で失格して手札が場に開きます。トンネルも切り替え可能。',
     keywords: ['パスは3回まで', '失格', 'トンネル'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -405,6 +452,7 @@ export const games: GameDef[] = [
     description:
       'めくった2枚が同じ数字ならもらえる定番のカードゲーム。ひとりでタイムアタック、CPU対戦は強さ3段階。12〜52枚から選べます。',
     keywords: ['タイムアタック', '12枚', '20枚', '28枚', '52枚'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-14',
   },
@@ -418,6 +466,7 @@ export const games: GameDef[] = [
     description:
       '台札と1つ違いの数字を、手番を待たずに出し合うトランプの定番。CPU対戦は反応の速さで強さ3段階。1ゲーム1〜2分。',
     keywords: ['台札', '強さ3段階', 'ベストタイム'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-15',
   },
@@ -435,6 +484,7 @@ export const games: GameDef[] = [
     description:
       '合計を21に近づけて、CPUのディーラーと1対1で勝負するトランプの定番。ヒット・スタンド・ダブルダウン・スプリットに対応。チップは点数だけでお金はかかりません。',
     keywords: ['ヒット', 'スタンド', 'ダブルダウン', 'スプリット', '3:2', 'ソフト17'],
+    genre: 'trump',
     stage: 'wip',
     updatedAt: '2026-09-27',
   },
@@ -449,6 +499,7 @@ export const games: GameDef[] = [
     description:
       'A・2・3…Kの順に札を伏せて出し、ウソだと思ったら「ダウト！」。CPU 3人と4人で遊ぶ、読み合いのトランプ。CPUは3段階。',
     keywords: ['ダウト', 'トランプ', 'CPU対戦', 'ウソ', '読み合い'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-10-18',
   },
@@ -464,6 +515,7 @@ export const games: GameDef[] = [
     description:
       '石を反時計回りに1個ずつ配って、自分のゴールに多く集めたほうが勝ち。CPU対戦は3段階で先手・後手は交互。日替わりの「今日の1手番」は全員同じ局面です。',
     keywords: ['カラハ', 'もう1回', '横取り', 'CPUと対戦', '今日の1手番'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-10-19',
   },
@@ -480,6 +532,7 @@ export const games: GameDef[] = [
     description:
       '縦6×横7の盤に上からコマを落とし、縦・横・斜めに4つ並べたら勝ち。CPU対戦は3段階、1台を交互に使う2人対戦も。1局2〜5分です。',
     keywords: ['CPUと対戦', '2人で対戦', '1手もどす', '投了', '斜め'],
+    genre: 'board',
     stage: 'wip',
     updatedAt: '2026-11-06',
   },
@@ -495,6 +548,7 @@ export const games: GameDef[] = [
     description:
       '隣の駒を縦か横に飛び越えて取り、最後に1本だけ残す一人用パズル。毎日かわる今日の1問は必ず解ける局面。英国式33穴（最短18手）と三角15穴も遊べます。',
     keywords: ['今日の1問', '英国式33穴', '三角15穴', '完全クリア', 'ヒント', '待った'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-10-30',
   },
@@ -511,6 +565,7 @@ export const games: GameDef[] = [
     description:
       '3本の柱の円盤を、小さい円盤の上に大きい円盤を置かずに右の柱へ移す一人用パズル。円盤は3〜8枚。最少手数（2ⁿ−1）との比較、最短の1手を見るヒント、手順の自動再生つき。',
     keywords: ['最少手数', '2ⁿ−1', 'ヒント', '自動再生', '1手戻す'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-11-08',
   },
@@ -529,6 +584,7 @@ export const games: GameDef[] = [
     description:
       'ハートと♠Qを取らないように立ち回る、CPU 3人と4人で遊ぶトランプの定番。パス・ハートブレイク・シュートザムーンに対応し、1局だけでも100点までの試合でも遊べます。',
     keywords: ['ハートブレイク', 'シュートザムーン', '♠Q', 'フォロー', 'パス'],
+    genre: 'trump',
     stage: 'preview',
     updatedAt: '2026-09-30',
   },
@@ -543,6 +599,7 @@ export const games: GameDef[] = [
     description:
       '日本の伝統札で遊ぶ2人用の定番。CPU対戦は強さ3段階で、6ヶ月戦と12ヶ月戦を選べます。役の一覧と、あと何枚で役になるかの案内つき。',
     keywords: ['こいこい', '五光', '赤短', '猪鹿蝶', '6ヶ月戦', '12ヶ月戦'],
+    genre: 'trump',
     stage: 'public',
     updatedAt: '2026-08-15',
   },
@@ -556,6 +613,7 @@ export const games: GameDef[] = [
     description:
       '亀の形に積んだ144枚から同じ絵柄を2つずつ消す絵合わせパズル。必ず最後まで消せる盤面を配ります。',
     keywords: ['144枚', '亀の形', 'ヒント', '並べ替え'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-13',
   },
@@ -571,6 +629,7 @@ export const games: GameDef[] = [
     name: '二角取り',
     description:
       '曲がり角2回以内の経路で同じ麻雀牌を2つずつ消していくパズル。3段階の広さから選べます。必ず最後まで消せる盤面を配り、詰んだら「並べ替え」で解決します。',
+    genre: 'puzzle',
     stage: 'preview',
     updatedAt: '2026-08-20',
   },
@@ -583,6 +642,7 @@ export const games: GameDef[] = [
     description:
       '8×8の盤面に配られたピースを置いて、揃った行と列を消すパズル。時間制限なしでじっくり遊べます。',
     keywords: ['8×8', '行と列', '時間制限なし'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-13',
   },
@@ -600,6 +660,7 @@ export const games: GameDef[] = [
     description:
       '隣どうしを入れ替えて、同じ形を3つそろえて消すパズル。今日の盤面は全員同じで、30手のスコア勝負。手数無制限のエンドレスつき。',
     keywords: ['8×8', '30手', '日替わり', '連鎖'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-09-29',
   },
@@ -616,6 +677,7 @@ export const games: GameDef[] = [
     description:
       '左右2枚の絵から5つの違いを見つける脳トレ。今日の1枚は全員同じ絵で、何秒で見つけたかを競えます。やさしい〜むずかしいのエンドレスつき。',
     keywords: ['脳トレ', '5つの違い', '日替わり', '観察力'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-10-01',
   },
@@ -632,6 +694,7 @@ export const games: GameDef[] = [
     description:
       '矢印をタップして向きの方向へ抜くパズル。いま抜けられる矢印を見つけて全部抜けばクリア。今日の1面は全員同じ盤で、ミスの数とタイムを競えます。',
     keywords: ['矢印パズル', 'ハート', '今日の1面', 'ヒント'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-10-06',
   },
@@ -648,6 +711,7 @@ export const games: GameDef[] = [
     description:
       '同じ数か足して10になる2つの数字を選んで消していく数字パズル。盤を空にすればクリア。詰まったら残りを書き足せます（4回まで）。今日の1面は全員同じ盤です。',
     keywords: ['足して10', '数字パズル', '今日の1面', '書き足し', '脳トレ'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-10-11',
   },
@@ -664,6 +728,7 @@ export const games: GameDef[] = [
     description:
       '相手が隠した重複なしの数を「ヒット」「ブロー」のヒントで当てる数あて推理ゲーム。今日の1問は全員同じ数。CPUと交互に当て合う対戦は3段階。テンキーのタップだけで遊べます。',
     keywords: ['数あて', 'ヒット', 'ブロー', '今日の1問', 'CPUと対戦', '推理ゲーム'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-10-15',
   },
@@ -680,6 +745,7 @@ export const games: GameDef[] = [
     description:
       '色水を試験管に注ぎ分けて同じ色を1本にそろえるパズル。かんたん・ふつう・むずかしいの3段階。時間制限なしでのんびり遊べます。',
     keywords: ['試験管', '同じ色で4段', 'かんたん', 'むずかしい'],
+    genre: 'puzzle',
     stage: 'public',
     updatedAt: '2026-08-19',
   },
@@ -699,6 +765,7 @@ export const games: GameDef[] = [
     name: '箱入り娘',
     description:
       '4×5の盤で駒を滑らせ、大きな「娘」を下の出口まで運ぶ古典のスライドパズル。やさしい配置から伝統的な標準配置、むずかしい配置まで全10面。最短手数つき。',
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-09-18',
   },
@@ -715,6 +782,7 @@ export const games: GameDef[] = [
     description:
       '空きマスに数字の板をすべらせて順に並べる古典のスライドパズル。3×3・4×4・5×5と今日の1面、自分の写真で絵合わせも。3×3は最短手数とヒントつき。',
     keywords: ['3×3', '4×4', '5×5', '今日の1面', '写真', '最短手数', 'ヒント'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-11-24',
   },
@@ -724,6 +792,7 @@ export const games: GameDef[] = [
     name: 'ブロック崩し',
     description: 'マウスやタッチで操作する定番アクション。面が進むごとに速くなります。',
     keywords: ['パドル', 'ブロック', '速く'],
+    genre: 'action',
     stage: 'public',
     updatedAt: '2026-08-16',
   },
@@ -738,6 +807,7 @@ export const games: GameDef[] = [
     description:
       '餌を食べるほど長くなるヘビを操作する定番アーケード。壁と自分の体をよけてハイスコアを狙います。スワイプと矢印キーに対応。',
     keywords: ['スワイプ', '矢印キー', '壁と自分の体'],
+    genre: 'action',
     stage: 'public',
     updatedAt: '2026-08-18',
   },
@@ -752,6 +822,7 @@ export const games: GameDef[] = [
     description:
       '5個のサイコロを3回まで振って役を作る定番のダイスゲーム。フルハウスやストレートなど12の役を埋めて、合計点の高さを競います。CPU対戦は強さ2段階。',
     keywords: ['フルハウス', 'ストレート', '上段', 'ボーナス'],
+    genre: 'board',
     stage: 'public',
     updatedAt: '2026-08-21',
   },
@@ -762,6 +833,7 @@ export const games: GameDef[] = [
     description: 'フリッパーで球を打ち返す定番のアクション。バンパーと的で点を稼ぎます。',
     // 打ち出しと打ち返しの手応えを実機で確かめてから公開する。
     // 仕様書（docs/features/game-pinball.md）の状態行に公開の条件を書いてある
+    genre: 'action',
     stage: 'preview',
     updatedAt: '2026-08-16',
   },
@@ -782,6 +854,7 @@ export const games: GameDef[] = [
     name: 'ボルダリング合体パズル',
     description:
       '箱にクライミングのホールドを落として、同じホールドどうしをぶつけて大きく育てる物理パズル。カチからトップホールドまで11段階。当たり判定はホールドの形そのままです。',
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-09-07',
   },
@@ -799,6 +872,7 @@ export const games: GameDef[] = [
     name: 'タイピング練習',
     description:
       'ひらがなのお題をローマ字で打つ60秒トレーニング。KPMと正確率を測ります。shi・si どちらの打ち方でも判定します。パソコンのキーボード向け。',
+    genre: 'action',
     stage: 'wip',
     updatedAt: '2026-09-10',
   },
@@ -815,6 +889,7 @@ export const games: GameDef[] = [
     description:
       '目かくしで、まゆ・目・鼻・口を置いて顔を作るお正月の遊び。めかくしをとると顔が現れて点数つき。家族で順番に遊べて、できた顔は画像で保存できます。',
     keywords: ['家族で順番に', '画像で保存', '今日のお題', 'かんたん', 'むずかしい'],
+    genre: 'action',
     stage: 'wip',
     updatedAt: '2026-11-21',
   },
@@ -831,6 +906,7 @@ export const games: GameDef[] = [
     description:
       '真ん中の空きマスに漢字を1字入れて、上下左右の字とそれぞれ二字熟語を作る漢字パズル。きょうの1問は小学生・中学生・おとなの3段。4択か読みで答え、解くと読みと意味が出ます。',
     keywords: ['漢字パズル', '二字熟語', 'きょうの1問', '小学生', '中学生', 'おとな', '4択', '読み', '別解'],
+    genre: 'puzzle',
     stage: 'wip',
     updatedAt: '2026-11-23',
   },
@@ -841,6 +917,19 @@ export const games: GameDef[] = [
  * `games` を直に filter しないこと（見落としが公開事故になる）
  */
 export const publicGames = games.filter((g) => g.stage === 'public');
+
+/**
+ * 一覧（`/games/`）に出すジャンルごとの公開中のゲーム。並びは `GENRES` の順、
+ * ジャンル内は registry の並び順のまま。**`publicGames` を通す**（`games` を直に filter しない）。
+ * 公開中のゲームが1本も無いジャンルは出さない（空の見出しを置かない）。
+ */
+export function publicGamesByGenre(): { key: GameGenre; label: string; games: GameDef[] }[] {
+  return GENRES.map(({ key, label }) => ({
+    key,
+    label,
+    games: publicGames.filter((g) => g.genre === key),
+  })).filter((section) => section.games.length > 0);
+}
 
 /**
  * `stage` から検索避けを決める規則。**`robotsFor` と分けてあるのは、

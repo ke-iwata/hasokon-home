@@ -3,7 +3,7 @@
  *
  * 構成は tools/lib/jsonld.ts と揃えてある。片方だけ直さないこと。
  */
-import { SITE_NAME, SITE_URL, games } from './registry';
+import { SITE_NAME, SITE_URL, games, publicGamesByGenre } from './registry';
 
 /**
  * ドメイン直下のポータル（hasokon.com）。
@@ -71,4 +71,26 @@ export function breadcrumbList(trail: Crumb[]) {
       ...(c.url ? { item: c.url } : {}),
     })),
   };
+}
+
+/**
+ * 一覧（`/games/`）のジャンルごとの `ItemList`（docs/features/games-ichiran-genre.md の C）。
+ *
+ * リッチリザルトの対象ではない。AI クローラーと Bing が一覧の構造（どのジャンルに何があるか）を
+ * 読み取れるようにするためのもの。**名前・URL は registry から作る**（手で書かない）。
+ * `@id` は一覧ページのセクション（`#trump` など）に合わせる。
+ */
+export function genreItemLists() {
+  return publicGamesByGenre().map((section) => ({
+    '@type': 'ItemList',
+    '@id': `${SITE_URL}/#${section.key}`,
+    name: section.label,
+    numberOfItems: section.games.length,
+    itemListElement: section.games.map((g, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: g.name,
+      url: `${SITE_URL}/${g.slug}/`,
+    })),
+  }));
 }
