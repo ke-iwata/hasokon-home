@@ -131,9 +131,38 @@ export function initAnalytics(): void {
  */
 export function trackPageView(): void {
   gtag()?.('event', 'page_view', {
-    page_location: window.location.href,
+    page_location: pageLocationForAnalytics(window.location.href),
     page_title: document.title,
   });
+}
+
+/**
+ * page_view に載せてはいけないクエリ（パス → クエリ名）。
+ *
+ * 共有の URL（`?q=…`）に入力をそのまま載せるツールのうち、**入力が個人や組織を特定しうるもの**だけを書く。
+ * サブネット計算は自社サーバー・自宅回線のグローバル IP アドレスが入りうるので、
+ * page_location から `q` を外す（docs/features/subnet-keisan.md「共有のURLと計測」）。
+ * ページの側でも `history.replaceState` でクエリを消しているが、page_view の送信と
+ * どちらが先に走るかは React の effect の順番次第なので、送る側でも必ず外す。
+ */
+export const PRIVATE_QUERY_PARAMS: Record<string, readonly string[]> = {
+  '/tools/subnet/': ['q'],
+  '/tools/subnet': ['q'],
+  '/tools/subnet/index.html': ['q'],
+};
+
+/** page_location に使う URL。PRIVATE_QUERY_PARAMS に載ったクエリを外す（それ以外は href のまま） */
+export function pageLocationForAnalytics(href: string): string {
+  let url: URL;
+  try {
+    url = new URL(href);
+  } catch {
+    return href;
+  }
+  const names = PRIVATE_QUERY_PARAMS[url.pathname];
+  if (!names || !names.some((n) => url.searchParams.has(n))) return href;
+  for (const n of names) url.searchParams.delete(n);
+  return url.toString();
 }
 
 /**

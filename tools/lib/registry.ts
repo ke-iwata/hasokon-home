@@ -1171,6 +1171,20 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-21',
   },
   {
+    // 仕様: docs/features/subnet-keisan.md
+    slug: 'subnet',
+    // ネットワークの絵。ほかで使っていない
+    icon: 'Network',
+    name: 'サブネット計算（CIDR・IPアドレス範囲）',
+    description:
+      'CIDR やサブネットマスクから、ネットワークアドレス・ブロードキャスト・使えるホスト数・ワイルドカードマスクを計算。このIPは範囲に入るか・/24 を何個に分けるか・必要な台数からの逆算も。AWS・Azure・Google Cloud の予約アドレスを引いた実際に使える数まで。入力は送信しません。',
+    category: '計算・変換',
+    // 開発者向けの道具（Base64・JSON 整形・正規表現・ハッシュ値・cron 式・カラーコード）を public にする波に同じ時期に並べる
+    stage: 'wip',
+    updatedAt: '2026-11-24',
+    related: ['cron-shiki', 'hash-keisan', 'unix-jikan'],
+  },
+  {
     // 仕様: docs/features/jikan-keisan.md
     slug: 'jikan-keisan',
     icon: 'ClockUser',

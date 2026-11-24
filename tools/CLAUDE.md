@@ -157,6 +157,10 @@ robots.txt と ads.txt はここにはない。ドメイン統合により、ど
   サイコロを振る・グループ分けする・変換結果をコピーする）。
   GA4では `tool_use` イベントに `tool` / `action` パラメータが付く形で集計される
 - 新しいツールを足したときは、押して結果が出る操作があれば同じように呼ぶ
+- **入力が個人や組織を特定しうるツールの共有URL（`?q=…`）は、page_view に載せない。**
+  `lib/analytics.ts` の `PRIVATE_QUERY_PARAMS` にパスとクエリ名を足すと、`trackPageView()` が
+  `page_location` から外す（いまはサブネット計算の `q` だけ。IPアドレスが入るため。
+  [docs/features/subnet-keisan.md](../docs/features/subnet-keisan.md)）
 - **Cookieを使うのでプライバシーポリシーへの記載が必要**。サイト全体の
   `home/privacy.html` の「アクセス解析について」に記載済み。オプトアウトの案内も置いている
 
