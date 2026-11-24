@@ -10669,3 +10669,261 @@ button.hf-card {
     height: 6rem;
   }
 }
+
+/* ---- 15パズル ----
+   仕様: docs/features/game-15-puzzle.md
+
+   盤は正方形。大きさは幅と画面の高さの両方から決める（画面の約束2）。
+   **`max-width` をこの規則の外で書き直さない・`Game.tsx` から渡さない。**
+   `--chrome` は盤以外が使う高さの実測値（末尾の @media で狭い画面ぶんを上書き）。
+   下限 `--board-min` は1枚が44pxを割らない大きさ（4×4・3×3 は200px、5×5 は232px）。 */
+.fp-board {
+  --chrome: 480px;
+  --board-max: 440px;
+  /* 下限。1枚が押す先の下限44pxを割らない大きさ（5×5 は下で上書き） */
+  --board-min: 200px;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: min(var(--board-max), max(var(--board-min), calc(100dvh - var(--chrome))));
+  margin: 0 auto;
+  background: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  /* 盤の上のスワイプをページのスクロールに取られない（盤の外は普通にスクロールできる） */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fp-board:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 板。位置と大きさは `Game.tsx` が % で渡す。動きは left / top の transition に任せる */
+.fp-tile {
+  position: absolute;
+  padding: 2px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    left 110ms ease-out,
+    top 110ms ease-out;
+}
+
+.fp-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+  line-height: 1;
+  overflow: hidden;
+}
+
+.fp-board.fp-n5 {
+  --board-min: 232px;
+}
+
+.fp-n3 .fp-face {
+  font-size: clamp(1.4rem, 9vw, 2.6rem);
+}
+
+.fp-n4 .fp-face {
+  font-size: clamp(1.1rem, 7vw, 2rem);
+}
+
+.fp-n5 .fp-face {
+  font-size: clamp(0.95rem, 5.5vw, 1.6rem);
+}
+
+/* 写真の板。数字は角に小さく重ねる（絵を隠さない） */
+.fp-face.fp-photo {
+  background-color: var(--surface-2);
+  background-repeat: no-repeat;
+}
+
+.fp-face.fp-photo .fp-num {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  min-width: 1.6em;
+  padding: 2px 3px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+/* ヒントの一手。**輪郭と地の色の2つで示す**（色だけに頼らない） */
+.fp-tile.hinted .fp-face {
+  box-shadow: 0 0 0 3px var(--accent);
+  border-color: var(--accent);
+  background-color: var(--accent-soft);
+}
+
+.fp-tile.hinted .fp-face.fp-photo {
+  background-color: transparent;
+}
+
+/* 完成図。押しているあいだだけ盤の上に重ねる */
+.fp-peek {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-2);
+  pointer-events: none;
+}
+
+.fp-peek .fp-tile {
+  transition: none;
+}
+
+.fp-peek-photo {
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--radius-sm);
+  background-size: cover;
+}
+
+/* 遊び方と大きさ。**畳まない**（画面の約束5） */
+/* 遊び方と大きさは**どの幅でも別の段**にする（1行に並べると、写真の操作が出た瞬間に
+   折り返して盤が動く） */
+.fp-modes {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.fp-modes .seg button {
+  line-height: 1.5;
+}
+
+.fp-modes .seg button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* 大きさの段。写真のときだけ「写真を選ぶ」が並ぶので、**高さを固定して**盤を動かさない */
+.fp-sizes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.fp-note {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.fp-file {
+  position: relative;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fp-file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fp-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.fp-actions {
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.fp-actions .btn {
+  padding: 10px 14px;
+}
+
+.fp-game .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.fp-game .btn:disabled:hover {
+  border-color: var(--border);
+}
+
+/* 手数の行は1行で固定する（3桁の手数でも折り返して盤を動かさない） */
+.fp-game .status-bar {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  height: 1.6em;
+  line-height: 1.6;
+  margin: 6px 0;
+}
+
+.fp-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.fp-copy {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fp-tile {
+    transition: none;
+  }
+}
+
+/* 狭い画面（15パズル）。**ファイルの末尾に置く**（途中に置くと後ろの通常の規則に負ける） */
+@media (max-width: 600px) {
+  /* 390×664 で実測した盤より上（パンくず〜手数の行）が、記録の帯なしで368px・
+     ありで418px（帯は1回クリアすると出る）。帯ありでも盤の下端を画面に収める
+     （結果の行と畳んだ見かたは画面の下に出てよい）。664−430＝234px は 5×5 の下限232pxの上 */
+  .fp-board {
+    --chrome: 430px;
+  }
+
+  .fp-modes .seg button {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+
+  .fp-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .fp-actions .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 0.78rem;
+  }
+}
