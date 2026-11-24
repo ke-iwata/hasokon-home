@@ -28,6 +28,7 @@ import {
   summarizeV4,
   summarizeV6,
   toolUseAction,
+  trackableAction,
   wildcardToPrefix,
 } from '@/lib/subnet';
 import { pageLocationForAnalytics, trackPageView, trackToolUse } from '@/lib/analytics';
@@ -425,3 +426,34 @@ describe('共有のURLと計測', () => {
     expect(calls.at(-1)).toEqual(['event', 'tool_use', { tool: 'subnet', action: 'split' }]);
   });
 });
+
+describe('tool_use は利用者が触ったときだけ（#553 のレビュー）', () => {
+  it('既定の例（192.168.10.0/26・50台）のまま＝触っていないなら送らない', () => {
+    // 画面の既定値で ok になる計算でも、touched が false なら null
+    expect(parseInput('192.168.10.0/26').kind).toBe('v4');
+    expect(reverseFromHosts(50).ok).toBe(true);
+    expect(trackableAction('calc', { touched: false, ok: true })).toBeNull();
+    expect(trackableAction('reverse', { touched: false, ok: true })).toBeNull();
+    expect(trackableAction('calc', { touched: false, ok: true, cloud: 'aws' })).toBeNull();
+  });
+
+  it('触ったあとでも、結果が出ていなければ送らない', () => {
+    expect(trackableAction('calc', { touched: true, ok: false })).toBeNull();
+  });
+
+  it('触って結果が出たら action を返す（クラウドを選んでいれば -cloud-…）', () => {
+    expect(trackableAction('calc', { touched: true, ok: true })).toBe('calc');
+    expect(trackableAction('reverse', { touched: true, ok: true, cloud: 'aws' })).toBe('reverse-cloud-aws');
+  });
+
+  it('画面は calc・reverse を trackableAction を通して送っている（既定値で送る形に戻さない）', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../app/subnet/Calculator.tsx', import.meta.url), 'utf8');
+    expect(src).toMatch(/trackableAction\('calc', \{ touched: inputTouched\.current/);
+    expect(src).toMatch(/trackableAction\('reverse', \{ touched: reverseTouched\.current/);
+    // 触ったフラグは利用者の操作（onChange・ボタン）と ?q= の読み込みでだけ立てる
+    expect(src.match(/inputTouched\.current = true/g)?.length).toBe(3);
+    expect(src.match(/reverseTouched\.current = true/g)?.length).toBe(2);
+  });
+});
+

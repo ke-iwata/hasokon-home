@@ -125,7 +125,7 @@ export default function Page() {
           <thead>
             <tr>
               <th style={th}>長さ</th>
-              <th style={th}>マスクの第4オクテット</th>
+              <th style={th}>第4オクテット</th>
               <th style={th}>アドレス数</th>
               <th style={th}>使える数</th>
             </tr>
@@ -133,7 +133,7 @@ export default function Page() {
           <tbody>
             {OCTET_TABLE.map((r) => (
               <tr key={r.prefix}>
-                <td style={{ ...td, ...codeStyle }}>/{r.prefix}</td>
+                <td style={{ ...td, ...codeStyle, whiteSpace: 'nowrap' }}>/{r.prefix}</td>
                 <td style={{ ...td, ...codeStyle }}>{r.lastOctet}</td>
                 <td style={td}>{r.total}</td>
                 <td style={td}>
@@ -164,8 +164,8 @@ export default function Page() {
           <tbody>
             {CLOUD_ROWS.map((c) => (
               <tr key={c.id}>
-                <td style={td}>{c.rule.label}</td>
-                <td style={td}>{c.rule.reserved.length} 個</td>
+                <td style={{ ...td, whiteSpace: 'nowrap' }}>{c.rule.label}</td>
+                <td style={{ ...td, whiteSpace: 'nowrap' }}>{c.rule.reserved.length} 個</td>
                 <td style={td}>
                   {c.reserved.map((r) => (
                     <div key={r.address}>

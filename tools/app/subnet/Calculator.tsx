@@ -17,7 +17,7 @@ import {
   splitSubnet,
   summarizeV4,
   summarizeV6,
-  toolUseAction,
+  trackableAction,
   usableHosts,
   formatIPv4,
   prefixToMask,
@@ -75,8 +75,8 @@ function useDebounced<T>(value: T, ms: number): T {
 function useTrackOnce() {
   const sent = useRef(new Set<string>());
   return useCallback((action: SubnetAction, cloud: Cloud = 'none') => {
-    const a = toolUseAction(action, cloud);
-    if (sent.current.has(a)) return;
+    const a = trackableAction(action, { touched: true, ok: true, cloud });
+    if (a === null || sent.current.has(a)) return;
     sent.current.add(a);
     trackToolUse(SLUG, a);
   }, []);
@@ -175,12 +175,17 @@ export default function Calculator() {
   const [reverseCloud, setReverseCloud] = useState<Cloud>('none');
   const [copied, setCopied] = useState<string | null>(null);
   const track = useTrackOnce();
+  /** 利用者が上の入力（入力欄・クラウド・?q=）に触ったか。触る前の既定の例では tool_use を送らない */
+  const inputTouched = useRef(false);
+  /** 逆算（台数・逆算のクラウド）に触ったか */
+  const reverseTouched = useRef(false);
 
   // ?q= で開かれたら読んで、アドレスバーからクエリを消す（入力をURLに残さない）
   useEffect(() => {
     try {
       const q = readShareQuery(window.location.search);
       if (q !== null) {
+        inputTouched.current = true;
         setInput(q);
         window.history.replaceState(window.history.state, '', window.location.pathname + window.location.hash);
       }
@@ -204,7 +209,9 @@ export default function Calculator() {
   const v6 = effective.kind === 'v6' ? summarizeV6(effective.address, effective.prefix) : null;
 
   useEffect(() => {
-    if (effective.kind === 'v4' || effective.kind === 'v6' || effective.kind === 'mask-only') track('calc', effective.kind === 'v4' ? cloud : 'none');
+    const ok = effective.kind === 'v4' || effective.kind === 'v6' || effective.kind === 'mask-only';
+    const a = trackableAction('calc', { touched: inputTouched.current, ok, cloud: effective.kind === 'v4' ? cloud : 'none' });
+    if (a !== null) track('calc', effective.kind === 'v4' ? cloud : 'none');
   }, [effective, cloud, track]);
 
   const onCopy = async (value: string, id: string) => {
@@ -236,8 +243,9 @@ export default function Calculator() {
   const hostsNum = Number(hosts.replace(/[,，\s]/g, ''));
   const reverse = hosts.trim() === '' ? null : reverseFromHosts(hostsNum, reverseCloud);
   useEffect(() => {
-    if (reverse?.ok) track('reverse', reverseCloud);
-  }, [reverse?.ok, reverseCloud, track]);
+    const a = trackableAction('reverse', { touched: reverseTouched.current, ok: reverse?.ok === true, cloud: reverseCloud });
+    if (a !== null) track('reverse', reverseCloud);
+  }, [reverse?.ok, hostsNum, reverseCloud, track]);
 
   const note = readingNote(effective);
   const canFlip = override === null && (parsed.kind === 'v4' || parsed.kind === 'mask-only') && parsed.source === 'mask' && parsed.alternative !== undefined;
@@ -254,7 +262,10 @@ export default function Calculator() {
           autoCapitalize="off"
           spellCheck={false}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            inputTouched.current = true;
+            setInput(e.target.value);
+          }}
           placeholder="192.168.10.0/26"
           style={{ ...mono, fontSize: 16 }}
           aria-describedby="subnet-input-hint"
@@ -268,7 +279,10 @@ export default function Calculator() {
         <span className="hint" style={{ display: 'block', margin: '0 0 4px' }}>クラウド（使える数から予約アドレスを引く）</span>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="group" aria-label="クラウド">
           {CLOUDS.map((c) => (
-            <button key={c} type="button" style={buttonStyle(cloud === c)} aria-pressed={cloud === c} onClick={() => setCloud(c)}>
+            <button key={c} type="button" style={buttonStyle(cloud === c)} aria-pressed={cloud === c} onClick={() => {
+              inputTouched.current = true;
+              setCloud(c);
+            }}>
               {cloudLabel(c)}
             </button>
           ))}
@@ -477,7 +491,10 @@ export default function Calculator() {
             type="text"
             inputMode="numeric"
             value={hosts}
-            onChange={(e) => setHosts(e.target.value)}
+            onChange={(e) => {
+              reverseTouched.current = true;
+              setHosts(e.target.value);
+            }}
             style={{ fontSize: 16 }}
           />
         </div>
@@ -485,7 +502,10 @@ export default function Calculator() {
           <span className="hint" style={{ display: 'block', margin: '0 0 4px' }}>クラウド</span>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }} role="group" aria-label="逆算のクラウド">
             {CLOUDS.map((c) => (
-              <button key={c} type="button" style={buttonStyle(reverseCloud === c)} aria-pressed={reverseCloud === c} onClick={() => setReverseCloud(c)}>
+              <button key={c} type="button" style={buttonStyle(reverseCloud === c)} aria-pressed={reverseCloud === c} onClick={() => {
+                reverseTouched.current = true;
+                setReverseCloud(c);
+              }}>
                 {cloudLabel(c)}
               </button>
             ))}

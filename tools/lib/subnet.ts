@@ -720,3 +720,16 @@ export type SubnetAction = 'calc' | 'split' | 'reverse' | 'contains' | 'share';
 export function toolUseAction(action: SubnetAction, cloud: Cloud = 'none'): string {
   return cloud === 'none' ? action : `${action}-cloud-${cloud}`;
 }
+
+/**
+ * いま tool_use を送るなら、その action。送らないなら null。
+ *
+ * **利用者が触っていない（既定の例のまま）なら送らない。** 入力欄の既定値（192.168.10.0/26）と
+ * 逆算の既定の台数（50）で、開いただけの人まで「計算した」と数えないため
+ * （tool_use は「開かれたが使われなかった」を page_view と分けるためのイベント。#553 のレビュー）。
+ * 触った＝入力を変えた・`?q=` で開かれた・クラウドのボタンを押した。
+ */
+export function trackableAction(action: SubnetAction, opts: { touched: boolean; ok: boolean; cloud?: Cloud }): string | null {
+  if (!opts.touched || !opts.ok) return null;
+  return toolUseAction(action, opts.cloud ?? 'none');
+}
