@@ -1,6 +1,6 @@
 # ゲーム一覧（`/games/`）をジャンルで分ける — 28本が見出しなしの大きなカードで並び、スマホでは1画面に1本。tools の一覧と同じく「トランプ・ボード・パズル・アクション」の見出しと、先頭にジャンルへ飛ぶ目次を置く
 
-**状態**：提案（2026-11-24 起票。同日、企画レビュー（#549）の指摘 1〜6 を反映。セッション `session_012RoU2HP7xJJPvjbsjAQWM6`）
+**状態**：実装済み（2026-11-24。セッション `session_012RoU2GDo6DtJUXM9M164c8`。`games/lib/registry.ts` の `GENRES`・`publicGamesByGenre()`、`games/lib/jsonld.ts` の `genreItemLists()`、`games/app/page.tsx`、`games/app/globals.css` 末尾の1ブロック、`games/tests/genre.test.ts`。本番反映はタグリリース待ち）。以下は起票時の記録：提案（2026-11-24 起票。同日、企画レビュー（#549）の指摘 1〜6 を反映。セッション `session_012RoU2HP7xJJPvjbsjAQWM6`）
 **いつ `public` にするか**：フラグの対象外（公開中の一覧ページの並べ替え）。**冬休み（12/20〜1/7）の前**、12月中旬までに本番へ出したい
 **優先度：中。** 誤った情報は出していない。ただし AI アシスタント経由の着地が `/games/` に来ていて、そこで帰っている
 **対象**：`games/`（`games/lib/registry.ts` に `genre` を追加・`games/app/page.tsx`・`games/app/globals.css`（目次の見た目を1ブロック）・`games/tests/genre.test.ts`（新規））

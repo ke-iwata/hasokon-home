@@ -10669,3 +10669,98 @@ button.hf-card {
     height: 6rem;
   }
 }
+
+/* ---- ゲーム一覧（/games/）のジャンル見出し・目次・列 ----
+   仕様: docs/features/games-ichiran-genre.md の B。
+   **このブロックだけで閉じる**（スマホ2列が悪かったときに戻せるように）。
+   セレクタは一覧ページの .genre-nav / .genre-section の配下に限る。
+   .tp-guide など、ほかのページの .game-grid / .game-card には効かせない。
+   ファイルの末尾に置くのは、メディアクエリが詳細度を上げず途中だと後ろの規則に負けるため */
+.genre-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 8px;
+}
+
+.genre-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.genre-nav a:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+.genre-nav .count {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.genre-section {
+  scroll-margin-top: 12px;
+}
+
+.genre-section .section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 32px 0 4px;
+}
+
+.genre-section .section-title h2 {
+  margin: 0;
+}
+
+.genre-section .section-title .count {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.genre-section .game-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+}
+
+.genre-section .game-card .desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* スマホ（幅 480px 未満）だけ2列の小さい形。絵は 340×150 の比のまま縮め、説明は出さず名前だけ */
+@media (max-width: 479px) {
+  .genre-section .game-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 10px 0;
+  }
+
+  .genre-section .game-card {
+    padding: 0 0 8px;
+    overflow: hidden;
+  }
+
+  .genre-section .game-card .name {
+    margin-top: 6px;
+    padding: 0 8px;
+    font-size: 0.85rem;
+    line-height: 1.35;
+  }
+
+  .genre-section .game-card .desc {
+    display: none;
+  }
+}

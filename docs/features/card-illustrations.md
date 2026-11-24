@@ -100,6 +100,7 @@ node scripts/sync-home-card-art.mjs
   **一覧ページ（`tools/out/index.html`・`games/out/index.html`）に戻した**。
   ゲームのカードは `<a>` の style で `--cat-mark` を `--cat-play-mark`（黄土）に差し替える
 - トップは2列（スマホは1列）、絵は幅いっぱい、説明は2行で切る。スマホで絵を左に置く横並びはやめた
+- games の一覧（`/games/`）はスマホ2列（[games-ichiran-genre.md](./games-ichiran-genre.md)。2026-11-24）。幅 480px 未満で絵を 340×150 の比のまま縮め、説明は出さず名前だけ。tools の一覧とトップはスマホ1列のまま
 - テスト環境だけに出る「本番未公開」のカードは、フラスコの印を60pxのタイルのまま出す
   （`scripts/build-test-home.mjs` の差し込みCSS）
 - 小さいタイルの絵（`ToolArt.tsx`・`GameIcon.tsx` の `BOARD`）は、各ページの
