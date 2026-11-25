@@ -13,7 +13,8 @@
  * `touch-action: none` は**盤面の SVG（`.mz-board-svg`）だけ**に付ける。ページ全体に付けると
  * 盤の外でもスクロールできなくなる。拡大中は盤が見える範囲より大きくなるが、
  * 1本指はなぞりに使うので、表示位置は**2本指のドラッグ**で動かし（パソコンはスクロール）、
- * なぞっている先端が見える範囲から出たら自動で追いかける。
+ * 指を離したとき・矢印キーで動いたときに、先端が見える範囲に入るよう自動で追いかける
+ * （なぞっている最中は追いかけない。止まった指の下のマスがずれて線が勝手に伸びるため）。
  *
  * ## 印刷
  *
@@ -34,14 +35,17 @@ import {
 } from 'react';
 import {
   dailyMaze,
+  cellFromPoint,
   dirFromKey,
   generateLevel,
   goal,
+  grabCell,
   initialPath,
   LEVELS,
   levelOf,
   reachedGoal,
   routePathData,
+  scrollToShow,
   solve,
   step,
   traceTo,
@@ -154,6 +158,8 @@ export default function Game() {
   const [peeked, setPeeked] = useState(false);
   const [auto, setAuto] = useState(false);
   const [zoom, setZoom] = useState<number>(1);
+  /** 表示位置を先端へ追いかける合図（指を離したとき・矢印キーで動いたときに進める） */
+  const [followTick, setFollowTick] = useState(0);
   const [result, setResult] = useState<{ timeMs: number; improved: Improved; streak?: number; counted: boolean } | null>(null);
   /** 印刷する面（1面のときは今の迷路だけ。4面のときは今の迷路＋3面） */
   const [printMazes, setPrintMazes] = useState<Maze[]>([]);
@@ -233,23 +239,22 @@ export default function Game() {
     setResult({ timeMs, improved, streak: daily ? after.streak : undefined, counted: true });
   }, [maze, path, peeked, daily, today, variant, records, timer]);
 
-  // 拡大中は、なぞっている先端が見える範囲に入るよう表示位置を追いかける
+  // 拡大中は、先端が見える範囲に入るよう表示位置を追いかける。
+  // **なぞっている最中は追いかけない**（指を離したとき・矢印キー・拡大の切り替えだけ）。
+  // なぞり中にスクロールすると、止まっている指の下のマスが先へずれ、
+  // 指の小さな揺れで線がひとりでに伸びて壁まで走っていた（#558 のレビュー指摘）
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp || !maze || zoom === 1) return;
-    const head = path[path.length - 1];
-    const cellPx = vp.scrollWidth / (maze.w + 1);
-    const x = ((head % maze.w) + 1) * cellPx;
-    const y = (Math.floor(head / maze.w) + 1) * cellPx;
-    const margin = cellPx * 2;
-    let left = vp.scrollLeft;
-    let top = vp.scrollTop;
-    if (x - margin < left) left = x - margin;
-    if (x + margin > left + vp.clientWidth) left = x + margin - vp.clientWidth;
-    if (y - margin < top) top = y - margin;
-    if (y + margin > top + vp.clientHeight) top = y + margin - vp.clientHeight;
-    if (left !== vp.scrollLeft || top !== vp.scrollTop) vp.scrollTo({ left, top });
-  }, [path, zoom, maze]);
+    const head = pathRef.current[pathRef.current.length - 1];
+    const next = scrollToShow(head, maze, vp.scrollWidth, {
+      left: vp.scrollLeft,
+      top: vp.scrollTop,
+      width: vp.clientWidth,
+      height: vp.clientHeight,
+    });
+    if (next.left !== vp.scrollLeft || next.top !== vp.scrollTop) vp.scrollTo(next);
+  }, [followTick, zoom, maze]);
 
   /** 道を伸ばす・縮める（1手目でプレイ数とタイマーを始める） */
   const moveTo = useCallback(
@@ -267,18 +272,19 @@ export default function Game() {
     [maze, cleared, variant, records, timer, commit],
   );
 
-  /** 画面の座標 → マス。盤の外なら null */
+  /**
+   * 画面の座標 → マス。盤の外、または拡大中に見えている範囲の外なら null
+   * （見えていないマスへ線が伸びないように）
+   */
   const cellAt = useCallback(
     (x: number, y: number): number | null => {
       const svg = svgRef.current;
-      if (!svg || !maze) return null;
+      const vp = viewportRef.current;
+      if (!svg || !vp || !maze) return null;
+      const view = vp.getBoundingClientRect();
+      if (x < view.left || x >= view.right || y < view.top || y >= view.bottom) return null;
       const rect = svg.getBoundingClientRect();
-      // viewBox は盤の外に半マスずつ余白を取っている
-      const unit = rect.width / (maze.w + 1);
-      const c = Math.floor((x - rect.left) / unit - 0.5);
-      const r = Math.floor((y - rect.top) / unit - 0.5);
-      if (r < 0 || c < 0 || r >= maze.h || c >= maze.w) return null;
-      return r * maze.w + c;
+      return cellFromPoint(x - rect.left, y - rect.top, rect.width, maze);
     },
     [maze],
   );
@@ -295,12 +301,13 @@ export default function Game() {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const cell = cellAt(e.clientX, e.clientY);
     if (cell === null) return;
-    // 道の上（先端・途中）を押したときだけなぞり始める。途中を押せばそこまで戻る
-    if (!pathRef.current.includes(cell)) return;
+    // 道の上（先端・途中）か、先端の1マス以内を押したときだけなぞり始める。途中を押せばそこまで戻る
+    const from = grabCell(maze, pathRef.current, cell);
+    if (from === null) return;
     e.preventDefault();
     dragging.current = true;
     e.currentTarget.setPointerCapture?.(e.pointerId);
-    moveTo(traceTo(maze, pathRef.current, cell));
+    moveTo(traceTo(maze, pathRef.current, from));
   };
 
   const onPointerMove = (e: PointerEvent<SVGSVGElement>) => {
@@ -320,6 +327,7 @@ export default function Game() {
 
   const endDrag = (e: PointerEvent<SVGSVGElement>) => {
     pointers.current.delete(e.pointerId);
+    if (dragging.current) setFollowTick((t) => t + 1);
     dragging.current = false;
   };
 
@@ -330,6 +338,7 @@ export default function Game() {
     // 盤の上で矢印キーを押したときにページが動かないようにする
     e.preventDefault();
     moveTo(step(maze, pathRef.current, dir, auto));
+    setFollowTick((t) => t + 1);
   };
 
   const changeZoom = (delta: number) => {

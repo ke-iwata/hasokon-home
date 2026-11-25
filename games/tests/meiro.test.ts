@@ -3,12 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '@/lib/daily';
 import {
   canMove,
+  cellFromPoint,
   dailyMaze,
   dirFromKey,
   E,
   generate,
   generateLevel,
   goal,
+  grabCell,
   initialPath,
   isValidPath,
   LEVELS,
@@ -20,6 +22,7 @@ import {
   reachedGoal,
   routePathData,
   S,
+  scrollToShow,
   solve,
   step,
   traceTo,
@@ -343,6 +346,52 @@ describe('描画', () => {
   });
 });
 
+describe('画面の座標とマス（拡大）', () => {
+  const m = { w: 30, h: 30 };
+  // 盤 310px → 1マス 10px、左上の半マス（5px）が余白
+  it('盤の座標からマスを引く（余白は盤の外）', () => {
+    expect(cellFromPoint(5, 5, 310, m)).toBe(0);
+    expect(cellFromPoint(14.9, 14.9, 310, m)).toBe(0);
+    expect(cellFromPoint(15, 5, 310, m)).toBe(1);
+    expect(cellFromPoint(5, 15, 310, m)).toBe(30);
+    expect(cellFromPoint(304.9, 304.9, 310, m)).toBe(899);
+    expect(cellFromPoint(4, 10, 310, m)).toBeNull();
+    expect(cellFromPoint(306, 10, 310, m)).toBeNull();
+    expect(cellFromPoint(10, 10, 0, m)).toBeNull();
+  });
+
+  it('同じ指の位置でも、スクロールした分だけ指の下のマスがずれる（なぞり中に追いかけてはいけない理由）', () => {
+    // 300% で盤 930px（1マス 30px）。見える範囲 310px
+    const before = cellFromPoint(300 + 0, 300, 930, m);
+    const view = { left: 0, top: 0, width: 310, height: 310 };
+    const scrolled = scrollToShow(before as number, m, 930, view);
+    expect(scrolled.top).toBeGreaterThan(0);
+    const after = cellFromPoint(300 + scrolled.left, 300 + scrolled.top, 930, m);
+    expect(after).not.toBe(before);
+  });
+
+  it('見えていれば動かさない。見えていなければ余白2マスぶん内側に入れる', () => {
+    const view = { left: 0, top: 0, width: 310, height: 310 };
+    expect(scrollToShow(31, m, 930, view)).toEqual({ left: 0, top: 0 });
+    // 右下のマス（899）：中心 900px。端で止まる（盤の外へはスクロールしない）
+    expect(scrollToShow(899, m, 930, view)).toEqual({ left: 620, top: 620 });
+    // 左上へ戻る
+    expect(scrollToShow(0, m, 930, { ...view, left: 400, top: 400 })).toEqual({ left: 0, top: 0 });
+    // 中ほど：マス (r=10, c=15) の中心 x=480・y=330。余白 60px → left=230, top=80
+    expect(scrollToShow(10 * 30 + 15, m, 930, view)).toEqual({ left: 230, top: 80 });
+  });
+
+  it('なぞり始め：道の上ならそのマス、先端の1マス以内なら先端、それ以外は始めない', () => {
+    const maze = { w: 5 };
+    const path = [0, 1, 2, 7];
+    expect(grabCell(maze, path, 1)).toBe(1);
+    expect(grabCell(maze, path, 12)).toBe(7); // 先端の真下
+    expect(grabCell(maze, path, 13)).toBe(7); // 斜め
+    expect(grabCell(maze, path, 17)).toBeNull(); // 2マス下
+    expect(grabCell(maze, path, 20)).toBeNull();
+  });
+});
+
 describe('ページ', () => {
   const page = readFileSync(new URL('../app/meiro/page.tsx', import.meta.url), 'utf8');
   const gameSrc = readFileSync(new URL('../app/meiro/Game.tsx', import.meta.url), 'utf8');
@@ -361,6 +410,23 @@ describe('ページ', () => {
     expect(gameSrc).toContain("trackToolUse('meiro', 'print')");
     expect(gameSrc).toContain("trackToolUse('meiro', 'print-4up')");
     expect(gameSrc).not.toMatch(/gtag\(/);
+  });
+
+  it('表示位置の自動追従は、道（path）が変わるたびには走らない（なぞり中に線が勝手に伸びた回帰）', () => {
+    const follow = gameSrc.slice(gameSrc.indexOf('scrollToShow(head'));
+    const deps = follow.slice(follow.indexOf('}, ['), follow.indexOf(']);') + 1);
+    expect(deps).toContain('followTick');
+    expect(deps).not.toMatch(/\bpath\b/);
+  });
+
+  it('FAQ は実装に合わせる（移動のボタンは無く、2本指で動かす）', () => {
+    expect(page).not.toContain('矢印のボタン');
+    expect(page).toContain('2本の指');
+  });
+
+  it('@page は書かない（games の全ページの印刷に効いてしまう）', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8');
+    expect(css).not.toMatch(/@page\s*\{/);
   });
 
   it('印刷物に hasokon.com/games/meiro/ を入れる', () => {

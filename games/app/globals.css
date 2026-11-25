@@ -11111,12 +11111,8 @@ button.hf-card {
 
 /* 印刷（A4縦）。書き方は tools の bosai-bichiku-keisan（tools/app/globals.css の @media print）にそろえる。
    紙（data-print='mz-sheet'）とその祖先以外をすべて消すので、広告・ボタン・本文は紙に出ない。
-   答えは break-before: page で必ず2枚目に回す（1面のときも4面のときも） */
-@page {
-  size: A4 portrait;
-  margin: 12mm;
-}
-
+   答えは break-before: page で必ず2枚目に回す（1面のときも4面のときも）。
+   `@page` は書かない（games の全ページの印刷に効いてしまう。既定の余白でも 170mm の盤は A4 に収まる） */
 @media print {
   body:has([data-print='mz-sheet'])
     *:not(:has([data-print='mz-sheet'])):not([data-print='mz-sheet'], [data-print='mz-sheet'] *) {

@@ -426,3 +426,78 @@ export function routePathData(maze: Pick<Maze, 'w'>, path: Path): string {
     })
     .join('');
 }
+
+// ---------------------------------------------------------------------------
+// 画面の座標とマス（拡大・表示位置）
+// ---------------------------------------------------------------------------
+
+/**
+ * 盤の SVG の中の座標（左上が 0、単位 px）→ マス。盤の外なら `null`。
+ *
+ * SVG の viewBox は盤の外に半マスずつ余白を取っているので、1マスの幅は `boardPx / (w + 1)`。
+ */
+export function cellFromPoint(
+  x: number,
+  y: number,
+  boardPx: number,
+  maze: Pick<Maze, 'w' | 'h'>,
+): number | null {
+  if (!(boardPx > 0)) return null;
+  const unit = boardPx / (maze.w + 1);
+  const c = Math.floor(x / unit - 0.5);
+  const r = Math.floor(y / unit - 0.5);
+  if (r < 0 || c < 0 || r >= maze.h || c >= maze.w) return null;
+  return r * maze.w + c;
+}
+
+export interface View {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * 拡大中に `cell` が見える範囲に入るスクロール位置。入っていればそのまま返す。
+ *
+ * **なぞっている最中には使わない。** スクロールすると、指は止まっているのに
+ * 指の下のマスが先へずれ、次の指の揺れで線がひとりでに伸びる（#558 のレビュー指摘）。
+ * 指を離したとき・矢印キーで動いたときだけ使う。
+ */
+export function scrollToShow(
+  cell: number,
+  maze: Pick<Maze, 'w' | 'h'>,
+  contentPx: number,
+  view: View,
+  marginCells = 2,
+): { left: number; top: number } {
+  const unit = contentPx / (maze.w + 1);
+  const x = ((cell % maze.w) + 1) * unit;
+  const y = (Math.floor(cell / maze.w) + 1) * unit;
+  const margin = unit * marginCells;
+  let { left, top } = view;
+  if (x - margin < left) left = x - margin;
+  if (x + margin > left + view.width) left = x + margin - view.width;
+  if (y - margin < top) top = y - margin;
+  if (y + margin > top + view.height) top = y + margin - view.height;
+  const maxLeft = Math.max(0, contentPx - view.width);
+  const maxTop = Math.max(0, contentPx - view.height);
+  return {
+    left: Math.min(maxLeft, Math.max(0, left)),
+    top: Math.min(maxTop, Math.max(0, top)),
+  };
+}
+
+/**
+ * なぞり始めのマス。押したマスが道の上ならそのマス（途中ならそこまで戻る）。
+ * 道の上でなくても、**先端から上下左右斜め1マス以内なら先端**から始める
+ * （30×30 を等倍で遊ぶと1マスが約10pxで、先端にちょうど指を置けないため）。
+ * それ以外は `null`（なぞり始めない）。
+ */
+export function grabCell(maze: Pick<Maze, 'w'>, path: Path, cell: number): number | null {
+  if (path.includes(cell)) return cell;
+  const head = path[path.length - 1];
+  const dr = Math.abs(Math.floor(cell / maze.w) - Math.floor(head / maze.w));
+  const dc = Math.abs((cell % maze.w) - (head % maze.w));
+  return dr <= 1 && dc <= 1 ? head : null;
+}
