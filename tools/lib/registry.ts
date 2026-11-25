@@ -1171,6 +1171,21 @@ export const tools: ToolDef[] = [
     updatedAt: '2026-11-21',
   },
   {
+    // 仕様: docs/features/gensen-hoshu-keisan.md
+    slug: 'gensen-hoshu',
+    // 請求書の絵。Receipt は源泉徴収票・インボイスほかが使っているので別にした
+    icon: 'Invoice',
+    name: '報酬の源泉徴収税額 計算（10.21%・20.42%）',
+    description:
+      '原稿料・講演料・デザイン料・士業の報酬から源泉徴収税額と差引の振込額を計算。手取り（振込額）から請求額の逆算も。消費税を区分して書く／書かない、100万円超の20.42%、司法書士の1万円控除、2027年1月からの内訳（防衛特別所得税1%＋復興特別所得税1.1%）に対応。請求書の書き方をコピーできます。',
+    category: 'お金・社会保険',
+    // 2027-01-05（仕事始め）より前に public。間に合わなければ確定申告（2027-02-16〜）の前。
+    // public にする PR で home/index.html・home/404.html のカードと ToolArt.tsx・ToolPreview.tsx の絵を足す
+    stage: 'wip',
+    updatedAt: '2026-11-25',
+    related: ['shiharai-kijitsu', 'invoice-nozeigaku', 'boei-tokubetsu-shotokuzei'],
+  },
+  {
     // 仕様: docs/features/subnet-keisan.md
     slug: 'subnet',
     // ネットワークの絵。ほかで使っていない
