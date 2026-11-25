@@ -490,7 +490,8 @@ ol {
 .ch-board,
 .y4-board,
 .ig-board,
-.sk-stage {
+.sk-stage,
+.mz-board {
   max-width: min(var(--board-max, 100%), max(200px, calc(100dvh - var(--chrome, 400px))));
   margin-inline: auto;
 }
@@ -10925,6 +10926,315 @@ button.hf-card {
   /* 360px幅（Androidに多い）でも文字を2行に割らない（レビュー指摘）。
      折り返さず、幅は文字に合わせて残りを分け合う。押す先の高さ44pxは割らない */
   .fp-actions .btn {
+    flex: 1 1 auto;
+    min-height: 44px;
+    padding: 6px 4px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+}
+
+/* ---- 迷路（docs/features/game-meiro.md） ----
+   盤の大きさは共通の指定（.mz-board は「盤を画面の高さに合わせる」の並びに入っている）に任せ、
+   ここで max-width を書き直さないこと。`--chrome` / `--board-max` は入れ物（`.mz-game`）に置く。
+   拡大（むずかしい・おにむず）は .mz-zoomer の幅を倍率ぶん広げ、.mz-board の中でスクロールさせる。
+   **`touch-action: none` は盤の SVG（.mz-board-svg）だけ**に付ける（ページ全体に付けると盤の外でもスクロールできなくなる） */
+/* `--chrome` は盤より上（パンくず〜時間と拡大の行）＋盤の下の余白。
+   1366×768 で実測した盤の上端が 375px（2026-11-25）。結果の行と畳んだ見かたは画面の下に出てよい */
+.mz-game {
+  --chrome: 385px;
+  --board-max: 520px;
+}
+
+.mz-modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+/* 押す先は44pxを割らない（画面の約束4） */
+.mz-modes .seg button,
+.mz-actions .btn {
+  min-height: 44px;
+}
+
+.mz-actions {
+  justify-content: center;
+  margin: 6px 0;
+}
+
+.mz-game .btn:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+.mz-game .btn:disabled:hover {
+  border-color: var(--border);
+}
+
+/* 時間と拡大の行は1行で固定する（なぞっているあいだに時間の桁が増えても盤を動かさない） */
+.mz-game .status-bar {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  margin: 4px 0;
+}
+
+/* ようじの段は時間を小さく出して急かさない */
+.mz-youji .mz-time {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.mz-game .mz-status {
+  height: 44px;
+  align-items: center;
+}
+
+.mz-zoom {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.mz-zoom .btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+}
+
+.mz-board {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.mz-board:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mz-zoomer {
+  aspect-ratio: 1;
+}
+
+.mz-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mz-board-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+
+.mz-walls {
+  fill: none;
+  stroke: var(--text);
+  stroke-linecap: square;
+}
+
+.mz-route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.mz-answer {
+  fill: none;
+  stroke: var(--warn-border);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.2 0.15;
+  opacity: 0.6;
+}
+
+.mz-head {
+  fill: var(--accent-strong);
+}
+
+.mz-start {
+  fill: var(--accent-soft);
+}
+
+.mz-goal {
+  fill: var(--warn-bg);
+}
+
+.mz-label {
+  fill: var(--text);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.mz-result {
+  height: 2.4em;
+  line-height: 2.4;
+  overflow: hidden;
+  margin: 6px 0;
+  text-align: center;
+}
+
+.mz-clear {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.mz-clear-big {
+  font-size: 1.4rem;
+}
+
+.mz-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.mz-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 印刷用の紙は画面には出さない */
+.mz-sheet {
+  display: none;
+}
+
+/* 印刷（A4縦）。書き方は tools の bosai-bichiku-keisan（tools/app/globals.css の @media print）にそろえる。
+   紙（data-print='mz-sheet'）とその祖先以外をすべて消すので、広告・ボタン・本文は紙に出ない。
+   答えは break-before: page で必ず2枚目に回す（1面のときも4面のときも） */
+@page {
+  size: A4 portrait;
+  margin: 12mm;
+}
+
+@media print {
+  body:has([data-print='mz-sheet'])
+    *:not(:has([data-print='mz-sheet'])):not([data-print='mz-sheet'], [data-print='mz-sheet'] *) {
+    display: none !important;
+  }
+
+  body:has([data-print='mz-sheet']) {
+    background: #fff;
+  }
+
+  /* 祖先に残る枠・影・余白は紙では邪魔なので落とす */
+  body:has([data-print='mz-sheet']) main,
+  body:has([data-print='mz-sheet']) .card {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: none;
+    max-width: none;
+  }
+
+  [data-print='mz-sheet'] {
+    display: block;
+    color: #000;
+  }
+
+  [data-print='mz-sheet'] .mz-page {
+    break-inside: avoid;
+  }
+
+  [data-print='mz-sheet'] .mz-answers {
+    break-before: page;
+  }
+
+  .mz-sheet-head {
+    display: flex;
+    justify-content: space-between;
+    margin: 0 0 4mm;
+    font-size: 12pt;
+  }
+
+  .mz-sheet-title {
+    margin: 0 0 4mm;
+    font-size: 13pt;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .mz-sheet-one .mz-print-svg {
+    display: block;
+    width: 170mm;
+    height: 170mm;
+    margin: 0 auto;
+  }
+
+  .mz-sheet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8mm;
+  }
+
+  .mz-sheet-grid .mz-print-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+  }
+
+  .mz-sheet-foot {
+    margin: 4mm 0 0;
+    font-size: 9pt;
+    text-align: right;
+    color: #444;
+  }
+
+  /* 印刷は白地に黒い線（インクを使わない）。スタートとゴールは枠と文字だけ */
+  [data-print='mz-sheet'] .mz-walls {
+    stroke: #000;
+  }
+
+  [data-print='mz-sheet'] .mz-start,
+  [data-print='mz-sheet'] .mz-goal {
+    fill: none;
+  }
+
+  [data-print='mz-sheet'] .mz-label {
+    fill: #000;
+  }
+
+  [data-print='mz-sheet'] .mz-answer {
+    stroke: #555;
+    stroke-dasharray: none;
+    opacity: 1;
+  }
+}
+
+/* 狭い画面（迷路）。`.mz-*` に効く規則のうちいちばん後ろに置く */
+@media (max-width: 600px) {
+  /* 360×740・390×664 で実測した盤の上端が 412px（段階の段が2行に折り返す）。
+     360×740 で盤 320px（12×12 で1マス約25px）、390×664 で 244px */
+  .mz-game {
+    --chrome: 420px;
+  }
+
+  /* 360px幅でも段階の名前を2行に割らない（「よう／じ」になっていた。実測） */
+  .mz-modes .seg button {
+    padding: 6px 6px;
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
+
+  .mz-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .mz-actions .btn {
     flex: 1 1 auto;
     min-height: 44px;
     padding: 6px 4px;

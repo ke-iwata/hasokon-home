@@ -19,6 +19,7 @@ import {
   LayoutIcon,
   NumberCircleNineIcon,
   NumpadIcon,
+  PathIcon,
   RacquetIcon,
   SmileyIcon,
   SpadeIcon,
@@ -1191,6 +1192,7 @@ const BOARD: Record<string, ReactNode> = {
 export const GAME_BOARD_ICONS: readonly string[] = Object.keys(BOARD);
 
 const ICONS: Record<string, ComponentType<IconProps>> = {
+  Path: PathIcon,
   Cards: CardsIcon,
   Crown: CrownIcon,
   Spade: SpadeIcon,

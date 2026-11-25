@@ -787,6 +787,21 @@ export const games: GameDef[] = [
     updatedAt: '2026-11-24',
   },
   {
+    // 迷路は特定の作品ではなく一般名の遊び。既存作品の面やキャラクターは使わず、
+    // 迷路はその場で生成する（docs/features/game-meiro.md）。
+    // **名称の J-PlatPat 確認（第9類・第41類）は `public` の前に運営者が済ませる**。
+    // 冬休み（12/20〜1/7）の前に `public` にする予定。公開するPRでカードの絵も描く
+    slug: 'meiro',
+    icon: 'Path',
+    name: '迷路',
+    description:
+      '指やマウスでなぞってゴールへ。ようじ5×5〜おにむず30×30の5段階と今日の1面。必ず解けて道は1本、A4に答えつきで印刷できます。',
+    keywords: ['ようじ', 'かんたん', 'ふつう', 'むずかしい', 'おにむず', '今日の1面', '印刷', '4面まとめて'],
+    genre: 'puzzle',
+    stage: 'wip',
+    updatedAt: '2026-11-25',
+  },
+  {
     slug: 'breakout',
     icon: 'Racquet',
     name: 'ブロック崩し',
