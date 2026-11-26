@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import {
   EXEMPT_BELOW,
@@ -55,7 +56,10 @@ export default function Calculator() {
               key={String(v)}
               type="button"
               aria-pressed={age65 === v}
-              onClick={() => setAge65(v)}
+              onClick={() => {
+                setAge65(v);
+                trackToolUse('nenkin-gensen', 'select-age');
+              }}
               style={{
                 padding: '8px 0',
                 fontWeight: age65 === v ? 700 : 400,
@@ -78,6 +82,7 @@ export default function Calculator() {
             step={10000}
             value={annual}
             onChange={(e) => setAnnual(e.target.value)}
+            onBlur={() => trackToolUse('nenkin-gensen', 'input-annual')}
           />
         </label>
         <label>
@@ -89,6 +94,7 @@ export default function Calculator() {
             step={1000}
             value={social}
             onChange={(e) => setSocial(e.target.value)}
+            onBlur={() => trackToolUse('nenkin-gensen', 'input-social')}
           />
         </label>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import {
   simplify,
@@ -30,6 +31,7 @@ export default function Calculator() {
     try {
       await navigator.clipboard.writeText(cssCode);
       setCopied(true);
+      trackToolUse('aspect-ratio', 'copy');
       setTimeout(() => setCopied(false), 1500);
     } catch {
       /* クリップボード非対応環境では何もしない */
@@ -48,6 +50,7 @@ export default function Calculator() {
             step="any"
             value={width}
             onChange={(e) => setWidth(e.target.value)}
+            onBlur={() => trackToolUse('aspect-ratio', 'input-width')}
           />
         </label>
         <label>
@@ -59,6 +62,7 @@ export default function Calculator() {
             step="any"
             value={height}
             onChange={(e) => setHeight(e.target.value)}
+            onBlur={() => trackToolUse('aspect-ratio', 'input-height')}
           />
         </label>
       </div>
@@ -154,6 +158,7 @@ export default function Calculator() {
                   step={1}
                   value={scaleValue}
                   onChange={(e) => setScaleValue(e.target.value)}
+                  onBlur={() => trackToolUse('aspect-ratio', 'input-scale')}
                 />
               </label>
             </div>

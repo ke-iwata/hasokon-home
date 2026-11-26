@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -162,7 +163,10 @@ export default function Calculator() {
                 type="radio"
                 name="nendo"
                 checked={nendo === n}
-                onChange={() => setNendo(n)}
+                onChange={() => {
+                  setNendo(n);
+                  trackToolUse('juminzei-hikazei', 'select-year');
+                }}
                 style={{ width: 'auto' }}
               />
               {NENDO_RULES[n].label}（{NENDO_RULES[n].incomeYear}年の収入
@@ -183,6 +187,7 @@ export default function Calculator() {
           step={10000}
           value={salary}
           onChange={(e) => setSalary(e.target.value)}
+          onBlur={() => trackToolUse('juminzei-hikazei', 'input-salary')}
         />
         <p className="hint">源泉徴収票の「支払金額」。パート・アルバイトも含みます。なければ0。</p>
       </div>
@@ -198,6 +203,7 @@ export default function Calculator() {
           step={10000}
           value={pension}
           onChange={(e) => setPension(e.target.value)}
+          onBlur={() => trackToolUse('juminzei-hikazei', 'input-pension')}
         />
         <p className="hint">老齢年金の源泉徴収票の「支払金額」。遺族年金・障害年金は非課税なので入れません。</p>
       </div>
@@ -380,7 +386,10 @@ export default function Calculator() {
               この人：{STATUS_TEXT[household.members[i + 1].status]}
               <button
                 type="button"
-                onClick={() => setMembers((ms) => ms.filter((_, k) => k !== i))}
+                onClick={() => {
+                  setMembers((ms) => ms.filter((_, k) => k !== i));
+                  trackToolUse('juminzei-hikazei', 'remove-row');
+                }}
                 style={{ marginLeft: 8 }}
               >
                 外す
@@ -389,7 +398,10 @@ export default function Calculator() {
           </fieldset>
         ))}
         {members.length < MAX_MEMBERS && (
-          <button type="button" onClick={() => setMembers((ms) => [...ms, { ...EMPTY_MEMBER }])}>
+          <button type="button" onClick={() => {
+              setMembers((ms) => [...ms, { ...EMPTY_MEMBER }]);
+              trackToolUse('juminzei-hikazei', 'add-row');
+            }}>
             世帯員を足す
           </button>
         )}

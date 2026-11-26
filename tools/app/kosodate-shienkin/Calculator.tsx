@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import { calcShienkin } from '@/lib/kosodate-shienkin';
 
@@ -26,6 +27,7 @@ export default function Calculator() {
             step={10000}
             value={monthly}
             onChange={(e) => setMonthly(e.target.value)}
+            onBlur={() => trackToolUse('kosodate-shienkin', 'input-monthly')}
           />
         </label>
         <label>
@@ -37,6 +39,7 @@ export default function Calculator() {
             step={100000}
             value={bonus}
             onChange={(e) => setBonus(e.target.value)}
+            onBlur={() => trackToolUse('kosodate-shienkin', 'input-bonus')}
           />
         </label>
       </div>

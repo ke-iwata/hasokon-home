@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import { calcWarikan, ROUND_UNITS, type KanjiMode } from '@/lib/warikan';
 
@@ -37,6 +38,7 @@ export default function Calculator() {
             step={100}
             value={totalStr}
             onChange={(e) => setTotalStr(e.target.value)}
+            onBlur={() => trackToolUse('warikan', 'input-total')}
           />
         </label>
         <label>
@@ -48,6 +50,7 @@ export default function Calculator() {
             step={1}
             value={peopleStr}
             onChange={(e) => setPeopleStr(e.target.value)}
+            onBlur={() => trackToolUse('warikan', 'input-people')}
           />
         </label>
         <label>
@@ -66,7 +69,13 @@ export default function Calculator() {
         </label>
         <label>
           幹事の扱い
-          <select value={mode} onChange={(e) => setMode(e.target.value as KanjiMode)}>
+          <select
+            value={mode}
+            onChange={(e) => {
+              setMode(e.target.value as KanjiMode);
+              trackToolUse('warikan', 'select-mode');
+            }}
+          >
             {MODES.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}

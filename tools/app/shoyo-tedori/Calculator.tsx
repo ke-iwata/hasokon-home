@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TABLE_YEAR_LABEL } from '@/lib/shoyo-gensen-table';
@@ -74,6 +75,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={1000}
             value={bonusText}
             onChange={(e) => setBonusText(e.target.value)}
+            onBlur={() => trackToolUse('shoyo-tedori', 'input-bonus')}
           />
         </label>
         <label>
@@ -89,6 +91,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             value={prevText}
             disabled={noPrev}
             onChange={(e) => setPrevText(e.target.value)}
+            onBlur={() => trackToolUse('shoyo-tedori', 'input-prev-salary')}
           />
         </label>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 400 }}>
@@ -100,7 +103,13 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           <span className="hint" style={{ display: 'block', fontWeight: 400 }}>
             扶養控除等申告書に書いた配偶者・扶養親族の数（障害者・寡婦・ひとり親・勤労学生に当たる場合は1人ずつ加える）
           </span>
-          <select value={dependents} onChange={(e) => setDependents(e.target.value)}>
+          <select
+            value={dependents}
+            onChange={(e) => {
+              setDependents(e.target.value);
+              trackToolUse('shoyo-tedori', 'select-dependents');
+            }}
+          >
             {DEPENDENT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}

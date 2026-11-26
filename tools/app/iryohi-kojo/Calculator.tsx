@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import {
   MEDICAL_CAP,
@@ -123,6 +124,7 @@ export default function Calculator() {
           step={100000}
           value={income}
           onChange={(e) => setIncome(e.target.value)}
+          onBlur={() => trackToolUse('iryohi-kojo', 'input-income')}
         />
         <p className="hint">
           源泉徴収票の「支払金額」。手取りではなく額面です。
@@ -140,6 +142,7 @@ export default function Calculator() {
           step={10000}
           value={medicalExpenses}
           onChange={(e) => setMedicalExpenses(e.target.value)}
+          onBlur={() => trackToolUse('iryohi-kojo', 'input-medical-expenses')}
         />
         <p className="hint">
           1月1日〜12月31日に実際に<strong>支払った</strong>額。生計を一にする家族の分を合算できます。
@@ -177,6 +180,7 @@ export default function Calculator() {
           step={1000}
           value={otcExpenses}
           onChange={(e) => setOtcExpenses(e.target.value)}
+          onBlur={() => trackToolUse('iryohi-kojo', 'input-otc-expenses')}
         />
         <p className="hint">
           対象商品はレシートに★などの印が付きます。使わない場合は0のままで構いません。

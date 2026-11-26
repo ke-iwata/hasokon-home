@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -86,6 +87,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             onChange={(e) => {
               setInsured(e.target.value as InsuredType);
               setContribution(null);
+              trackToolUse('ideco', 'select-insured');
             }}
           >
             {INSURED.map((t) => (
@@ -169,6 +171,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={1}
             value={age}
             onChange={(e) => setAge(e.target.value)}
+            onBlur={() => trackToolUse('ideco', 'input-age')}
           />
         </label>
 
@@ -206,6 +209,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                 step={100000}
                 value={income}
                 onChange={(e) => setIncome(e.target.value)}
+                onBlur={() => trackToolUse('ideco', 'input-income')}
                 style={{ marginTop: 8 }}
               />
               <p className="hint" style={{ marginTop: 6 }}>
@@ -254,6 +258,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                 step={100000}
                 value={taxable}
                 onChange={(e) => setTaxable(e.target.value)}
+                onBlur={() => trackToolUse('ideco', 'input-taxable')}
                 style={{ marginTop: 8 }}
               />
               <p className="hint" style={{ marginTop: 6 }}>

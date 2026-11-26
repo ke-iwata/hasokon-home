@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -53,11 +54,18 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={1}
             value={incomeMan}
             onChange={(e) => setIncomeMan(e.target.value)}
+            onBlur={() => trackToolUse('boei-tokubetsu-shotokuzei', 'input-income')}
           />
         </label>
         <label>
           扶養している家族の人数（16歳以上）
-          <select value={dependents} onChange={(e) => setDependents(Number(e.target.value))}>
+          <select
+            value={dependents}
+            onChange={(e) => {
+              setDependents(Number(e.target.value));
+              trackToolUse('boei-tokubetsu-shotokuzei', 'select-dependents');
+            }}
+          >
             {DEPENDENT_OPTIONS.map((n) => (
               <option key={n} value={n}>
                 {n === 0 ? 'なし' : `${n}人`}

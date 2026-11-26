@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useRef, useState } from 'react';
 import PublicToolLink, { ToolLink } from '@/app/PublicToolLink';
 import YenField from '@/app/YenField';
@@ -165,6 +166,7 @@ export default function Calculator() {
             step={10}
             value={incomeMan}
             onChange={(e) => setIncomeMan(e.target.value)}
+            onBlur={() => trackToolUse('nenmatsu-chosei', 'input-income')}
           />
         </label>
 
@@ -177,6 +179,7 @@ export default function Calculator() {
             step={100}
             value={withheldYen}
             onChange={(e) => setWithheldYen(e.target.value)}
+            onBlur={() => trackToolUse('nenmatsu-chosei', 'input-withheld')}
             placeholder={`空欄なら ${r.withheld.toLocaleString('ja-JP')} 円として計算`}
           />
           <span
@@ -247,7 +250,13 @@ export default function Calculator() {
 
         <label>
           配偶者
-          <select value={spouse} onChange={(e) => setSpouse(e.target.value as SpouseKind)}>
+          <select
+            value={spouse}
+            onChange={(e) => {
+              setSpouse(e.target.value as SpouseKind);
+              trackToolUse('nenmatsu-chosei', 'select-spouse');
+            }}
+          >
             {SPOUSES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
