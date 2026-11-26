@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -276,11 +277,18 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={1}
             value={incomeMan}
             onChange={(e) => setIncomeMan(e.target.value)}
+            onBlur={() => trackToolUse('hatarakizon', 'input-income')}
           />
         </label>
         <label>
           あなたの立場
-          <select value={position} onChange={(e) => setPosition(e.target.value as Position)}>
+          <select
+            value={position}
+            onChange={(e) => {
+              setPosition(e.target.value as Position);
+              trackToolUse('hatarakizon', 'select-position');
+            }}
+          >
             {POSITIONS.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
@@ -373,6 +381,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               placeholder="扶養内に抑える年収（万円）"
               value={baselineMan}
               onChange={(e) => setBaselineMan(e.target.value)}
+              onBlur={() => trackToolUse('hatarakizon', 'input-baseline')}
               style={{ marginTop: 8 }}
             />
           )}

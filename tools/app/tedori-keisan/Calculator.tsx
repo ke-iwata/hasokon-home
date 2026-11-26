@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -44,13 +45,17 @@ export default function Calculator() {
             step={1}
             value={incomeMan}
             onChange={(e) => setIncomeMan(e.target.value)}
+            onBlur={() => trackToolUse('tedori-keisan', 'input-income')}
           />
         </label>
         <label>
           年齢
           <select
             value={ageBand}
-            onChange={(e) => setAgeBand(e.target.value as (typeof AGE_BANDS)[number]['value'])}
+            onChange={(e) => {
+              setAgeBand(e.target.value as (typeof AGE_BANDS)[number]['value']);
+              trackToolUse('tedori-keisan', 'select-age');
+            }}
           >
             {AGE_BANDS.map((b) => (
               <option key={b.value} value={b.value}>

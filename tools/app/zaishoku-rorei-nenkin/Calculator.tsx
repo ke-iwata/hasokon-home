@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -59,6 +60,7 @@ export default function Calculator() {
             step={10000}
             value={pensionYearly}
             onChange={(e) => setPensionYearly(e.target.value)}
+            onBlur={() => trackToolUse('zaishoku-rorei-nenkin', 'input-pension')}
           />
         </label>
 
@@ -95,6 +97,7 @@ export default function Calculator() {
                 step={10000}
                 value={salary}
                 onChange={(e) => setSalary(e.target.value)}
+                onBlur={() => trackToolUse('zaishoku-rorei-nenkin', 'input-salary')}
                 style={{ marginTop: 8 }}
               />
               <p className="hint" style={{ marginTop: 6 }}>
@@ -111,6 +114,7 @@ export default function Calculator() {
                 step={10000}
                 value={standard}
                 onChange={(e) => setStandard(e.target.value)}
+                onBlur={() => trackToolUse('zaishoku-rorei-nenkin', 'input-standard')}
                 style={{ marginTop: 8 }}
               />
               <p className="hint" style={{ marginTop: 6 }}>
@@ -132,12 +136,19 @@ export default function Calculator() {
             step={10000}
             value={bonus}
             onChange={(e) => setBonus(e.target.value)}
+            onBlur={() => trackToolUse('zaishoku-rorei-nenkin', 'input-bonus')}
           />
         </label>
 
         <label>
           計算する年度
-          <select value={fiscalYear} onChange={(e) => setFiscalYear(Number(e.target.value))}>
+          <select
+            value={fiscalYear}
+            onChange={(e) => {
+              setFiscalYear(Number(e.target.value));
+              trackToolUse('zaishoku-rorei-nenkin', 'select-year');
+            }}
+          >
             {FISCAL_YEARS.map((f) => (
               <option key={f.year} value={f.year}>
                 {f.label}：基準額 {man(f.threshold)}

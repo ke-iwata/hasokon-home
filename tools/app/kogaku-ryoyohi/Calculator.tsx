@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import {
   type AgeBand,
@@ -93,7 +94,10 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
         <select
           id="age-band"
           value={ageBand}
-          onChange={(e) => changeAgeBand(e.target.value as AgeBand)}
+          onChange={(e) => {
+            changeAgeBand(e.target.value as AgeBand);
+            trackToolUse('kogaku-ryoyohi', 'select-age');
+          }}
         >
           {AGE_BANDS.map((a) => (
             <option key={a.value} value={a.value}>
@@ -110,7 +114,14 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
 
       <div className="field">
         <label htmlFor="bracket">所得区分</label>
-        <select id="bracket" value={bracket.id} onChange={(e) => setBracketId(e.target.value)}>
+        <select
+          id="bracket"
+          value={bracket.id}
+          onChange={(e) => {
+            setBracketId(e.target.value);
+            trackToolUse('kogaku-ryoyohi', 'select-bracket');
+          }}
+        >
           {brackets.map((b) => (
             <option key={b.id} value={b.id}>
               {b.name}｜{b.incomeGuide}
@@ -130,6 +141,7 @@ export default function Calculator({ buildMonth }: { buildMonth: string }) {
           step={10000}
           value={medicalCost}
           onChange={(e) => setMedicalCost(e.target.value)}
+          onBlur={() => trackToolUse('kogaku-ryoyohi', 'input-medical-cost')}
         />
         <p className="hint">
           窓口で払った額（{r.copayPercent / 10}割）ではなく、医療費の総額（10割）を入れてください。

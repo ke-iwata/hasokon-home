@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import { toHebonRomaji, type HebonResult } from '@/lib/hebon-romaji';
 
@@ -28,6 +29,7 @@ export default function Calculator() {
             type="text"
             value={sei}
             onChange={(e) => setSei(e.target.value)}
+            onBlur={() => trackToolUse('hebon-romaji', 'input-sei')}
             placeholder="さいとう"
           />
         </label>
@@ -37,6 +39,7 @@ export default function Calculator() {
             type="text"
             value={mei}
             onChange={(e) => setMei(e.target.value)}
+            onBlur={() => trackToolUse('hebon-romaji', 'input-mei')}
             placeholder="ゆうこ"
           />
         </label>

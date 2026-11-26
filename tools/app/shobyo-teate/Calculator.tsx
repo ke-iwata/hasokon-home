@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import { MAX_PAYABLE_DAYS, SHORT_TENURE_CAP, TAIKI_DAYS, calcShobyoTeate } from '@/lib/shobyo-teate';
 
@@ -28,6 +29,7 @@ export default function Calculator() {
             step={10000}
             value={monthlyIncome}
             onChange={(e) => setMonthlyIncome(e.target.value)}
+            onBlur={() => trackToolUse('shobyo-teate', 'input-monthly')}
           />
         </label>
         <label>
@@ -39,6 +41,7 @@ export default function Calculator() {
             step={1}
             value={restDays}
             onChange={(e) => setRestDays(e.target.value)}
+            onBlur={() => trackToolUse('shobyo-teate', 'input-days')}
           />
         </label>
         <label style={{ fontWeight: 400, display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 'var(--fs-sm)' }}>

@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import {
   CORRESPONDENCE_DEFAULT_TUITION_PER_UNIT,
@@ -65,7 +66,10 @@ export default function Calculator() {
                 type="radio"
                 name="school-type"
                 checked={schoolType === t}
-                onChange={() => changeSchoolType(t)}
+                onChange={() => {
+                  changeSchoolType(t);
+                  trackToolUse('koko-jugyoryo', 'select-school-type');
+                }}
                 style={{ width: 'auto' }}
               />
               <span>{SCHOOL_TYPE_LABELS[t]}</span>
@@ -92,6 +96,7 @@ export default function Calculator() {
             step={10000}
             value={yearlyTuition}
             onChange={(e) => setYearlyTuition(e.target.value)}
+            onBlur={() => trackToolUse('koko-jugyoryo', 'input-tuition')}
           />
           <p className="hint">
             初期値は全国平均にあたる{fmtYen(PRIVATE_FULLTIME_AVERAGE_TUITION)}
@@ -115,6 +120,7 @@ export default function Calculator() {
                   step={1}
                   value={unitsPerYear}
                   onChange={(e) => setUnitsPerYear(e.target.value)}
+                  onBlur={() => trackToolUse('koko-jugyoryo', 'input-units')}
                 />
               </label>
               <label>
@@ -148,6 +154,7 @@ export default function Calculator() {
           step={10000}
           value={otherCosts}
           onChange={(e) => setOtherCosts(e.target.value)}
+          onBlur={() => trackToolUse('koko-jugyoryo', 'input-other-costs')}
         />
         <div className="field-row" style={{ marginTop: 8 }}>
           {OTHER_COST_PRESETS.map((p) => (

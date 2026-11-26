@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import { addDays, formatDate, formatJa, parseDate } from '@/lib/date-parts';
 import {
@@ -144,6 +145,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           step={10000}
           value={monthly}
           onChange={(e) => setMonthly(e.target.value)}
+          onBlur={() => trackToolUse('shitsugyo-hoken', 'input-monthly')}
         />
         <p className="hint">
           税・社会保険料を引く前の額面です。<strong>賞与（ボーナス）は含めません。</strong>
@@ -165,6 +167,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               step={1}
               value={age}
               onChange={(e) => setAge(e.target.value)}
+              onBlur={() => trackToolUse('shitsugyo-hoken', 'input-age')}
             />
           </div>
           <div>
@@ -194,7 +197,14 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
 
       <div className="field">
         <label htmlFor="sh-reason">離職理由</label>
-        <select id="sh-reason" value={reasonKey} onChange={(e) => setReasonKey(e.target.value)}>
+        <select
+          id="sh-reason"
+          value={reasonKey}
+          onChange={(e) => {
+            setReasonKey(e.target.value);
+            trackToolUse('shitsugyo-hoken', 'select-reason');
+          }}
+        >
           {REASONS.map((x) => (
             <option key={x.value} value={x.value}>
               {x.label}
@@ -281,6 +291,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               type="date"
               value={leaveDate}
               onChange={(e) => setLeaveDate(e.target.value)}
+              onBlur={() => trackToolUse('shitsugyo-hoken', 'input-leave-date')}
             />
           </div>
           <div>

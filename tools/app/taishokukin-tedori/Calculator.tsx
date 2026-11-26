@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import Link from 'next/link';
 import {
@@ -147,12 +148,19 @@ export default function Calculator() {
             step={100000}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
+            onBlur={() => trackToolUse('taishokukin-tedori', 'input-amount')}
           />
         </label>
 
         <label>
           退職の区分
-          <select value={kind} onChange={(e) => setKind(e.target.value as RetirementKind)}>
+          <select
+            value={kind}
+            onChange={(e) => {
+              setKind(e.target.value as RetirementKind);
+              trackToolUse('taishokukin-tedori', 'select-kind');
+            }}
+          >
             {KINDS.map((k) => (
               <option key={k.value} value={k.value}>
                 {k.label}
@@ -163,7 +171,13 @@ export default function Calculator() {
 
         <label>
           iDeCo（確定拠出年金）の一時金を、この退職金より先に受け取りましたか？
-          <select value={prior} onChange={(e) => setPrior(e.target.value as PriorChoice)}>
+          <select
+            value={prior}
+            onChange={(e) => {
+              setPrior(e.target.value as PriorChoice);
+              trackToolUse('taishokukin-tedori', 'select-prior');
+            }}
+          >
             <option value="no">いいえ（受け取っていない）</option>
             <option value="yes">はい（先に受け取った）</option>
             <option value="unknown">わからない</option>
@@ -251,6 +265,7 @@ export default function Calculator() {
                 min={0}
                 value={years}
                 onChange={(e) => setYears(e.target.value)}
+                onBlur={() => trackToolUse('taishokukin-tedori', 'input-years')}
                 aria-label="勤続年数（年）"
                 style={{ maxWidth: 120 }}
               />

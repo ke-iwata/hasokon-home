@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useMemo, useState } from 'react';
 import { formatDate, formatJa, parseDate } from '@/lib/date-parts';
 import {
@@ -103,6 +104,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
           step={10000}
           value={monthly}
           onChange={(e) => setMonthly(e.target.value)}
+          onBlur={() => trackToolUse('ikuji-kyugyo-kyufu', 'input-monthly')}
         />
         <p className="hint">
           税・社会保険料を引く前の額面です。<strong>賞与（ボーナス）は含めません。</strong>
@@ -135,6 +137,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
               type="date"
               value={birth}
               onChange={(e) => setBirth(e.target.value)}
+              onBlur={() => trackToolUse('ikuji-kyugyo-kyufu', 'input-birth')}
             />
           </div>
           <div>
@@ -188,7 +191,14 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
         <div className="field-row">
           <div>
             <label htmlFor="ik-months">取得予定の期間</label>
-            <select id="ik-months" value={months} onChange={(e) => setMonths(e.target.value)}>
+            <select
+              id="ik-months"
+              value={months}
+              onChange={(e) => {
+                setMonths(e.target.value);
+                trackToolUse('ikuji-kyugyo-kyufu', 'select-months');
+              }}
+            >
               {MONTHS.map((m) => (
                 <option key={m} value={m}>
                   {m}ヶ月

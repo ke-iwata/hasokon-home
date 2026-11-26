@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useEffect, useState } from 'react';
 import {
   calcFurusato,
@@ -156,7 +157,10 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
                     type="radio"
                     name="tax-year"
                     checked={year === y}
-                    onChange={() => setTaxYear(y)}
+                    onChange={() => {
+                      setTaxYear(y);
+                      trackToolUse('furusato-nozei', 'select-year');
+                    }}
                     style={{ width: 'auto' }}
                   />
                   {taxYearText(y)}
@@ -175,12 +179,19 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={10}
             value={incomeMan}
             onChange={(e) => setIncomeMan(e.target.value)}
+            onBlur={() => trackToolUse('furusato-nozei', 'input-income')}
           />
         </label>
 
         <label>
           配偶者
-          <select value={spouse} onChange={(e) => setSpouse(e.target.value as SpouseType)}>
+          <select
+            value={spouse}
+            onChange={(e) => {
+              setSpouse(e.target.value as SpouseType);
+              trackToolUse('furusato-nozei', 'select-spouse');
+            }}
+          >
             {SPOUSES.map((s) => (
               <option key={s.value} value={s.value}>
                 {s.label}
@@ -242,6 +253,7 @@ export default function Calculator({ buildDate }: { buildDate: string }) {
             step={1000}
             value={donationInput}
             onChange={(e) => setDonationInput(e.target.value)}
+            onBlur={() => trackToolUse('furusato-nozei', 'input-donation')}
             placeholder={`空欄なら ${r.limit.toLocaleString('ja-JP')} 円で計算`}
           />
         </label>

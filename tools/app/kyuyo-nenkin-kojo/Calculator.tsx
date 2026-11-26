@@ -1,5 +1,6 @@
 'use client';
 
+import { trackToolUse } from '@/lib/analytics';
 import { useState } from 'react';
 import {
   CAP,
@@ -53,6 +54,7 @@ export default function Calculator() {
             step={10000}
             value={salary}
             onChange={(e) => setSalary(e.target.value)}
+            onBlur={() => trackToolUse('kyuyo-nenkin-kojo', 'input-salary')}
           />
         </label>
 
@@ -68,6 +70,7 @@ export default function Calculator() {
             step={10000}
             value={pension}
             onChange={(e) => setPension(e.target.value)}
+            onBlur={() => trackToolUse('kyuyo-nenkin-kojo', 'input-pension')}
           />
         </label>
 
@@ -116,6 +119,7 @@ export default function Calculator() {
               step={10000}
               value={otherIncome}
               onChange={(e) => setOtherIncome(e.target.value)}
+              onBlur={() => trackToolUse('kyuyo-nenkin-kojo', 'input-other-income')}
             />
           </label>
         </details>
